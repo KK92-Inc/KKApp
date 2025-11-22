@@ -1,0 +1,28 @@
+{
+	"link": {
+		"distance": 125,
+		"strength": 1.0,
+		"iterations": 1
+	},
+	"charge": {
+		"strength": -1000,
+		"distanceMax": 1000
+	},
+	"collision": {
+		"enabled": true,
+		"padding": 6,
+		"strength": 0.7
+	},
+	"simulation": {
+		"alpha": 1,
+		"alphaTarget": 0,
+		"alphaMin": 0.001,
+		"alphaDecay": 0.0228,
+		"velocityDecay": 0.4
+	},
+	"drag": {
+		"startAlphaTarget": 0.3,
+		"endAlphaTarget": 0,
+		"restartOnDrag": true
+	}
+}

@@ -1,0 +1,154 @@
+# Visual Studio
+.vs/
+.vscode/
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+.DS_Store
+
+# Auto-generated files
+Generated\ Files/
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+
+# Enable "build/" folder in the NuGet Packages folder since NuGet packages use it for MSBuild targets
+!build/
+
+# Uncomment if you have tasks that create the project's static files in wwwroot
+#wwwroot/
+
+# Project-specific
+project.lock.json
+project.fragment.lock.json
+artifacts/
+*.mp3
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# ASP.NET temporary files
+*.swp
+*.log
+
+# .NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/
+project.json.lock
+project.assets.json
+
+# ASP.NET / Kestrel
+*.kestrel
+
+# StyleCop
+StyleCopReport.xml
+
+# Resharper
+_ReSharper/
+*.[Rr]e[Ss]harper
+_ReSharper.Caches/
+
+# JustCode
+.JustCode
+
+# TeamCity
+_TeamCity/
+
+# DotCover is a JetBrains code coverage tool
+*.dotCover
+
+# NUnit
+*.TestResult.xml
+
+# Build results of an "nx g @nrwl/angular:lib" command
+dist/
+
+# Cake - Uncomment if you are using Cake
+# tools/**/*
+# !tools/packages.config
+
+# ASP.NET Identity
+*.db
+
+# Windows image file caches
+Thumbs.db
+ehthumbs.db
+
+# Folder config file
+Desktop.ini
+
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
+
+# VS Code directories
+.history
+.ionide/
+.lldb/
+.node_repl_history
+.omnisharp/
+
+# Windows-specific files
+*.ini
+*.lnk
+
+# dotenv environment variable files
+.env
+
+# ASP.NET Core User Secrets
+*.secrets.json
+
+# Rider
+.idea/
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/dictionaries
+.idea/**/shelf/
+.idea/**/deployment.xml
+.idea/**/Dockerfile.run.xml
+.idea/**/Dockerfile.debug.xml
+
+# dotnet user interface debug logs
+*.opendb
+
+# local NuGet packages
+*.nupkg
+
+# Custom log files
+*.log
+
+# Windows 8 explorer thumbnail cache
+thumbcache*.db
+
+# node.js build results
+node_modules/
+
+# Coverage reports
+coverage/
+*.lcov
+
+# React Native
+.expo/
+.expo-shared/
+
+# Rollup.js
+dist/
+
+# Runtime data
+logs/
+*.log
+
+# Node modules

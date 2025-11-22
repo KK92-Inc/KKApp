@@ -1,0 +1,432 @@
+{
+    "name": "My Awesome Galaxy",
+    "goals": [],
+    "type": "root",
+    "state": "Active",
+    "children": [
+        {
+            "name": "Branch 1",
+            "goals": [],
+            "type": "node",
+            "state": "Active",
+            "children": [
+                {
+                    "name": "Sector 1-1",
+                    "goals": [
+                        {
+                            "id": "goal-1",
+                            "name": "Goal 1",
+                            "state": "Active"
+                        },
+                        {
+                            "id": "goal-2",
+                            "name": "Goal 2",
+                            "state": "Active"
+                        },
+                        {
+                            "id": "goal-3",
+                            "name": "Goal 3",
+                            "state": "Active"
+                        }
+                    ],
+                    "type": "leaf",
+                    "state": "Active"
+                },
+                {
+                    "name": "Sector 1-2",
+                    "goals": [
+                        {
+                            "id": "goal-4",
+                            "name": "Goal 4",
+                            "state": "Active"
+                        },
+                        {
+                            "id": "goal-5",
+                            "name": "Goal 5",
+                            "state": "Active"
+                        },
+                        {
+                            "id": "goal-6",
+                            "name": "Goal 6",
+                            "state": "Active"
+                        }
+                    ],
+                    "type": "leaf",
+                    "state": "Active"
+                },
+                {
+                    "name": "Sector 1-3",
+                    "goals": [
+                        {
+                            "id": "goal-7",
+                            "name": "Goal 7",
+                            "state": "Active"
+                        },
+                        {
+                            "id": "goal-8",
+                            "name": "Goal 8",
+                            "state": "Active"
+                        },
+                        {
+                            "id": "goal-9",
+                            "name": "Goal 9",
+                            "state": "Active"
+                        }
+                    ],
+                    "type": "leaf",
+                    "state": "Active"
+                },
+                {
+                    "name": "Sector 1-4",
+                    "goals": [
+                        {
+                            "id": "goal-10",
+                            "name": "Goal 10",
+                            "state": "Active"
+                        }
+                    ],
+                    "type": "leaf",
+                    "state": "Active",
+                    "children": [
+                        {
+                            "name": "Sector 1-1",
+                            "goals": [
+                                {
+                                    "id": "goal-1",
+                                    "name": "Goal 1",
+                                    "state": "Active"
+                                },
+                                {
+                                    "id": "goal-2",
+                                    "name": "Goal 2",
+                                    "state": "Active"
+                                },
+                                {
+                                    "id": "goal-3",
+                                    "name": "Goal 3",
+                                    "state": "Active"
+                                }
+                            ],
+                            "type": "leaf",
+                            "state": "Active"
+                        },
+                        {
+                            "name": "Sector 1-2",
+                            "goals": [
+                                {
+                                    "id": "goal-4",
+                                    "name": "Goal 4",
+                                    "state": "Active"
+                                },
+                                {
+                                    "id": "goal-5",
+                                    "name": "Goal 5",
+                                    "state": "Active"
+                                },
+                                {
+                                    "id": "goal-6",
+                                    "name": "Goal 6",
+                                    "state": "Active"
+                                }
+                            ],
+                            "type": "leaf",
+                            "state": "Active"
+                        },
+                        {
+                            "name": "Sector 1-3",
+                            "goals": [
+                                {
+                                    "id": "goal-7",
+                                    "name": "Goal 7",
+                                    "state": "Active"
+                                },
+                                {
+                                    "id": "goal-8",
+                                    "name": "Goal 8",
+                                    "state": "Active"
+                                },
+                                {
+                                    "id": "goal-9",
+                                    "name": "Goal 9",
+                                    "state": "Active"
+                                }
+                            ],
+                            "type": "leaf",
+                            "state": "Active"
+                        },
+                        {
+                            "name": "Sector 1-4",
+                            "goals": [
+                                {
+                                    "id": "goal-10",
+                                    "name": "Goal 10",
+                                    "state": "Active"
+                                }
+                            ],
+                            "type": "leaf",
+                            "state": "Active"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Branch 2",
+            "goals": [],
+            "type": "node",
+            "state": "Active",
+            "children": [
+                {
+                    "name": "Sector 2-1",
+                    "goals": [
+                        {
+                            "id": "goal-11",
+                            "name": "Goal 11",
+                            "state": "Active"
+                        },
+                        {
+                            "id": "goal-12",
+                            "name": "Goal 12",
+                            "state": "Active"
+                        },
+                        {
+                            "id": "goal-13",
+                            "name": "Goal 13",
+                            "state": "Active"
+                        }
+                    ],
+                    "type": "leaf",
+                    "state": "Active"
+                },
+                {
+                    "name": "Sector 2-2",
+                    "goals": [
+                        {
+                            "id": "goal-14",
+                            "name": "Goal 14",
+                            "state": "Active"
+                        },
+                        {
+                            "id": "goal-15",
+                            "name": "Goal 15",
+                            "state": "Active"
+                        },
+                        {
+                            "id": "goal-16",
+                            "name": "Goal 16",
+                            "state": "Active"
+                        }
+                    ],
+                    "type": "leaf",
+                    "state": "Active"
+                },
+                {
+                    "name": "Sector 2-3",
+                    "goals": [
+                        {
+                            "id": "goal-17",
+                            "name": "Goal 17",
+                            "state": "Active"
+                        },
+                        {
+                            "id": "goal-18",
+                            "name": "Goal 18",
+                            "state": "Active"
+                        },
+                        {
+                            "id": "goal-19",
+                            "name": "Goal 19",
+                            "state": "Active"
+                        }
+                    ],
+                    "type": "leaf",
+                    "state": "Active"
+                },
+                {
+                    "name": "Sector 2-4",
+                    "goals": [
+                        {
+                            "id": "goal-20",
+                            "name": "Goal 20",
+                            "state": "Active"
+                        }
+                    ],
+                    "type": "leaf",
+                    "state": "Active"
+                }
+            ]
+        },
+        {
+            "name": "Branch 3",
+            "goals": [],
+            "type": "node",
+            "state": "Active",
+            "children": [
+                {
+                    "name": "Sector 3-1",
+                    "goals": [
+                        {
+                            "id": "goal-21",
+                            "name": "Goal 21",
+                            "state": "Active"
+                        },
+                        {
+                            "id": "goal-22",
+                            "name": "Goal 22",
+                            "state": "Active"
+                        },
+                        {
+                            "id": "goal-23",
+                            "name": "Goal 23",
+                            "state": "Active"
+                        }
+                    ],
+                    "type": "leaf",
+                    "state": "Active"
+                },
+                {
+                    "name": "Sector 3-2",
+                    "goals": [
+                        {
+                            "id": "goal-24",
+                            "name": "Goal 24",
+                            "state": "Active"
+                        },
+                        {
+                            "id": "goal-25",
+                            "name": "Goal 25",
+                            "state": "Active"
+                        },
+                        {
+                            "id": "goal-26",
+                            "name": "Goal 26",
+                            "state": "Active"
+                        }
+                    ],
+                    "type": "leaf",
+                    "state": "Active"
+                },
+                {
+                    "name": "Sector 3-3",
+                    "goals": [
+                        {
+                            "id": "goal-27",
+                            "name": "Goal 27",
+                            "state": "Active"
+                        },
+                        {
+                            "id": "goal-28",
+                            "name": "Goal 28",
+                            "state": "Active"
+                        },
+                        {
+                            "id": "goal-29",
+                            "name": "Goal 29",
+                            "state": "Active"
+                        }
+                    ],
+                    "type": "leaf",
+                    "state": "Active"
+                },
+                {
+                    "name": "Sector 3-4",
+                    "goals": [
+                        {
+                            "id": "goal-30",
+                            "name": "Goal 30",
+                            "state": "Active"
+                        }
+                    ],
+                    "type": "leaf",
+                    "state": "Active"
+                }
+            ]
+        },
+        {
+            "name": "Branch 4",
+            "goals": [],
+            "type": "node",
+            "state": "Active",
+            "children": [
+                {
+                    "name": "Sector 4-1",
+                    "goals": [
+                        {
+                            "id": "goal-31",
+                            "name": "Goal 31",
+                            "state": "Active"
+                        },
+                        {
+                            "id": "goal-32",
+                            "name": "Goal 32",
+                            "state": "Active"
+                        },
+                        {
+                            "id": "goal-33",
+                            "name": "Goal 33",
+                            "state": "Active"
+                        }
+                    ],
+                    "type": "leaf",
+                    "state": "Active"
+                },
+                {
+                    "name": "Sector 4-2",
+                    "goals": [
+                        {
+                            "id": "goal-34",
+                            "name": "Goal 34",
+                            "state": "Active"
+                        },
+                        {
+                            "id": "goal-35",
+                            "name": "Goal 35",
+                            "state": "Active"
+                        },
+                        {
+                            "id": "goal-36",
+                            "name": "Goal 36",
+                            "state": "Active"
+                        }
+                    ],
+                    "type": "leaf",
+                    "state": "Active"
+                },
+                {
+                    "name": "Sector 4-3",
+                    "goals": [
+                        {
+                            "id": "goal-37",
+                            "name": "Goal 37",
+                            "state": "Active"
+                        },
+                        {
+                            "id": "goal-38",
+                            "name": "Goal 38",
+                            "state": "Active"
+                        },
+                        {
+                            "id": "goal-39",
+                            "name": "Goal 39",
+                            "state": "Active"
+                        }
+                    ],
+                    "type": "leaf",
+                    "state": "Active"
+                },
+                {
+                    "name": "Sector 4-4",
+                    "goals": [
+                        {
+                            "id": "goal-40",
+                            "name": "Goal 40",
+                            "state": "Active"
+                        }
+                    ],
+                    "type": "leaf",
+                    "state": "Active"
+                }
+            ]
+        }
+    ]
+}

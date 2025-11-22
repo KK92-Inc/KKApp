@@ -1,0 +1,26 @@
+[
+	{
+		"version": "1.0.3",
+		"title": "Enhanced User Permissions",
+		"description": "Added role-based access control and custom permission settings",
+		"on": "2023/11/22"
+	},
+	{
+		"version": "1.0.2",
+		"title": "Performance Optimization",
+		"description": "Improved loading times and reduced resource consumption by 40%",
+		"on": "2023/09/08"
+	},
+	{
+		"version": "1.0.1",
+		"title": "Bug Fixes and UI Refinements",
+		"description": "Fixed critical issues and updated the user interface with modern design patterns",
+		"on": "2023/07/30"
+	},
+	{
+		"version": "1.0.0",
+		"title": "Initial Release",
+		"description": "First public release featuring core functionality and basic analytics",
+		"on": "2023/06/15"
+	}
+]

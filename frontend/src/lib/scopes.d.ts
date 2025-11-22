@@ -1,0 +1,1 @@
+type Scopes = "comments:read" | "comments:write" | "cursus:read" | "cursus:write" | "goals:read" | "goals:write" | "projects:read" | "projects:write" | "reviews:read" | "reviews:write" | "rubrics:read" | "rubrics:write" | "user:settings:read" | "user:settings:write";
