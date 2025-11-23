@@ -4,8 +4,9 @@
 // ============================================================================
 
 using System.Linq.Expressions;
-using NXTBackend.API.Core.Utils.Query;
-using NXTBackend.API.Domain.Common;
+using Backend.API.Core.Query;
+using Backend.API.Domain;
+using Backend.API.Models;
 using NXTBackend.API.Models;
 
 // ============================================================================

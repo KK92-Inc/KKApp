@@ -1,0 +1,60 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "backend", "backend", "{1AE8ACA6-933B-BF2A-3671-3E2EAC007D16}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Backend.API", "Backend.API", "{D0DEFB3C-6DE4-6C87-E907-12ABAF6788DF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Backend.API.Core", "backend\Backend.API\Backend.API.Core\Backend.API.Core.csproj", "{3DD7E5DF-B1A1-587B-061E-786380DB80C9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Backend.API.Domain", "backend\Backend.API\Backend.API.Domain\Backend.API.Domain.csproj", "{0B00278B-B3C8-36F6-1209-EC132A4F27DF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Backend.API.Infrastructure", "backend\Backend.API\Backend.API.Infrastructure\Backend.API.Infrastructure.csproj", "{C1856994-0BB2-BF2A-29AE-F315BC1C6557}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Backend.API.Models", "backend\Backend.API\Backend.API.Models\Backend.API.Models.csproj", "{EB1606C5-08A2-01B2-8E08-C6D5B6C92660}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Backend.API.Root", "backend\Backend.API\Backend.API.Root\Backend.API.Root.csproj", "{0689FB96-1BB2-E6C0-033C-16BFC1914633}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3DD7E5DF-B1A1-587B-061E-786380DB80C9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3DD7E5DF-B1A1-587B-061E-786380DB80C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3DD7E5DF-B1A1-587B-061E-786380DB80C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3DD7E5DF-B1A1-587B-061E-786380DB80C9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0B00278B-B3C8-36F6-1209-EC132A4F27DF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0B00278B-B3C8-36F6-1209-EC132A4F27DF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0B00278B-B3C8-36F6-1209-EC132A4F27DF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0B00278B-B3C8-36F6-1209-EC132A4F27DF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C1856994-0BB2-BF2A-29AE-F315BC1C6557}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C1856994-0BB2-BF2A-29AE-F315BC1C6557}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C1856994-0BB2-BF2A-29AE-F315BC1C6557}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C1856994-0BB2-BF2A-29AE-F315BC1C6557}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EB1606C5-08A2-01B2-8E08-C6D5B6C92660}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EB1606C5-08A2-01B2-8E08-C6D5B6C92660}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EB1606C5-08A2-01B2-8E08-C6D5B6C92660}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EB1606C5-08A2-01B2-8E08-C6D5B6C92660}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0689FB96-1BB2-E6C0-033C-16BFC1914633}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0689FB96-1BB2-E6C0-033C-16BFC1914633}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0689FB96-1BB2-E6C0-033C-16BFC1914633}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0689FB96-1BB2-E6C0-033C-16BFC1914633}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{D0DEFB3C-6DE4-6C87-E907-12ABAF6788DF} = {1AE8ACA6-933B-BF2A-3671-3E2EAC007D16}
+		{3DD7E5DF-B1A1-587B-061E-786380DB80C9} = {D0DEFB3C-6DE4-6C87-E907-12ABAF6788DF}
+		{0B00278B-B3C8-36F6-1209-EC132A4F27DF} = {D0DEFB3C-6DE4-6C87-E907-12ABAF6788DF}
+		{C1856994-0BB2-BF2A-29AE-F315BC1C6557} = {D0DEFB3C-6DE4-6C87-E907-12ABAF6788DF}
+		{EB1606C5-08A2-01B2-8E08-C6D5B6C92660} = {D0DEFB3C-6DE4-6C87-E907-12ABAF6788DF}
+		{0689FB96-1BB2-E6C0-033C-16BFC1914633} = {D0DEFB3C-6DE4-6C87-E907-12ABAF6788DF}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {DE958B2C-F1BD-4484-AA8F-93BBC045BB4C}
+	EndGlobalSection
+EndGlobal
