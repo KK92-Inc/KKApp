@@ -6,8 +6,9 @@
 using Serilog;
 using Serilog.Templates;
 using Serilog.Templates.Themes;
+using Wolverine;
 
-namespace backend.api.root;
+namespace Backend.API.Root;
 
 // ============================================================================
 
@@ -15,6 +16,9 @@ public static class Services
 {
     public static WebApplicationBuilder Register(WebApplicationBuilder builder)
     {
+		builder.Host.UseWolverine();
+		builder.Services.AddSingleton<IssueRepository>();
+
         // Add services to the container.
         // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
         builder.Services.AddOpenApi();

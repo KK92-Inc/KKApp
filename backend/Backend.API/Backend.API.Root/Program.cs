@@ -4,21 +4,24 @@
 // ============================================================================
 
 using Serilog;
-using backend.api.root;
+using Wolverine;
+using Backend.API.Root;
 
 // ============================================================================
-Log.Logger = new LoggerConfiguration()
-    .WriteTo.Console()
-    .CreateBootstrapLogger();
-
+Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateBootstrapLogger();
 Log.Information("Starting up!");
-var app = Services.Register(WebApplication.CreateBuilder(args)).Build();
 
-// Configure the HTTP request pipeline.
+var app = Services.Register(WebApplication.CreateBuilder(args)).Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+
+app.MapPost("/issues", async (CreateIssue command, IMessageBus bus) =>
+{
+    await bus.InvokeAsync(command);
+    return Results.Ok("Issue creation initiated");
+});
 
 app.MapControllers();
 app.UseHttpsRedirection();
