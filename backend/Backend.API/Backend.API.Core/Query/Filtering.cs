@@ -3,9 +3,11 @@
 // See README in the root project for more information.
 // ============================================================================
 
-namespace Backend.API.Core.Query;
-
 using System.Linq.Expressions;
+
+// ============================================================================
+
+namespace Backend.API.Core.Query;
 
 public static class Filter
 {
@@ -16,14 +18,14 @@ public static class Filter
     }
 
     // 2. Handle Nullable Structs (int?, DateTime?, Guid?, etc.)
-    public static Expression<Func<T, bool>>? With<T, TValue>(TValue? value, Expression<Func<T, bool>> filter) 
+    public static Expression<Func<T, bool>>? With<T, TValue>(TValue? value, Expression<Func<T, bool>> filter)
         where TValue : struct
     {
         return value.HasValue ? filter : null;
     }
 
     // 3. Handle Reference Types (Classes, Arrays, Lists)
-    public static Expression<Func<T, bool>>? With<T, TValue>(TValue? value, Expression<Func<T, bool>> filter) 
+    public static Expression<Func<T, bool>>? With<T, TValue>(TValue? value, Expression<Func<T, bool>> filter)
         where TValue : class
     {
         return value != null ? filter : null;

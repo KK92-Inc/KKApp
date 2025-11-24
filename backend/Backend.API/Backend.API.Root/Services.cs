@@ -3,26 +3,90 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using System.Diagnostics;
+using System.Security.Claims;
+using System.Text.Json;
+using Backend.API.Core;
+using Backend.API.Infrastructure;
+using Backend.API.Infrastructure.Interceptors;
+using Keycloak.AuthServices.Authentication;
+using Keycloak.AuthServices.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using Serilog;
 using Serilog.Templates;
 using Serilog.Templates.Themes;
 using Wolverine;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using Backend.API.Core.Services.Interface;
+using Backend.API.Core.Services.Implementation;
 
 namespace Backend.API.Root;
 
 // ============================================================================
 
+/// <summary>
+/// Static service initilization class.
+/// </summary>
 public static class Services
 {
     public static WebApplicationBuilder Register(WebApplicationBuilder builder)
     {
-		builder.Host.UseWolverine();
-		builder.Services.AddSingleton<IssueRepository>();
+        // Messaging Bus (confusingly named use?)
+        builder.Host.UseWolverine();
 
-        // Add services to the container.
-        // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+        // Keycloak Auth + Authz
+        builder.Services.AddKeycloakAuthorization(builder.Configuration);
+        builder.Services.AddKeycloakWebApiAuthentication(builder.Configuration);
+        builder.Services.AddAuthorizationBuilder()
+            .AddPolicy("IsStaff", b => b.RequireClaim(ClaimTypes.Role, "staff"))
+            .AddPolicy("IsDeveloper", b => b.RequireClaim(ClaimTypes.Role, "developer"));
+
+        // Controller Config
+        builder.Services.AddControllers(o =>
+        {
+            o.AddProtectedResources();
+            o.Filters.Add<ServiceExceptionFilter>();
+        }).AddJsonOptions(o =>
+        {
+            // Let's us configure the casing for out JSON DTOs for example.
+            o.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        });
+
+        // Database
+        builder.AddNpgsqlDataSource("postgresdb");
+        builder.Services.AddDbContext<DatabaseContext>((provider, options) =>
+        {
+            var dataSource = provider.GetRequiredService<NpgsqlDataSource>();
+            options.AddInterceptors(new SavingChangesInterceptor(provider.GetRequiredService<TimeProvider>()));
+            options.UseLazyLoadingProxies().UseNpgsql(dataSource);
+        });
+
+        builder.Services.AddHttpContextAccessor();
+        // builder.Services.AddScoped<ICursusService, CursusService>();
+        builder.Services.AddScoped<IUserService, UserService>();
+        // builder.Services.AddScoped<IUserCursusService, UserCursusService>();
+        // builder.Services.AddScoped<IUserGoalService, UserGoalService>();
+        // builder.Services.AddScoped<IUserProjectService, UserProjectService>();
+        // builder.Services.AddScoped<IFeatureService, FeatureService>();
+        // builder.Services.AddScoped<IGoalService, GoalService>();
+        // builder.Services.AddScoped<IFeedbackService, FeedbackService>();
+        // builder.Services.AddScoped<ICommentService, CommentService>();
+        // builder.Services.AddScoped<IProjectService, ProjectService>();
+        // builder.Services.AddScoped<IRubricService, RubricService>();
+        // builder.Services.AddScoped<IReviewService, ReviewService>();
+        // builder.Services.AddScoped<IResourceOwnerService, ResourceOwnerService>();
+        // builder.Services.AddScoped<ISpotlightEventService, SpotlightEventService>();
+        // builder.Services.AddScoped<IGitService, GitService2>();
+        // builder.Services.AddScoped<INotificationService, NotificationService>();
+        // builder.Services.AddScoped<ISpotlightEventActionService, SpotlightEventActionService>();
+        // builder.Services.AddTransient<IResend, ResendClient>();
+        // builder.Services.AddSingleton<INotificationQueue, InMemoryNotificationQueue>();
+        builder.Services.AddSingleton(TimeProvider.System);
+
+        // Misc
         builder.Services.AddOpenApi();
-        builder.Services.AddControllers();
         builder.Services.AddSerilog((services, lc) => lc
             .ReadFrom.Configuration(builder.Configuration)
             .ReadFrom.Services(services)
@@ -32,5 +96,47 @@ public static class Services
                 theme: TemplateTheme.Code
             )));
         return builder;
+    }
+}
+
+// ============================================================================
+
+/// <summary>
+/// Exception filter for deep service related exceptions.
+/// For example, a service way down in the call stack might need to propegate
+/// some form of HTTP Error to the client because further processing isn't
+/// possible. Or for example we tried to find something and it isn't there.
+///
+/// Rather than 'handle' it, we just throw an exception and respond back.
+/// </summary>
+public class ServiceExceptionFilter : IExceptionFilter
+{
+    public void OnException(ExceptionContext context)
+    {
+        if (context.Exception is not ServiceException serviceException)
+            return;
+
+        context.Result = serviceException.StatusCode switch
+        {
+            StatusCodes.Status403Forbidden => new ForbidResult(),
+            StatusCodes.Status404NotFound => new NotFoundResult(),
+            _ => new ObjectResult(new ProblemDetails
+            {
+                Type = $"https://http.cat/{serviceException.StatusCode}",
+                Title = serviceException.Message,
+                Detail = serviceException.Detail,
+                Status = serviceException.StatusCode,
+                Instance = context.HttpContext.Request.Path,
+                Extensions = new Dictionary<string, object?>
+                {
+                    ["traceId"] = Activity.Current?.Id ?? context.HttpContext.TraceIdentifier
+                }
+            })
+            {
+                ContentTypes = { "application/problem+json" }
+            }
+        };
+
+        context.ExceptionHandled = true;
     }
 }

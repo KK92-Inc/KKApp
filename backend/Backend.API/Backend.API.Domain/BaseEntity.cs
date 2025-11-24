@@ -24,13 +24,13 @@ public abstract class BaseEntity
     public Guid Id { get; set; } = Guid.CreateVersion7();
 
     /// <summary>
-    /// When the feature was created.
+    /// Created at timestamp
     /// </summary>
     [Column("created_at")]
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
     /// <summary>
-    /// Updated at.
+    /// Updated at timestamp
     /// </summary>
     [Column("updated_at")]
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;

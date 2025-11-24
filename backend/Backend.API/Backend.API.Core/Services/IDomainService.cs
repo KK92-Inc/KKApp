@@ -6,65 +6,61 @@
 using System.Linq.Expressions;
 using Backend.API.Core.Query;
 using Backend.API.Domain;
-using Backend.API.Models;
-using NXTBackend.API.Models;
 
 // ============================================================================
 
-namespace NXTBackend.API.Core;
+namespace Backend.API.Core.Services;
 
-/// <summary>
-/// Interface for Domain models.
-///
-/// Ensure that basic CRUD functions are defined.
-/// </summary>
-/// <remarks></remarks>
-/// <typeparam name="T">The model type.</typeparam>
 public interface IDomainService<T> where T : BaseEntity
 {
-	public IQueryable<T> Query(bool tracking = true);
+    /// <summary>
+    /// Returns a queryable for the entity.
+    /// </summary>
+    /// <param name="tracking">Whether to track changes or not.</param>
+    /// <returns>A queryable for the entity.</returns>
+    public IQueryable<T> Query(bool tracking = true);
 
-	/// <summary>
-	/// Find the entity by its ID.
-	/// </summary>
-	/// <param name="id">The ID.</param>
-	/// <returns>The entity found by that ID or null if not found.</returns>
-	Task<T?> FindByIdAsync(Guid id);
+    /// <summary>
+    /// Find the entity by its ID.
+    /// </summary>
+    /// <param name="id">The ID.</param>
+    /// <returns>The entity found by that ID or null if not found.</returns>
+    public Task<T?> FindByIdAsync(Guid id);
 
-	/// <summary>
-	/// Update the entity.
-	/// </summary>
-	/// <param name="entity">The updated entity.</param>
-	/// <returns>The updated entity.</returns>
-	Task<T> UpdateAsync(T entity);
+    /// <summary>
+    /// Update the entity.
+    /// </summary>
+    /// <param name="entity">The updated entity.</param>
+    /// <returns>The updated entity.</returns>
+    public Task<T> UpdateAsync(T entity);
 
-	/// <summary>
-	/// Validates if all provided IDs exist in the database.
-	/// </summary>
-	/// <param name="ids">Collection of IDs to validate.</param>
-	/// <returns>True if all IDs are valid, false otherwise.</returns>
-	Task<bool> AreValid(IEnumerable<Guid> ids);
+    /// <summary>
+    /// Validates if all provided IDs exist in the database.
+    /// </summary>
+    /// <param name="ids">Collection of IDs to validate.</param>
+    /// <returns>True if all IDs are valid, false otherwise.</returns>
+    public bool Exists(IEnumerable<Guid> ids);
 
-	/// <summary>
-	/// Delete the entity.
-	/// </summary>
-	/// <param name="entity">The entity to delete</param>
-	/// <returns>The deleted entity.</returns>
-	Task<T> DeleteAsync(T entity);
+    /// <summary>
+    /// Delete the entity.
+    /// </summary>
+    /// <param name="entity">The entity to delete</param>
+    /// <returns>The deleted entity.</returns>
+    public Task<T> DeleteAsync(T entity);
 
-	/// <summary>
-	/// Create a new entity.
-	/// </summary>
-	/// <param name="entity">The newly created entity.</param>
-	/// <returns>The newly created entity.</returns>
-	Task<T> CreateAsync(T entity);
+    /// <summary>
+    /// Create a new entity.
+    /// </summary>
+    /// <param name="entity">The newly created entity.</param>
+    /// <returns>The newly created entity.</returns>
+    public Task<T> CreateAsync(T entity);
 
-	/// <summary>
-	/// Get all entities.
-	/// </summary>
-	/// <param name="pagination">Specific pagination parameters (as to avoid large queries)</param>
-	/// <param name="sorting">Parameters for sorting the results</param>
-	/// <param name="filter">Optional filters to apply to the query</param>
-	/// <returns>A paginated list of entities.</returns>
-	Task<PaginatedList<T>> GetAllAsync(PaginationParams pagination, SortingParams sorting, FilterDictionary? filter = null);
+    /// <summary>
+    /// Get all entities with pagination, sorting and filtering.
+    /// </summary>
+    /// <param name="pagination">The pagination options.</param>
+    /// <param name="sorting">The sorting options.</param>
+    /// <param name="filters">The filters to apply.</param>
+    /// <returns>A paginated list of entities.</returns>
+    public Task<PaginatedList<T>> GetAllAsync(IPagination pagination, ISorting sorting, params Expression<Func<T, bool>>?[] filters);
 }

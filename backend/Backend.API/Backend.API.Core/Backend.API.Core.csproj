@@ -14,5 +14,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Backend.API.Domain\Backend.API.Domain.csproj" />
     <ProjectReference Include="..\Backend.API.Models\Backend.API.Models.csproj" />
+    <ProjectReference Include="../Backend.API.Infrastructure/Backend.API.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

@@ -1,13 +1,21 @@
+// ============================================================================
+// W2Inc, Amsterdam 2025, All Rights Reserved.
+// See README in the root project for more information.
+// ============================================================================
+
+using Backend.API.Core.Query;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
-namespace Backend.API.Root.Params;
+// ============================================================================
 
+namespace Backend.API.Root.Params;
 
 /// <summary>
 /// Query parameters for pagination.
 /// </summary>
-public class PaginationParams
+public class Pagination : IPagination
 {
 	private const int c_MaxPageSize = 50;
 
@@ -19,6 +27,7 @@ public class PaginationParams
 	/// </summary>
 	[Range(1, int.MaxValue)]
 	[FromQuery(Name = "page[index]")]
+    [Description("The page number/index")]
 	public int Page
 	{
 		get => _pageNumber;
@@ -30,6 +39,7 @@ public class PaginationParams
 	/// </summary>
 	[Range(1, c_MaxPageSize)]
 	[FromQuery(Name = "page[size]")]
+    [Description("The amount of results per page")]
 	public int Size
 	{
 		get => _pageSize;

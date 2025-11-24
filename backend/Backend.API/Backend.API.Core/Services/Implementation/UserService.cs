@@ -1,37 +1,26 @@
-using System.Linq.Expressions;
-using Backend.API.Domain;
+// ============================================================================
+// Copyright (c) 2025 - W2Inc.
+// See README.md in the project root for license information.
+// ============================================================================
+
+using Backend.API.Infrastructure;
+using Backend.API.Core.Services.Interface;
+using Backend.API.Domain.Entities.Users;
+using Microsoft.EntityFrameworkCore;
+
+// ============================================================================
 
 namespace Backend.API.Core.Services.Implementation;
 
-public class UserService<T>() where T : BaseEntity
+public class UserService(DatabaseContext context) : BaseService<User>(context), IUserService
 {
-	// Ensure your Interface matches this signature too!
-	public virtual async Task<List<T>> GetAllAsync(
+    public async Task<User?> FindByLoginAsync(string login)
+    {
+        return await _dbSet.FirstOrDefaultAsync(u => u.Login == login);
+    }
 
-		// The ? here is the magic fix
-		params Expression<Func<T, bool>>?[] filters)
-	{
-		var query = _dbSet.AsQueryable();
-
-		foreach (var filter in filters)
-		{
-			// Now the compiler knows 'filter' might be null, so we check it.
-			if (filter != null)
-			{
-				query = query.Where(filter);
-			}
-		}
-
-		return await query.ToPagedListAsync(p);
-	}
-
-	public Expression<Func<T, bool>>? With<TVal>(TVal? value, Expression<Func<T, bool>> filter)
-	{
-		if (value is null) return null;
-
-		// Special handling for strings to ignore Empty strings too
-		if (value is string s && string.IsNullOrEmpty(s)) return null;
-
-		return filter;
-	}
+    public async Task<User?> FindByNameAsync(string displayName)
+    {
+        return await _dbSet.FirstOrDefaultAsync(u => u.Display == displayName);
+    }
 }
