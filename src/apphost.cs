@@ -17,7 +17,7 @@
 #:package Aspire.Npgsql@*
 #:package Aspire.Hosting.PostgreSQL@*
 #:package CommunityToolkit.Aspire.Hosting.Bun@*
-#:project Backend.API/Backend.API.Root/Backend.API.Root.csproj
+#:project Backend/Backend.API.Root/Backend.API.Root.csproj
 
 // ============================================================================
 
@@ -29,7 +29,7 @@ var postgresdb = postgres.AddDatabase("postgresdb");
 
 // ============================================================================
 
-builder.AddProject<Projects.Backend_API_Root>("api")
+builder.AddProject<Projects.Backend>("api")
     .WithReference(postgresdb);
 
 // builder.AddNpgsqlDataSource(connectionName: "postgresdb");
