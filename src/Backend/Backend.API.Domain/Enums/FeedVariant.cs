@@ -14,7 +14,7 @@ namespace Backend.API.Domain.Enums;
 /// </summary>
 [Flags]
 // [JsonConverter(typeof(JsonStringEnumConverter)),]
-public enum FeedKind
+public enum FeedVariant
 {
 	/// <summary>
 	/// Feed requires user to accept or decline.

@@ -6,6 +6,7 @@
 using Serilog;
 using Wolverine;
 using Backend.API.Root;
+using Grpc.Net.Client;
 
 // ============================================================================
 Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateBootstrapLogger();

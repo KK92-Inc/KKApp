@@ -8,20 +8,17 @@ using System.Text.Json.Serialization;
 namespace Backend.API.Domain.Enums;
 
 /// <summary>
-/// The different kinds of feeds that exist.
+/// Certain kinds of ownership for an entity.
+/// 
+/// <para>E.g: An API App can be owned by a User or an Organization.</para>
+/// <para>E.g: A repository can be owned by a User or an Organization.</para>
 /// </summary>
-[JsonConverter(typeof(JsonStringEnumMemberNameAttribute))]
-public enum SearchKind
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum EntityOwnership
 {
-    /// <summary>
-    /// A new user has joined the app
-    /// </summary>
     [JsonPropertyName(nameof(User))]
-    User = 1 << 0,
+    User,
 
-    /// <summary>
-    /// Some user has completed a project, hoorah!
-    /// </summary>
-    [JsonPropertyName(nameof(Project))]
-    Project = 1 << 1,
+    [JsonPropertyName(nameof(Organization))]
+    Organization,
 }

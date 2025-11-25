@@ -29,12 +29,12 @@ var postgresdb = postgres.AddDatabase("postgresdb");
 
 // ============================================================================
 
-builder.AddProject<Projects.Backend>("api")
+builder.AddProject<Projects.Backend_API_Root>("api")
     .WithReference(postgresdb);
 
 // builder.AddNpgsqlDataSource(connectionName: "postgresdb");
 // TODO: Cookies are fucked...
-builder.AddBunApp("frontend", "../frontend", "dev")
+builder.AddBunApp("frontend", "./Frontend", "dev")
     .WithBunPackageInstallation()
     .WithHttpEndpoint(env: "PORT", port: 5173)
     .WithExternalHttpEndpoints()

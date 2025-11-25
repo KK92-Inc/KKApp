@@ -1,6 +1,6 @@
 // ============================================================================
-// W2Inc, Amsterdam 2023-2024, All Rights Reserved.
-// See README in the root project for more information.
+// Copyright (c) 2025 - W2Inc.
+// See README.md in the project root for license information.
 // ============================================================================
 
 using System.Text.Json.Serialization;
@@ -11,7 +11,7 @@ namespace Backend.API.Domain.Enums;
 /// The different kinds of cursi that exist.
 /// </summary>
 [JsonConverter(typeof(JsonStringEnumConverter))]
-public enum CursusKind
+public enum CursusVariant
 {
     /// <summary>
     /// A dynamic cursus is one whose content is generated on the fly.

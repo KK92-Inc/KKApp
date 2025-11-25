@@ -11,7 +11,7 @@ namespace Backend.API.Domain.Enums;
 /// The different kinds of reviews that exist for a project.
 /// </summary>
 [JsonConverter(typeof(JsonStringEnumConverter))]
-public enum ReviewKind
+public enum ReviewVariant
 {
     /// <summary>
     /// A reflection on the project by the author themselves.

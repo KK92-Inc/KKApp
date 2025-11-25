@@ -1,6 +1,6 @@
 ﻿// ============================================================================
-// W2Inc, Amsterdam 2023-2024, All Rights Reserved.
-// See README in the root project for more information.
+// Copyright (c) 2025 - W2Inc.
+// See README.md in the project root for license information.
 // ============================================================================
 
 using System.Text.Json.Serialization;
