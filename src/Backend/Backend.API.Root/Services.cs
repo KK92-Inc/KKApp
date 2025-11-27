@@ -62,6 +62,12 @@ public static class Services
         {
             options.UseLazyLoadingProxies();
             options.AddInterceptors(new SavingChangesInterceptor(TimeProvider.System));
+            options.UseNpgsql(builder.Configuration.GetConnectionString("data"));
+
+            if (builder.Environment.IsDevelopment())
+            {
+                options.EnableSensitiveDataLogging();
+            }
         });
 
         builder.Services.AddHttpContextAccessor();

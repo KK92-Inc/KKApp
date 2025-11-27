@@ -17,6 +17,7 @@
 #:package Aspire.Npgsql@*
 #:package Aspire.Hosting.PostgreSQL@*
 #:package CommunityToolkit.Aspire.Hosting.Bun@*
+#:project Migrations/Migrations.csproj
 #:project Backend/Backend.API.Root/Backend.API.Root.csproj
 
 // ============================================================================
@@ -31,13 +32,17 @@ var postgres = builder.AddPostgres("database", username, password)
     // Configure the container to store data in a volume so that it persists across instances.
     .WithDataVolume()
     // Keep the container running between app host sessions.
-    .WithLifetime(ContainerLifetime.Persistent);
+    .WithLifetime(ContainerLifetime.Persistent)
+    .AddDatabase(dbname);
 
-var db = postgres.AddDatabase(dbname);
+var migrationService = builder.AddProject<Projects.Migrations>("migration")
+    .WithReference(postgres)
+    .WaitFor(postgres);
+
 builder.AddProject<Projects.Backend_API_Root>("api")
     // .WithHttpHealthCheck("/health")
-    .WithReference(db)
-    .WaitFor(db);
+    .WithReference(postgres)
+    .WaitFor(migrationService);
 
 builder.Build().Run();
 

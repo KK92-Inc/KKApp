@@ -4,28 +4,21 @@
 // ============================================================================
 
 using Serilog;
-using Wolverine;
 using Backend.API.Root;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Hosting;
-using Backend.API.Infrastructure;
-// using Grpc.Net.Client;
 
 // ============================================================================
+
 Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateBootstrapLogger();
 Log.Information("Starting up!");
 
-var builder = WebApplication.CreateBuilder(args);
-
-// builder.AddServiceDefaults(); // TODO: Set it up...
-var app = Services.Register(builder).Build();
+var app = Services.Register(WebApplication.CreateBuilder(args)).Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
 
-app.MapControllers().RequireRateLimiting("AuthenticatedRateLimit"); ;
-app.UseHttpsRedirection();
-app.UseAuthentication();
 app.UseAuthorization();
+app.UseAuthentication();
+app.UseHttpsRedirection();
+app.MapControllers().RequireRateLimiting("AuthenticatedRateLimit"); ;
 app.Run();

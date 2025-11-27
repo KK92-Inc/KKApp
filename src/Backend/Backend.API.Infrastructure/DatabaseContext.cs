@@ -15,12 +15,6 @@ namespace Backend.API.Infrastructure;
 /// <inheritdoc />
 public class DatabaseContext(DbContextOptions<DatabaseContext> options) : DbContext(options)
 {
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
-            optionsBuilder.EnableSensitiveDataLogging();
-    }
-
 #nullable disable
     public DbSet<User> Users { get; set; }
     public DbSet<Details> Details { get; set; }
