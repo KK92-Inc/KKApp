@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.0" />
+    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.7.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Domain/App.Backend.Domain.csproj" />
+    <ProjectReference Include="../Models/App.Backend.Models.csproj" />
+    <ProjectReference Include="../Database/App.Backend.Database.csproj" />
+  </ItemGroup>
+</Project>
