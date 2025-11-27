@@ -1,3 +1,11 @@
+# App.Frontend
+
+This is the frontend application for PeerU, built with **SvelteKit**.
+
+It interacts with the `App.Backend` API to provide the user interface.
+
+---
+
 # sv
 
 Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).

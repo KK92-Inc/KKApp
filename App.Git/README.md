@@ -1,3 +1,10 @@
-# SSH Git Server
+# App.Git
 
-The gist of it: https://www.youtube.com/watch?v=iuIdBfjL62s
+This folder contains configuration and Docker definitions for the Git infrastructure components of PeerU.
+
+## Components
+
+- **Gitaly**: A Git RPC service for handling all git calls.
+- **GitLab Shell**: Handles SSH access for git operations.
+
+These components allow PeerU to host and manage git repositories directly.

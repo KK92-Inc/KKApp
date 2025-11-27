@@ -18,10 +18,10 @@ using Serilog.Templates;
 using Serilog.Templates.Themes;
 using Wolverine;
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
 using App.Backend.Core.Services.Interface;
 using App.Backend.Core.Services.Implementation;
 using System.Threading.RateLimiting;
+using Quartz;
 
 namespace App.Backend.API;
 
@@ -72,11 +72,11 @@ public static class Services
         });
 
         // Database
-        builder.AddNpgsqlDbContext<DatabaseContext>("data", null, options =>
+        builder.AddNpgsqlDbContext<DatabaseContext>("peeru-db", null, options =>
         {
             options.UseLazyLoadingProxies();
             options.AddInterceptors(new SavingChangesInterceptor(TimeProvider.System));
-            options.UseNpgsql(builder.Configuration.GetConnectionString("data"));
+            options.UseNpgsql(builder.Configuration.GetConnectionString("peeru-db"));
             if (builder.Environment.IsDevelopment())
                 options.EnableSensitiveDataLogging();
         });
@@ -102,6 +102,21 @@ public static class Services
         // builder.Services.AddTransient<IResend, ResendClient>();
         // builder.Services.AddSingleton<INotificationQueue, InMemoryNotificationQueue>();
         builder.Services.AddSingleton(TimeProvider.System);
+
+        // Quartz
+        builder.Services.AddQuartz(q =>
+        {
+            q.SchedulerName = "NXT";
+            q.SchedulerId = "Queue";
+            q.UseDefaultThreadPool(x => x.MaxConcurrency = 5);
+
+            Jobs.Register<SampleJob>
+
+            Jobs<ReviewCompositionJob>(q);
+            RegisterJob<DispatchNotificationsJob>(q);
+        });
+
+        builder.Services.AddQuartzHostedService(o => o.WaitForJobsToComplete = true);
 
         // Rate limit
         builder.Services.AddRateLimiter(options =>

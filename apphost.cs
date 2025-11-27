@@ -35,16 +35,16 @@ var postgres = builder.AddPostgres("postgres-server", dbUsername, dbPassword)
     .WithLifetime(ContainerLifetime.Persistent);
 
 // "peeru-db" is the logical database name used in connection strings
-var peeruDb = postgres.AddDatabase("peeru-db");
+var database = postgres.AddDatabase("peeru-db");
 
 // 2. Migrations run as a task
 var migrationService = builder.AddProject<Projects.Migrations>("migration-job")
-    .WithReference(peeruDb)
+    .WithReference(database)
     .WaitFor(postgres);
 
 // 3. Backend API
 var backendApi = builder.AddProject<Projects.App_Backend_API>("backend-api")
-    .WithReference(peeruDb)
+    .WithReference(database)
     .WaitFor(migrationService);
 
 // 4. Frontend (Uncommented and wired up)
