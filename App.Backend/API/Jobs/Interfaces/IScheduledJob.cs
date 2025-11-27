@@ -7,7 +7,7 @@ using Quartz;
 
 // ============================================================================
 
-namespace App.Backend.API.Jobs;
+namespace App.Backend.API.Jobs.Interfaces;
 
 /// <summary>
 /// Base shape for a Scheduled Job.
@@ -26,32 +26,4 @@ public interface IScheduledJob : IJob
     /// The name / identity of the job.
     /// </summary>
     public static abstract string Identity { get; }
-}
-
-public static class JobService
-{
-    public static void Register<Job>(
-        IServiceCollectionQuartzConfigurator quartz,
-        ILogger<Job> logger
-    ) where Job : IScheduledJob
-    {
-        try
-        {
-            JobKey jobKey = new(Job.Identity);
-            quartz.AddJob<Job>(opts => opts.WithIdentity(jobKey));
-            quartz.AddTrigger(opts =>
-            {
-                opts.ForJob(jobKey);
-                opts.WithIdentity($"{Job.Identity}-trigger");
-                if (Job.Schedule is not null)
-                    opts.WithCronSchedule(Job.Schedule);
-            });
-
-        }
-        catch (FormatException)
-        {
-            logger.LogError($"Failed to register job: {Job.Identity} due to badly formated cron: '{Job.Schedule}'");
-            throw;
-        }
-    }
 }

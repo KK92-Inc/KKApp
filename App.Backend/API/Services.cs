@@ -4,7 +4,6 @@
 // ============================================================================
 
 using System.Diagnostics;
-using System.Security.Claims;
 using System.Text.Json;
 using App.Backend.Core;
 using App.Backend.Database;
@@ -22,6 +21,11 @@ using App.Backend.Core.Services.Interface;
 using App.Backend.Core.Services.Implementation;
 using System.Threading.RateLimiting;
 using Quartz;
+using App.Backend.API.Jobs;
+using App.Backend.API.Jobs.Extensions;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Keycloak.AuthServices.Sdk;
+using System.Security.Claims;
 
 namespace App.Backend.API;
 
@@ -36,10 +40,40 @@ public static class Services
     {
         // Messaging Bus (confusingly named use?)
         builder.Host.UseWolverine();
+        builder.Services.AddProblemDetails();
+        builder.Services.AddControllers(o =>
+        {
+            o.AddProtectedResources();
+            o.Filters.Add<ServiceExceptionFilter>();
+        }).AddJsonOptions(o =>
+        {
+            // Let's us configure the casing for out JSON DTOs for example.
+            o.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        });
+
+        builder.Services
+            .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddKeycloakWebApi(builder.Configuration);
+
+        builder.Services
+            .AddAuthorization()
+            .AddAuthorizationBuilder()
+            .AddPolicy("IsStaff", b => b.RequireClaim(ClaimTypes.Role, "staff"))
+            .AddPolicy("IsDeveloper", b => b.RequireClaim(ClaimTypes.Role, "developer"));
+
+        builder.Services
+            .AddKeycloakAuthorization()
+            .AddAuthorizationServer(builder.Configuration);
+
+        builder.Services
+            .AddKeycloakProtectionHttpClient(
+                builder.Configuration,
+                keycloakClientSectionName: KeycloakProtectionClientOptions.Section
+            );
+
 
         // Misc Services
         builder.Services.AddOpenApi();
-        builder.Services.AddProblemDetails();
         builder.Services.AddResponseCompression();
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddHttpContextAccessor();
@@ -53,24 +87,6 @@ public static class Services
             options.AddPolicy("1h", b => b.Expire(TimeSpan.FromHours(1)));
         });
 
-        // Keycloak Auth + Authz
-        builder.Services.AddKeycloakAuthorization(builder.Configuration);
-        builder.Services.AddKeycloakWebApiAuthentication(builder.Configuration);
-        builder.Services.AddAuthorizationBuilder()
-            .AddPolicy("IsStaff", b => b.RequireClaim(ClaimTypes.Role, "staff"))
-            .AddPolicy("IsDeveloper", b => b.RequireClaim(ClaimTypes.Role, "developer"));
-
-        // Controller Config
-        builder.Services.AddControllers(o =>
-        {
-            o.AddProtectedResources();
-            o.Filters.Add<ServiceExceptionFilter>();
-        }).AddJsonOptions(o =>
-        {
-            // Let's us configure the casing for out JSON DTOs for example.
-            o.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-        });
-
         // Database
         builder.AddNpgsqlDbContext<DatabaseContext>("peeru-db", null, options =>
         {
@@ -81,39 +97,35 @@ public static class Services
                 options.EnableSensitiveDataLogging();
         });
 
-        // Register Transient, Scoped, Singletons, ...
-        // builder.Services.AddScoped<ICursusService, CursusService>();
+        // // Register Transient, Scoped, Singletons, ...
+        // // builder.Services.AddScoped<ICursusService, CursusService>();
         builder.Services.AddScoped<IUserService, UserService>();
-        // builder.Services.AddScoped<IUserCursusService, UserCursusService>();
-        // builder.Services.AddScoped<IUserGoalService, UserGoalService>();
-        // builder.Services.AddScoped<IUserProjectService, UserProjectService>();
-        // builder.Services.AddScoped<IFeatureService, FeatureService>();
-        // builder.Services.AddScoped<IGoalService, GoalService>();
-        // builder.Services.AddScoped<IFeedbackService, FeedbackService>();
-        // builder.Services.AddScoped<ICommentService, CommentService>();
-        // builder.Services.AddScoped<IProjectService, ProjectService>();
-        // builder.Services.AddScoped<IRubricService, RubricService>();
-        // builder.Services.AddScoped<IReviewService, ReviewService>();
-        // builder.Services.AddScoped<IResourceOwnerService, ResourceOwnerService>();
-        // builder.Services.AddScoped<ISpotlightEventService, SpotlightEventService>();
-        // builder.Services.AddScoped<IGitService, GitService2>();
-        // builder.Services.AddScoped<INotificationService, NotificationService>();
-        // builder.Services.AddScoped<ISpotlightEventActionService, SpotlightEventActionService>();
-        // builder.Services.AddTransient<IResend, ResendClient>();
-        // builder.Services.AddSingleton<INotificationQueue, InMemoryNotificationQueue>();
+        // // builder.Services.AddScoped<IUserCursusService, UserCursusService>();
+        // // builder.Services.AddScoped<IUserGoalService, UserGoalService>();
+        // // builder.Services.AddScoped<IUserProjectService, UserProjectService>();
+        // // builder.Services.AddScoped<IFeatureService, FeatureService>();
+        // // builder.Services.AddScoped<IGoalService, GoalService>();
+        // // builder.Services.AddScoped<IFeedbackService, FeedbackService>();
+        // // builder.Services.AddScoped<ICommentService, CommentService>();
+        // // builder.Services.AddScoped<IProjectService, ProjectService>();
+        // // builder.Services.AddScoped<IRubricService, RubricService>();
+        // // builder.Services.AddScoped<IReviewService, ReviewService>();
+        // // builder.Services.AddScoped<IResourceOwnerService, ResourceOwnerService>();
+        // // builder.Services.AddScoped<ISpotlightEventService, SpotlightEventService>();
+        // // builder.Services.AddScoped<IGitService, GitService2>();
+        // // builder.Services.AddScoped<INotificationService, NotificationService>();
+        // // builder.Services.AddScoped<ISpotlightEventActionService, SpotlightEventActionService>();
+        // // builder.Services.AddTransient<IResend, ResendClient>();
+        // // builder.Services.AddSingleton<INotificationQueue, InMemoryNotificationQueue>();
         builder.Services.AddSingleton(TimeProvider.System);
 
         // Quartz
-        builder.Services.AddQuartz(q =>
+        builder.Services.AddQuartz(quartz =>
         {
-            q.SchedulerName = "NXT";
-            q.SchedulerId = "Queue";
-            q.UseDefaultThreadPool(x => x.MaxConcurrency = 5);
-
-            Jobs.Register<SampleJob>
-
-            Jobs<ReviewCompositionJob>(q);
-            RegisterJob<DispatchNotificationsJob>(q);
+            quartz.SchedulerName = "NXT";
+            quartz.SchedulerId = "Queue";
+            quartz.UseDefaultThreadPool(x => x.MaxConcurrency = 5);
+            quartz.Register<SampleJob>();
         });
 
         builder.Services.AddQuartzHostedService(o => o.WaitForJobsToComplete = true);

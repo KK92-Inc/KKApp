@@ -17,10 +17,13 @@
 #:package Aspire.Npgsql@*
 #:package Aspire.Hosting.PostgreSQL@*
 #:package CommunityToolkit.Aspire.Hosting.Bun@*
+#:package Scalar.Aspire@0.7.4
 #:project App.Migrations/Migrations.csproj
 #:project App.Backend/API/App.Backend.API.csproj
 
 // ============================================================================
+
+using Scalar.Aspire;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
@@ -46,6 +49,22 @@ var migrationService = builder.AddProject<Projects.Migrations>("migration-job")
 var backendApi = builder.AddProject<Projects.App_Backend_API>("backend-api")
     .WithReference(database)
     .WaitFor(migrationService);
+
+var scalar = builder.AddScalarApiReference(options =>
+{
+    options
+    .WithTheme(ScalarTheme.Kepler)
+    .AddPreferredSecuritySchemes("OAuth2", "ApiKey")
+    .AddAuthorizationCodeFlow("OAuth2", flow =>
+    {
+        flow
+            .WithClientId("")
+            .WithAuthorizationUrl("https://auth.example.com/oauth2/authorize")
+            .WithTokenUrl("https://auth.example.com/oauth2/token");
+    });
+});
+
+scalar.WithApiReference(backendApi);
 
 // 4. Frontend (Uncommented and wired up)
 // builder.AddBunApp("frontend-app", "./Frontend", "dev")

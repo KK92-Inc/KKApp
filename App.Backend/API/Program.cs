@@ -17,11 +17,23 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseRouting();
-app.UseAuthorization();
+app.UseStatusCodePages();
+app.UseExceptionHandler();
+
 app.UseAuthentication();
+app.UseAuthorization();
 app.UseSerilogRequestLogging();
 app.UseResponseCompression();
-app.UseHttpsRedirection();
-app.MapControllers().RequireRateLimiting("AuthenticatedRateLimit"); ;
+
+app.MapControllers().RequireAuthorization();
+
+// app.UseRouting();
+// app.UseAuthentication();
+// app.UseAuthorization();
+
+// app.UseHttpsRedirection();
+// app.MapControllers()
+//     .RequireAuthorization()
+//     .RequireRateLimiting("AuthenticatedRateLimit");
+
 app.Run();

@@ -7,13 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Keycloak.AuthServices.Sdk" Version="2.7.0" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
     <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.5.2" />
     <PackageReference Include="Bogus" Version="35.6.5" />
     <PackageReference Include="MailKit" Version="4.14.1" />
     <PackageReference Include="Keycloak.AuthServices.Authentication" Version="2.7.0" />
     <PackageReference Include="Keycloak.AuthServices.Authorization" Version="2.7.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.3.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0" />
 	<PackageReference Include="Microsoft.EntityFrameworkCore.Proxies" Version="10.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
