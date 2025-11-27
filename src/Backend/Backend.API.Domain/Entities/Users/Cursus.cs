@@ -1,5 +1,5 @@
 // ============================================================================
-// Copyright (c) 2025 - W2Inc.
+// Copyright (c) 2025 - W2Inc, All Rights Reserved.
 // See README.md in the project root for license information.
 // ============================================================================
 
@@ -20,7 +20,7 @@ public class UserCursus : BaseEntity
     public UserCursus()
     {
         State = EntityState.Active;
-        
+
         UserId = Guid.Empty;
         User = null!;
 
@@ -42,7 +42,7 @@ public class UserCursus : BaseEntity
 
     [ForeignKey(nameof(CursusId))]
     public virtual Cursus Cursus { get; set; }
-    
+
     /// <summary>
     /// The track / path of the Cursus stored in the .graph format.
     /// </summary>

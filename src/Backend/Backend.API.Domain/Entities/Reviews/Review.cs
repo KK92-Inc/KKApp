@@ -1,5 +1,5 @@
 // ============================================================================
-// Copyright (c) 2025 - W2Inc.
+// Copyright (c) 2025 - W2Inc, All Rights Reserved.
 // See README.md in the project root for license information.
 // ============================================================================
 
@@ -54,7 +54,7 @@ public class Review : BaseEntity
 
     /// <summary>
     /// Reviews are made up of multiple feedback entries.
-    /// E.g: 
+    /// E.g:
     /// </summary>
-    public virtual Collection<Feedback> Feedbacks { get; set; }
+    public virtual Collection<Comment> Comments { get; set; }
 }

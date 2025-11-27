@@ -1,5 +1,5 @@
 // ============================================================================
-// Copyright (c) 2025 - W2Inc.
+// Copyright (c) 2025 - W2Inc, All Rights Reserved.
 // See README.md in the project root for license information.
 // ============================================================================
 
@@ -21,6 +21,7 @@ using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Backend.API.Core.Services.Interface;
 using Backend.API.Core.Services.Implementation;
+using System.Threading.RateLimiting;
 
 namespace Backend.API.Root;
 
@@ -35,6 +36,8 @@ public static class Services
     {
         // Messaging Bus (confusingly named use?)
         builder.Host.UseWolverine();
+        builder.Services.AddProblemDetails();
+        builder.Services.AddEndpointsApiExplorer();
 
         // Keycloak Auth + Authz
         builder.Services.AddKeycloakAuthorization(builder.Configuration);
@@ -46,7 +49,7 @@ public static class Services
         // Controller Config
         builder.Services.AddControllers(o =>
         {
-            o.AddProtectedResources();
+            // o.AddProtectedResources();
             o.Filters.Add<ServiceExceptionFilter>();
         }).AddJsonOptions(o =>
         {
@@ -55,12 +58,10 @@ public static class Services
         });
 
         // Database
-        builder.AddNpgsqlDataSource("postgresdb");
-        builder.Services.AddDbContext<DatabaseContext>((provider, options) =>
+        builder.AddNpgsqlDbContext<DatabaseContext>("data", null, options =>
         {
-            var dataSource = provider.GetRequiredService<NpgsqlDataSource>();
-            options.AddInterceptors(new SavingChangesInterceptor(provider.GetRequiredService<TimeProvider>()));
-            options.UseLazyLoadingProxies().UseNpgsql(dataSource);
+            options.UseLazyLoadingProxies();
+            options.AddInterceptors(new SavingChangesInterceptor(TimeProvider.System));
         });
 
         builder.Services.AddHttpContextAccessor();
@@ -84,6 +85,22 @@ public static class Services
         // builder.Services.AddTransient<IResend, ResendClient>();
         // builder.Services.AddSingleton<INotificationQueue, InMemoryNotificationQueue>();
         builder.Services.AddSingleton(TimeProvider.System);
+
+        builder.Services.AddRateLimiter(options =>
+        {
+            options.RejectionStatusCode = 429;
+            options.AddPolicy("AuthenticatedRateLimit", context =>
+                RateLimitPartition.GetSlidingWindowLimiter(
+                    partitionKey: context.User.Identity?.Name ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                    factory: _ => new SlidingWindowRateLimiterOptions
+                    {
+                        PermitLimit = 100,
+                        Window = TimeSpan.FromMinutes(1),
+                        SegmentsPerWindow = 4,
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 10
+                    }));
+        });
 
         // Misc
         builder.Services.AddOpenApi();
