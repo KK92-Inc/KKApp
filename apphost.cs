@@ -15,50 +15,62 @@
 
 #:sdk Aspire.AppHost.Sdk@13.0.0
 #:package Aspire.Npgsql@*
+#:package Scalar.Aspire@0.7.4
 #:package Aspire.Hosting.PostgreSQL@*
 #:package CommunityToolkit.Aspire.Hosting.Bun@*
-#:package Scalar.Aspire@0.7.4
+#:package Keycloak.AuthServices.Aspire.Hosting@0.2.0
 #:project App.Migrations/Migrations.csproj
 #:project App.Backend/API/App.Backend.API.csproj
 
-// ============================================================================
-
 using Scalar.Aspire;
+
+// ============================================================================
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-// 1. Define specific names for resources
+// Database
+// ============
 var dbPassword = builder.AddParameter("db-password", secret: true);
 var dbUsername = builder.AddParameter("db-username", secret: true);
-
-// "postgres-server" is the container name
 var postgres = builder.AddPostgres("postgres-server", dbUsername, dbPassword)
     .WithHostPort(52842)
     .WithDataVolume()
     .WithLifetime(ContainerLifetime.Persistent);
 
-// "peeru-db" is the logical database name used in connection strings
 var database = postgres.AddDatabase("peeru-db");
 
-// 2. Migrations run as a task
+// Keycloak
+// ============
+var keycloak = builder.AddKeycloakContainer("keycloak")
+    .WithDataVolume()
+    .WithImport("./config/dev-realm.json");
+
+var realm = keycloak.AddRealm("student");
+
+// Migration
+// ============
 var migrationService = builder.AddProject<Projects.Migrations>("migration-job")
     .WithReference(database)
     .WaitFor(postgres);
 
-// 3. Backend API
+// Backend
+// ============
 var backendApi = builder.AddProject<Projects.App_Backend_API>("backend-api")
     .WithReference(database)
     .WaitFor(migrationService);
+    // .WithReference(keycloak)
+    // .WaitFor(keycloak)
+    // .WithReference(realm);
 
 var scalar = builder.AddScalarApiReference(options =>
 {
     options
-    .WithTheme(ScalarTheme.Kepler)
+    .WithTheme(ScalarTheme.DeepSpace)
     .AddPreferredSecuritySchemes("OAuth2", "ApiKey")
     .AddAuthorizationCodeFlow("OAuth2", flow =>
     {
         flow
-            .WithClientId("")
+            .WithClientId("intra")
             .WithAuthorizationUrl("https://auth.example.com/oauth2/authorize")
             .WithTokenUrl("https://auth.example.com/oauth2/token");
     });
@@ -66,10 +78,12 @@ var scalar = builder.AddScalarApiReference(options =>
 
 scalar.WithApiReference(backendApi);
 
-// 4. Frontend (Uncommented and wired up)
-// builder.AddBunApp("frontend-app", "./Frontend", "dev")
-//     .WithReference(backendApi) // Allows frontend to resolve backend URL
-//     .WithHttpEndpoint(env: "PORT", port: 5173)
-//     .WithExternalHttpEndpoints();
+// Frontend
+// ============
+
+builder.AddBunApp("frontend-app", "./App.Frontend", "dev")
+    .WithReference(backendApi)
+    .WithHttpEndpoint(env: "PORT", port: 51842)
+    .WithExternalHttpEndpoints();
 
 builder.Build().Run();

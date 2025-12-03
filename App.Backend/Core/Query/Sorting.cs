@@ -34,7 +34,7 @@ public enum Order
 public interface ISorting
 {
     string? OrderBy { get; set; }
-    Order? Order { get; set; }
+    Order Order { get; set; }
 }
 
 public static class SortingExtensions
@@ -51,12 +51,12 @@ public static class SortingExtensions
         {
             // Use default sorting if no valid sort parameters are provided
             if (string.IsNullOrWhiteSpace(sorting.OrderBy))
-                return source.ApplyDefaultSorting(sorting.Order ?? Order.Ascending);
+                return source.ApplyDefaultSorting(sorting.Order);
 
             // Process each sort parameter
             var orderParams = sorting.OrderBy.Split(',', StringSplitOptions.RemoveEmptyEntries);
             if (orderParams.Length == 0)
-                return source.ApplyDefaultSorting(sorting.Order ?? Order.Ascending);
+                return source.ApplyDefaultSorting(sorting.Order);
 
             var defaultDirection = sorting.Order == Order.Descending ? "desc" : "asc";
             var sortExpressions = new List<string>(orderParams.Length);
@@ -74,7 +74,7 @@ public static class SortingExtensions
             // Apply sorting or default if no valid expressions
             return sortExpressions.Count > 0
                 ? source.OrderBy(string.Join(", ", sortExpressions))
-                : source.ApplyDefaultSorting(sorting.Order ?? Order.Ascending);
+                : source.ApplyDefaultSorting(sorting.Order);
         }
         catch (ParseException e)
         {
