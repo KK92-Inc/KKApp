@@ -17,7 +17,6 @@ export const login = form(() => {
 
 	const { cookies, url } = getRequestEvent();
 	const uri = Keycloak.create(state, verifier, ['email', 'roles', 'openid', 'profile']);
-
 	cookies.set(Keycloak.COOKIE_STATE, state, {
 		secure: !dev,
 		path: '/',

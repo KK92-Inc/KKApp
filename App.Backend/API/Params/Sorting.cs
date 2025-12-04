@@ -33,5 +33,5 @@ public class Sorting : ISorting
     /// <value>The sort direction. Defaults to <see cref="Order.Ascending"/>.</value>
     [FromQuery( Name = "sort[order]")]
     [Description("The sort direction.")]
-    public Order? Order { get; set; }
+    public Order Order { get; set; }
 }

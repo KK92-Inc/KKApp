@@ -23,7 +23,7 @@ namespace App.Backend.API.Controllers;
 
 [ApiController]
 [Route("users")]
-[ProtectedResource("users")]
+[ProtectedResource("users"), Authorize]
 public class UserController(ILogger<UserController> log, IUserService users) : Controller
 {
     [HttpGet("/users/current")]
@@ -62,7 +62,8 @@ public class UserController(ILogger<UserController> log, IUserService users) : C
         );
 
         page.AppendHeaders(Request.Headers);
-        return Ok(page.Items.Select(e => new NotificationDO(e)));
+        return Ok('1');
+        // return Ok(page.Items.Select(e => new NotificationDO(e)));
     }
 
     [HttpGet("/users/")]
@@ -72,7 +73,7 @@ public class UserController(ILogger<UserController> log, IUserService users) : C
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Get the currently authenticated user.")]
     [EndpointDescription("When authenticated it's useful to know who you currently are logged in as.")]
-    public async Task<ActionResult<UserDO>> CurrentNotifications(
+    public async Task<ActionResult<UserDO>> Users(
     [FromQuery(Name = "filter[read]")] bool read,
     [FromQuery(Name = "filter[variant]")] NotifiableVariant inclusive,
     [FromQuery(Name = "filter[not[variant]]")] NotifiableVariant exclusive,
@@ -88,7 +89,8 @@ public class UserController(ILogger<UserController> log, IUserService users) : C
         );
 
         page.AppendHeaders(Request.Headers);
-        return Ok(page.Items.Select(e => new NotificationDO(e)));
+        return Ok('1');
+        // return Ok(page.Items.Select(e => new NotificationDO(e)));
     }
 }
 

@@ -57,11 +57,17 @@ const required = v.object({
 	email: v.string(),
 	email_verified: v.optional(v.boolean(), false),
 	preferred_username: v.string(),
-	resource_access: v.record(
-		v.string(),
-		v.object({
-			roles: v.array(v.string())
-		})
+	realm_access: v.object({
+		roles: v.array(v.string())
+	}),
+	resource_access: v.optional(
+		v.record(
+			v.string(),
+			v.object({
+				roles: v.array(v.string())
+			})
+		),
+		{}
 	),
 	authorization: v.optional(
 		v.object({
@@ -369,7 +375,7 @@ async function ticket(accessToken: string, audience: string = prv.KC_ID) {
 
 	const data = await response.json();
 	if (!response.ok || !('access_token' in data)) {
-		throw new Error(`Failed to obtain UMA ticket: ${await response.text()}`);
+		throw new Error(`Failed to obtain UMA ticket: ${response.statusText}`);
 	}
 
 	return new Tokens(data);

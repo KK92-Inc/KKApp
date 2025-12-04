@@ -2,16 +2,6 @@
 // Copyright (c) 2025 - W2Inc, All Rights Reserved.
 // See README.md in the project root for license information.
 // ============================================================================
-// Aspire’s AppHost is the code-first place where you declare your application’s
-// services and their relationships.
-//
-// Instead of managing scattered configuration files,
-// you describe the architecture in code.
-//
-// Aspire then handles local orchestration so you can focus on
-// building features.
-// @see: https://aspire.dev/get-started/app-host/
-// ============================================================================
 
 #:sdk Aspire.AppHost.Sdk@13.0.0
 #:package Aspire.Npgsql@*
@@ -24,14 +14,14 @@
 
 using Scalar.Aspire;
 
-// ============================================================================
-
 var builder = DistributedApplication.CreateBuilder(args);
 
-// Database
-// ============
+// ============================================================================
+// 1. Database
+// ============================================================================
 var dbPassword = builder.AddParameter("db-password", secret: true);
 var dbUsername = builder.AddParameter("db-username", secret: true);
+
 var postgres = builder.AddPostgres("postgres-server", dbUsername, dbPassword)
     .WithHostPort(52842)
     .WithDataVolume()
@@ -39,51 +29,75 @@ var postgres = builder.AddPostgres("postgres-server", dbUsername, dbPassword)
 
 var database = postgres.AddDatabase("peeru-db");
 
-// Keycloak
-// ============
+// ============================================================================
+// 2. Keycloak
+// ============================================================================
 var keycloak = builder.AddKeycloakContainer("keycloak")
     .WithDataVolume()
-    .WithImport("./config/dev-realm.json");
+    .WithImport("./config/student-realm.json")
+    .WithExternalHttpEndpoints()
+    .WithArgs("--verbose")
+    .WithEnvironment("KC_BOOTSTRAP_ADMIN_USERNAME", "admin")
+    .WithEnvironment("KC_BOOTSTRAP_ADMIN_PASSWORD", "admin");
 
 var realm = keycloak.AddRealm("student");
 
-// Migration
-// ============
+// ============================================================================
+// 3. Migrations
+// ============================================================================
 var migrationService = builder.AddProject<Projects.Migrations>("migration-job")
     .WithReference(database)
     .WaitFor(postgres);
 
-// Backend
-// ============
+// ============================================================================
+// 4. Backend API
+// ============================================================================
 var backendApi = builder.AddProject<Projects.App_Backend_API>("backend-api")
     .WithReference(database)
-    .WaitFor(migrationService);
-    // .WithReference(keycloak)
-    // .WaitFor(keycloak)
-    // .WithReference(realm);
+    .WaitFor(migrationService)
+    .WithReference(keycloak)
+    .WithReference(realm);
+    // ------------------------------------------------------------
+    // CONFIGURATION FOR CUSTOM DOMAIN & FIXED PORT
+    // ------------------------------------------------------------
+    // This sets the port to 7001 (HTTPS).
+    // With '127.0.0.1 app.test' in your /etc/hosts, you can now
+    // set your Keycloak callback URL to:
+    // https://app.test:7001/signin-oidc
+    // ------------------------------------------------------------
+    // .WithHttpsEndpoint(port: 7001, name: "https");
 
+// ============================================================================
+// 5. API Documentation (Scalar)
+// ============================================================================
 var scalar = builder.AddScalarApiReference(options =>
-{
-    options
-    .WithTheme(ScalarTheme.DeepSpace)
-    .AddPreferredSecuritySchemes("OAuth2", "ApiKey")
-    .AddAuthorizationCodeFlow("OAuth2", flow =>
     {
-        flow
-            .WithClientId("intra")
-            .WithAuthorizationUrl("https://auth.example.com/oauth2/authorize")
-            .WithTokenUrl("https://auth.example.com/oauth2/token");
+        options.WithTheme(ScalarTheme.DeepSpace);
+    })
+    .WithReference(keycloak)
+    .WithExternalHttpEndpoints();
+
+scalar.WithApiReference(backendApi, options =>
+{
+    options.WithTheme(ScalarTheme.Saturn);
+    options.WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
+    options.AddPreferredSecuritySchemes("OAuth2");
+    options.AddImplicitFlow("OAuth2", flow =>
+    {
+        flow.WithClientId("intra");
+        // flow.WithRefreshUrl($"{keycloak()}/realms/student/protocol/openid-connect/token");
     });
 });
 
-scalar.WithApiReference(backendApi);
-
-// Frontend
-// ============
-
+// ============================================================================
+// 6. Frontend
+// ============================================================================
 builder.AddBunApp("frontend-app", "./App.Frontend", "dev")
     .WithReference(backendApi)
     .WithHttpEndpoint(env: "PORT", port: 51842)
     .WithExternalHttpEndpoints();
 
+// ============================================================================
+// Run Application
+// ============================================================================
 builder.Build().Run();

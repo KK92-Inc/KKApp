@@ -12,15 +12,15 @@ import { cwd } from "process";
 const fatal = (msg?: string) => {
 	throw new Error(msg);
 };
-const env = (k: string) => Bun.env[k] ?? fatal(`${k} not set`);
+const env = (k: string, v?: string) => Bun.env[k] ?? v ?? fatal(`${k} not set`);
 
 // ============================================================================
 
-const ID = env('KC_ID');
-const REALM = env('KC_REALM');
-const ORIGIN = env('KC_ORIGIN');
-const ADMIN = env('KC_ADMIN');
-const PASSWORD = env('KC_ADMIN_PASSWORD');
+const ID = env('KC_ID', 'intra');
+const REALM = env('KC_REALM', 'student');
+const ORIGIN = env('KC_ORIGIN', 'http://localhost:8080');
+const ADMIN = env('KC_ADMIN', 'wizar');
+const PASSWORD = env('KC_ADMIN_PASSWORD', 'admin');
 
 // ============================================================================
 
@@ -29,6 +29,7 @@ async function api<T>(path: string, { method = 'GET', token, form }: FetchOpts =
 	const headers = new Headers({ Accept: 'application/json' });
 	if (token) headers.set('Authorization', `Bearer ${token}`);
 	const body = form ? new URLSearchParams(form) : undefined;
+	// console.log(`${method} ${ORIGIN}${path}`, body ? `-d ${body}` : '');
 	const res = await fetch(`${ORIGIN}${path}`, { method, headers, body });
 	if (!res.ok) fatal(await res.text());
 	return (await res.json()) as T;

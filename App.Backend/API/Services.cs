@@ -26,6 +26,10 @@ using App.Backend.API.Jobs.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Keycloak.AuthServices.Sdk;
 using System.Security.Claims;
+using App.Backend.API.Schemas.Document;
+using App.Backend.API.Schemas.Operation;
+using Microsoft.OpenApi;
+using Keycloak.AuthServices.Common;
 
 namespace App.Backend.API;
 
@@ -51,9 +55,15 @@ public static class Services
             o.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
         });
 
-        builder.Services
-            .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-            .AddKeycloakWebApi(builder.Configuration);
+        // builder.Services
+        //     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        //     .AddKeycloakWebApi(builder.Configuration);
+
+        builder.Services.AddKeycloakWebApiAuthentication(builder.Configuration, options =>
+        {
+            options.Audience = "intra";
+            options.RequireHttpsMetadata = false;
+        });
 
         builder.Services
             .AddAuthorization()
@@ -73,7 +83,38 @@ public static class Services
 
 
         // Misc Services
-        builder.Services.AddOpenApi();
+        builder.Services.AddOpenApi(o =>
+        {
+            o.AddDocumentTransformer<InfoSchemeTransformer>();
+            o.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+            o.AddOperationTransformer<BasicResponsesOperationTransformer>();
+                        o.AddDocumentTransformer((document, context, cancellationToken) =>
+            {
+                // TODO: Get from config
+                if (builder.Environment.IsDevelopment())
+                    document.Servers = [new() { Url = "http://localhost:3001" }];
+                document.Components ??= new OpenApiComponents();
+
+                var options = builder.Configuration.GetKeycloakOptions<KeycloakAuthenticationOptions>()!;
+                document.Components.SecuritySchemes!.TryAdd("OAuth2", new OpenApiSecurityScheme
+                {
+                    Name = "Keycloak Server",
+                    OpenIdConnectUrl = new Uri($"{options.KeycloakUrlRealm}protocol/openid-connect"),
+                    Type = SecuritySchemeType.OAuth2,
+                    Flows = new OpenApiOAuthFlows
+                    {
+                        Implicit = new OpenApiOAuthFlow
+                        {
+                            AuthorizationUrl = new Uri($"{options.KeycloakUrlRealm}protocol/openid-connect/auth"),
+                            TokenUrl = new Uri($"{options.KeycloakUrlRealm}protocol/openid-connect/token"),
+                        }
+                    }
+                });
+
+                return Task.CompletedTask;
+            });
+        });
+
         builder.Services.AddResponseCompression();
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddHttpContextAccessor();

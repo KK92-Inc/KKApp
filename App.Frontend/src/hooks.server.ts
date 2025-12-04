@@ -68,7 +68,7 @@ export async function handleFetch({ fetch, request, event }) {
 	if (request.url.startsWith(prv.API)) {
 		const accessToken = event.cookies.get(Keycloak.COOKIE_ACCESS);
 		if (accessToken) {
-			Log.dbg(request.method, '=>', request.url);
+			// Log.dbg(request.method, '=>', request.url);
 			request.headers.set('authorization', `Bearer ${accessToken}`);
 		}
 		// if (accessToken) {
@@ -82,5 +82,7 @@ export async function handleFetch({ fetch, request, event }) {
 		// request.headers.set('authorization', `Bearer ${accessToken}`);
 	}
 
-	return fetch(request);
+	const response = await fetch(request);
+	Log.dbg(request.method, '<=', request.url, response.status);
+	return response;
 }
