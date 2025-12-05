@@ -23,15 +23,14 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 	}
 
 	const tokens = await Keycloak.exchange(code, verifier);
-	const ticket = await Keycloak.ticket(tokens.access());
-	cookies.set(Keycloak.COOKIE_ACCESS, ticket.access(), {
+	cookies.set(Keycloak.COOKIE_ACCESS, tokens.access(), {
 		secure: !dev,
 		path: '/',
 		httpOnly: true,
 		sameSite: 'lax'
 	});
 
-	cookies.set(Keycloak.COOKIE_REFRESH, ticket.refresh(), {
+	cookies.set(Keycloak.COOKIE_REFRESH, tokens.refresh(), {
 		secure: !dev,
 		path: '/',
 		httpOnly: true,

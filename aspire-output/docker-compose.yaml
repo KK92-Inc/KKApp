@@ -1,0 +1,149 @@
+services:
+  env-dashboard:
+    image: "mcr.microsoft.com/dotnet/nightly/aspire-dashboard:latest"
+    expose:
+      - "18888"
+      - "18889"
+    networks:
+      - "aspire"
+    restart: "always"
+  postgres-server:
+    image: "docker.io/library/postgres:17.6"
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: "scram-sha-256"
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
+      POSTGRES_USER: "${DB_USERNAME}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD}"
+    expose:
+      - "5432"
+    volumes:
+      - type: "volume"
+        target: "/var/lib/postgresql/data"
+        source: "apphost-e7f9f553c0-postgres-server-data"
+        read_only: false
+    networks:
+      - "aspire"
+  cache:
+    image: "docker.io/valkey/valkey:9.0"
+    command:
+      - "-c"
+      - "valkey-server --requirepass $$VALKEY_PASSWORD --save 60 1"
+    entrypoint:
+      - "/bin/sh"
+    environment:
+      VALKEY_PASSWORD: "${CACHE_PASSWORD}"
+    expose:
+      - "6379"
+    volumes:
+      - type: "volume"
+        target: "/data"
+        source: "apphost-e7f9f553c0-cache-data"
+        read_only: false
+    networks:
+      - "aspire"
+  keycloak:
+    image: "quay.io/keycloak/keycloak:26.3.3"
+    command:
+      - "start"
+      - "--import-realm"
+      - "--verbose"
+    environment:
+      KEYCLOAK_ADMIN: "admin"
+      KEYCLOAK_ADMIN_PASSWORD: "admin"
+      KC_BOOTSTRAP_ADMIN_USERNAME: "admin"
+      KC_BOOTSTRAP_ADMIN_PASSWORD: "admin"
+    ports:
+      - "8080:8080"
+    volumes:
+      - type: "volume"
+        target: "/opt/keycloak/data"
+        source: "apphost-e7f9f553c0-keycloak-data"
+        read_only: false
+      - type: "bind"
+        target: "/opt/keycloak/data/import/student-realm.json"
+        source: "/home/w2wizard/Developer/PeerU/nxtapp/config/student-realm.json"
+        read_only: false
+    networks:
+      - "aspire"
+  migration-job:
+    image: "${MIGRATION_JOB_IMAGE}"
+    environment:
+      OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EXCEPTION_LOG_ATTRIBUTES: "true"
+      OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EVENT_LOG_ATTRIBUTES: "true"
+      OTEL_DOTNET_EXPERIMENTAL_OTLP_RETRY: "in_memory"
+      ConnectionStrings__peeru-db: "Host=postgres-server;Port=5432;Username=${DB_USERNAME};Password=${DB_PASSWORD};Database=peeru-db"
+      PEERU-DB_HOST: "postgres-server"
+      PEERU-DB_PORT: "5432"
+      PEERU-DB_USERNAME: "${DB_USERNAME}"
+      PEERU-DB_PASSWORD: "${DB_PASSWORD}"
+      PEERU-DB_URI: "postgresql://${DB_USERNAME}:${DB_PASSWORD}@postgres-server:5432/peeru-db"
+      PEERU-DB_JDBCCONNECTIONSTRING: "jdbc:postgresql://postgres-server:5432/peeru-db"
+      PEERU-DB_DATABASE: "peeru-db"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://env-dashboard:18889"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_SERVICE_NAME: "migration-job"
+    depends_on:
+      postgres-server:
+        condition: "service_started"
+    networks:
+      - "aspire"
+  backend-api:
+    image: "${BACKEND_API_IMAGE}"
+    environment:
+      OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EXCEPTION_LOG_ATTRIBUTES: "true"
+      OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EVENT_LOG_ATTRIBUTES: "true"
+      OTEL_DOTNET_EXPERIMENTAL_OTLP_RETRY: "in_memory"
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      HTTP_PORTS: "${BACKEND_API_PORT}"
+      ConnectionStrings__peeru-db: "Host=postgres-server;Port=5432;Username=${DB_USERNAME};Password=${DB_PASSWORD};Database=peeru-db"
+      PEERU-DB_HOST: "postgres-server"
+      PEERU-DB_PORT: "5432"
+      PEERU-DB_USERNAME: "${DB_USERNAME}"
+      PEERU-DB_PASSWORD: "${DB_PASSWORD}"
+      PEERU-DB_URI: "postgresql://${DB_USERNAME}:${DB_PASSWORD}@postgres-server:5432/peeru-db"
+      PEERU-DB_JDBCCONNECTIONSTRING: "jdbc:postgresql://postgres-server:5432/peeru-db"
+      PEERU-DB_DATABASE: "peeru-db"
+      ConnectionStrings__cache: "cache:6379,password=${CACHE_PASSWORD}"
+      CACHE_HOST: "cache"
+      CACHE_PORT: "6379"
+      CACHE_PASSWORD: "${CACHE_PASSWORD}"
+      CACHE_URI: "valkey://:${CACHE_PASSWORD}@cache:6379"
+      KEYCLOAK_HTTP: "http://keycloak:8080"
+      services__keycloak__http__0: "http://keycloak:8080"
+      Keycloak__auth-server-url: "http://keycloak:8080"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://env-dashboard:18889"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_SERVICE_NAME: "backend-api"
+    expose:
+      - "${BACKEND_API_PORT}"
+    depends_on:
+      migration-job:
+        condition: "service_started"
+    networks:
+      - "aspire"
+  scalar:
+    image: "scalarapi/aspire-api-reference:0.7.4"
+    environment:
+      API_REFERENCE_CONFIG: "W3sicHJveHlVcmwiOiIvc2NhbGFyLXByb3h5Iiwic2VydmVycyI6W3sidXJsIjoiaHR0cDovL2JhY2tlbmQtYXBpIiwiZGVzY3JpcHRpb24iOiJiYWNrZW5kLWFwaSJ9XSwiZGVmYXVsdEh0dHBDbGllbnQiOnsidGFyZ2V0S2V5IjoiQ1NoYXJwIiwiY2xpZW50S2V5IjoiSHR0cENsaWVudCJ9LCJhdXRoZW50aWNhdGlvbiI6eyJwcmVmZXJyZWRTZWN1cml0eVNjaGVtZSI6WyJPQXV0aDIiXSwic2VjdXJpdHlTY2hlbWVzIjp7Ik9BdXRoMiI6eyJmbG93cyI6eyJpbXBsaWNpdCI6eyJ4LXNjYWxhci1jbGllbnQtaWQiOiJpbnRyYSJ9fX19fSwidGhlbWUiOiJTYXR1cm4iLCJmYXZpY29uIjoiZmF2aWNvbi5zdmciLCJfaW50ZWdyYXRpb24iOiJkb3RuZXQiLCJzb3VyY2VzIjpbeyJ0aXRsZSI6ImJhY2tlbmQtYXBpIHwgdjEiLCJ1cmwiOiJodHRwOi8vYmFja2VuZC1hcGkvb3BlbmFwaS92MS5qc29uIn1dfV0="
+      CDN_URL: "scalar.js"
+      ALLOW_SELF_SIGNED_CERTIFICATES: "False"
+      DEFAULT_PROXY: "True"
+      KEYCLOAK_HTTP: "http://keycloak:8080"
+      services__keycloak__http__0: "http://keycloak:8080"
+      BACKEND-API_HTTP: "http://backend-api:${BACKEND_API_PORT}"
+      services__backend-api__http__0: "http://backend-api:${BACKEND_API_PORT}"
+      BACKEND-API_HTTPS: "https://backend-api:${BACKEND_API_PORT}"
+    ports:
+      - "8080"
+    networks:
+      - "aspire"
+networks:
+  aspire:
+    driver: "bridge"
+volumes:
+  apphost-e7f9f553c0-postgres-server-data:
+    driver: "local"
+  apphost-e7f9f553c0-cache-data:
+    driver: "local"
+  apphost-e7f9f553c0-keycloak-data:
+    driver: "local"

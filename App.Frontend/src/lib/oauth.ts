@@ -17,9 +17,9 @@ import { dev } from '$app/environment';
 import { env as prv } from '$env/dynamic/private';
 import { JWSInvalid, JWTClaimValidationFailed, JWTExpired, JWTInvalid } from 'jose/errors';
 import { ensure } from './utils';
-import type { Handle } from '@sveltejs/kit';
+import type { Handle, RequestEvent } from '@sveltejs/kit';
 import { Log } from './log';
-import { fromAbsolute, now } from '@internationalized/date';
+import { redis } from './redis';
 
 // ============================================================================
 
@@ -52,7 +52,7 @@ export interface Session {
 // NOTE(W2): Some fields are optional on the JWT!
 // We *need* these to be present in our use case. At any point of bad
 // configuration we must error!
-const required = v.object({
+const tokenSchema = v.object({
 	sub: v.string(),
 	email: v.string(),
 	email_verified: v.optional(v.boolean(), false),
@@ -68,18 +68,20 @@ const required = v.object({
 			})
 		),
 		{}
-	),
-	authorization: v.optional(
-		v.object({
-			permissions: v.array(
-				v.object({
-					scopes: v.optional(v.array(v.string())),
-					rsid: v.string(),
-					rsname: v.string()
-				})
-			)
-		})
 	)
+});
+
+const uma = v.object({
+	...tokenSchema.entries,
+	authorization: v.object({
+		permissions: v.array(
+			v.object({
+				scopes: v.optional(v.array(v.string())),
+				rsid: v.string(),
+				rsname: v.string()
+			})
+		)
+	})
 });
 
 /**
@@ -108,19 +110,44 @@ const handle: Handle = async ({ event, resolve }) => {
 	 * Creates a session from the JWT payload
 	 * @param payload - JWT payload from the verified token
 	 */
-	const useSession = async (payload: unknown): Promise<Session> => {
-		const claims = v.parse(required, payload);
+	const useSession = async (payload: unknown, event: RequestEvent): Promise<Session> => {
+		const claims = v.parse(tokenSchema, payload);
 		const roles = Object.values(claims.resource_access).flatMap((r) => r.roles);
-		const perms = claims.authorization?.permissions ?? [];
-		const permissions = perms.flatMap((p) => p.scopes ?? []);
+
+		console.log('User Roles:', claims.realm_access.roles.concat(roles));
+		const fetchPermissions = async (): Promise<string[]> => {
+			const data = await redis.get(`permissions:${claims.sub}`);
+			console.log('Cached Permissions:', data, redis.connected);
+			if (data !== null) {
+				const uma = await Keycloak.ticket(accessToken!);
+				const umaClaims = v.parse(uma, uma);
+				console.log('UMA Ticket:', uma);
+				// return data.split(',');
+			}
+			return [];
+		};
+
+	// 		const { locals, cookies } = getRequestEvent();
+	//
+	// const accessToken = cookies.get(Keycloak.COOKIE_ACCESS);
+	// if (accessToken && data === null) {
+	// 	const perms = await Keycloak.ticket(accessToken);
+
+	// 	// redis.set(`permissions:${locals.session.userId}`, '', { ex: 60 * 5 }); // Cache empty for 5 minutes
+	// 	return []; // TODO: Fetch UMA Ticket
+	// }
+	// return data?.split(',') ?? [];
+
+		// const perms = claims.authorization?.permissions ?? [];
+		// const permissions = perms.flatMap((p) => p.scopes ?? []);
 
 		return {
 			userId: claims.sub,
 			verified: claims.email_verified,
 			username: claims.preferred_username,
 			email: claims.email,
-			permissions,
-			roles
+			roles,
+			permissions: await fetchPermissions(),
 		};
 	};
 
@@ -185,7 +212,7 @@ const handle: Handle = async ({ event, resolve }) => {
 			}
 
 			// Create session from the JWT payload
-			event.locals.session = await useSession(jwt.payload);
+			event.locals.session = await useSession(jwt.payload, event);
 			return resolve(event);
 		} catch (err) {
 			Log.dbg(err);

@@ -12,7 +12,7 @@ import createClient from 'openapi-fetch';
 import type { paths } from '$lib/api/api';
 import { Log } from '$lib/log';
 import { MetaData } from './routes/index.svelte';
-import * as jose from 'jose';
+import { permissions } from './routes/auth/auth.remote';
 
 // ============================================================================
 
@@ -35,10 +35,11 @@ const authorize: Handle = async ({ event, resolve }) => {
 	}
 
 	const data = MetaData.get(event.route.id);
-	const permissions: string[] = event.locals.session.permissions;
+	const perms: string[] = event.locals.session.permissions;
+	console.log('Route Permissions:', data?.scopes, 'User Permissions:', perms);
 	if (!data?.scopes || data.scopes.length === 0) {
 		return resolve(event);
-	} else if (data.scopes.some((s: string) => permissions.includes(s))) {
+	} else if (data.scopes.some((s: string) => perms.includes(s))) {
 		return resolve(event);
 	}
 
@@ -47,7 +48,7 @@ const authorize: Handle = async ({ event, resolve }) => {
 };
 
 const init: Handle = async ({ event, resolve }) => {
-	Log.dbg('Incoming request', event.getClientAddress());
+	// Log.dbg('Incoming request', event.getClientAddress());
 	event.setHeaders({
 		server: `Bun ${Bun.version}`,
 		'x-app': pub.PUBLIC_NAME

@@ -6,7 +6,8 @@
 import { dev } from '$app/environment';
 import { Keycloak } from '$lib/oauth';
 import { redirect } from '@sveltejs/kit';
-import { form, getRequestEvent } from '$app/server';
+import { form, getRequestEvent, query } from '$app/server';
+import { redis } from '$lib/redis';
 
 // ============================================================================
 
@@ -56,3 +57,18 @@ export const logout = form(async () => {
 	cookies.delete(Keycloak.COOKIE_REFRESH, { path: '/' });
 	redirect(303, '/');
 });
+
+/** Query the permissions for the current user */
+// export const permissions = query(async () => {
+// 	const { locals, cookies } = getRequestEvent();
+// 	const data = await redis.get(`permissions:${locals.session.userId}`)
+// 	const accessToken = cookies.get(Keycloak.COOKIE_ACCESS);
+// 	if (accessToken && data === null) {
+// 		const perms = await Keycloak.ticket(accessToken);
+
+// 		// redis.set(`permissions:${locals.session.userId}`, '', { ex: 60 * 5 }); // Cache empty for 5 minutes
+// 		return []; // TODO: Fetch UMA Ticket
+// 	}
+// 	return data?.split(',') ?? [];
+// });
+

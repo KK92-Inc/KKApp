@@ -11,7 +11,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace App.Backend.Domain.Entities;
 
-
 /// <summary>
 /// Project entity.
 /// </summary>

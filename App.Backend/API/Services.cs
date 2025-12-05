@@ -23,7 +23,6 @@ using System.Threading.RateLimiting;
 using Quartz;
 using App.Backend.API.Jobs;
 using App.Backend.API.Jobs.Extensions;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Keycloak.AuthServices.Sdk;
 using System.Security.Claims;
 using App.Backend.API.Schemas.Document;
@@ -115,6 +114,11 @@ public static class Services
             });
         });
 
+        builder.Services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = builder.Configuration.GetConnectionString("cache");
+            options.InstanceName = "PeerU_";
+        });
         builder.Services.AddResponseCompression();
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddHttpContextAccessor();

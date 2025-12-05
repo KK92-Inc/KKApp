@@ -3,6 +3,8 @@
 // See README in the root project for more information.
 // ============================================================================
 
+// import { env } from '$env/dynamic/private';
+// import { RedisClient } from 'bun';
 import * as v from 'valibot';
 
 // ============================================================================
@@ -21,5 +23,3 @@ export const Filters = {
 		size: v.optional(v.fallback(v.number(), 25), 25)
 	},
 };
-
-// ============================================================================
