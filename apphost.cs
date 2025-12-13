@@ -12,7 +12,7 @@
 #:package Keycloak.AuthServices.Aspire.Hosting@0.2.0
 #:project App.Migrations/Migrations.csproj
 #:project App.Backend/API/App.Backend.API.csproj
-#:package Aspire.Hosting.JavaScript@*
+#:package Aspire.Hosting.JavaScript@13.0.2
 #:package Scalar.Aspire@0.7.4
 
 using Scalar.Aspire;

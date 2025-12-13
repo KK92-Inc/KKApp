@@ -23,8 +23,8 @@ namespace App.Backend.API.Controllers;
 
 [ApiController]
 [Route("users")]
-[ProtectedResource("users"), Authorize]
-public class UserController(ILogger<UserController> log, IUserService users) : Controller
+// [ProtectedResource("users"), Authorize]
+public class UserController(ILogger<UserController> log, IUserService users, INotificationService notifications) : Controller
 {
     [HttpGet("/users/current")]
     [ProtectedResource("users", "user:read")]
@@ -73,13 +73,12 @@ public class UserController(ILogger<UserController> log, IUserService users) : C
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Get the currently authenticated user.")]
     [EndpointDescription("When authenticated it's useful to know who you currently are logged in as.")]
-    public async Task<ActionResult<UserDO>> Users(
+    public async Task<ActionResult<NotificationDO>> Users(
     [FromQuery(Name = "filter[read]")] bool read,
     [FromQuery(Name = "filter[variant]")] NotifiableVariant inclusive,
     [FromQuery(Name = "filter[not[variant]]")] NotifiableVariant exclusive,
     [FromQuery] Pagination pagination,
-    [FromQuery] Sorting sorting,
-    INotificationService notifications
+    [FromQuery] Sorting sorting
 )
     {
         var page = await notifications.GetAllAsync(pagination, sorting,
@@ -89,8 +88,7 @@ public class UserController(ILogger<UserController> log, IUserService users) : C
         );
 
         page.AppendHeaders(Request.Headers);
-        return Ok('1');
-        // return Ok(page.Items.Select(e => new NotificationDO(e)));
+        return Ok(page.Items.Select(e => new NotificationDO(e)));
     }
 }
 

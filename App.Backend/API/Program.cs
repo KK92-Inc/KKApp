@@ -25,7 +25,8 @@ app.UseAuthorization();
 app.UseSerilogRequestLogging();
 app.UseResponseCompression();
 
-app.MapControllers().RequireAuthorization();
+// app.MapControllers().RequireAuthorization();
+app.MapControllers();
 
 // app.UseRouting();
 // app.UseAuthentication();
