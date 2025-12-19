@@ -6,7 +6,10 @@
 using App.Backend.Database;
 using App.Backend.Core.Services.Interface;
 using App.Backend.Domain.Entities.Users;
+using App.Backend.Models;
 using Microsoft.EntityFrameworkCore;
+using App.Backend.Domain.Enums;
+using App.Backend.Domain.Entities.Projects;
 
 // ============================================================================
 

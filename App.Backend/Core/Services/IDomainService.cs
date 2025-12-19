@@ -25,14 +25,14 @@ public interface IDomainService<T> where T : BaseEntity
     /// </summary>
     /// <param name="id">The ID.</param>
     /// <returns>The entity found by that ID or null if not found.</returns>
-    public Task<T?> FindByIdAsync(Guid id);
+    public Task<T?> FindByIdAsync(Guid id, CancellationToken token = default);
 
     /// <summary>
     /// Update the entity.
     /// </summary>
     /// <param name="entity">The updated entity.</param>
     /// <returns>The updated entity.</returns>
-    public Task<T> UpdateAsync(T entity);
+    public Task UpdateAsync(T entity, CancellationToken token = default);
 
     /// <summary>
     /// Validates if all provided IDs exist in the database.
@@ -46,21 +46,27 @@ public interface IDomainService<T> where T : BaseEntity
     /// </summary>
     /// <param name="entity">The entity to delete</param>
     /// <returns>The deleted entity.</returns>
-    public Task<T> DeleteAsync(T entity);
+    public Task DeleteAsync(T entity, CancellationToken token = default);
 
     /// <summary>
     /// Create a new entity.
     /// </summary>
     /// <param name="entity">The newly created entity.</param>
     /// <returns>The newly created entity.</returns>
-    public Task<T> CreateAsync(T entity);
+    public Task<T> CreateAsync(T entity, CancellationToken token = default);
 
     /// <summary>
     /// Get all entities with pagination, sorting and filtering.
     /// </summary>
     /// <param name="pagination">The pagination options.</param>
     /// <param name="sorting">The sorting options.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
     /// <param name="filters">The filters to apply.</param>
     /// <returns>A paginated list of entities.</returns>
-    public Task<PaginatedList<T>> GetAllAsync(IPagination pagination, ISorting sorting, params Expression<Func<T, bool>>?[] filters);
+    public Task<PaginatedList<T>> GetAllAsync(
+        ISorting sorting,
+        IPagination pagination,
+        CancellationToken token = default,
+        params Expression<Func<T, bool>>?[] filters
+    );
 }

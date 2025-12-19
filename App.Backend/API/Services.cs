@@ -30,6 +30,8 @@ using App.Backend.API.Schemas.Operation;
 using Microsoft.OpenApi;
 using Keycloak.AuthServices.Common;
 
+using App.Backend.API.Filters;
+
 namespace App.Backend.API;
 
 // ============================================================================
@@ -44,10 +46,12 @@ public static class Services
         // Messaging Bus (confusingly named use?)
         builder.Host.UseWolverine();
         builder.Services.AddProblemDetails();
+        builder.Services.AddScoped<KeycloakUser>();
         builder.Services.AddControllers(o =>
         {
             o.AddProtectedResources();
             o.Filters.Add<ServiceExceptionFilter>();
+            o.Filters.AddService<KeycloakUser>();
         }).AddJsonOptions(o =>
         {
             // Let's us configure the casing for out JSON DTOs for example.

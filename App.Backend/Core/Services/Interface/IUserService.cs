@@ -5,6 +5,7 @@
 
 using System.Linq.Dynamic.Core;
 using App.Backend.Domain.Entities.Users;
+using App.Backend.Models;
 
 // ============================================================================
 
@@ -25,6 +26,4 @@ public interface IUserService : IDomainService<User>
     /// <param name="displayName">The Display name</param>
     /// <returns>The user.</returns>
     public Task<User?> FindByNameAsync(string displayName);
-
-    // public override async Task<PagedResult>
 }

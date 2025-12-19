@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>REST API Planner</title>
+	<style>
+		:root {
+			--bg-color: #f4f4f9;
+			--card-bg: #ffffff;
+			--text-color: #333;
+			--border-color: #ddd;
+			--get-color: #61affe;
+			--post-color: #49cc90;
+			--put-color: #fca130;
+			--delete-color: #f93e3e;
+		}
+
+		body {
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+			background-color: var(--bg-color);
+			color: var(--text-color);
+			margin: 0;
+			padding: 20px;
+			max-width: 1200px;
+			margin: 0 auto;
+		}
+
+		h1 { text-align: center; margin-bottom: 30px; }
+
+		/* Header Controls */
+		.controls {
+			display: flex;
+			justify-content: flex-end;
+			gap: 10px;
+			margin-bottom: 15px;
+		}
+
+		.btn-secondary {
+			padding: 8px 12px;
+			background-color: white;
+			border: 1px solid var(--border-color);
+			border-radius: 4px;
+			cursor: pointer;
+			font-size: 0.9rem;
+			color: #555;
+		}
+		.btn-secondary:hover { background-color: #eee; }
+
+		/* Form Styles */
+		.planner-form {
+			background: var(--card-bg);
+			padding: 20px;
+			border-radius: 8px;
+			box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+			display: grid;
+			/* Adjusted columns to include Params */
+			grid-template-columns: 0.7fr 1.2fr 1fr 1.2fr 0.8fr 0.7fr;
+			gap: 10px;
+			margin-bottom: 30px;
+			align-items: end;
+		}
+
+		.form-group { display: flex; flex-direction: column; }
+		label { font-size: 0.85rem; margin-bottom: 5px; font-weight: bold; color: #666; }
+
+		input, select {
+			padding: 10px;
+			border: 1px solid var(--border-color);
+			border-radius: 4px;
+			font-size: 1rem;
+		}
+
+		button#addBtn {
+			padding: 10px;
+			background-color: #333;
+			color: white;
+			border: none;
+			border-radius: 4px;
+			cursor: pointer;
+			font-weight: bold;
+		}
+		button#addBtn:hover { background-color: #555; }
+
+		/* List Styles */
+		.route-list {
+			display: flex;
+			flex-direction: column;
+			gap: 15px;
+		}
+
+		.route-card {
+			background: var(--card-bg);
+			border: 1px solid var(--border-color);
+			border-radius: 6px;
+			padding: 15px;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			transition: transform 0.1s;
+		}
+
+		.route-info {
+			display: flex;
+			align-items: center;
+			gap: 15px;
+			flex-grow: 1;
+			flex-wrap: wrap;
+		}
+
+		.method-badge {
+			padding: 5px 10px;
+			border-radius: 4px;
+			color: white;
+			font-weight: bold;
+			font-size: 0.9rem;
+			width: 60px;
+			text-align: center;
+			text-transform: uppercase;
+			flex-shrink: 0;
+		}
+
+		.method-GET { background-color: var(--get-color); }
+		.method-POST { background-color: var(--post-color); }
+		.method-PUT { background-color: var(--put-color); }
+		.method-DELETE { background-color: var(--delete-color); }
+		.method-PATCH { background-color: #50e3c2; }
+
+		.route-path {
+			font-family: monospace;
+			font-size: 1.1rem;
+			font-weight: 600;
+		}
+
+		.route-params {
+			font-family: monospace;
+			color: #b45309;
+			font-size: 0.9rem;
+			background: #fffbeb;
+			padding: 2px 6px;
+			border-radius: 4px;
+			border: 1px solid #fcd34d;
+		}
+
+		.route-desc {
+			color: #666;
+			font-size: 0.9rem;
+			margin-left: 10px;
+			border-left: 2px solid #eee;
+			padding-left: 10px;
+		}
+
+		.perm-badge {
+			font-size: 0.75rem;
+			background: #e0e7ff;
+			color: #4338ca;
+			padding: 3px 8px;
+			border-radius: 12px;
+			border: 1px solid #c7d2fe;
+			margin-left: auto; /* Push to right of info section */
+		}
+
+		.delete-btn {
+			background: none;
+			border: none;
+			color: #999;
+			cursor: pointer;
+			font-size: 1.2rem;
+			padding: 0 10px;
+			margin-left: 10px;
+		}
+		.delete-btn:hover { color: var(--delete-color); }
+
+		.empty-state { text-align: center; color: #999; margin-top: 50px; }
+	</style>
+</head>
+<body>
+
+	<h1>REST API Planner</h1>
+
+	<div class="controls">
+		<button class="btn-secondary" onclick="exportData()">Export JSON</button>
+		<button class="btn-secondary" onclick="document.getElementById('importFile').click()">Import JSON</button>
+		<input type="file" id="importFile" style="display: none;" accept=".json" onchange="importData(this)">
+	</div>
+
+	<div class="planner-form">
+		<div class="form-group">
+			<label for="method">Method</label>
+			<select id="method">
+				<option value="GET">GET</option>
+				<option value="POST">POST</option>
+				<option value="PUT">PUT</option>
+				<option value="DELETE">DELETE</option>
+				<option value="PATCH">PATCH</option>
+			</select>
+		</div>
+		<div class="form-group">
+			<label for="path">Endpoint Path</label>
+			<input type="text" id="path" placeholder="/api/resource">
+		</div>
+		<div class="form-group">
+			<label for="params">Params</label>
+			<input type="text" id="params" placeholder="?filter[read]">
+		</div>
+		<div class="form-group">
+			<label for="desc">Description</label>
+			<input type="text" id="desc" placeholder="Fetch user by ID">
+		</div>
+		<div class="form-group">
+			<label for="perms">Permissions</label>
+			<input type="text" id="perms" placeholder="e.g. admin, read">
+		</div>
+		<button id="addBtn">Add Route</button>
+	</div>
+
+	<div id="routeList" class="route-list">
+		<!-- Routes will appear here -->
+	</div>
+
+	<script>
+		const addBtn = document.getElementById('addBtn');
+		const routeList = document.getElementById('routeList');
+		const inputs = {
+			method: document.getElementById('method'),
+			path: document.getElementById('path'),
+			params: document.getElementById('params'),
+			desc: document.getElementById('desc'),
+			perms: document.getElementById('perms')
+		};
+
+		// Load from LocalStorage on start
+		let routes = JSON.parse(localStorage.getItem('restPlannerRoutes')) || [];
+
+		function saveRoutes() {
+			localStorage.setItem('restPlannerRoutes', JSON.stringify(routes));
+			render();
+		}
+
+		function addRoute() {
+			if (!inputs.path.value) return alert("Path is required");
+
+			const newRoute = {
+				id: Date.now(),
+				method: inputs.method.value,
+				path: inputs.path.value,
+				params: inputs.params.value,
+				desc: inputs.desc.value,
+				perms: inputs.perms.value
+			};
+
+			routes.push(newRoute);
+			inputs.path.value = '';
+			inputs.params.value = '';
+			inputs.desc.value = '';
+			inputs.perms.value = '';
+			saveRoutes();
+		}
+
+		function deleteRoute(id) {
+			routes = routes.filter(r => r.id !== id);
+			saveRoutes();
+		}
+
+		function render() {
+			routeList.innerHTML = '';
+
+			if (routes.length === 0) {
+				routeList.innerHTML = '<div class="empty-state">No routes planned yet. Add one above!</div>';
+				return;
+			}
+
+			routes.forEach(route => {
+				const card = document.createElement('div');
+				card.className = 'route-card';
+
+				card.innerHTML = `
+					<div class="route-info">
+						<span class="method-badge method-${route.method}">${route.method}</span>
+						<span class="route-path">${route.path}</span>
+						${route.params ? `<span class="route-params">${route.params}</span>` : ''}
+						${route.desc ? `<span class="route-desc">${route.desc}</span>` : ''}
+						${route.perms ? `<span class="perm-badge">🔒 ${route.perms}</span>` : ''}
+					</div>
+					<button class="delete-btn" onclick="deleteRoute(${route.id})">&times;</button>
+				`;
+				routeList.appendChild(card);
+			});
+		}
+
+		// --- Export / Import Logic ---
+
+		function exportData() {
+			const dataStr = JSON.stringify(routes, null, 2);
+			const blob = new Blob([dataStr], { type: "application/json" });
+			const url = URL.createObjectURL(blob);
+
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = "api-routes.json";
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+		}
+
+		function importData(input) {
+			const file = input.files[0];
+			if (!file) return;
+
+			const reader = new FileReader();
+			reader.onload = function(e) {
+				try {
+					const importedRoutes = JSON.parse(e.target.result);
+					if (Array.isArray(importedRoutes)) {
+						// Merge or Replace? Here we replace for simplicity,
+						// but you could use routes = [...routes, ...importedRoutes] to merge.
+						if(confirm("This will overwrite current routes. Continue?")) {
+							routes = importedRoutes;
+							saveRoutes();
+						}
+					} else {
+						alert("Invalid JSON format: Expected an array.");
+					}
+				} catch (err) {
+					alert("Error parsing JSON file.");
+					console.error(err);
+				}
+				// Reset input so same file can be selected again if needed
+				input.value = '';
+			};
+			reader.readAsText(file);
+		}
+
+		addBtn.addEventListener('click', addRoute);
+
+		// Initial Render
+		render();
+	</script>
+</body>
+</html>

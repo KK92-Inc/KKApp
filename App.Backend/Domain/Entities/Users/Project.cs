@@ -3,6 +3,7 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using App.Backend.Domain.Entities.Projects;
 using App.Backend.Domain.Enums;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -19,7 +20,7 @@ public class UserProject : BaseEntity
 {
     public UserProject()
     {
-        State = EntityState.Inactive;
+        State = EntityObjectState.Inactive;
 
         Project = null!;
         ProjectId = Guid.Empty;
@@ -27,11 +28,12 @@ public class UserProject : BaseEntity
         GitInfo = null!;
         GitInfoId = Guid.Empty;
 
-        Users = null!;
+        Members = [];
+        Transactions = [];
     }
 
     [Column("state")]
-    public EntityState State { get; set; }
+    public EntityObjectState State { get; set; }
 
     [Column("project_id")]
     public Guid ProjectId { get; set; }
@@ -45,6 +47,14 @@ public class UserProject : BaseEntity
     [ForeignKey(nameof(GitInfoId))]
     public virtual Git? GitInfo { get; set; }
 
-    public virtual ICollection<User> Users { get; set; }
+    /// <summary>
+    /// Users partaking in this project session.
+    /// </summary>
+    public virtual ICollection<UserProjectMember> Members { get; set; }
+
+    /// <summary>
+    /// Transactions related to user activities within this project.
+    /// </summary>
+    public virtual ICollection<UserProjectTransaction> Transactions { get; set; }
 
 }

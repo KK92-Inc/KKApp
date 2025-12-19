@@ -72,13 +72,13 @@ public static class PaginationExtension
     /// <param name="source">The source queryable.</param>
     /// <param name="pagination">The pagination parameters.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the paginated list.</returns>
-    public static async Task<PaginatedList<T>> PaginateAsync<T>(this IQueryable<T> source, IPagination pagination) where T : BaseEntity
+    public static async Task<PaginatedList<T>> PaginateAsync<T>(this IQueryable<T> source, IPagination pagination, CancellationToken token = default) where T : BaseEntity
     {
-        int count = await source.CountAsync();
+        int count = await source.CountAsync(token);
         var items = await source
             .Skip((pagination.Page - 1) * pagination.Size)
             .Take(pagination.Size)
-            .ToListAsync();
+            .ToListAsync(token);
 
         return new PaginatedList<T>(items, count, pagination.Page, pagination.Size);
     }

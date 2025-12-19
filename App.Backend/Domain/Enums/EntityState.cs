@@ -12,7 +12,7 @@ namespace App.Backend.Domain.Enums;
 /// E.g: User Project is Active, Inactive, Awaiting or Completed.
 /// </summary>
 [JsonConverter(typeof(JsonStringEnumConverter))]
-public enum EntityState
+public enum EntityObjectState
 {
     /// <summary>
     /// The entity is inactive and won't continue.

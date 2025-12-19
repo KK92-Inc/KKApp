@@ -18,12 +18,5 @@ public interface INotificationService : IDomainService<Notification>
     /// </summary>
     /// <param name="userId">The ID of the user</param>
     /// <param name="notificationIds">Optional list of specific notification IDs to mark as read. If null or empty, marks all notifications as read.</param>
-    Task MarkAsReadAsync(Guid userId, IEnumerable<Guid>? notificationIds = null);
-
-    /// <summary>
-    /// Marks notifications as unread for a given user.
-    /// </summary>
-    /// <param name="userId">The ID of the user</param>
-    /// <param name="notificationIds">Optional list of specific notification IDs to mark as unread. If null or empty, marks all notifications as unread.</param>
-    Task MarkAsUnreadAsync(Guid userId, IEnumerable<Guid>? notificationIds = null);
+    Task MarkAsAsync(Guid userId, IEnumerable<Guid>? guids = null, bool read = true, CancellationToken token = default);
 }

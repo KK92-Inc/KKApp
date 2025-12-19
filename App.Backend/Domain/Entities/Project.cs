@@ -27,4 +27,13 @@ public class Project : BaseEntity
 
     [Column("slug")]
     public string Slug { get; set; }
+
+    [Column("active")]
+    public bool Active { get; set; }
+
+    [Column("public")]
+    public bool Public { get; set; }
+
+    [Column("deprecated")]
+    public bool Deprecated { get; set; }
 }

@@ -19,7 +19,7 @@ public class UserCursus : BaseEntity
 {
     public UserCursus()
     {
-        State = EntityState.Active;
+        State = EntityObjectState.Active;
 
         UserId = Guid.Empty;
         User = null!;
@@ -29,7 +29,7 @@ public class UserCursus : BaseEntity
     }
 
     [Column("state")]
-    public EntityState State { get; set; }
+    public EntityObjectState State { get; set; }
 
     [Column("user_id")]
     public Guid UserId { get; set; }

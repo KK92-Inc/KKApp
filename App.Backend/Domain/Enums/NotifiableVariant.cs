@@ -22,19 +22,6 @@ public enum NotifiableVariant
 	AcceptOrDecline = 1 << 0,
 
 	/// <summary>
-	/// Broadcast to all users (system-wide announcements, feature releases).
-	/// When set, NotifiableId is ignored and the notification is delivered to everyone.
-	/// </summary>
-	[JsonPropertyName(nameof(Global))]
-	Global = 1 << 1,
-
-	/// <summary>
-	/// Targeted to a single user. Requires NotifiableId to identify the recipient.
-	/// </summary>
-	[JsonPropertyName(nameof(Private))]
-	Private = 1 << 2,
-
-	/// <summary>
 	/// Standard informational notification that informs the recipient about an event; usually requires no action.
 	/// </summary>
 	[JsonPropertyName(nameof(Default))]
@@ -75,13 +62,6 @@ public enum NotifiableVariant
 	/// </summary>
 	[JsonPropertyName(nameof(Welcome))]
 	Welcome = 1 << 9,
-
-	/// <summary>
-	/// High-priority, highlighted notifications used for major events or campaigns that should stand out in the UI.
-	/// Examples: conferences, platform-wide events, hackathons.
-	/// </summary>
-	[JsonPropertyName(nameof(Spotlight))]
-	Spotlight = 1 << 10,
 
 	/// <summary>
 	/// Represents all flags combined (bitwise all ones).

@@ -22,49 +22,92 @@ namespace App.Backend.Core.Services;
 /// <typeparam name="T"></typeparam>
 public abstract class BaseService<T>(DatabaseContext context) : IDomainService<T> where T : BaseEntity
 {
-    /// <inheritdoc />
+    protected readonly DbSet<T> _dbSet = context.Set<T>();
+
+    /// <summary>
+    /// Query the entities.
+    /// </summary>
+    /// <param name="tracking"></param>
+    /// <returns></returns>
     public IQueryable<T> Query(bool tracking = true) => tracking ? _dbSet.AsQueryable<T>() : _dbSet.AsNoTracking();
 
-    /// <inheritdoc />
-    public async Task<T?> FindByIdAsync(Guid id) => await _dbSet.FirstOrDefaultAsync(x => x.Id == id);
-
-    /// <inheritdoc />
-    public bool Exists(IEnumerable<Guid> ids) => ids.Any(id => !_dbSet.Any(f => f.Id == id));
-
-    /// <inheritdoc />
-    public async Task<T> CreateAsync(T entity)
+    /// <summary>
+    /// Create a new entity.
+    /// </summary>
+    /// <param name="entity"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public virtual async Task<T> CreateAsync(T entity, CancellationToken token = default)
     {
-        var createdEntity = await _dbSet.AddAsync(entity);
-        await context.SaveChangesAsync();
-        return createdEntity.Entity;
+        var result = await _dbSet.AddAsync(entity, token);
+        await context.SaveChangesAsync(token);
+        return result.Entity;
     }
 
-    /// <inheritdoc />
-    public async Task<T> DeleteAsync(T entity)
-    {
-        _dbSet.Remove(entity);
-        await context.SaveChangesAsync();
-        return entity;
-    }
-
-    /// <inheritdoc />
-    public async Task<T> UpdateAsync(T entity)
+    /// <summary>
+    /// Update the entity.
+    /// </summary>
+    /// <param name="entity"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public virtual async Task UpdateAsync(T entity, CancellationToken token = default)
     {
         _dbSet.Update(entity);
-        await context.SaveChangesAsync();
-        return entity;
+        await context.SaveChangesAsync(token);
     }
 
-    /// <inheritdoc />
-    public async Task<PaginatedList<T>> GetAllAsync(IPagination pagination, ISorting sorting, params Expression<Func<T, bool>>?[] filters)
+    /// <summary>
+    /// Delete the entity.
+    /// </summary>
+    /// <param name="entity"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public virtual async Task DeleteAsync(T entity, CancellationToken token = default)
     {
-        var query = _dbSet.AsQueryable();
+        _dbSet.Remove(entity);
+        await context.SaveChangesAsync(token);
+    }
+
+    /// <summary>
+    /// Validates if any provided IDs exist in the database.
+    /// </summary>
+    /// <param name="ids"></param>
+    /// <returns></returns>
+    public bool Exists(IEnumerable<Guid> ids)
+    {
+        return ids.Any(id => !_dbSet.Any(f => f.Id == id));
+    }
+
+    /// <summary>
+    /// Find the entity by its ID.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public async Task<T?> FindByIdAsync(Guid id, CancellationToken token = default)
+    {
+        return await _dbSet.FirstOrDefaultAsync(x => x.Id == id, token);
+    }
+
+    /// <summary>
+    /// Get all entities with pagination, sorting and filtering.
+    /// </summary>
+    /// <param name="sorting"></param>
+    /// <param name="pagination"></param>
+    /// <param name="token"></param>
+    /// <param name="filters"></param>
+    /// <returns></returns>
+    public async Task<PaginatedList<T>> GetAllAsync(
+        ISorting sorting,
+        IPagination pagination,
+        CancellationToken token = default,
+        params Expression<Func<T, bool>>?[] filters
+    )
+    {
         return await filters
             .Where(f => f is not null)
-            .Aggregate(query, (c, filter) => c.Where(filter!))
+            .Aggregate(_dbSet.AsQueryable(), (c, filter) => c.Where(filter!))
             .Sort(sorting)
             .PaginateAsync(pagination);
     }
-
-    protected readonly DbSet<T> _dbSet = context.Set<T>();
 }

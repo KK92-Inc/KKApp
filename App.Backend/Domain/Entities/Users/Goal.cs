@@ -4,6 +4,7 @@
 // ============================================================================
 
 using System.ComponentModel.DataAnnotations.Schema;
+using App.Backend.Domain.Enums;
 
 // ============================================================================
 
@@ -20,8 +21,7 @@ public class UserGoal : BaseEntity
         GoalId = Guid.Empty;
         Goal = null!;
 
-        UserCursusId = null;
-        UserCursus = null;
+        State = EntityObjectState.Active;
     }
 
     [Column("user_id")]
@@ -36,9 +36,6 @@ public class UserGoal : BaseEntity
     [ForeignKey(nameof(GoalId))]
     public virtual Goal Goal { get; set; }
 
-    [Column("user_cursus_id")]
-    public Guid? UserCursusId { get; set; }
-
-    [ForeignKey(nameof(UserCursusId))]
-    public virtual UserCursus? UserCursus { get; set; }
+    [Column("state")]
+    public EntityObjectState State { get; set; }
 }

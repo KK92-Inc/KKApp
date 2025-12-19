@@ -6,6 +6,8 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 using App.Backend.Domain.Enums;
+using System.Text.Json;
+using System.ComponentModel.DataAnnotations;
 
 // ============================================================================
 
@@ -18,7 +20,6 @@ public class Notification : BaseEntity
 {
     public Notification()
     {
-        Data = "{}";
         ReadAt = null;
         Type = nameof(Notification);
         Descriptor = NotifiableVariant.Default;
@@ -59,6 +60,6 @@ public class Notification : BaseEntity
     /// <summary>
     /// The notification data.
     /// </summary>
-    [Column("data", TypeName = "jsonb")]
-    public string Data { get; set; }
+    [Column("data", TypeName = "jsonb"), Required]
+    public required JsonDocument Data { get; set; }
 }

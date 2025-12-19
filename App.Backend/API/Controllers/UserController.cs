@@ -12,10 +12,13 @@ using App.Backend.API.Params;
 using App.Backend.Core.Services.Implementation;
 using App.Backend.Domain;
 using App.Backend.Core.Services.Interface;
-using App.Backend.Models.Entities;
+using App.Backend.Models;
 using Keycloak.AuthServices.Authorization;
 using App.Backend.Domain.Enums;
 using NXTBackend.API.Core.Services.Interface;
+using App.Backend.Models.Responses.Entities;
+using App.Backend.Models.Responses.Entities.Notifications;
+using App.Backend.Models.Requests.Users;
 
 // ============================================================================
 
@@ -24,7 +27,12 @@ namespace App.Backend.API.Controllers;
 [ApiController]
 [Route("users")]
 // [ProtectedResource("users"), Authorize]
-public class UserController(ILogger<UserController> log, IUserService users, INotificationService notifications) : Controller
+public class UserController(
+    ILogger<UserController> log,
+    IUserService users,
+    INotificationService notifications,
+    ISubscriptionService subscriptions
+) : Controller
 {
     [HttpGet("/users/current")]
     [ProtectedResource("users", "user:read")]
@@ -52,36 +60,10 @@ public class UserController(ILogger<UserController> log, IUserService users, INo
         [FromQuery(Name = "filter[not[variant]]")] NotifiableVariant exclusive,
         [FromQuery] Pagination pagination,
         [FromQuery] Sorting sorting,
-        INotificationService notifications
+        CancellationToken cancellationToken
     )
     {
-        var page = await notifications.GetAllAsync(pagination, sorting,
-            n => read ? n.ReadAt != null : n.ReadAt == null,
-            n => (n.Descriptor & inclusive) != 0,
-            n => (n.Descriptor & exclusive) == 0
-        );
-
-        page.AppendHeaders(Request.Headers);
-        return Ok('1');
-        // return Ok(page.Items.Select(e => new NotificationDO(e)));
-    }
-
-    [HttpGet("/users/")]
-    [ProtectedResource("users", "user:view")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [EndpointSummary("Get the currently authenticated user.")]
-    [EndpointDescription("When authenticated it's useful to know who you currently are logged in as.")]
-    public async Task<ActionResult<NotificationDO>> Users(
-    [FromQuery(Name = "filter[read]")] bool read,
-    [FromQuery(Name = "filter[variant]")] NotifiableVariant inclusive,
-    [FromQuery(Name = "filter[not[variant]]")] NotifiableVariant exclusive,
-    [FromQuery] Pagination pagination,
-    [FromQuery] Sorting sorting
-)
-    {
-        var page = await notifications.GetAllAsync(pagination, sorting,
+        var page = await notifications.GetAllAsync(sorting, pagination, cancellationToken,
             n => read ? n.ReadAt != null : n.ReadAt == null,
             n => (n.Descriptor & inclusive) != 0,
             n => (n.Descriptor & exclusive) == 0
@@ -90,44 +72,143 @@ public class UserController(ILogger<UserController> log, IUserService users, INo
         page.AppendHeaders(Request.Headers);
         return Ok(page.Items.Select(e => new NotificationDO(e)));
     }
+
+[HttpGet("/users/current/spotlights")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Get the currently authenticated user.")]
+    [EndpointDescription("When authenticated it's useful to know who you currently are logged in as.")]
+    public async Task<ActionResult<UserDO>> CurrentSpotlights()
+    {
+        // TODO: Implement spotlights service and remove this placeholder
+        return Ok();
+    }
+
+[HttpDelete("/users/current/spotlights/{id:guid}")]
+    [EndpointSummary("Dismiss a spotlighted event")]
+    [EndpointDescription("If users dismiss a spotlight event, they won't shown in the future.")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> DismissSpotlight(Guid id)
+    {
+        // TODO: Implement spotlights service and remove this placeholder
+        return Ok();
+    }
+
+    [HttpGet]
+    [ProtectedResource("users", "users:read")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Query all users")]
+    [EndpointDescription("Retrieve a paginated list of all users")]
+    public async Task<ActionResult> GetAll(
+        [FromQuery] Pagination pagination,
+        [FromQuery] Sorting sorting
+    )
+    {
+        var page = await users.GetAllAsync(sorting, pagination);
+        page.AppendHeaders(Request.Headers);
+        return Ok(page.Items.Select(u => new UserDO(u)));
+    }
+
+    [HttpPost]
+    [ProtectedResource("users", "users:write")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Create a new user")]
+    [EndpointDescription("Create a new user with optional details")]
+    public async Task<ActionResult<UserDO>> Create([FromBody] PostUserRequestDTO request)
+    {
+        var user = await users.CreateAsync(new () 
+        {
+            Login = request.Login,
+            Display = request.DisplayName,
+            AvatarUrl = request.AvatarUrl,
+            Details = null
+        });
+        return CreatedAtAction(nameof(GetById), new { id = user.Id }, new UserDO(user));
+    }
+
+    [HttpDelete("{id:guid}")]
+    [ProtectedResource("users", "users:delete")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Delete a user")]
+    [EndpointDescription("Delete a user and their details")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        var user = await users.FindByIdAsync(id);
+        if (user is null)
+            return NotFound();
+        await users.DeleteAsync(user);
+        return NoContent();
+    }
+
+    [HttpGet("{id:guid}")]
+    [ProtectedResource("users", "users:read")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Query a user")]
+    [EndpointDescription("Retrieve a specific user by ID")]
+    public async Task<ActionResult<UserDO>> GetById(Guid id)
+    {
+        var user = await users.FindByIdAsync(id);
+        return user is null ? NotFound() : Ok(new UserDO(user));
+    }
+
+    [HttpPatch("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Update a user")]
+    [EndpointDescription("Update user and details via a single DTO")]
+    public async Task<ActionResult<UserDO>> Update(Guid id, [FromBody] PatchUserRequestDTO request)
+    {
+        var currentUserId = User.GetSID();
+        
+        // Authorization check: user can only update their own profile unless they are staff
+        if (User.GetSID() != id && !User.Claims.Any(c => c.Type == "role" && c.Value == "staff"))
+            return Forbid();
+
+        return Ok();
+        // var user = await users.UpdateUserAsync(id, request);
+        // return user is null ? NotFound() : Ok(new UserDO(user));
+    }
+
+    [HttpPost("{id:guid}/projects/{projectId:guid}/subscribe")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Subscribe to project")]
+    [EndpointDescription("Create a user project instance for current user")]
+    public async Task<ActionResult> SubscribeToProject(Guid id, Guid projectId)
+    {
+        return Created();
+    }
+
+    [HttpDelete("{id:guid}/projects/{projectId:guid}/unsubscribe")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Get user projects")]
+    [EndpointDescription("Retrieve project instances subscribed by current user")]
+    public async Task<ActionResult> UnsubscribeFromProject(Guid id, Guid projectId)
+    {
+        
+
+        return NoContent();
+    }
 }
 
-
-// [ProtectedResource("users", "user:list")]
-// [EndpointSummary("Get the currently authenticated user.")]
-// [EndpointDescription("When authenticated it's useful to know who you currently are logged in as.")]
-// [ProducesResponseType(StatusCodes.Status200OK)]
-// [ProducesErrorResponseType(typeof(ProblemDetails))]
-// [HttpGet("/users/current"), OutputCache(PolicyName = "1m")]
-// public async Task<ActionResult<string>> Current(
-//     [FromQuery] Sorting sorting,
-//     [FromQuery] Pagination pagination
-// )
-// {
-//     var result = await userService.GetAllAsync(pagination, sorting, u => u.Display == "hello");
-//     return Ok("Ok!");
-//     // var user = await userService.FindByIdAsync(User.GetSID());
-//     // return user is null ? Forbid() : Ok(new UserDO(user));
-// }
-
-
-// [ProtectedResource("users", "user:list")]
-// [EndpointSummary("Get all users")]
-// [EndpointDescription("Returns all users to you, lets you filter as well.")]
-// [ProducesResponseType(StatusCodes.Status200OK)]
-// [ProducesErrorResponseType(typeof(ProblemDetails))]
-// [HttpGet("/users/"), OutputCache(PolicyName = "1m")]
-// public async Task<ActionResult<UserDO>> GetAll(
-//     [FromQuery] Sorting sorting,
-//     [FromQuery] Pagination pagination,
-//     [FromQuery(Name = "filter[display]")] string? displayName
-// )
-// {
-//     log.LogInformation("Getting all users with display name filter: {displayName}", displayName);
-//     var page = await userService.GetAllAsync(pagination, sorting,
-//         u => u.Display == displayName
-//     );
-
-//     page.AppendHeaders(Response.Headers);
-//     return Ok(page.Items.Select(e => new UserDO(e)));
-// }
