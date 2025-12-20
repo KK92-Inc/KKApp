@@ -3,16 +3,16 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-#:sdk Aspire.AppHost.Sdk@13.0.2
-#:package Aspire.Hosting.Docker@13.0.2-preview.1.25603.5
-#:package Aspire.Npgsql@13.0.2
-#:package Aspire.Hosting.Valkey@13.0.2
-#:package Aspire.Hosting.PostgreSQL@13.0.2
+#:sdk Aspire.AppHost.Sdk@13.1.0
+#:package Aspire.Hosting.Docker@13.1.0-preview.1.25616.3
+#:package Aspire.Npgsql@13.1.0
+#:package Aspire.Hosting.Valkey@13.1.0
+#:package Aspire.Hosting.PostgreSQL@13.1.0
 #:package CommunityToolkit.Aspire.Hosting.Bun@*
 #:package Keycloak.AuthServices.Aspire.Hosting@0.2.0
 #:project App.Migrations/Migrations.csproj
 #:project App.Backend/API/App.Backend.API.csproj
-#:package Aspire.Hosting.JavaScript@13.0.2
+#:package Aspire.Hosting.JavaScript@13.1.0
 #:package Scalar.Aspire@0.7.4
 
 using Scalar.Aspire;

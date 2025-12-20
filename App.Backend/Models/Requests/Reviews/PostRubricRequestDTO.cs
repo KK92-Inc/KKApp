@@ -4,7 +4,6 @@
 // ============================================================================
 
 using System.ComponentModel.DataAnnotations;
-using System.Text.Json;
 
 namespace App.Backend.Models.Requests.Reviews;
 
@@ -31,5 +30,5 @@ public record PostRubricRequestDTO
     /// The rubric response data as JSON.
     /// </summary>
     [Required]
-    public required JsonDocument Data { get; init; }
+    public required string Data { get; init; }
 }

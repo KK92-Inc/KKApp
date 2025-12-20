@@ -6,7 +6,6 @@
 using App.Backend.Domain;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Text.Json;
 
 // ============================================================================
 
@@ -32,5 +31,5 @@ public class Cursus : BaseEntity
     /// The track / path of the Cursus stored in the .graph format.
     /// </summary>
     [Column("track", TypeName = "jsonb")]
-    public JsonDocument? Track { get; set; }
+    public string? Track { get; set; }
 }

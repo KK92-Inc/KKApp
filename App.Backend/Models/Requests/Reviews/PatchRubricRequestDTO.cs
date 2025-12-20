@@ -4,7 +4,6 @@
 // ============================================================================
 
 using System.ComponentModel.DataAnnotations;
-using System.Text.Json;
 
 namespace App.Backend.Models.Requests.Reviews;
 
@@ -24,5 +23,5 @@ public record PatchRubricRequestDTO
     /// <summary>
     /// Optional rubric data update as JSON.
     /// </summary>
-    public JsonDocument? Data { get; init; }
+    public string? Data { get; init; }
 }

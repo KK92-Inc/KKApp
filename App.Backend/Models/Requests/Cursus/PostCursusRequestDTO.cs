@@ -4,7 +4,6 @@
 // ============================================================================
 
 using System.ComponentModel.DataAnnotations;
-using System.Text.Json;
 
 namespace App.Backend.Models.Requests.Cursus;
 
@@ -48,5 +47,5 @@ public record PostCursusRequestDTO
     /// <summary>
     /// The track definition as JSON.
     /// </summary>
-    public JsonDocument? Track { get; init; }
+    public string? Track { get; init; }
 }

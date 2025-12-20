@@ -39,10 +39,10 @@ public class SubscriptionService(
         // Instance already exists
         if (userCursus is not null)
         {
+            if (userCursus.State is EntityObjectState.Completed)
+                throw new ServiceException(422, "Cursus is already completed");
             if (userCursus.State is not EntityObjectState.Inactive)
                 throw new ServiceException(409, "Already subscribed to this cursus");
-            if (userCursus.State is EntityObjectState.Completed)
-                throw new ServiceException(422, "Goal is already completed");
 
             userCursus.State = EntityObjectState.Active;
             ctx.UserCursi.Update(userCursus);

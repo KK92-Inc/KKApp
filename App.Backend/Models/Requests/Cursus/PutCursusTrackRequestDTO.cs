@@ -4,7 +4,6 @@
 // ============================================================================
 
 using System.ComponentModel.DataAnnotations;
-using System.Text.Json;
 
 namespace App.Backend.Models.Requests.Cursus;
 
@@ -19,5 +18,5 @@ public record PutCursusTrackRequestDTO
     /// The track definition as JSON. This will replace the entire track.
     /// </summary>
     [Required]
-    public required JsonDocument Track { get; init; }
+    public required string Track { get; init; }
 }

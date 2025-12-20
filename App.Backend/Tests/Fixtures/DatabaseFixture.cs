@@ -11,13 +11,14 @@ using Microsoft.EntityFrameworkCore;
 namespace App.Backend.Tests.Fixtures;
 
 /// <summary>
-/// Fixture for creating an in-memory database context for testing.
+/// Base class for service tests that need a database context.
+/// Provides automatic setup and teardown of an in-memory database.
 /// </summary>
-public class DatabaseFixture : IDisposable
+public abstract class ServiceTestBase : IDisposable
 {
-    public DatabaseContext Context { get; private set; }
+    protected readonly DatabaseContext Context;
 
-    public DatabaseFixture()
+    protected ServiceTestBase()
     {
         var options = new DbContextOptionsBuilder<DatabaseContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
@@ -25,21 +26,6 @@ public class DatabaseFixture : IDisposable
 
         Context = new DatabaseContext(options);
         Context.Database.EnsureCreated();
-    }
-
-    /// <summary>
-    /// Creates a fresh database context with a new in-memory database.
-    /// Useful for tests that need isolation.
-    /// </summary>
-    public static DatabaseContext CreateFreshContext()
-    {
-        var options = new DbContextOptionsBuilder<DatabaseContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-
-        var context = new DatabaseContext(options);
-        context.Database.EnsureCreated();
-        return context;
     }
 
     public void Dispose()
