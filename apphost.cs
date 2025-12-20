@@ -38,6 +38,23 @@ var cache = builder.AddValkey("cache")
     .WithLifetime(ContainerLifetime.Persistent);
 
 // ============================================================================
+// 2.5 Git Server (Soft Serve)
+// ============================================================================
+var gitServer = builder.AddContainer("git-server", "charmcli/soft-serve", "latest")
+    .WithBindMount("soft-serve-data", "/soft-serve")
+    .WithHttpEndpoint(port: 23231, targetPort: 23231, name: "http")  // HTTP for cloning
+    .WithEndpoint(port: 23232, targetPort: 23232, name: "ssh")       // SSH access
+    .WithEndpoint(port: 23233, targetPort: 23233, name: "git")       // Git protocol
+    .WithEnvironment("SOFT_SERVE_DATA_PATH", "/soft-serve")
+    .WithEnvironment("SOFT_SERVE_INITIAL_ADMIN_KEYS", "")            // Allow anonymous admin initially
+    .WithEnvironment("SOFT_SERVE_HTTP_ENABLED", "true")
+    .WithEnvironment("SOFT_SERVE_HTTP_LISTEN_ADDR", ":23231")
+    .WithEnvironment("SOFT_SERVE_SSH_LISTEN_ADDR", ":23232")
+    .WithEnvironment("SOFT_SERVE_GIT_LISTEN_ADDR", ":23233")
+    .WithEnvironment("SOFT_SERVE_ANON_ACCESS", "read-write")         // Public repos accessible
+    .WithLifetime(ContainerLifetime.Persistent);
+
+// ============================================================================
 // 2. Keycloak
 // ============================================================================
 var keycloak = builder.AddKeycloakContainer("keycloak")
@@ -65,6 +82,10 @@ var backend = builder.AddProject<Projects.App_Backend_API>("backend-api")
     .WithReference(cache)
     .WaitFor(migrationService)
     .WithReference(keycloak)
+    .WaitFor(gitServer)
+    .WithEnvironment("Git__HttpUrl", gitServer.GetEndpoint("http"))
+    .WithEnvironment("Git__SshPort", "23232")
+    .WithEnvironment("Git__GitPort", "23233")
     // This overrides Keycloak:auth-server-url in appsettings.json
     .WithEnvironment("Keycloak__auth-server-url", keycloak.GetEndpoint("http"));
 

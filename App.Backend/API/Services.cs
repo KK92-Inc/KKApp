@@ -168,6 +168,11 @@ public static class Services
         // // builder.Services.AddSingleton<INotificationQueue, InMemoryNotificationQueue>();
         builder.Services.AddSingleton(TimeProvider.System);
 
+        // Git Service
+        builder.Services.Configure<GitServiceOptions>(
+            builder.Configuration.GetSection(GitServiceOptions.SectionName));
+        builder.Services.AddSingleton<IGitService, GitService>();
+
         // Quartz
         builder.Services.AddQuartz(quartz =>
         {
