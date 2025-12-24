@@ -20,6 +20,7 @@ public class DatabaseContext(DbContextOptions<DatabaseContext> options) : DbCont
 
 #nullable disable
     public DbSet<User> Users { get; set; }
+    public DbSet<SshKey> SshKeys { get; set; }
     public DbSet<Details> Details { get; set; }
     public DbSet<Comment> Comments { get; set; }
     public DbSet<Cursus> Cursi { get; set; }

@@ -20,10 +20,7 @@ public class GitDO(Git git) : BaseEntityDO<Git>(git)
     public string Name { get; set; } = git.Name;
 
     [Required]
-    public string Namespace { get; set; } = git.Namespace;
-
-    [Required]
-    public string Url { get; set; } = git.Url;
+    public string Owner { get; set; } = git.Owner;
 
     [Required]
     public EntityOwnership Ownership { get; set; } = git.Ownership;

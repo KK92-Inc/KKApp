@@ -3,6 +3,11 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using App.Backend.Core.Query;
+using App.Backend.Core.Services;
+using App.Backend.Domain.Entities;
+using App.Backend.Domain.Entities.Users;
+
 namespace App.Backend.Core.Services.Interface;
 
 // ============================================================================
@@ -35,118 +40,79 @@ public record GitCommit(string Sha, string Message, string Author, string Author
 /// <param name="Tip">The SHA of the branch tip commit.</param>
 public record GitBranch(string Name, bool IsHead, bool IsRemote, string Tip);
 
-/// <summary>
-/// Options for cloning a repository.
-/// </summary>
-/// <param name="Branch">The branch to checkout after cloning.</param>
-/// <param name="Depth">The depth of the clone (0 for full clone).</param>
-public record CloneOptions(string? Branch = null, int Depth = 0);
-
 // ============================================================================
 
 /// <summary>
-/// Service for interacting with Git repositories.
+/// Defines a service for interacting with Git repositories and managing Git-related operations within the domain.
+/// Extends the generic domain service for the <see cref="Git"/> entity.
 /// </summary>
-public interface IGitService
+public interface IGitService : ICollaborativeService<Git>, IDomainService<Git>
 {
     /// <summary>
-    /// Gets the base URL for HTTP git operations.
+    /// Retrieves a specific file from a Git repository at a given path and reference.
     /// </summary>
-    string HttpBaseUrl { get; }
+    /// <param name="git">The Git repository entity to query.</param>
+    /// <param name="path">The relative path to the file within the repository.</param>
+    /// <param name="reference">The Git reference (branch, tag, or commit hash) to look up. Defaults to "HEAD".</param>
+    /// <param name="token">A cancellation token to cancel the operation.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the <see cref="GitFile"/> if found; otherwise, null.</returns>
+    public Task<GitFile?> GetFileAsync(Git git, string path, string reference = "HEAD", CancellationToken token = default);
 
     /// <summary>
-    /// Clones a repository from the git server.
+    /// Lists files within a specific directory of a Git repository.
     /// </summary>
-    /// <param name="repoName">The name of the repository to clone.</param>
-    /// <param name="localPath">The local path to clone to.</param>
-    /// <param name="options">Clone options.</param>
-    /// <param name="token">Cancellation token.</param>
-    /// <returns>The path to the cloned repository.</returns>
-    Task<string> CloneAsync(string repoName, string localPath, CloneOptions? options = null, CancellationToken token = default);
+    /// <param name="git">The Git repository entity to query.</param>
+    /// <param name="pagination">Pagination parameters to control the number of results returned.</param>
+    /// <param name="directory">The directory path to list files from. Defaults to the root directory ("").</param>
+    /// <param name="reference">The Git reference (branch, tag, or commit hash) to look up. Defaults to "HEAD".</param>
+    /// <param name="recursive">If set to <c>true</c>, lists files recursively in subdirectories; otherwise, lists only the top-level files.</param>
+    /// <param name="token">A cancellation token to cancel the operation.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains a collection of <see cref="GitFile"/> objects.</returns>
+    public Task<IEnumerable<GitFile>> ListFilesAsync(Git git, IPagination pagination, string directory = "", string reference = "HEAD", bool recursive = false, CancellationToken token = default);
 
     /// <summary>
-    /// Gets the contents of a file from a repository.
+    /// Retrieves a paginated list of commits for a specific reference in a Git repository.
     /// </summary>
-    /// <param name="repoPath">The local path to the repository.</param>
-    /// <param name="filePath">The path to the file within the repository.</param>
-    /// <param name="reference">The git reference (branch, tag, commit SHA). Defaults to HEAD.</param>
-    /// <param name="token">Cancellation token.</param>
-    /// <returns>The file contents, or null if not found.</returns>
-    Task<GitFile?> GetFileAsync(string repoPath, string filePath, string reference = "HEAD", CancellationToken token = default);
+    /// <param name="git">The Git repository entity to query.</param>
+    /// <param name="pagination">Pagination parameters to control the number of commits returned.</param>
+    /// <param name="reference">The Git reference (branch, tag, or commit hash) to start the history from. Defaults to "HEAD".</param>
+    /// <param name="token">A cancellation token to cancel the operation.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains a collection of <see cref="GitCommit"/> objects.</returns>
+    public Task<IEnumerable<GitCommit>> GetCommitsAsync(Git git, IPagination pagination, string reference = "HEAD", CancellationToken token = default);
 
     /// <summary>
-    /// Lists files in a directory within a repository.
+    /// Retrieves a paginated list of branches available in a Git repository.
     /// </summary>
-    /// <param name="repoPath">The local path to the repository.</param>
-    /// <param name="directoryPath">The directory path within the repository. Empty for root.</param>
-    /// <param name="reference">The git reference (branch, tag, commit SHA). Defaults to HEAD.</param>
-    /// <param name="recursive">Whether to list files recursively.</param>
-    /// <param name="token">Cancellation token.</param>
-    /// <returns>List of files in the directory.</returns>
-    Task<IEnumerable<GitFile>> ListFilesAsync(string repoPath, string directoryPath = "", string reference = "HEAD", bool recursive = false, CancellationToken token = default);
+    /// <param name="git">The Git repository entity to query.</param>
+    /// <param name="pagination">Pagination parameters to control the number of branches returned.</param>
+    /// <param name="token">A cancellation token to cancel the operation.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains a collection of <see cref="GitBranch"/> objects.</returns>
+    public Task<IEnumerable<GitBranch>> GetBranchesAsync(Git git, IPagination pagination, CancellationToken token = default);
 
     /// <summary>
-    /// Gets the commit history for a repository.
+    /// Associates an SSH public key with a specific user for Git authentication.
     /// </summary>
-    /// <param name="repoPath">The local path to the repository.</param>
-    /// <param name="reference">The git reference to start from. Defaults to HEAD.</param>
-    /// <param name="maxCount">Maximum number of commits to return.</param>
-    /// <param name="token">Cancellation token.</param>
-    /// <returns>List of commits.</returns>
-    Task<IEnumerable<GitCommit>> GetCommitsAsync(string repoPath, string reference = "HEAD", int maxCount = 50, CancellationToken token = default);
+    /// <param name="user">The user entity to associate the key with.</param>
+    /// <param name="publicKey">The SSH public key string.</param>
+    /// <param name="token">A cancellation token to cancel the operation.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    public Task AddUserPublicKeyAsync(User user, string publicKey, CancellationToken token = default);
 
     /// <summary>
-    /// Gets the branches in a repository.
+    /// Removes an SSH public key associated with a specific user.
     /// </summary>
-    /// <param name="repoPath">The local path to the repository.</param>
-    /// <param name="token">Cancellation token.</param>
-    /// <returns>List of branches.</returns>
-    Task<IEnumerable<GitBranch>> GetBranchesAsync(string repoPath, CancellationToken token = default);
+    /// <param name="user">The user entity to remove the key from.</param>
+    /// <param name="publicKey">The SSH public key string to remove.</param>
+    /// <param name="token">A cancellation token to cancel the operation.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    public Task RemoveUserPublicKeyAsync(User user, string publicKey, CancellationToken token = default);
 
     /// <summary>
-    /// Creates a commit with the specified files.
+    /// Updates the visibility status (public or private) of a Git repository.
     /// </summary>
-    /// <param name="repoPath">The local path to the repository.</param>
-    /// <param name="message">The commit message.</param>
-    /// <param name="authorName">The author name.</param>
-    /// <param name="authorEmail">The author email.</param>
-    /// <param name="files">Dictionary of file paths to their content.</param>
-    /// <param name="token">Cancellation token.</param>
-    /// <returns>The created commit.</returns>
-    Task<GitCommit> CommitAsync(string repoPath, string message, string authorName, string authorEmail, Dictionary<string, string> files, CancellationToken token = default);
-
-    /// <summary>
-    /// Pushes commits to the remote repository.
-    /// </summary>
-    /// <param name="repoPath">The local path to the repository.</param>
-    /// <param name="remoteName">The remote name. Defaults to "origin".</param>
-    /// <param name="branchName">The branch to push. Defaults to current branch.</param>
-    /// <param name="token">Cancellation token.</param>
-    Task PushAsync(string repoPath, string remoteName = "origin", string? branchName = null, CancellationToken token = default);
-
-    /// <summary>
-    /// Pulls changes from the remote repository.
-    /// </summary>
-    /// <param name="repoPath">The local path to the repository.</param>
-    /// <param name="remoteName">The remote name. Defaults to "origin".</param>
-    /// <param name="branchName">The branch to pull. Defaults to current branch.</param>
-    /// <param name="token">Cancellation token.</param>
-    Task PullAsync(string repoPath, string remoteName = "origin", string? branchName = null, CancellationToken token = default);
-
-    /// <summary>
-    /// Initializes a new repository on the git server.
-    /// </summary>
-    /// <param name="repoName">The name of the repository to create.</param>
-    /// <param name="description">Optional description for the repository.</param>
-    /// <param name="isPrivate">Whether the repository should be private.</param>
-    /// <param name="token">Cancellation token.</param>
-    /// <returns>The URL of the created repository.</returns>
-    Task<string> CreateRepositoryAsync(string repoName, string? description = null, bool isPrivate = false, CancellationToken token = default);
-
-    /// <summary>
-    /// Deletes a repository from the git server.
-    /// </summary>
-    /// <param name="repoName">The name of the repository to delete.</param>
-    /// <param name="token">Cancellation token.</param>
-    Task DeleteRepositoryAsync(string repoName, CancellationToken token = default);
+    /// <param name="git">The Git repository entity to update.</param>
+    /// <param name="visible">If set to <c>true</c>, makes the repository public; otherwise, makes it private.</param>
+    /// <param name="token">A cancellation token to cancel the operation.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    public Task SetRepositoryVisibilityAsync(Git git, bool visible, CancellationToken token = default);
 }

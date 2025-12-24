@@ -22,8 +22,8 @@ public static class GitFactory
     public static Faker<Git> Create() => new Faker<Git>()
         .RuleFor(g => g.Id, f => f.Random.Guid())
         .RuleFor(g => g.Name, f => f.Hacker.Noun().ToLowerInvariant().Replace(" ", "-"))
-        .RuleFor(g => g.Namespace, f => f.Internet.UserName().ToLowerInvariant())
-        .RuleFor(g => g.Url, (f, g) => $"https://git.example.com/{g.Namespace}/{g.Name}")
+        .RuleFor(g => g.Owner, f => f.Internet.UserName().ToLowerInvariant())
+        .RuleFor(g => g.Name, f => f.Internet.UserName().ToLowerInvariant())
         .RuleFor(g => g.Ownership, f => f.PickRandom<EntityOwnership>())
         .RuleFor(g => g.CreatedAt, f => f.Date.PastOffset(1))
         .RuleFor(g => g.UpdatedAt, (f, g) => g.CreatedAt);

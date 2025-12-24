@@ -152,3 +152,6 @@ logs/
 *.log
 
 # Node modules
+
+# Other
+soft-serve-data/

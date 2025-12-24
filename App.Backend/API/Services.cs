@@ -31,6 +31,7 @@ using Microsoft.OpenApi;
 using Keycloak.AuthServices.Common;
 
 using App.Backend.API.Filters;
+using Renci.SshNet;
 
 namespace App.Backend.API;
 
@@ -167,11 +168,22 @@ public static class Services
         // // builder.Services.AddTransient<IResend, ResendClient>();
         // // builder.Services.AddSingleton<INotificationQueue, InMemoryNotificationQueue>();
         builder.Services.AddSingleton(TimeProvider.System);
+        // builder.Services.AddSingleton(sp =>
+        // {
+        //     var sshClient = new SshClient(
+        //         builder.Configuration.GetValue<string>("GitService:Host"),
+        //         builder.Configuration.GetValue<int>("GitService:Port"),
+        //         builder.Configuration.GetValue<string>("GitService:User"),
+        //         new PrivateKeyFile(builder.Configuration.GetValue<string>("GitService:PrivateKeyPath"))
+        //     );
+        //     sshClient.Connect();
+        //     return sshClient;
+        // });
 
         // Git Service
-        builder.Services.Configure<GitServiceOptions>(
-            builder.Configuration.GetSection(GitServiceOptions.SectionName));
-        builder.Services.AddSingleton<IGitService, GitService>();
+        // builder.Services.Configure<GitServiceOptions>(
+        //     builder.Configuration.GetSection(GitServiceOptions.SectionName));
+        // builder.Services.AddSingleton<IGitService, GitService>();
 
         // Quartz
         builder.Services.AddQuartz(quartz =>

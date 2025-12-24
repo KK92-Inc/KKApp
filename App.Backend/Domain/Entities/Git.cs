@@ -18,18 +18,14 @@ public class Git : BaseEntity
     public Git()
     {
         Name = string.Empty;
-        Namespace = string.Empty;
-        Url = string.Empty;
+        Owner = string.Empty;
     }
 
     [Column("name")]
     public string Name { get; set; }
 
-    [Column("namespace")]
-    public string Namespace { get; set; }
-
-    [Column("url")]
-    public string Url { get; set; }
+    [Column("owner")]
+    public string Owner { get; set; }
 
     [Column("ownership")]
     public EntityOwnership Ownership { get; set; }

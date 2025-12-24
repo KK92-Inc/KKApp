@@ -19,16 +19,16 @@ public class UserProjectService(DatabaseContext ctx) : BaseService<UserProject>(
 {
     private readonly DatabaseContext context = ctx;
 
-    public async Task<UserProjectTransaction?> RecordAsync(Guid upId, Guid? userId, UserProjectTransactionVariant type)
-    {
-        var transaction = await ctx.UserProjectTransactions.AddAsync(new UserProjectTransaction()
-        {
-            UserId = userId,
-            UserProjectId = upId,
-            Type = type,
-        });
+    // public async Task<UserProjectTransaction?> RecordAsync(Guid upId, Guid? userId, UserProjectTransactionVariant type)
+    // {
+    //     var transaction = await ctx.UserProjectTransactions.AddAsync(new UserProjectTransaction()
+    //     {
+    //         UserId = userId,
+    //         UserProjectId = upId,
+    //         Type = type,
+    //     });
 
-        await ctx.SaveChangesAsync();
-        return transaction.Entity;
-    }
+    //     await ctx.SaveChangesAsync();
+    //     return transaction.Entity;
+    // }
 }

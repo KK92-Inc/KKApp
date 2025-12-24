@@ -17,10 +17,7 @@ using App.Backend.Domain.Enums;
 
 namespace App.Backend.Core.Services.Implementation;
 
-public class SubscriptionService(
-    DatabaseContext ctx,
-    IUserProjectService userProject
-) : ISubscriptionService
+public class SubscriptionService(DatabaseContext ctx) : ISubscriptionService
 {
     public async Task<UserCursus> SubscribeToCursusAsync(Guid userId, Guid cursusId)
     {
@@ -103,12 +100,18 @@ public class SubscriptionService(
         }
 
         // Lets check all the user projects under this goal
-        var state = await ctx.GoalProject
+        var projectStats = await ctx.GoalProject
             .Where(gp => gp.GoalId == goalId)
-            .AllAsync(gp => ctx.UserProjects
-            .Where(up => up.ProjectId == gp.ProjectId && up.Members
-                .Any(m => m.UserId == userId))
-            .Any(up => up.State == EntityObjectState.Completed))
+            .Select(gp => new
+            {
+                IsCompleted = ctx.UserProjects.Any(up =>
+                    up.ProjectId == gp.ProjectId &&
+                    up.Members.Any(m => m.UserId == userId) &&
+                    up.State == EntityObjectState.Completed)
+            })
+            .ToListAsync();
+
+        var state = projectStats.Count > 0 && projectStats.All(p => p.IsCompleted)
             ? EntityObjectState.Completed
             : EntityObjectState.Active;
 
@@ -139,39 +142,45 @@ public class SubscriptionService(
     public async Task<UserProject> SubscribeToProjectAsync(Guid userId, Guid projectId)
     {
         var up = await ctx.UserProjects
-            .Where(up => up.ProjectId == projectId && up.Members
-            .Any(m => m.UserId == userId))
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(up => up.ProjectId == projectId && up.Members.Any(m => m.UserId == userId));
 
         if (up is not null)
         {
-            switch (up.State)
-            {
-                case EntityObjectState.Active:
-                    throw new ServiceException(409, "Already subscribed to this project");
-                case EntityObjectState.Inactive:
+            if (up.State == EntityObjectState.Active)
+                throw new ServiceException(409, "Already subscribed to this project");
 
-                    up.State = EntityObjectState.Active;
-                    await userProject.RecordAsync(up.Id, userId, UserProjectTransactionVariant.StateChangedToActive);
-                    return up;
-                default:
-                    throw new ServiceException(400, "Cannot subscribe to this project in its current state");
-            }
+            if (up.State != EntityObjectState.Inactive)
+                throw new ServiceException(400, "Cannot subscribe to this project in its current state");
+
+            up.State = EntityObjectState.Active;
+            ctx.UserProjects.Update(up);
+            await ctx.UserProjectTransactions.AddAsync(new ()
+            {
+                UserId = userId,
+                UserProjectId = up.Id,
+                Type = UserProjectTransactionVariant.StateChangedToActive,
+            });
+
+            await ctx.SaveChangesAsync();
+            return up;
         }
 
-        var result = await ctx.UserProjects.AddAsync(new UserProject()
+        up = new UserProject
         {
             ProjectId = projectId,
             State = EntityObjectState.Active,
-            Members =
-            [
-                // NOTE(W2): Fresh new sessions always start with the first user as leader
-                new () { UserId = userId, Role = UserProjectRole.Leader }
-            ]
+            Members = [new() { UserId = userId, Role = UserProjectRole.Leader }]
+        };
+
+        await ctx.UserProjects.AddAsync(up);
+        await ctx.UserProjectTransactions.AddAsync(new ()
+        {
+            UserId = userId,
+            UserProjectId = up.Id,
+            Type = UserProjectTransactionVariant.Started,
         });
 
-        up = result.Entity;
-        await userProject.RecordAsync(up.Id, userId, UserProjectTransactionVariant.Started);
+        await ctx.SaveChangesAsync();
         return up;
     }
 
@@ -189,13 +198,24 @@ public class SubscriptionService(
         {
             up.State = EntityObjectState.Inactive;
             ctx.UserProjects.Update(up);
-            await userProject.RecordAsync(up.Id, userId, UserProjectTransactionVariant.StateChangedToInActive);
+            await ctx.UserProjectTransactions.AddAsync(new ()
+            {
+                UserId = userId,
+                UserProjectId = up.Id,
+                Type = UserProjectTransactionVariant.StateChangedToActive,
+            });
+            await ctx.SaveChangesAsync();
         }
 
         // Rule 2: If the user is just a member, remove them from the session.
         up.Members.Remove(member);
         ctx.UserProjects.Update(up);
-        await userProject.RecordAsync(up.Id, userId, UserProjectTransactionVariant.MemberLeft);
-
+        await ctx.UserProjectTransactions.AddAsync(new ()
+        {
+            UserId = userId,
+            UserProjectId = up.Id,
+            Type = UserProjectTransactionVariant.MemberLeft,
+        });
+        await ctx.SaveChangesAsync();
     }
 }

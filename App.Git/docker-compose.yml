@@ -1,7 +1,0 @@
-services:
-  gitaly:
-    build:
-      context: ./gitaly
-      dockerfile: Dockerfile
-    container_name: gitaly
-    hostname: gitaly

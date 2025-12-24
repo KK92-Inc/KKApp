@@ -47,6 +47,11 @@ public class User : BaseEntity
 
     //= Relations =//
 
+    /// <summary>
+    /// SSH keys associated with this user for git operations.
+    /// </summary>
+    public virtual ICollection<SshKey> SshKeys { get; set; } = [];
+
     // public virtual ICollection<Review> Rubricer { get; set; }
     // public virtual ICollection<Project> CreatedProjects { get; set; }
     // public virtual ICollection<Rubric> CreatedRubrics { get; set; }

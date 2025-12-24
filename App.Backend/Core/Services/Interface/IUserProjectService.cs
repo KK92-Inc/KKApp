@@ -20,5 +20,5 @@ public interface IUserProjectService : IDomainService<UserProject>
     /// <param name="userId"></param>
     /// <param name="type"></param>
     /// <returns></returns>
-    public Task<UserProjectTransaction?> RecordAsync(Guid upId, Guid? userId, UserProjectTransactionVariant type);
+    // public Task<UserProjectTransaction?> RecordAsync(Guid upId, Guid? userId, UserProjectTransactionVariant type);
 }
