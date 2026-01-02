@@ -30,10 +30,18 @@ public class ReviewDO(Review review) : BaseEntityDO<Review>(review)
     [Required]
     public Guid UserProjectId { get; set; } = review.UserProjectId;
 
+    [Required]
+    public Guid RubricId { get; set; } = review.RubricId;
+
     /// <summary>
     /// The user performing the review, if assigned.
     /// </summary>
     public UserLightDO? Reviewer { get; set; } = review.Reviewer;
+
+    /// <summary>
+    /// The rubric used for this review.
+    /// </summary>
+    public RubricDO? Rubric { get; set; } = review.Rubric;
 
     public static implicit operator ReviewDO?(Review? review) =>
         review is null ? null : new(review);

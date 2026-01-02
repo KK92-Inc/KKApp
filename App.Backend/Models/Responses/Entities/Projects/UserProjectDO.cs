@@ -6,6 +6,7 @@
 using System.ComponentModel.DataAnnotations;
 using App.Backend.Domain.Entities.Users;
 using App.Backend.Domain.Enums;
+using App.Backend.Models.Responses.Entities.Reviews;
 
 // ============================================================================
 
@@ -23,6 +24,11 @@ public class UserProjectDO(UserProject userProject) : BaseEntityDO<UserProject>(
     public Guid ProjectId { get; set; } = userProject.ProjectId;
 
     /// <summary>
+    /// The rubric selected for evaluating this project.
+    /// </summary>
+    public Guid? RubricId { get; set; } = userProject.RubricId;
+
+    /// <summary>
     /// The project template this instance is based on.
     /// </summary>
     public ProjectDO? Project { get; set; } = userProject.Project;
@@ -31,6 +37,11 @@ public class UserProjectDO(UserProject userProject) : BaseEntityDO<UserProject>(
     /// Git repository information for this project instance.
     /// </summary>
     public GitDO? GitInfo { get; set; } = userProject.GitInfo;
+
+    /// <summary>
+    /// The rubric selected for evaluating this project.
+    /// </summary>
+    public RubricDO? Rubric { get; set; } = userProject.Rubric;
 
     public static implicit operator UserProjectDO?(UserProject? userProject) =>
         userProject is null ? null : new(userProject);

@@ -150,6 +150,8 @@ public static class Services
         // // Register Transient, Scoped, Singletons, ...
         // // builder.Services.AddScoped<ICursusService, CursusService>();
         builder.Services.AddScoped<IUserService, UserService>();
+        builder.Services.AddScoped<IRuleService, EligibilityService>();
+        builder.Services.AddScoped<IReviewService, ReviewService>();
         // // builder.Services.AddScoped<IUserCursusService, UserCursusService>();
         // // builder.Services.AddScoped<IUserGoalService, UserGoalService>();
         // // builder.Services.AddScoped<IUserProjectService, UserProjectService>();

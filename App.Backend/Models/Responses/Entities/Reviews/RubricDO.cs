@@ -5,6 +5,8 @@
 
 using System.ComponentModel.DataAnnotations;
 using App.Backend.Domain.Entities.Reviews;
+using App.Backend.Domain.Enums;
+using App.Backend.Domain.Rules;
 
 // ============================================================================
 
@@ -19,6 +21,9 @@ public class RubricDO(Rubric rubric) : BaseEntityDO<Rubric>(rubric)
     public string Name { get; set; } = rubric.Name;
 
     [Required]
+    public string Slug { get; set; } = rubric.Slug;
+
+    [Required]
     public string Markdown { get; set; } = rubric.Markdown;
 
     [Required]
@@ -28,18 +33,12 @@ public class RubricDO(Rubric rubric) : BaseEntityDO<Rubric>(rubric)
     public bool Enabled { get; set; } = rubric.Enabled;
 
     [Required]
-    public Guid ProjectId { get; set; } = rubric.ProjectId;
+    public ReviewKinds SupportedReviewKinds { get; set; } = rubric.SupportedReviewKinds;
 
     [Required]
     public Guid CreatorId { get; set; } = rubric.CreatorId;
 
-    [Required]
-    public Guid GitInfoId { get; set; } = rubric.GitInfoId;
-
-    /// <summary>
-    /// The project this rubric belongs to.
-    /// </summary>
-    public Projects.ProjectDO? Project { get; set; } = rubric.Project;
+    public Guid? GitInfoId { get; set; } = rubric.GitInfoId;
 
     /// <summary>
     /// The user who created this rubric.
@@ -50,6 +49,16 @@ public class RubricDO(Rubric rubric) : BaseEntityDO<Rubric>(rubric)
     /// Git information for this rubric.
     /// </summary>
     public GitDO? GitInfo { get; set; } = rubric.GitInfo;
+
+    /// <summary>
+    /// Rules that determine who can be a reviewer.
+    /// </summary>
+    public List<Rule> ReviewerEligibilityRules { get; set; } = rubric.ReviewerEligibilityRules;
+
+    /// <summary>
+    /// Rules that determine who can request a review.
+    /// </summary>
+    public List<Rule> RevieweeEligibilityRules { get; set; } = rubric.RevieweeEligibilityRules;
 
     public static implicit operator RubricDO?(Rubric? rubric) =>
         rubric is null ? null : new(rubric);

@@ -29,7 +29,7 @@ public class DatabaseContext(DbContextOptions<DatabaseContext> options) : DbCont
     public DbSet<UserProject> UserProjects { get; set; }
     public DbSet<UserCursus> UserCursi { get; set; }
     public DbSet<UserGoal> UserGoals { get; set; }
-    public DbSet<Rubric> Rubric { get; set; }
+    public DbSet<Rubric> Rubrics { get; set; }
     public DbSet<Review> Reviews { get; set; }
     public DbSet<Git> GitInfo { get; set; }
     public DbSet<Notification> Notifications { get; set; }
