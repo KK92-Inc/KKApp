@@ -32,13 +32,19 @@ public class RuleServiceN(DatabaseContext context) : IRuleService
         return RuleEngineResult.Combine(results);
     }
 
-    public Task<RuleEngineResult> AbleToRequestReviewAsync(Rubric rubric, UserProject up, User user, CancellationToken token = default)
-    {
+
+    public Task<RuleEngineResult> AbleToRequestReviewAsync(Rubric rubric, User user, UserProject up, CancellationToken token = default)
+    {   
+        // 1. Is team leader
+        // 2. Project state allows it
+        // 
         throw new NotImplementedException();
     }
 
-    public Task<RuleEngineResult> AbleToReviewAsync(Rubric rubric, User reviewer, UserProject up, CancellationToken token = default)
+    public async Task<RuleEngineResult> AbleToReviewAsync(Rubric rubric, User reviewer, UserProject up, CancellationToken token = default)
     {
+        // Evalutaes the rules
+        return await EvaluateAsync()
         throw new NotImplementedException();
     }
 
@@ -97,7 +103,7 @@ public class RuleServiceN(DatabaseContext context) : IRuleService
         var isMember = await _context.UserProjectMembers
             .Where(m => m.UserId == context.User.Id && m.UserProjectId == context.UserProject.Id)
             .AnyAsync(ct);
-        
+
         if (!isMember)
             return RuleEngineResult.Failure(r.Description ?? "User is not a member of the project instance");
         return RuleEngineResult.Success();
@@ -164,6 +170,4 @@ public class RuleServiceN(DatabaseContext context) : IRuleService
     {
         throw new NotImplementedException();
     }
-
-    #endregion
 }

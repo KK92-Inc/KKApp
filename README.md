@@ -22,3 +22,7 @@ dotnet run --project src/apphost.cs
 ```
 
 This will spin up the Postgres database, run migrations, start the Backend API, and launch the Frontend.
+
+## Notes
+
+Learn more about local [secrets](https://learn.microsoft.com/en-us/aspnet/core/security/app-secrets?view=aspnetcore-10.0&tabs=linux).

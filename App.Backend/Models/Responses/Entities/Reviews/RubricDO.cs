@@ -53,12 +53,12 @@ public class RubricDO(Rubric rubric) : BaseEntityDO<Rubric>(rubric)
     /// <summary>
     /// Rules that determine who can be a reviewer.
     /// </summary>
-    public List<Rule> ReviewerEligibilityRules { get; set; } = rubric.ReviewerEligibilityRules;
+    // public List<Rule> ReviewerEligibilityRules { get; set; } = rubric.ReviewerEligibilityRules;
 
     /// <summary>
     /// Rules that determine who can request a review.
     /// </summary>
-    public List<Rule> RevieweeEligibilityRules { get; set; } = rubric.RevieweeEligibilityRules;
+    // public List<Rule> RevieweeEligibilityRules { get; set; } = rubric.RevieweeEligibilityRules;
 
     public static implicit operator RubricDO?(Rubric? rubric) =>
         rubric is null ? null : new(rubric);

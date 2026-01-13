@@ -141,6 +141,7 @@ public static class Services
         builder.AddNpgsqlDbContext<DatabaseContext>("peeru-db", null, options =>
         {
             options.UseLazyLoadingProxies();
+            options.AddInterceptors(new SshKeyInterceptor());
             options.AddInterceptors(new SavingChangesInterceptor(TimeProvider.System));
             options.UseNpgsql(builder.Configuration.GetConnectionString("peeru-db"));
             if (builder.Environment.IsDevelopment())
@@ -150,7 +151,7 @@ public static class Services
         // // Register Transient, Scoped, Singletons, ...
         // // builder.Services.AddScoped<ICursusService, CursusService>();
         builder.Services.AddScoped<IUserService, UserService>();
-        builder.Services.AddScoped<IRuleService, EligibilityService>();
+        builder.Services.AddScoped<IRuleService, RuleServiceN>();
         builder.Services.AddScoped<IReviewService, ReviewService>();
         // // builder.Services.AddScoped<IUserCursusService, UserCursusService>();
         // // builder.Services.AddScoped<IUserGoalService, UserGoalService>();

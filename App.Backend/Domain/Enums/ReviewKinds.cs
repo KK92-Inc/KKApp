@@ -16,11 +16,6 @@ namespace App.Backend.Domain.Enums;
 public enum ReviewKinds
 {
     /// <summary>
-    /// No review types supported.
-    /// </summary>
-    None = 0,
-
-    /// <summary>
     /// Supports self-reflection reviews.
     /// </summary>
     Self = 1 << 0,

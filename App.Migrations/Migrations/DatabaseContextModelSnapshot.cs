@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 using App.Backend.Database;
-using App.Backend.Domain.Entities.Reviews;
+using App.Backend.Domain.Rules;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
@@ -460,15 +460,15 @@ namespace Migrations.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("public");
 
-                    b.Property<List<Rule>>("RevieweeEligibilityRules")
+                    b.Property<ICollection<Rule>>("RevieweeRules")
                         .IsRequired()
                         .HasColumnType("jsonb")
-                        .HasColumnName("reviewee_eligibility_rules");
+                        .HasColumnName("reviewee_rules");
 
-                    b.Property<List<Rule>>("ReviewerEligibilityRules")
+                    b.Property<ICollection<Rule>>("ReviewerRules")
                         .IsRequired()
                         .HasColumnType("jsonb")
-                        .HasColumnName("reviewer_eligibility_rules");
+                        .HasColumnName("reviewer_rules");
 
                     b.Property<string>("Slug")
                         .IsRequired()
@@ -647,40 +647,25 @@ namespace Migrations.Migrations
 
             modelBuilder.Entity("App.Backend.Domain.Entities.Users.SshKey", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id")
+                    b.Property<string>("Fingerprint")
+                        .HasColumnType("text")
+                        .HasColumnName("fingerprint")
                         .HasColumnOrder(0);
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<string>("Fingerprint")
+                    b.Property<string>("KeyBlob")
                         .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)")
-                        .HasColumnName("fingerprint");
+                        .HasColumnType("text")
+                        .HasColumnName("blob");
 
                     b.Property<string>("KeyType")
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
-                        .HasColumnName("key_type");
-
-                    b.Property<DateTimeOffset?>("LastUsedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("last_used_at");
-
-                    b.Property<string>("PublicKey")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("public_key");
-
-                    b.Property<bool>("SyncedToGitServer")
-                        .HasColumnType("boolean")
-                        .HasColumnName("synced_to_git_server");
+                        .HasColumnName("type");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -696,7 +681,7 @@ namespace Migrations.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("user_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Fingerprint");
 
                     b.HasIndex("UserId");
 

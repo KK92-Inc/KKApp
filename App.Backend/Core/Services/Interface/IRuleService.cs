@@ -54,8 +54,8 @@ public interface IRuleService
     /// <returns>The eligibility result.</returns>
     Task<RuleEngineResult> AbleToRequestReviewAsync(
         Rubric rubric,
-        UserProject userProject,
         User user,
+        UserProject userProject,
         CancellationToken token = default
     );
 }

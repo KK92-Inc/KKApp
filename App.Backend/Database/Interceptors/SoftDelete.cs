@@ -1,6 +1,13 @@
+// ============================================================================
+// Copyright (c) 2025 - W2Inc, All Rights Reserved.
+// See README.md in the project root for license information.
+// ============================================================================
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+
+// ============================================================================
 
 namespace App.Backend.Database.Interceptors;
 

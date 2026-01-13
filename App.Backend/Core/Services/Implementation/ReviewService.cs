@@ -93,8 +93,8 @@ public class ReviewService(
             .FirstOrDefaultAsync(u => u.Id == requestingUserId, token)
             ?? throw new ServiceException(404, "Requesting user not found");
 
-        var eligibility = await _eligibilityService.CanReviewAsync(
-            rubric, userProject, requestingUser, token);
+        var eligibility = await _eligibilityService.AbleToReviewAsync(
+            rubric, requestingUser, userProject, token);
 
         if (!eligibility.IsEligible)
         {
@@ -152,8 +152,8 @@ public class ReviewService(
             ?? throw new ServiceException(404, "Reviewer not found");
 
         // 4. Check reviewer eligibility
-        var eligibility = await _eligibilityService.CanRequestReviewAsync(
-            review.Rubric, reviewer, review.UserProject, token);
+        var eligibility = await _eligibilityService.AbleToRequestReviewAsync(
+            review.Rubric, review.UserProject, reviewer, token);
 
         if (!eligibility.IsEligible)
         {

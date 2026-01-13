@@ -1,0 +1,24 @@
+# Basic SSH Config
+Port 22
+Protocol 2
+HostKey /etc/ssh/ssh_host_rsa_key
+HostKey /etc/ssh/ssh_host_ecdsa_key
+HostKey /etc/ssh/ssh_host_ed25519_key
+
+# Disable password auth (keys only)
+PasswordAuthentication no
+ChallengeResponseAuthentication no
+UsePAM yes
+
+# --- THE MAGIC PART ---
+
+# 1. Where to find keys? Ask this script!
+# %u replaces with the username (which will always be "git")
+# %f is the fingerprint (optional, if you want to optimize)
+AuthorizedKeysCommand /usr/local/bin/auth-lookup.ts %u %f %t %k
+AuthorizedKeysCommandUser root
+
+# 2. Prevent port forwarding (security)
+AllowAgentForwarding no
+AllowTcpForwarding no
+X11Forwarding no

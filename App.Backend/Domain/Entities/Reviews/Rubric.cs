@@ -8,6 +8,7 @@ using System.Text.Json.Serialization;
 using App.Backend.Domain;
 using App.Backend.Domain.Entities.Users;
 using App.Backend.Domain.Enums;
+using App.Backend.Domain.Rules;
 using Microsoft.EntityFrameworkCore;
 
 // ============================================================================
@@ -37,11 +38,10 @@ public class Rubric : BaseEntity
         GitInfo = null;
 
         SupportedReviewKinds = ReviewKinds.All;
-        ReviewerEligibilityRules = [];
-        RevieweeEligibilityRules = [];
-
-        Reviews = [];
+        RevieweeRules = [];
+        ReviewerRules = [];
         UserProjects = [];
+        Reviews = [];
     }
 
     /// <summary>
@@ -77,22 +77,22 @@ public class Rubric : BaseEntity
     /// <summary>
     /// The types of reviews this rubric supports.
     /// </summary>
-    [Column("supported_review_kinds")]
+    [Column("supported_variants")]
     public ReviewKinds SupportedReviewKinds { get; set; }
 
-    // /// <summary>
-    // /// Rules that determine who is eligible to be a reviewer.
-    // /// Stored as JSON.
-    // /// </summary>
-    // [Column("reviewer_eligibility_rules", TypeName = "jsonb")]
-    // public List<Rule> ReviewerEligibilityRules { get; set; }
+    /// <summary>
+    /// Rules that determine who is eligible to be a reviewer.
+    /// Stored as JSON.
+    /// </summary>
+    [Column("reviewer_rules", TypeName = "jsonb")]
+    public ICollection<Rule> ReviewerRules { get; set; }
 
-    // /// <summary>
-    // /// Rules that determine who is eligible to request a review (reviewee).
-    // /// Stored as JSON.
-    // /// </summary>
-    // [Column("reviewee_eligibility_rules", TypeName = "jsonb")]
-    // public List<Rule> RevieweeEligibilityRules { get; set; }
+    /// <summary>
+    /// Rules that determine who is eligible to request a review (reviewee).
+    /// Stored as JSON.
+    /// </summary>
+    [Column("reviewee_rules", TypeName = "jsonb")]
+    public ICollection<Rule> RevieweeRules { get; set; }
 
     /// <summary>
     /// The user who created this rubric.
