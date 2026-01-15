@@ -1,0 +1,36 @@
+# Docker Compose for LOCAL DEVELOPMENT
+# Mounts local files and uses hot-reload where possible
+
+services:
+  git-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: git-api-dev
+    volumes:
+      - ./tmp/repos:/home/git/repos
+    networks:
+      - git-network
+    ports:
+      - "3000:3000"  # Exposed for local testing
+    restart: unless-stopped
+
+  git-ssh:
+    build:
+      context: .
+      dockerfile: Dockerfile.ssh
+    container_name: git-ssh-dev
+    volumes:
+      - ./tmp/repos:/home/git/repos
+      - ./config/sshd_config:/etc/ssh/sshd_config:ro
+    networks:
+      - git-network
+    ports:
+      - "2222:22"
+    restart: unless-stopped
+    depends_on:
+      - git-api
+
+networks:
+  git-network:
+    driver: bridge

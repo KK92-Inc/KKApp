@@ -152,16 +152,16 @@ public class ReviewService(
             ?? throw new ServiceException(404, "Reviewer not found");
 
         // 4. Check reviewer eligibility
-        var eligibility = await _eligibilityService.AbleToRequestReviewAsync(
-            review.Rubric, review.UserProject, reviewer, token);
+        // var eligibility = await _eligibilityService.AbleToRequestReviewAsync(
+        //     review.Rubric, review.UserProject, reviewer, token);
 
-        if (!eligibility.IsEligible)
-        {
-            throw new ServiceException(
-                403,
-                "User is not eligible to be a reviewer",
-                string.Join("; ", eligibility.Reasons));
-        }
+        // if (!eligibility.IsEligible)
+        // {
+        //     throw new ServiceException(
+        //         403,
+        //         "User is not eligible to be a reviewer",
+        //         string.Join("; ", eligibility.Reasons));
+        // }
 
         // 5. For Peer and Self reviews, ensure reviewer is a team member
         if (review.Kind == ReviewVariant.Peer || review.Kind == ReviewVariant.Self)

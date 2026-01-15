@@ -11,7 +11,7 @@ using App.Backend.Domain.Enums;
 
 namespace App.Backend.Core.Services;
 
-public interface ICollaborativeService<T> where T : BaseEntity
+public interface ICollaborativeService<T> where T : BaseTimestampEntity
 {
     /// <summary>
     /// Adds a user to a collaborative project with a specified role.

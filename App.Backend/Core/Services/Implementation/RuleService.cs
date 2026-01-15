@@ -34,21 +34,19 @@ public class RuleServiceN(DatabaseContext context) : IRuleService
 
 
     public Task<RuleEngineResult> AbleToRequestReviewAsync(Rubric rubric, User user, UserProject up, CancellationToken token = default)
-    {   
+    {
         // 1. Is team leader
         // 2. Project state allows it
-        // 
+        //
         throw new NotImplementedException();
     }
 
     public async Task<RuleEngineResult> AbleToReviewAsync(Rubric rubric, User reviewer, UserProject up, CancellationToken token = default)
     {
         // Evalutaes the rules
-        return await EvaluateAsync()
+        // return await EvaluateAsync()
         throw new NotImplementedException();
     }
-
-    #region Rule Evaluators
 
     private async Task<RuleEngineResult> EvaluateRuleAsync(Rule rule, RuleContext ctx, CancellationToken token)
     {

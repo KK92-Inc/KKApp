@@ -49,7 +49,20 @@ var cache = builder.AddValkey("cache")
 // ============================================================================
 // Git Server (Soft Serve) TODO: Migrate to custom solution
 // ============================================================================
-var git = builder.AddContainer("git", "charmcli/soft-serve", "v0.11.1");
+// var git = builder.AddContainer("git", "charmcli/soft-serve", "v0.11.1");
+
+var gitApi = builder.AddDockerfile("git-api", "./App.Repository", "Dockerfile.api")
+    .WithVolume("git-repos", "/home/git/repos")
+    .WithHttpEndpoint(port: 3000, targetPort: 3000, name: "http")
+    .WithLifetime(ContainerLifetime.Persistent);
+
+var gitSsh = builder.AddDockerfile("git-ssh", "./App.Repository", "Dockerfile.ssh")
+    .WithVolume("git-repos", "/home/git/repos")
+    .WithEndpoint(port: 2222, targetPort: 22, scheme: "tcp", name: "ssh")
+    .WithReference(database)
+    .WaitFor(database)
+    .WaitFor(gitApi)
+    .WithLifetime(ContainerLifetime.Persistent);
 
 // ============================================================================
 // Keycloak Identity Provider

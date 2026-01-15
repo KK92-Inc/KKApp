@@ -5,7 +5,7 @@
 
 import { join } from "path";
 import { spawn } from "bun";
-import { existsSync, mkdirSync } from "fs";
+import { existsSync } from "fs";
 
 // ============================================================================
 
@@ -54,10 +54,13 @@ if (!command) {
 const match = command.match(
 	/^(git-upload-pack|git-receive-pack|git-upload-archive) '(.*)'$/
 );
-const [cmd, git, path] = match ?? die("Invalid command format!");
-if (!git || !path) {
+const [cmd, git, rawPath] = match ?? die("Invalid command format!");
+if (!git || !rawPath) {
 	die("Missing Command and/or invalid path");
 }
+
+// Strip leading slash to ensure path is treated as relative to ROOT
+const path = rawPath.replace(/^\/+/, "");
 
 // NOTE(W2): Git repos are created via the API Application
 // App.Backend communicates with that API instead/
@@ -69,8 +72,7 @@ if (!existsSync(fullpath) && git === "git-receive-pack") {
 // Finalize
 // ============================================================================
 
-const proc = spawn([git, path], {
-	cwd: ROOT,
+const proc = spawn([git, fullpath], {
 	stdin: "inherit", // Pipe SSH stdin -> Git stdin
 	stdout: "inherit", // Pipe Git stdout -> SSH stdout
 	stderr: "inherit", // Pipe Git stderr -> SSH stderr

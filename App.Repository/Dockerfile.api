@@ -1,0 +1,43 @@
+# ============================================================================
+# Git API Server - Internal REST API for repository management
+# ============================================================================
+
+# Stage 1: Build the executables
+# ============================================================================
+
+FROM oven/bun:1.3 AS builder
+
+WORKDIR /app
+
+COPY package.json ./
+COPY tsconfig.json ./
+COPY build.ts ./
+COPY src/ ./src/
+
+RUN bun run build.ts
+
+# Stage 2: Runtime container
+# ============================================================================
+
+FROM debian:bookworm-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /home/git/repos
+RUN mkdir -p /etc/service
+
+ENV REPOS=/home/git/repos
+
+# Copy compiled executable from builder stage
+COPY --from=builder /app/output/api-git /usr/local/bin/api-git
+COPY ./config/sevice.toml /etc/service/config.toml
+
+RUN chmod +x /usr/local/bin/api-git
+
+EXPOSE 3000
+VOLUME ["/home/git/repos"]
+
+CMD ["/usr/local/bin/api-git", "/etc/service/config.toml"]

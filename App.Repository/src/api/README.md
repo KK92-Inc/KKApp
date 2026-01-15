@@ -1,3 +1,3 @@
 # GitShell Rest API
 
-Internal API for handling 
+Internal API for handling repositories
