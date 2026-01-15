@@ -27,6 +27,8 @@ var username = builder.AddParameter("postgres-usr", secret: true);
 var password = builder.AddParameter("postgres-pwd", secret: true);
 var keycloakClientSecret = builder.AddParameter("kc-client-secret", secret: true);
 
+builder.AddDockerComposeEnvironment("env");
+
 // ============================================================================
 // PostgreSQL Database
 // ============================================================================

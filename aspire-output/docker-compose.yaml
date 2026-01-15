@@ -1,0 +1,217 @@
+services:
+  env-dashboard:
+    image: "mcr.microsoft.com/dotnet/nightly/aspire-dashboard:latest"
+    ports:
+      - "18888"
+    expose:
+      - "18889"
+      - "18890"
+    networks:
+      - "aspire"
+    restart: "always"
+  postgres-server:
+    image: "docker.io/library/postgres:17.6"
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: "scram-sha-256"
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
+      POSTGRES_USER: "${POSTGRES_USR}"
+      POSTGRES_PASSWORD: "${POSTGRES_PWD}"
+    expose:
+      - "5432"
+    volumes:
+      - type: "volume"
+        target: "/var/lib/postgresql/data"
+        source: "apphost-e7f9f553c0-postgres-server-data"
+        read_only: false
+    networks:
+      - "aspire"
+  cache:
+    image: "docker.io/valkey/valkey:9.0"
+    command:
+      - "-c"
+      - "valkey-server --requirepass $$VALKEY_PASSWORD --save 60 1"
+    entrypoint:
+      - "/bin/sh"
+    environment:
+      VALKEY_PASSWORD: "${CACHE_PASSWORD}"
+    expose:
+      - "6379"
+    volumes:
+      - type: "volume"
+        target: "/data"
+        source: "apphost-e7f9f553c0-cache-data"
+        read_only: false
+    networks:
+      - "aspire"
+  git-api:
+    image: "${GIT_API_IMAGE}"
+    expose:
+      - "3000"
+    volumes:
+      - type: "volume"
+        target: "/home/git/repos"
+        source: "git-repos"
+        read_only: false
+    networks:
+      - "aspire"
+  git-ssh:
+    image: "${GIT_SSH_IMAGE}"
+    environment:
+      ConnectionStrings__peeru-db: "Host=postgres-server;Port=5432;Username=${POSTGRES_USR};Password=${POSTGRES_PWD};Database=peeru-db"
+      PEERU_DB_HOST: "postgres-server"
+      PEERU_DB_PORT: "5432"
+      PEERU_DB_USERNAME: "${POSTGRES_USR}"
+      PEERU_DB_PASSWORD: "${POSTGRES_PWD}"
+      PEERU_DB_URI: "postgresql://${POSTGRES_USR}:${POSTGRES_PWD}@postgres-server:5432/peeru-db"
+      PEERU_DB_JDBCCONNECTIONSTRING: "jdbc:postgresql://postgres-server:5432/peeru-db"
+      PEERU_DB_DATABASENAME: "peeru-db"
+    expose:
+      - "22"
+    volumes:
+      - type: "volume"
+        target: "/home/git/repos"
+        source: "git-repos"
+        read_only: false
+    depends_on:
+      postgres-server:
+        condition: "service_started"
+      git-api:
+        condition: "service_started"
+    networks:
+      - "aspire"
+  keycloak:
+    image: "quay.io/keycloak/keycloak:26.3.3"
+    command:
+      - "start"
+      - "--import-realm"
+    environment:
+      KEYCLOAK_ADMIN: "admin"
+      KEYCLOAK_ADMIN_PASSWORD: "admin"
+      KC_BOOTSTRAP_ADMIN_USERNAME: "admin"
+      KC_BOOTSTRAP_ADMIN_PASSWORD: "admin"
+    ports:
+      - "8080:8080"
+    volumes:
+      - type: "volume"
+        target: "/opt/keycloak/data"
+        source: "apphost-e7f9f553c0-keycloak-data"
+        read_only: false
+      - type: "bind"
+        target: "/opt/keycloak/data/import/student-realm.json"
+        source: "${KEYCLOAK_BINDMOUNT_0}"
+        read_only: false
+    networks:
+      - "aspire"
+  migration-job:
+    image: "${MIGRATION_JOB_IMAGE}"
+    environment:
+      OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EXCEPTION_LOG_ATTRIBUTES: "true"
+      OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EVENT_LOG_ATTRIBUTES: "true"
+      OTEL_DOTNET_EXPERIMENTAL_OTLP_RETRY: "in_memory"
+      ConnectionStrings__peeru-db: "Host=postgres-server;Port=5432;Username=${POSTGRES_USR};Password=${POSTGRES_PWD};Database=peeru-db"
+      PEERU_DB_HOST: "postgres-server"
+      PEERU_DB_PORT: "5432"
+      PEERU_DB_USERNAME: "${POSTGRES_USR}"
+      PEERU_DB_PASSWORD: "${POSTGRES_PWD}"
+      PEERU_DB_URI: "postgresql://${POSTGRES_USR}:${POSTGRES_PWD}@postgres-server:5432/peeru-db"
+      PEERU_DB_JDBCCONNECTIONSTRING: "jdbc:postgresql://postgres-server:5432/peeru-db"
+      PEERU_DB_DATABASENAME: "peeru-db"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://env-dashboard:18889"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_SERVICE_NAME: "migration-job"
+    depends_on:
+      postgres-server:
+        condition: "service_started"
+    networks:
+      - "aspire"
+  backend:
+    image: "${BACKEND_IMAGE}"
+    environment:
+      OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EXCEPTION_LOG_ATTRIBUTES: "true"
+      OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EVENT_LOG_ATTRIBUTES: "true"
+      OTEL_DOTNET_EXPERIMENTAL_OTLP_RETRY: "in_memory"
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      HTTP_PORTS: "${BACKEND_PORT}"
+      ConnectionStrings__peeru-db: "Host=postgres-server;Port=5432;Username=${POSTGRES_USR};Password=${POSTGRES_PWD};Database=peeru-db"
+      PEERU_DB_HOST: "postgres-server"
+      PEERU_DB_PORT: "5432"
+      PEERU_DB_USERNAME: "${POSTGRES_USR}"
+      PEERU_DB_PASSWORD: "${POSTGRES_PWD}"
+      PEERU_DB_URI: "postgresql://${POSTGRES_USR}:${POSTGRES_PWD}@postgres-server:5432/peeru-db"
+      PEERU_DB_JDBCCONNECTIONSTRING: "jdbc:postgresql://postgres-server:5432/peeru-db"
+      PEERU_DB_DATABASENAME: "peeru-db"
+      ConnectionStrings__cache: "cache:6379,password=${CACHE_PASSWORD}"
+      CACHE_HOST: "cache"
+      CACHE_PORT: "6379"
+      CACHE_PASSWORD: "${CACHE_PASSWORD}"
+      CACHE_URI: "valkey://:${CACHE_PASSWORD}@cache:6379"
+      KEYCLOAK_HTTP: "http://keycloak:8080"
+      services__keycloak__http__0: "http://keycloak:8080"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://env-dashboard:18889"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_SERVICE_NAME: "backend"
+    expose:
+      - "${BACKEND_PORT}"
+    depends_on:
+      migration-job:
+        condition: "service_started"
+      postgres-server:
+        condition: "service_started"
+      cache:
+        condition: "service_started"
+      keycloak:
+        condition: "service_started"
+    networks:
+      - "aspire"
+  frontend-app:
+    image: "${FRONTEND_APP_IMAGE}"
+    environment:
+      PORT: "51842"
+      ConnectionStrings__cache: "cache:6379,password=${CACHE_PASSWORD}"
+      CACHE_HOST: "cache"
+      CACHE_PORT: "6379"
+      CACHE_PASSWORD: "${CACHE_PASSWORD}"
+      CACHE_URI: "valkey://:${CACHE_PASSWORD}@cache:6379"
+      API: "http://backend:${BACKEND_PORT}"
+      KC_ID: "intra"
+      KC_REALM: "student"
+      KC_ORIGIN: "http://keycloak:8080"
+      KC_SECRET: "${KC_CLIENT_SECRET}"
+      ORIGIN: "http://frontend-app:51842"
+    ports:
+      - "51842:51842"
+    depends_on:
+      backend:
+        condition: "service_started"
+      keycloak:
+        condition: "service_started"
+    networks:
+      - "aspire"
+  scalar:
+    image: "scalarapi/aspire-api-reference:0.7.4"
+    environment:
+      API_REFERENCE_CONFIG: "W3sicHJveHlVcmwiOiIvc2NhbGFyLXByb3h5Iiwic2VydmVycyI6W3sidXJsIjoiaHR0cDovL2JhY2tlbmQiLCJkZXNjcmlwdGlvbiI6ImJhY2tlbmQifV0sImRlZmF1bHRIdHRwQ2xpZW50Ijp7InRhcmdldEtleSI6IkNTaGFycCIsImNsaWVudEtleSI6Ikh0dHBDbGllbnQifSwiYXV0aGVudGljYXRpb24iOnsicHJlZmVycmVkU2VjdXJpdHlTY2hlbWUiOlsiT0F1dGgyIl0sInNlY3VyaXR5U2NoZW1lcyI6eyJPQXV0aDIiOnsiZmxvd3MiOnsiaW1wbGljaXQiOnsieC1zY2FsYXItY2xpZW50LWlkIjoiaW50cmEifX19fX0sInRoZW1lIjoiU2F0dXJuIiwiZmF2aWNvbiI6ImZhdmljb24uc3ZnIiwiX2ludGVncmF0aW9uIjoiZG90bmV0Iiwic291cmNlcyI6W3sidGl0bGUiOiJiYWNrZW5kIHwgdjEiLCJ1cmwiOiJodHRwOi8vYmFja2VuZC9vcGVuYXBpL3YxLmpzb24ifV19XQ=="
+      CDN_URL: "scalar.js"
+      ALLOW_SELF_SIGNED_CERTIFICATES: "False"
+      DEFAULT_PROXY: "True"
+      KEYCLOAK_HTTP: "http://keycloak:8080"
+      services__keycloak__http__0: "http://keycloak:8080"
+      BACKEND_HTTP: "http://backend:${BACKEND_PORT}"
+      services__backend__http__0: "http://backend:${BACKEND_PORT}"
+      BACKEND_HTTPS: "https://backend:${BACKEND_PORT}"
+    ports:
+      - "8080"
+    networks:
+      - "aspire"
+networks:
+  aspire:
+    driver: "bridge"
+volumes:
+  apphost-e7f9f553c0-postgres-server-data:
+    driver: "local"
+  apphost-e7f9f553c0-cache-data:
+    driver: "local"
+  git-repos:
+    driver: "local"
+  apphost-e7f9f553c0-keycloak-data:
+    driver: "local"

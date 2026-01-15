@@ -12,7 +12,6 @@ import createClient from 'openapi-fetch';
 import type { paths } from '$lib/api/api';
 import { Log } from '$lib/log';
 import { MetaData } from './routes/index.svelte';
-import { permissions } from './routes/auth/auth.remote';
 
 // ============================================================================
 
