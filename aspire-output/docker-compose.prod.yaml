@@ -1,0 +1,199 @@
+# ============================================================================
+# Production Docker Compose - Uses images from GitHub Container Registry
+# ============================================================================
+# This file is designed for production deployment using pre-built images
+# from ghcr.io instead of building locally.
+#
+# Usage:
+#   1. Copy .env.template to .env and configure your secrets
+#   2. Login to ghcr.io: docker login ghcr.io -u YOUR_GITHUB_USERNAME
+#   3. Run: docker compose -f docker-compose.prod.yaml up -d
+# ============================================================================
+
+services:
+  # ==========================================================================
+  # Infrastructure Services
+  # ==========================================================================
+
+  postgres-server:
+    image: docker.io/library/postgres:17.6
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
+      POSTGRES_USER: ${POSTGRES_USR}
+      POSTGRES_PASSWORD: ${POSTGRES_PWD}
+    expose:
+      - "5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USR}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  cache:
+    image: docker.io/valkey/valkey:9.0
+    command: ["-c", "valkey-server --requirepass $$VALKEY_PASSWORD --save 60 1"]
+    entrypoint: ["/bin/sh"]
+    environment:
+      VALKEY_PASSWORD: ${CACHE_PASSWORD}
+    expose:
+      - "6379"
+    volumes:
+      - cache-data:/data
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "valkey-cli", "-a", "${CACHE_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.3.3
+    command: ["start", "--import-realm"]
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:-admin}
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:-admin}
+      KC_HOSTNAME_STRICT: "false"
+      KC_PROXY_HEADERS: xforwarded
+    ports:
+      - "8080:8080"
+    volumes:
+      - keycloak-data:/opt/keycloak/data
+      - ${KEYCLOAK_REALM_CONFIG:-./config/student-realm.json}:/opt/keycloak/data/import/student-realm.json:ro
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # ==========================================================================
+  # Git Services
+  # ==========================================================================
+
+  git-api:
+    image: ${REGISTRY_PREFIX}/git-api:${IMAGE_TAG:-latest}
+    expose:
+      - "3000"
+    volumes:
+      - git-repos:/home/git/repos
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  git-ssh:
+    image: ${REGISTRY_PREFIX}/git-ssh:${IMAGE_TAG:-latest}
+    environment:
+      ConnectionStrings__peeru-db: "Host=postgres-server;Port=5432;Username=${POSTGRES_USR};Password=${POSTGRES_PWD};Database=peeru-db"
+      PEERU_DB_HOST: postgres-server
+      PEERU_DB_PORT: "5432"
+      PEERU_DB_USERNAME: ${POSTGRES_USR}
+      PEERU_DB_PASSWORD: ${POSTGRES_PWD}
+      PEERU_DB_URI: "postgresql://${POSTGRES_USR}:${POSTGRES_PWD}@postgres-server:5432/peeru-db"
+      PEERU_DB_DATABASENAME: peeru-db
+    ports:
+      - "2222:22"
+    volumes:
+      - git-repos:/home/git/repos
+    depends_on:
+      postgres-server:
+        condition: service_healthy
+      git-api:
+        condition: service_started
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # ==========================================================================
+  # Application Services
+  # ==========================================================================
+
+  migration-job:
+    image: ${REGISTRY_PREFIX}/migration-job:${IMAGE_TAG:-latest}
+    environment:
+      ConnectionStrings__peeru-db: "Host=postgres-server;Port=5432;Username=${POSTGRES_USR};Password=${POSTGRES_PWD};Database=peeru-db"
+      PEERU_DB_HOST: postgres-server
+      PEERU_DB_PORT: "5432"
+      PEERU_DB_USERNAME: ${POSTGRES_USR}
+      PEERU_DB_PASSWORD: ${POSTGRES_PWD}
+      PEERU_DB_URI: "postgresql://${POSTGRES_USR}:${POSTGRES_PWD}@postgres-server:5432/peeru-db"
+      PEERU_DB_DATABASENAME: peeru-db
+    depends_on:
+      postgres-server:
+        condition: service_healthy
+    networks:
+      - app-network
+    # Migration job runs once and exits
+    restart: "no"
+
+  backend:
+    image: ${REGISTRY_PREFIX}/backend:${IMAGE_TAG:-latest}
+    environment:
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      HTTP_PORTS: ${BACKEND_PORT:-8080}
+      ConnectionStrings__peeru-db: "Host=postgres-server;Port=5432;Username=${POSTGRES_USR};Password=${POSTGRES_PWD};Database=peeru-db"
+      PEERU_DB_HOST: postgres-server
+      PEERU_DB_PORT: "5432"
+      PEERU_DB_USERNAME: ${POSTGRES_USR}
+      PEERU_DB_PASSWORD: ${POSTGRES_PWD}
+      PEERU_DB_URI: "postgresql://${POSTGRES_USR}:${POSTGRES_PWD}@postgres-server:5432/peeru-db"
+      PEERU_DB_DATABASENAME: peeru-db
+      ConnectionStrings__cache: "cache:6379,password=${CACHE_PASSWORD}"
+      CACHE_HOST: cache
+      CACHE_PORT: "6379"
+      CACHE_PASSWORD: ${CACHE_PASSWORD}
+      CACHE_URI: "valkey://:${CACHE_PASSWORD}@cache:6379"
+      KEYCLOAK_HTTP: http://keycloak:8080
+      services__keycloak__http__0: http://keycloak:8080
+    expose:
+      - "${BACKEND_PORT:-8080}"
+    depends_on:
+      migration-job:
+        condition: service_completed_successfully
+      cache:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  frontend-app:
+    image: ${REGISTRY_PREFIX}/frontend-app:${IMAGE_TAG:-latest}
+    environment:
+      PORT: "51842"
+      ConnectionStrings__cache: "cache:6379,password=${CACHE_PASSWORD}"
+      CACHE_HOST: cache
+      CACHE_PORT: "6379"
+      CACHE_PASSWORD: ${CACHE_PASSWORD}
+      CACHE_URI: "valkey://:${CACHE_PASSWORD}@cache:6379"
+      API: "http://backend:${BACKEND_PORT:-8080}"
+      KC_ID: intra
+      KC_REALM: student
+      KC_ORIGIN: http://keycloak:8080
+      KC_SECRET: ${KC_CLIENT_SECRET}
+      ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:51842}
+    ports:
+      - "51842:51842"
+    depends_on:
+      - backend
+      - keycloak
+    networks:
+      - app-network
+    restart: unless-stopped
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  cache-data:
+  keycloak-data:
+  git-repos:

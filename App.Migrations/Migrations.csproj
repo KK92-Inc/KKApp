@@ -6,6 +6,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <!-- Make build happy with generated migrations -->
     <NoWarn>$(NoWarn);IDE0161;IDE0005</NoWarn>
+    <!-- Container publishing settings -->
+    <ContainerBaseImage>mcr.microsoft.com/dotnet/runtime:10.0-preview</ContainerBaseImage>
+    <ContainerFamily>noble-chiseled</ContainerFamily>
   </PropertyGroup>
 
   <ItemGroup>

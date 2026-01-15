@@ -1,0 +1,221 @@
+# ============================================================================
+# Build and Publish Docker Images to GitHub Container Registry
+# ============================================================================
+# This workflow builds all application Docker images and pushes them to ghcr.io
+# Images are tagged with the git sha and 'latest' for main branch builds
+# ============================================================================
+
+name: Build and Publish Docker Images
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'App.Backend/**'
+      - 'App.Frontend/**'
+      - 'App.Migrations/**'
+      - 'App.Repository/**'
+      - '.github/workflows/build-images.yml'
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch: # Allow manual triggers
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  # ============================================================================
+  # Build .NET Projects (Backend API + Migrations)
+  # ============================================================================
+  build-dotnet:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        include:
+          - name: backend
+            project: App.Backend/API/App.Backend.API.csproj
+          - name: migration-job
+            project: App.Migrations/Migrations.csproj
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+          dotnet-quality: 'preview'
+
+      - name: Restore dependencies
+        run: dotnet restore ${{ matrix.project }}
+
+      - name: Get repository owner lowercase
+        id: repo
+        run: echo "owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
+      - name: Build and push container image
+        if: github.event_name != 'pull_request'
+        run: |
+          TAGS="${{ github.sha }}"
+          if [ "${{ github.ref }}" = "refs/heads/main" ] || [ "${{ github.ref }}" = "refs/heads/master" ]; then
+            TAGS="${TAGS};latest"
+          fi
+
+          dotnet publish ${{ matrix.project }} \
+            --os linux \
+            --arch x64 \
+            -c Release \
+            -p:ContainerRegistry=${{ env.REGISTRY }} \
+            -p:ContainerRepository=${{ steps.repo.outputs.owner }}/${{ matrix.name }} \
+            -p:ContainerImageTags="\"${TAGS}\"" \
+            -p:PublishProfile=DefaultContainer
+
+      - name: Build container image (PR - no push)
+        if: github.event_name == 'pull_request'
+        run: |
+          dotnet publish ${{ matrix.project }} \
+            --os linux \
+            --arch x64 \
+            -c Release \
+            -p:ContainerRegistry=${{ env.REGISTRY }} \
+            -p:ContainerRepository=${{ steps.repo.outputs.owner }}/${{ matrix.name }} \
+            -p:ContainerImageTags='"pr-${{ github.event.number }}"' \
+            -p:PublishProfile=DefaultContainer \
+            -p:ContainerPushToRegistry=false
+
+  # ============================================================================
+  # Build Dockerfile-based Projects (Frontend, Git API, Git SSH)
+  # ============================================================================
+  build-dockerfiles:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        include:
+          - name: frontend-app
+            context: ./App.Frontend
+            dockerfile: ./App.Frontend/Dockerfile
+          - name: git-api
+            context: ./App.Repository
+            dockerfile: ./App.Repository/Dockerfile.api
+          - name: git-ssh
+            context: ./App.Repository
+            dockerfile: ./App.Repository/Dockerfile.ssh
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.name }}
+          tags: |
+            type=sha,prefix=
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' }}
+            type=ref,event=branch
+            type=ref,event=pr
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ============================================================================
+  # Update docker-compose with new image tags (optional - creates a PR)
+  # ============================================================================
+  update-compose:
+    needs: [build-dotnet, build-dockerfiles]
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Update .env.Production with new image tags
+        run: |
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          SHA=${{ github.sha }}
+
+          cat > aspire-output/.env.Production << EOF
+          # Container image name for backend
+          BACKEND_IMAGE=ghcr.io/${OWNER}/backend:${SHA}
+
+          # Default container port for backend
+          BACKEND_PORT=8080
+
+          # Parameter cache-password
+          CACHE_PASSWORD=\${CACHE_PASSWORD:-changeme}
+
+          # Container image name for frontend-app
+          FRONTEND_APP_IMAGE=ghcr.io/${OWNER}/frontend-app:${SHA}
+
+          # Container image name for git-api
+          GIT_API_IMAGE=ghcr.io/${OWNER}/git-api:${SHA}
+
+          # Container image name for git-ssh
+          GIT_SSH_IMAGE=ghcr.io/${OWNER}/git-ssh:${SHA}
+
+          # Parameter kc-client-secret
+          KC_CLIENT_SECRET=\${KC_CLIENT_SECRET:-changeme}
+
+          # Bind mount source for keycloak
+          KEYCLOAK_BINDMOUNT_0=./config/student-realm.json
+
+          # Container image name for migration-job
+          MIGRATION_JOB_IMAGE=ghcr.io/${OWNER}/migration-job:${SHA}
+
+          # Parameter postgres-pwd
+          POSTGRES_PWD=\${POSTGRES_PWD:-postgres}
+
+          # Parameter postgres-usr
+          POSTGRES_USR=\${POSTGRES_USR:-postgres}
+          EOF
+
+      - name: Commit updated .env.Production
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add aspire-output/.env.Production
+          git diff --staged --quiet || git commit -m "chore: update image tags to ${{ github.sha }}"
+          git push
