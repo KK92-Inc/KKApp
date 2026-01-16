@@ -7,7 +7,7 @@
     <!-- Make build happy with generated migrations -->
     <NoWarn>$(NoWarn);IDE0161;IDE0005</NoWarn>
     <!-- Container publishing settings -->
-    <ContainerBaseImage>mcr.microsoft.com/dotnet/runtime:10.0-preview</ContainerBaseImage>
+    <ContainerBaseImage>mcr.microsoft.com/dotnet/runtime:10.0</ContainerBaseImage>
     <ContainerFamily>noble-chiseled</ContainerFamily>
   </PropertyGroup>
 

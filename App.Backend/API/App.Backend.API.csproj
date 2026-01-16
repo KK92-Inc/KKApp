@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <!-- Container publishing settings -->
-    <ContainerBaseImage>mcr.microsoft.com/dotnet/aspnet:10.0-preview</ContainerBaseImage>
+    <ContainerBaseImage>mcr.microsoft.com/dotnet/aspnet:10.0</ContainerBaseImage>
     <ContainerFamily>noble-chiseled</ContainerFamily>
   </PropertyGroup>
 
