@@ -147,6 +147,10 @@ jobs:
             type=ref,event=branch
             type=ref,event=pr
 
+      - name: Setup frontend environment file
+        if: matrix.name == 'frontend-app'
+        run: cp ./App.Frontend/.env.ci ./App.Frontend/.env
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
@@ -157,65 +161,3 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-  # ============================================================================
-  # Update docker-compose with new image tags (optional - creates a PR)
-  # ============================================================================
-  update-compose:
-    needs: [build-dotnet, build-dockerfiles]
-    runs-on: ubuntu-latest
-    if: github.event_name != 'pull_request'
-    permissions:
-      contents: write
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Update .env.Production with new image tags
-        run: |
-          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          SHA=${{ github.sha }}
-
-          cat > aspire-output/.env.Production << EOF
-          # Container image name for backend
-          BACKEND_IMAGE=ghcr.io/${OWNER}/backend:${SHA}
-
-          # Default container port for backend
-          BACKEND_PORT=8080
-
-          # Parameter cache-password
-          CACHE_PASSWORD=\${CACHE_PASSWORD:-changeme}
-
-          # Container image name for frontend-app
-          FRONTEND_APP_IMAGE=ghcr.io/${OWNER}/frontend-app:${SHA}
-
-          # Container image name for git-api
-          GIT_API_IMAGE=ghcr.io/${OWNER}/git-api:${SHA}
-
-          # Container image name for git-ssh
-          GIT_SSH_IMAGE=ghcr.io/${OWNER}/git-ssh:${SHA}
-
-          # Parameter kc-client-secret
-          KC_CLIENT_SECRET=\${KC_CLIENT_SECRET:-changeme}
-
-          # Bind mount source for keycloak
-          KEYCLOAK_BINDMOUNT_0=./config/student-realm.json
-
-          # Container image name for migration-job
-          MIGRATION_JOB_IMAGE=ghcr.io/${OWNER}/migration-job:${SHA}
-
-          # Parameter postgres-pwd
-          POSTGRES_PWD=\${POSTGRES_PWD:-postgres}
-
-          # Parameter postgres-usr
-          POSTGRES_USR=\${POSTGRES_USR:-postgres}
-          EOF
-
-      - name: Commit updated .env.Production
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add aspire-output/.env.Production
-          git diff --staged --quiet || git commit -m "chore: update image tags to ${{ github.sha }}"
-          git push
