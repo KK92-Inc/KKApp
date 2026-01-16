@@ -75,7 +75,11 @@ var keycloak = builder.AddKeycloakContainer("keycloak")
     .WithImport("./config/student-realm.json")
     .WithExternalHttpEndpoints()
     .WithEnvironment("KC_BOOTSTRAP_ADMIN_USERNAME", "admin")
-    .WithEnvironment("KC_BOOTSTRAP_ADMIN_PASSWORD", "admin");
+    .WithEnvironment("KC_BOOTSTRAP_ADMIN_PASSWORD", "admin")
+    .WithEnvironment("KC_HTTP_ENABLED", "true")
+    .WithEnvironment("KC_HOSTNAME_STRICT", "false")
+    .WithEnvironment("KC_HOSTNAME_STRICT_HTTPS", "false")
+    .WithEnvironment("KC_PROXY_HEADERS", "xforwarded");
 
 var realm = keycloak.AddRealm("student");
 

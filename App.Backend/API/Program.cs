@@ -11,12 +11,9 @@ using App.Backend.API;
 Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateBootstrapLogger();
 Log.Information("Starting up!");
 
-var app = Services.Register(WebApplication.CreateBuilder(args)).Build();
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
 
+var app = Services.Register(WebApplication.CreateBuilder(args)).Build();
+app.MapOpenApi();
 app.UseStatusCodePages();
 app.UseExceptionHandler();
 
