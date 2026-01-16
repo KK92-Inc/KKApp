@@ -92,28 +92,28 @@ public static class Services
             o.AddDocumentTransformer<InfoSchemeTransformer>();
             o.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
             o.AddOperationTransformer<BasicResponsesOperationTransformer>();
-                        o.AddDocumentTransformer((document, context, cancellationToken) =>
+            o.AddDocumentTransformer((document, context, cancellationToken) =>
             {
-                // TODO: Get from config
-                if (builder.Environment.IsDevelopment())
-                    document.Servers = [new() { Url = "http://localhost:3001" }];
                 document.Components ??= new OpenApiComponents();
 
-                var options = builder.Configuration.GetKeycloakOptions<KeycloakAuthenticationOptions>()!;
-                document.Components.SecuritySchemes!.TryAdd("OAuth2", new OpenApiSecurityScheme
+                var options = builder.Configuration.GetKeycloakOptions<KeycloakAuthenticationOptions>();
+                if (options?.KeycloakUrlRealm is not null)
                 {
-                    Name = "Keycloak Server",
-                    OpenIdConnectUrl = new Uri($"{options.KeycloakUrlRealm}protocol/openid-connect"),
-                    Type = SecuritySchemeType.OAuth2,
-                    Flows = new OpenApiOAuthFlows
+                    document.Components.SecuritySchemes!.TryAdd("OAuth2", new OpenApiSecurityScheme
                     {
-                        Implicit = new OpenApiOAuthFlow
+                        Name = "Keycloak Server",
+                        OpenIdConnectUrl = new Uri($"{options.KeycloakUrlRealm}protocol/openid-connect"),
+                        Type = SecuritySchemeType.OAuth2,
+                        Flows = new OpenApiOAuthFlows
                         {
-                            AuthorizationUrl = new Uri($"{options.KeycloakUrlRealm}protocol/openid-connect/auth"),
-                            TokenUrl = new Uri($"{options.KeycloakUrlRealm}protocol/openid-connect/token"),
+                            Implicit = new OpenApiOAuthFlow
+                            {
+                                AuthorizationUrl = new Uri($"{options.KeycloakUrlRealm}protocol/openid-connect/auth"),
+                                TokenUrl = new Uri($"{options.KeycloakUrlRealm}protocol/openid-connect/token"),
+                            }
                         }
-                    }
-                });
+                    });
+                }
 
                 return Task.CompletedTask;
             });
