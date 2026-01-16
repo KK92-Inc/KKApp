@@ -38,7 +38,7 @@ jobs:
         include:
           - name: kk-backend
             project: App.Backend/API/App.Backend.API.csproj
-          - name: migration-job
+          - name: kk-migration
             project: App.Migrations/Migrations.csproj
 
     steps:
