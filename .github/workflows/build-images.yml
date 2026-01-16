@@ -148,7 +148,7 @@ jobs:
             type=ref,event=pr
 
       - name: Setup frontend environment file
-        if: matrix.name == 'frontend-app'
+        if: matrix.name == 'kk-frontend'
         run: cp ./App.Frontend/.env.ci ./App.Frontend/.env
 
       - name: Build and push Docker image
