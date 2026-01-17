@@ -67,11 +67,13 @@ var keycloak = builder.AddKeycloakContainer("keycloak")
     .WithImport("./config/student-realm.json")
     .WithEnvironment("KC_HTTP_ENABLED", "true")
     .WithEnvironment("KC_PROXY_HEADERS", "xforwarded")
+    .WithEnvironment("KC_HOSTNAME_STRICT", "false")
     .WithExternalHttpEndpoints();
 
 var realm = keycloak.AddRealm("student");
 
 var backend = builder.AddProject<Projects.App_Backend_API>("backend")
+    .WithExternalHttpEndpoints()
     .WithReference(database)
     .WithReference(cache)
     .WithReference(keycloak)
@@ -88,6 +90,9 @@ var frontend = builder.AddViteApp("frontend", "./App.Frontend")
     .WaitFor(keycloak)
     .WithReference(realm)
     // Reverse proxy headers
+    .WithEnvironment("S3_ACCESS_KEY_ID", builder.AddParameter("s3-id", secret: true))
+    .WithEnvironment("S3_SECRET_ACCESS_KEY", builder.AddParameter("s3-password", secret: true))
+    .WithEnvironment("KC_SECRET", builder.AddParameter("keycloak-client-secret", secret: true))
     .WithEnvironment("HOST_HEADER", "x-forwarded-host")
     .WithEnvironment("PROTOCOL_HEADER", "x-forwarded-proto")
     .WithEnvironment("ADDRESS_HEADER", "True-Client-IP")

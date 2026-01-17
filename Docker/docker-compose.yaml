@@ -111,6 +111,7 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: "admin"
       KC_HTTP_ENABLED: "true"
       KC_PROXY_HEADERS: "xforwarded"
+      KC_HOSTNAME_STRICT: "false"
     ports:
       - "8080:8080"
     volumes:
@@ -150,7 +151,7 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://env-dashboard:18889"
       OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
       OTEL_SERVICE_NAME: "backend"
-    expose:
+    ports:
       - "${BACKEND_PORT}"
     depends_on:
       migration-job:
@@ -178,6 +179,9 @@ services:
       BACKEND_HTTPS: "https://backend:${BACKEND_PORT}"
       Keycloak__AuthServerUrl: "http://keycloak:8080"
       Keycloak__Realm: "student"
+      S3_ACCESS_KEY_ID: "${S3_ID}"
+      S3_SECRET_ACCESS_KEY: "${S3_PASSWORD}"
+      KC_SECRET: "${KEYCLOAK_CLIENT_SECRET}"
       HOST_HEADER: "x-forwarded-host"
       PROTOCOL_HEADER: "x-forwarded-proto"
       ADDRESS_HEADER: "True-Client-IP"
