@@ -108,6 +108,7 @@ $RECYCLE.BIN/
 
 # dotenv environment variable files
 .env
+.env.*
 
 # ASP.NET Core User Secrets
 *.secrets.json
