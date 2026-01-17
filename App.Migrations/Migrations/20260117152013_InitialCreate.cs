@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Migrations.Migrations
 {
     /// <inheritdoc />
-    public partial class Init : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -199,7 +199,7 @@ namespace Migrations.Migrations
                     markdown = table.Column<string>(type: "text", nullable: false),
                     @public = table.Column<bool>(name: "public", type: "boolean", nullable: false),
                     enabled = table.Column<bool>(type: "boolean", nullable: false),
-                    supported_review_kinds = table.Column<int>(type: "integer", nullable: false),
+                    supported_variants = table.Column<int>(type: "integer", nullable: false),
                     reviewer_rules = table.Column<ICollection<Rule>>(type: "jsonb", nullable: false),
                     reviewee_rules = table.Column<ICollection<Rule>>(type: "jsonb", nullable: false),
                     creator_id = table.Column<Guid>(type: "uuid", nullable: false),

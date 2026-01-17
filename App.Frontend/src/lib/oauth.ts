@@ -14,7 +14,7 @@
 import * as v from 'valibot';
 import * as jose from 'jose';
 import { dev } from '$app/environment';
-import { env as prv } from '$env/dynamic/private';
+import { KC_ORIGIN, KC_REALM, KC_COOKIE, KC_ID, KC_CALLBACK, KC_SECRET } from '$lib/config';
 import { JWSInvalid, JWTClaimValidationFailed, JWTExpired, JWTInvalid } from 'jose/errors';
 import { ensure } from './utils';
 import type { Handle, RequestEvent } from '@sveltejs/kit';
@@ -23,16 +23,16 @@ import { redis } from './redis';
 
 // ============================================================================
 
-const KC_URL = `${prv.KC_ORIGIN}/realms/${prv.KC_REALM}`;
+const KC_URL = `${KC_ORIGIN}/realms/${KC_REALM}`;
 const AUTH_URL = `${KC_URL}/protocol/openid-connect/auth`;
 const CERTS_URL = `${KC_URL}/protocol/openid-connect/certs`;
 const TOKEN_URL = `${KC_URL}/protocol/openid-connect/token`;
 const REVOKE_URL = `${KC_URL}/protocol/openid-connect/logout`;
 
-const COOKIE_REFRESH = `${prv.KC_COOKIE}-R`;
-const COOKIE_ACCESS = `${prv.KC_COOKIE}-A`;
-const COOKIE_STATE = `${prv.KC_COOKIE}-S`;
-const COOKIE_VERIFIER = `${prv.KC_COOKIE}-V`;
+const COOKIE_REFRESH = `${KC_COOKIE}-R`;
+const COOKIE_ACCESS = `${KC_COOKIE}-A`;
+const COOKIE_STATE = `${KC_COOKIE}-S`;
+const COOKIE_VERIFIER = `${KC_COOKIE}-V`;
 
 const JWKS = jose.createRemoteJWKSet(new URL(CERTS_URL));
 
@@ -71,18 +71,18 @@ const tokenSchema = v.object({
 	)
 });
 
-const uma = v.object({
-	...tokenSchema.entries,
-	authorization: v.object({
-		permissions: v.array(
-			v.object({
-				scopes: v.optional(v.array(v.string())),
-				rsid: v.string(),
-				rsname: v.string()
-			})
-		)
-	})
-});
+// const uma = v.object({
+// 	...tokenSchema.entries,
+// 	authorization: v.object({
+// 		permissions: v.array(
+// 			v.object({
+// 				scopes: v.optional(v.array(v.string())),
+// 				rsid: v.string(),
+// 				rsname: v.string()
+// 			})
+// 		)
+// 	})
+// });
 
 /**
  * SvelteKit Handle implementation that enforces Keycloak-based authentication and session creation.
@@ -110,7 +110,7 @@ const handle: Handle = async ({ event, resolve }) => {
 	 * Creates a session from the JWT payload
 	 * @param payload - JWT payload from the verified token
 	 */
-	const useSession = async (payload: unknown, event: RequestEvent): Promise<Session> => {
+	const useSession = async (payload: unknown, _: RequestEvent): Promise<Session> => {
 		const claims = v.parse(tokenSchema, payload);
 		const roles = Object.values(claims.resource_access).flatMap((r) => r.roles);
 
@@ -118,12 +118,12 @@ const handle: Handle = async ({ event, resolve }) => {
 		const fetchPermissions = async (): Promise<string[]> => {
 			const data = await redis.get(`permissions:${claims.sub}`);
 			console.log('Cached Permissions:', data, redis.connected);
-			if (data !== null) {
-				const uma = await Keycloak.ticket(accessToken!);
-				const umaClaims = v.parse(uma, uma);
-				console.log('UMA Ticket:', uma);
-				// return data.split(',');
-			}
+			// if (data !== null) {
+			// 	const uma = await Keycloak.ticket(accessToken!);
+			// 	const umaClaims = v.parse(uma, uma);
+			// 	console.log('UMA Ticket:', uma);
+			// 	// return data.split(',');
+			// }
 			return [];
 		};
 
@@ -302,8 +302,8 @@ class Tokens {
 function create(state: string, verifier: string, scopes: string[] = []): URL {
 	const c = Buffer.from(Bun.SHA256.hash(verifier).buffer).toString('base64url');
 	const params = new URLSearchParams({
-		client_id: prv.KC_ID,
-		redirect_uri: prv.KC_CALLBACK,
+		client_id: KC_ID,
+		redirect_uri: KC_CALLBACK,
 		response_type: 'code',
 		state: state,
 		code_challenge: c,
@@ -333,13 +333,14 @@ function create(state: string, verifier: string, scopes: string[] = []): URL {
 async function exchange(code: string, verifier: string): Promise<Tokens> {
 	const params = new URLSearchParams({
 		grant_type: 'authorization_code',
-		client_id: prv.KC_ID,
-		redirect_uri: prv.KC_CALLBACK,
-		client_secret: prv.KC_SECRET,
+		client_id: KC_ID,
+		redirect_uri: KC_CALLBACK,
+		client_secret: KC_SECRET,
 		code: code,
 		code_verifier: verifier
 	});
 
+	console.log(params, TOKEN_URL);
 	const response = await fetch(TOKEN_URL, {
 		method: 'POST',
 		headers: {
@@ -363,8 +364,8 @@ async function refresh(refreshToken: string): Promise<Tokens> {
 	const params = new URLSearchParams({
 		grant_type: 'refresh_token',
 		refresh_token: refreshToken,
-		client_id: prv.KC_ID,
-		client_secret: prv.KC_SECRET
+		client_id: KC_ID,
+		client_secret: KC_SECRET
 	});
 
 	const response = await fetch(TOKEN_URL, {
@@ -385,7 +386,7 @@ async function refresh(refreshToken: string): Promise<Tokens> {
  * Exchanges access token for UMA ticket (RPT - Requesting Party Token)
  * This gives you a JWT with permissions for protected resources
  */
-async function ticket(accessToken: string, audience: string = prv.KC_ID) {
+async function ticket(accessToken: string, audience: string = KC_ID) {
 	const params = new URLSearchParams({
 		audience,
 		grant_type: 'urn:ietf:params:oauth:grant-type:uma-ticket'
@@ -422,8 +423,8 @@ async function revoke(token?: string, hint?: 'access_token' | 'refresh_token') {
 	if (!token) return;
 	const params = new URLSearchParams({
 		token: token,
-		client_id: prv.KC_ID,
-		client_secret: prv.KC_SECRET
+		client_id: KC_ID,
+		client_secret: KC_SECRET
 	});
 
 	if (hint) {

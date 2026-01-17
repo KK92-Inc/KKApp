@@ -41,8 +41,12 @@
   </ItemGroup>
 
 
+<ItemGroup>
+</ItemGroup>
+
   <ItemGroup>
     <!-- <ProjectReference Include="..\..\backend.defaults\backend.defaults.csproj" /> -->
+    <ProjectReference Include="../../App.Migrations/Migrations.csproj" />
     <ProjectReference Include="../Core/App.Backend.Core.csproj" />
     <ProjectReference Include="../Models/App.Backend.Models.csproj" />
   </ItemGroup>

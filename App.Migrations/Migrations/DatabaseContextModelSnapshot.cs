@@ -477,7 +477,7 @@ namespace Migrations.Migrations
 
                     b.Property<int>("SupportedReviewKinds")
                         .HasColumnType("integer")
-                        .HasColumnName("supported_review_kinds");
+                        .HasColumnName("supported_variants");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")

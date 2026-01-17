@@ -16,7 +16,7 @@ builder.Services.AddHostedService<Initializer>();
 // builder.AddServiceDefaults();
 builder.Services.AddDbContextPool<DatabaseContext>(options =>
 {
-    var connection = builder.Configuration.GetConnectionString("peeru-db");
+    var connection = builder.Configuration.GetConnectionString("db");
     options.UseNpgsql(connection, o => o.MigrationsAssembly("Migrations"));
     if (builder.Environment.IsDevelopment())
         options.EnableSensitiveDataLogging();

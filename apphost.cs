@@ -16,82 +16,47 @@
 #:project App.Migrations/Migrations.csproj
 #:project App.Backend/API/App.Backend.API.csproj
 
+using Aspire.Hosting.JavaScript;
 using Scalar.Aspire;
 
-// ============================================================================
-// Parameters
+// Setup
 // ============================================================================
 
 var builder = DistributedApplication.CreateBuilder(args);
-var username = builder.AddParameter("postgres-usr", secret: true);
-var password = builder.AddParameter("postgres-pwd", secret: true);
-var keycloakClientSecret = builder.AddParameter("kc-client-secret", secret: true);
-
 builder.AddDockerComposeEnvironment("env");
 
-// ============================================================================
-// PostgreSQL Database
+// Storage
 // ============================================================================
 
-var postgres = builder.AddPostgres("postgres-server", username, password)
-    .WithDataVolume()
-    .WithHostPort(52843)
+var postgres = builder.AddPostgres("database")
+    .WithDataVolume(name: "database-volume")
     .WithLifetime(ContainerLifetime.Persistent);
 
-var database = postgres.AddDatabase("peeru-db");
-
-// ============================================================================
-// Valkey Cache
-// ============================================================================
-
-var cache = builder.AddValkey("cache")
-    .WithDataVolume()
+var cache = builder.AddValkey("valkey")
+    .WithDataVolume(name: "cache-volume")
     .WithLifetime(ContainerLifetime.Persistent);
 
-// ============================================================================
-// Git Server (Soft Serve) TODO: Migrate to custom solution
-// ============================================================================
-// var git = builder.AddContainer("git", "charmcli/soft-serve", "v0.11.1");
+var database = postgres.AddDatabase("db");
 
-var gitApi = builder.AddDockerfile("git-api", "./App.Repository", "Dockerfile.api")
-    .WithVolume("git-repos", "/home/git/repos")
-    .WithHttpEndpoint(port: 3000, targetPort: 3000, name: "http")
-    .WithLifetime(ContainerLifetime.Persistent);
-
-var gitSsh = builder.AddDockerfile("git-ssh", "./App.Repository", "Dockerfile.ssh")
-    .WithVolume("git-repos", "/home/git/repos")
-    .WithEndpoint(port: 2222, targetPort: 22, scheme: "tcp", name: "ssh")
-    .WithReference(database)
-    .WaitFor(database)
-    .WaitFor(gitApi)
-    .WithLifetime(ContainerLifetime.Persistent);
-
-// ============================================================================
-// Keycloak Identity Provider
-// ===========================================================================
-
-var keycloak = builder.AddKeycloakContainer("keycloak")
-    .WithDataVolume()
-    .WithImport("./config/student-realm.json")
-    .WithExternalHttpEndpoints()
-    .WithEnvironment("KC_BOOTSTRAP_ADMIN_USERNAME", "admin")
-    .WithEnvironment("KC_BOOTSTRAP_ADMIN_PASSWORD", "admin")
-    .WithEnvironment("KC_HTTP_ENABLED", "true")
-    .WithEnvironment("KC_HOSTNAME_STRICT", "false")
-    .WithEnvironment("KC_HOSTNAME_STRICT_HTTPS", "false")
-    .WithEnvironment("KC_PROXY_HEADERS", "xforwarded");
-
-var realm = keycloak.AddRealm("student");
-
-// ============================================================================
-// Migrations and API Service
+// Migration
 // ============================================================================
 
 var migration = builder.AddProject<Projects.Migrations>("migration-job")
     .WithReference(database)
     .WaitFor(postgres);
 
-var api = builder.AddProject<Projects.App_Backend_API>("backend")
+// ============================================================================
+
+var keycloak = builder.AddKeycloakContainer("keycloak")
+    .WithDataVolume()
+    .WithImport("./config/student-realm.json")
+    .WithEnvironment("KC_HTTP_ENABLED", "true")
+    .WithEnvironment("KC_PROXY_HEADERS", "xforwarded")
+    .WithExternalHttpEndpoints();
+
+var realm = keycloak.AddRealm("student");
+
+var backend = builder.AddProject<Projects.App_Backend_API>("backend")
     .WithReference(database)
     .WithReference(cache)
     .WithReference(keycloak)
@@ -100,63 +65,41 @@ var api = builder.AddProject<Projects.App_Backend_API>("backend")
     .WaitFor(cache)
     .WaitFor(keycloak);
 
-// ============================================================================
-// Frontend
-// ============================================================================
-
-if (builder.ExecutionContext.IsPublishMode)
-{
-    var frontend = builder.AddDockerfile("frontend-app", "./App.Frontend")
-        .WithHttpEndpoint(env: "PORT", port: 51842)
-        .WithExternalHttpEndpoints();
-    ConfigureFrontend(frontend);
-    frontend.WithEnvironment("ORIGIN", frontend.GetEndpoint("http"));
-}
-else
-{
-    var frontend = builder.AddBunApp("frontend-app", "./App.Frontend", "dev")
-        .WithHttpEndpoint(env: "PORT", port: 51842)
-        .WithExternalHttpEndpoints();
-    ConfigureFrontend(frontend);
-    // TODO: ehhh ?
-    frontend.WithEnvironment("ORIGIN", "http://frontend-app-peeru.dev.localhost:51842");
-}
-
-void ConfigureFrontend<T>(IResourceBuilder<T> resource) where T : IResourceWithEnvironment, IResourceWithEndpoints, IResourceWithWaitSupport
-{
-    resource.WaitFor(api)
-        .WaitFor(keycloak)
-        .WithReference(cache)
-        .WithEnvironment("API", api.GetEndpoint("http"))
-        .WithEnvironment("KC_ID", "intra")
-        .WithEnvironment("KC_REALM", "student")
-        .WithEnvironment("KC_ORIGIN", keycloak.GetEndpoint("http"))
-        .WithEnvironment("KC_SECRET", keycloakClientSecret);
-}
-
-// ============================================================================
-// Scalar Hosting
-// ============================================================================
-
-var scalar = builder.AddScalarApiReference(options =>
+var frontend = builder.AddViteApp("frontend", "./App.Frontend")
+    .WaitFor(cache)
+    .WithReference(cache)
+    .WaitFor(backend)
+    .WithReference(backend)
+    .WaitFor(keycloak)
+    .WithReference(realm)
+    // Reverse proxy headers
+    .WithEnvironment("HOST_HEADER", "x-forwarded-host")
+    .WithEnvironment("PROTOCOL_HEADER", "x-forwarded-proto")
+    .WithEnvironment("ADDRESS_HEADER", "True-Client-IP")
+    //TODO: Remove on Aspire 13.2: https://github.com/dotnet/aspire/issues/13686
+    .WithAnnotation(new JavaScriptPackageManagerAnnotation("bun", runScriptCommand: "run", cacheMount: "/root/.bun")
     {
-        options.WithTheme(ScalarTheme.DeepSpace);
+        PackageFilesPatterns =
+        {
+            new CopyFilePattern("package.json", "./"),
+            new CopyFilePattern("bun.lock", "./")
+        }
     })
-    .WithReference(keycloak)
-    .WithExternalHttpEndpoints();
-
-scalar.WithApiReference(api, options =>
-{
-    options.WithTheme(ScalarTheme.Saturn);
-    options.WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
-    options.AddPreferredSecuritySchemes("OAuth2");
-    options.AddImplicitFlow("OAuth2", flow =>
-    {
-        flow.WithClientId("intra");
-        // flow.WithRefreshUrl($"{keycloak()}/realms/student/protocol/openid-connect/token");
-    });
-});
+    .WithAnnotation(new JavaScriptInstallCommandAnnotation(["install"]));
 
 // ============================================================================
+
+var scalar = builder.AddScalarApiReference(o => o.WithTheme(ScalarTheme.Kepler))
+    .WithReference(keycloak)
+    .WithExternalHttpEndpoints()
+    .WithApiReference(backend, o =>
+    {
+        o.WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
+        o.AddPreferredSecuritySchemes("OAuth2");
+        o.AddImplicitFlow("OAuth2", flow => flow.WithClientId("intra"));
+    });
+
+// ============================================================================
+
 
 builder.Build().Run();

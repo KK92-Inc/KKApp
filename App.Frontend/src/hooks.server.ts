@@ -3,32 +3,25 @@
 // See README in the root project for more information.
 // ============================================================================
 
-import type { Handle } from '@sveltejs/kit';
-import { env as prv } from '$env/dynamic/private';
-import { env as pub } from '$env/dynamic/public';
+import type { Handle, ServerInit } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
 import { Keycloak } from '$lib/oauth';
 import createClient from 'openapi-fetch';
 import type { paths } from '$lib/api/api';
 import { Log } from '$lib/log';
 import { MetaData } from './routes/index.svelte';
+import { BACKEND_URI } from '$lib/config';
 
 // ============================================================================
 
-class APIInstance {
-	static set(fn: typeof fetch) {
-		return createClient<paths>({
-			baseUrl: prv.API,
-			mode: 'cors',
-			fetch: fn
-		});
-	}
-}
+export const main: ServerInit = async () => {
+
+};
 
 // ============================================================================
 
 const authorize: Handle = async ({ event, resolve }) => {
-	const authRoute = event.url.pathname.startsWith('/auth')
+	const authRoute = event.url.pathname.startsWith('/auth');
 	if (authRoute || !event.route.id) {
 		return resolve(event);
 	}
@@ -50,10 +43,14 @@ const init: Handle = async ({ event, resolve }) => {
 	// Log.dbg('Incoming request', event.getClientAddress());
 	event.setHeaders({
 		server: `Bun ${Bun.version}`,
-		'x-app': pub.PUBLIC_NAME
+		'x-app': "KKApp"
 	});
 
-	event.locals.api = APIInstance.set(event.fetch)
+	event.locals.api ??= createClient<paths>({
+		baseUrl: BACKEND_URI,
+		mode: 'cors',
+		fetch: event.fetch
+	});
 	return resolve(event);
 };
 
@@ -65,7 +62,7 @@ export const handle = sequence(init, Keycloak.handle, authorize);
 
 // Our API request go to a different HOST, thus we need to attach the token
 export async function handleFetch({ fetch, request, event }) {
-	if (request.url.startsWith(prv.API)) {
+	if (request.url.startsWith(BACKEND_URI)) {
 		const accessToken = event.cookies.get(Keycloak.COOKIE_ACCESS);
 		if (accessToken) {
 			// Log.dbg(request.method, '=>', request.url);

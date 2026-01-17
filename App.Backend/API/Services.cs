@@ -122,7 +122,7 @@ public static class Services
         builder.Services.AddStackExchangeRedisCache(options =>
         {
             options.Configuration = builder.Configuration.GetConnectionString("cache");
-            options.InstanceName = "PeerU_";
+            options.InstanceName = "KKBackend";
         });
         builder.Services.AddResponseCompression();
         builder.Services.AddEndpointsApiExplorer();
@@ -138,12 +138,12 @@ public static class Services
         });
 
         // Database
-        builder.AddNpgsqlDbContext<DatabaseContext>("peeru-db", null, options =>
+        builder.AddNpgsqlDbContext<DatabaseContext>("db", null, options =>
         {
             options.UseLazyLoadingProxies();
             options.AddInterceptors(new SshKeyInterceptor());
             options.AddInterceptors(new SavingChangesInterceptor(TimeProvider.System));
-            options.UseNpgsql(builder.Configuration.GetConnectionString("peeru-db"));
+            options.UseNpgsql(builder.Configuration.GetConnectionString("db"));
             if (builder.Environment.IsDevelopment())
                 options.EnableSensitiveDataLogging();
         });

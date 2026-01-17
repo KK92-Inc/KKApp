@@ -2,6 +2,9 @@
 
 A distributed peer-to-peer learning platform built with .NET Aspire, featuring a modern SvelteKit frontend, .NET Web API backend, and custom Git hosting infrastructure.
 
+> [!CAUTION]
+> This project is unlicensed, unfinished and still work in progress. It is quite literally unusable at it's current stage.
+
 ## 🏗️ Architecture
 
 ```

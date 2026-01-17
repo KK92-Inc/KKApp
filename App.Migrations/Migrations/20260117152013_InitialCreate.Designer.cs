@@ -14,8 +14,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Migrations.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    [Migration("20260104235452_Init")]
-    partial class Init
+    [Migration("20260117152013_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -480,7 +480,7 @@ namespace Migrations.Migrations
 
                     b.Property<int>("SupportedReviewKinds")
                         .HasColumnType("integer")
-                        .HasColumnName("supported_review_kinds");
+                        .HasColumnName("supported_variants");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")

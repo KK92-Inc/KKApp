@@ -49,7 +49,7 @@ var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddHostedService<Initializer>();
 builder.Services.AddDbContextPool<DatabaseContext>(options =>
 {
-    var connection = builder.Configuration.GetConnectionString("peeru-db");
+    var connection = builder.Configuration.GetConnectionString("db");
     options.UseNpgsql(connection, o => o.MigrationsAssembly("Migrations"));
 });
 builder.Build().Run();
