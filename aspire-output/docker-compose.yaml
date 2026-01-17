@@ -65,6 +65,42 @@ services:
         condition: "service_started"
     networks:
       - "aspire"
+  git-api:
+    image: "${GIT_API_IMAGE}"
+    expose:
+      - "3000"
+    volumes:
+      - type: "volume"
+        target: "/home/git/repos"
+        source: "git-repos"
+        read_only: false
+    networks:
+      - "aspire"
+  git-ssh:
+    image: "${GIT_SSH_IMAGE}"
+    environment:
+      ConnectionStrings__db: "Host=database;Port=5432;Username=postgres;Password=${DATABASE_PASSWORD};Database=db"
+      DB_HOST: "database"
+      DB_PORT: "5432"
+      DB_USERNAME: "postgres"
+      DB_PASSWORD: "${DATABASE_PASSWORD}"
+      DB_URI: "postgresql://postgres:${DATABASE_PASSWORD}@database:5432/db"
+      DB_JDBCCONNECTIONSTRING: "jdbc:postgresql://database:5432/db"
+      DB_DATABASENAME: "db"
+    expose:
+      - "22"
+    volumes:
+      - type: "volume"
+        target: "/home/git/repos"
+        source: "git-repos"
+        read_only: false
+    depends_on:
+      database:
+        condition: "service_started"
+      git-api:
+        condition: "service_started"
+    networks:
+      - "aspire"
   keycloak:
     image: "quay.io/keycloak/keycloak:26.3.3"
     command:
@@ -182,6 +218,8 @@ volumes:
   database-volume:
     driver: "local"
   cache-volume:
+    driver: "local"
+  git-repos:
     driver: "local"
   apphost-e7f9f553c0-keycloak-data:
     driver: "local"

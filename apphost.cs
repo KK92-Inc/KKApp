@@ -47,6 +47,21 @@ var migration = builder.AddProject<Projects.Migrations>("migration-job")
 
 // ============================================================================
 
+var gitApi = builder.AddDockerfile("git-api", "./App.Repository", "Dockerfile.api")
+    .WithVolume("git-repos", "/home/git/repos")
+    .WithHttpEndpoint(port: 3000, targetPort: 3000, name: "http")
+    .WithLifetime(ContainerLifetime.Persistent);
+
+var gitSsh = builder.AddDockerfile("git-ssh", "./App.Repository", "Dockerfile.ssh")
+    .WithVolume("git-repos", "/home/git/repos")
+    .WithEndpoint(port: 2222, targetPort: 22, scheme: "tcp", name: "ssh")
+    .WithReference(database)
+    .WaitFor(database)
+    .WaitFor(gitApi)
+    .WithLifetime(ContainerLifetime.Persistent);
+
+// ============================================================================
+
 var keycloak = builder.AddKeycloakContainer("keycloak")
     .WithDataVolume()
     .WithImport("./config/student-realm.json")
