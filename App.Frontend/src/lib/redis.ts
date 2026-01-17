@@ -5,7 +5,10 @@
 
 import { RedisClient } from "bun";
 import { VALKEY_HOST, VALKEY_PASSWORD, VALKEY_PORT } from "./config";
+import { building } from "$app/environment";
 
 // ============================================================================
 
-export const redis = new RedisClient(`valkey://:${VALKEY_PASSWORD}@${VALKEY_HOST}:${VALKEY_PORT}`);
+export const redis = !building ?
+	new RedisClient(`valkey://${VALKEY_PASSWORD}@${VALKEY_HOST}:${VALKEY_PORT}`) :
+	new RedisClient();

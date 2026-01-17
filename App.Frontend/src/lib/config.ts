@@ -12,12 +12,11 @@ import { building } from '$app/environment';
 // ============================================================================
 
 function config(keys: string[], fallback?: string) {
-	if (building) return ''; // Don't throw during build
+	if (building) return fallback; // Don't throw during build
 	for (const key of keys) {
 		const value = env[key];
 		if (value) return value;
 	}
-
 	if (fallback !== undefined) return fallback;
 
 	throw new Error(`Missing required env variable: ${keys.join(' or ')}`);
@@ -33,7 +32,7 @@ export const BACKEND_URI = config(['API', 'BACKEND_HTTP', 'BACKEND_HTTPS']);
 // Keycloak
 export const KC_ID = config(['KC_ID', 'Keycloak__ClientId'], 'intra');
 export const KC_REALM = config(['KC_REALM', 'Keycloak__Realm'], 'student');
-export const KC_ORIGIN = config(['KC_ORIGIN', 'Keycloak__AuthServerUrl']);
+export const KC_ORIGIN = config(['KC_ORIGIN', 'Keycloak__AuthServerUrl'], 'http://localhost:8080');
 export const KC_SECRET = config(['KC_SECRET']);
 export const KC_COOKIE = config(['KC_COOKIE'], 'kc.session');
 export const KC_CALLBACK = config(['KC_CALLBACK'], `${ORIGIN}/auth/callback`);

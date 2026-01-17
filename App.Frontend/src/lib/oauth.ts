@@ -23,18 +23,18 @@ import { redis } from './redis';
 
 // ============================================================================
 
-const KC_URL = `${KC_ORIGIN}/realms/${KC_REALM}`;
-const AUTH_URL = `${KC_URL}/protocol/openid-connect/auth`;
-const CERTS_URL = `${KC_URL}/protocol/openid-connect/certs`;
-const TOKEN_URL = `${KC_URL}/protocol/openid-connect/token`;
-const REVOKE_URL = `${KC_URL}/protocol/openid-connect/logout`;
+const KC_URL = () => `${KC_ORIGIN}/realms/${KC_REALM}`;
+const AUTH_URL = () => `${KC_URL()}/protocol/openid-connect/auth`;
+const CERTS_URL = () => `${KC_URL()}/protocol/openid-connect/certs`;
+const TOKEN_URL = () => `${KC_URL()}/protocol/openid-connect/token`;
+const REVOKE_URL = () => `${KC_URL()}/protocol/openid-connect/logout`;
 
 const COOKIE_REFRESH = `${KC_COOKIE}-R`;
 const COOKIE_ACCESS = `${KC_COOKIE}-A`;
 const COOKIE_STATE = `${KC_COOKIE}-S`;
 const COOKIE_VERIFIER = `${KC_COOKIE}-V`;
 
-const JWKS = jose.createRemoteJWKSet(new URL(CERTS_URL));
+const JWKS = jose.createRemoteJWKSet(new URL(CERTS_URL()));
 
 // ============================================================================
 // Session Interface
@@ -341,7 +341,7 @@ async function exchange(code: string, verifier: string): Promise<Tokens> {
 	});
 
 	console.log(params, TOKEN_URL);
-	const response = await fetch(TOKEN_URL, {
+	const response = await fetch(TOKEN_URL(), {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/x-www-form-urlencoded'
@@ -368,7 +368,7 @@ async function refresh(refreshToken: string): Promise<Tokens> {
 		client_secret: KC_SECRET
 	});
 
-	const response = await fetch(TOKEN_URL, {
+	const response = await fetch(TOKEN_URL(), {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/x-www-form-urlencoded'
@@ -392,7 +392,7 @@ async function ticket(accessToken: string, audience: string = KC_ID) {
 		grant_type: 'urn:ietf:params:oauth:grant-type:uma-ticket'
 	});
 
-	const response = await fetch(TOKEN_URL, {
+	const response = await fetch(TOKEN_URL(), {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/x-www-form-urlencoded',
@@ -431,7 +431,7 @@ async function revoke(token?: string, hint?: 'access_token' | 'refresh_token') {
 		params.set('token_type_hint', hint);
 	}
 
-	const response = await fetch(REVOKE_URL, {
+	const response = await fetch(REVOKE_URL(), {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/x-www-form-urlencoded'
