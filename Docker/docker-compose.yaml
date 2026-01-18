@@ -186,6 +186,7 @@ services:
       HOST_HEADER: "x-forwarded-host"
       PROTOCOL_HEADER: "x-forwarded-proto"
       PORT_HEADER: "x-forwarded-port"
+      XFF_DEPTH: "1"
       ADDRESS_HEADER: "True-Client-IP"
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://env-dashboard:18889"
       OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
