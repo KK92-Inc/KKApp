@@ -68,6 +68,7 @@ var keycloak = builder.AddKeycloakContainer("keycloak")
     .WithEnvironment("KC_HTTP_ENABLED", "true")
     .WithEnvironment("KC_PROXY_HEADERS", "xforwarded")
     .WithEnvironment("KC_HOSTNAME_STRICT", "false")
+    .WithEnvironment("KC_HOSTNAME", builder.AddParameter("kc-hostname"))
     .WithExternalHttpEndpoints();
 
 var realm = keycloak.AddRealm("student");
