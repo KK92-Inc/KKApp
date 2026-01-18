@@ -96,6 +96,8 @@ var frontend = builder.AddViteApp("frontend", "./App.Frontend")
     .WithEnvironment("KC_SECRET", builder.AddParameter("keycloak-client-secret", secret: true))
     .WithEnvironment("HOST_HEADER", "x-forwarded-host")
     .WithEnvironment("PROTOCOL_HEADER", "x-forwarded-proto")
+    .WithEnvironment("PORT_HEADER", "x-forwarded-port")
+    //.WithEnvironment("ORIGIN", builder.AddParameter("frontend-origin"))
     .WithEnvironment("ADDRESS_HEADER", "True-Client-IP")
     //TODO: Remove on Aspire 13.2: https://github.com/dotnet/aspire/issues/13686
     .WithAnnotation(new JavaScriptPackageManagerAnnotation("bun", runScriptCommand: "run", cacheMount: "/root/.bun")
