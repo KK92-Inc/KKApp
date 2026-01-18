@@ -64,6 +64,7 @@ var gitSsh = builder.AddDockerfile("git-ssh", "./App.Repository", "Dockerfile.ss
 
 var keycloak = builder.AddKeycloakContainer("keycloak")
     .WithDataVolume()
+    .WithImport("./config/student-realm.json")
     .WithEnvironment("KC_HTTP_ENABLED", "true")
     .WithEnvironment("KC_PROXY_HEADERS", "xforwarded")
     .WithEnvironment("KC_HOSTNAME_STRICT", "false")

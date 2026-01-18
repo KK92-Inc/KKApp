@@ -119,6 +119,10 @@ services:
         target: "/opt/keycloak/data"
         source: "apphost-e7f9f553c0-keycloak-data"
         read_only: false
+      - type: "bind"
+        target: "/opt/keycloak/data/import/student-realm.json"
+        source: "${KEYCLOAK_BINDMOUNT_0}"
+        read_only: false
     networks:
       - "aspire"
   backend:
