@@ -62,13 +62,14 @@ var gitSsh = builder.AddDockerfile("git-ssh", "./App.Repository", "Dockerfile.ss
 
 // ============================================================================
 
+var kcHostname = builder.AddParameter("kc-hostname");
 var keycloak = builder.AddKeycloakContainer("keycloak")
     .WithDataVolume()
     .WithImport("./config/student-realm.json")
     .WithEnvironment("KC_HTTP_ENABLED", "true")
     .WithEnvironment("KC_PROXY_HEADERS", "xforwarded")
     .WithEnvironment("KC_HOSTNAME_STRICT", "false")
-    .WithEnvironment("KC_HOSTNAME", builder.AddParameter("kc-hostname"))
+    .WithEnvironment("KC_HOSTNAME", kcHostname)
     .WithExternalHttpEndpoints();
 
 var realm = keycloak.AddRealm("student");
@@ -99,6 +100,7 @@ var frontend = builder.AddViteApp("frontend", "./App.Frontend")
     .WithEnvironment("PORT_HEADER", "x-forwarded-port")
     .WithEnvironment("XFF_DEPTH", "1")
     .WithEnvironment("ORIGIN", builder.AddParameter("frontend-origin"))
+    .WithEnvironment("KC_ORIGIN", kcHostname)
     .WithEnvironment("ADDRESS_HEADER", "True-Client-IP")
     //TODO: Remove on Aspire 13.2: https://github.com/dotnet/aspire/issues/13686
     .WithAnnotation(new JavaScriptPackageManagerAnnotation("bun", runScriptCommand: "run", cacheMount: "/root/.bun")
