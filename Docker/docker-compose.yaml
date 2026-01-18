@@ -112,6 +112,7 @@ services:
       KC_HTTP_ENABLED: "true"
       KC_PROXY_HEADERS: "xforwarded"
       KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME: "${KC_HOSTNAME}"
     ports:
       - "8080:8080"
     volumes:
