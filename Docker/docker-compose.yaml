@@ -185,6 +185,7 @@ services:
       KC_SECRET: "${KEYCLOAK_CLIENT_SECRET}"
       HOST_HEADER: "x-forwarded-host"
       PROTOCOL_HEADER: "x-forwarded-proto"
+      PORT_HEADER: "x-forwarded-port"
       ADDRESS_HEADER: "True-Client-IP"
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://env-dashboard:18889"
       OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
