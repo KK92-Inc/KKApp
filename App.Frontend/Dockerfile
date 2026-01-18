@@ -1,15 +1,20 @@
-FROM oven/bun:1 AS base
+FROM oven/bun:1 AS build
 WORKDIR /app
 
-FROM base AS build
+# Install dependencies with Bun and build
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 COPY . .
 RUN bun run build
 
-FROM base AS final
+FROM oven/bun:1 AS final
 WORKDIR /app
-COPY --from=build /app/dist/app .
-ENV PORT=51842
-EXPOSE 51842
-CMD ["./app"]
+ENV NODE_ENV=production
+ENV PORT=8000
+
+# Copy built output and node_modules from build stage
+COPY --from=build /app/build /app/build
+COPY --from=build /app/node_modules /app/node_modules
+COPY package.json bun.lock ./
+
+CMD ["bun", "./build/index.js"]

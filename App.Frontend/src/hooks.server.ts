@@ -40,7 +40,7 @@ const authorize: Handle = async ({ event, resolve }) => {
 };
 
 const init: Handle = async ({ event, resolve }) => {
-	Log.dbg('Incoming request', event.getClientAddress(), event.request.headers);
+	// Log.dbg('Incoming request', event.getClientAddress(), event.request.headers);
 	event.setHeaders({
 		server: `Bun ${Bun.version}`,
 		'x-app': "KKApp"
