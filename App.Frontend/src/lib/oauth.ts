@@ -314,7 +314,7 @@ function create(state: string, verifier: string, scopes: string[] = []): URL {
 		params.set('scope', scopes.join(' '));
 	}
 
-	return new URL(`${AUTH_URL}?${params}`);
+	return new URL(`${AUTH_URL()}?${params}`);
 }
 
 /**
@@ -340,7 +340,7 @@ async function exchange(code: string, verifier: string): Promise<Tokens> {
 		code_verifier: verifier
 	});
 
-	console.log(params, TOKEN_URL);
+	console.log(params);
 	const response = await fetch(TOKEN_URL(), {
 		method: 'POST',
 		headers: {
