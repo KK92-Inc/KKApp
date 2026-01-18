@@ -40,7 +40,6 @@ const authorize: Handle = async ({ event, resolve }) => {
 };
 
 const init: Handle = async ({ event, resolve }) => {
-	// Log.dbg('Incoming request', event.getClientAddress(), event.request.headers);
 	event.setHeaders({
 		server: `Bun ${Bun.version}`,
 		'x-app': "KKApp"
@@ -62,7 +61,7 @@ export const handle = sequence(init, Keycloak.handle, authorize);
 
 // Our API request go to a different HOST, thus we need to attach the token
 export async function handleFetch({ fetch, request, event }) {
-	if (request.url.startsWith(BACKEND_URI)) {
+	if (BACKEND_URI && request.url.startsWith(BACKEND_URI)) {
 		const accessToken = event.cookies.get(Keycloak.COOKIE_ACCESS);
 		if (accessToken) {
 			// Log.dbg(request.method, '=>', request.url);
