@@ -33,13 +33,13 @@ export const BACKEND_URI = config(['API', 'BACKEND_HTTP', 'BACKEND_HTTPS']);
 export const KC_ID = config(['KC_ID', 'Keycloak__ClientId'], 'intra');
 export const KC_REALM = config(['KC_REALM', 'Keycloak__Realm'], 'student');
 export const KC_ORIGIN = config(['KC_ORIGIN', 'Keycloak__AuthServerUrl'], 'http://localhost:8080');
-export const KC_SECRET = config(['KC_SECRET']);
+export const KC_SECRET = config(['KC_SECRET', 'KEYCLOAK_CLIENT_SECRET']);
 export const KC_COOKIE = config(['KC_COOKIE'], 'kc.session');
 export const KC_CALLBACK = config(['KC_CALLBACK'], `${ORIGIN}/auth/callback`);
 
 // S3
-export const S3_ID = config(['S3_ACCESS_KEY_ID']);
-export const S3_SECRET = config(['S3_SECRET_ACCESS_KEY']);
+export const S3_ID = config(['S3_ACCESS_KEY_ID', 'S3_ID']);
+export const S3_SECRET = config(['S3_SECRET_ACCESS_KEY', 'S3_PASSWORD']);
 
 // Valkey
 export const VALKEY_HOST = config(['VALKEY_HOST']);
