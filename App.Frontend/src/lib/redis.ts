@@ -11,4 +11,4 @@ import { building } from '$app/environment';
 
 export const redis = building
 	? new RedisClient()
-	: new RedisClient(`redis://${VALKEY_PASSWORD}@${VALKEY_HOST}:${VALKEY_PORT}`);
+	: new RedisClient(`redis://:${VALKEY_PASSWORD}@${VALKEY_HOST}:${VALKEY_PORT}`);
