@@ -187,6 +187,7 @@ services:
       PROTOCOL_HEADER: "x-forwarded-proto"
       PORT_HEADER: "x-forwarded-port"
       XFF_DEPTH: "1"
+      ORIGIN: "${FRONTEND_ORIGIN}"
       KC_ORIGIN: "${KC_HOSTNAME}"
       ADDRESS_HEADER: "True-Client-IP"
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://env-dashboard:18889"
