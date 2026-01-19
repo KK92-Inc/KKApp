@@ -14,7 +14,7 @@
 import * as v from 'valibot';
 import * as jose from 'jose';
 import { dev } from '$app/environment';
-import { KC_ORIGIN, KC_REALM, KC_COOKIE, KC_ID, KC_CALLBACK, KC_SECRET } from '$lib/config';
+import { KC_ORIGIN, KC_REALM, KC_COOKIE, KC_ID, KC_CALLBACK, KC_SECRET, VALKEY_PASSWORD, VALKEY_HOST, VALKEY_PORT } from '$lib/config';
 import { JWSInvalid, JWTClaimValidationFailed, JWTExpired, JWTInvalid } from 'jose/errors';
 import { ensure } from './utils';
 import type { Handle, RequestEvent } from '@sveltejs/kit';
@@ -115,7 +115,7 @@ const handle: Handle = async ({ event, resolve }) => {
 		const roles = Object.values(claims.resource_access).flatMap((r) => r.roles);
 
 		console.log('User Roles:', claims.realm_access.roles.concat(roles));
-		console.log(redis, redis.connected)
+		console.log(`redis://${VALKEY_PASSWORD}@${VALKEY_HOST}:${VALKEY_PORT}`, redis.connected)
 		const fetchPermissions = async (): Promise<string[]> => {
 			const data = await redis.get(`permissions:${claims.sub}`);
 			console.log('Cached Permissions:', data, redis.connected);
