@@ -115,6 +115,7 @@ const handle: Handle = async ({ event, resolve }) => {
 		const roles = Object.values(claims.resource_access).flatMap((r) => r.roles);
 
 		console.log('User Roles:', claims.realm_access.roles.concat(roles));
+		console.log(redis, redis.connected)
 		const fetchPermissions = async (): Promise<string[]> => {
 			const data = await redis.get(`permissions:${claims.sub}`);
 			console.log('Cached Permissions:', data, redis.connected);
@@ -147,7 +148,7 @@ const handle: Handle = async ({ event, resolve }) => {
 			username: claims.preferred_username,
 			email: claims.email,
 			roles,
-			permissions: await fetchPermissions(),
+			permissions: [] // await fetchPermissions(),
 		};
 	};
 
