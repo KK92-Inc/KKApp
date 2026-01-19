@@ -25,7 +25,7 @@
 		class="group relative mb-4 h-80 w-full overflow-hidden rounded-lg border p-0 min-w-0 shrink"
 	>
 		<div
-			class="absolute inset-0 bg-[url(graph.png)] bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
+			class="absolute inset-0 bg-[url('/graph.png')] bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
 		></div>
 
 		<div class="absolute inset-0 backdrop-blur-[2px]"></div>

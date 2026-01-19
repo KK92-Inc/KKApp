@@ -80,7 +80,7 @@
 			class="relative h-48 rounded-t-[inherit] bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500"
 		>
 			<div
-				class="absolute inset-0 rounded-t-[inherit] bg-[url('/img.png')] bg-cover bg-center opacity-20"
+				class="absolute inset-0 rounded-t-[inherit] bg-[url('/graph.png')] bg-cover bg-center opacity-20"
 			></div>
 			<Avatar.Root class="absolute top-4 left-4 size-32 rounded shadow-xl">
 				<Avatar.Image src="" />
