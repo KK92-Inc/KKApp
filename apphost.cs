@@ -23,7 +23,29 @@ using Scalar.Aspire;
 // ============================================================================
 
 var builder = DistributedApplication.CreateBuilder(args);
-builder.AddDockerComposeEnvironment("env");
+builder.AddDockerComposeEnvironment("env").WithDashboard(false);
+
+// Paramaters
+// ============================================================================
+
+// Configure origin domain for frontend
+var kcOrigin = builder.AddParameter("kc-origin", "https://auth.kk92.net", true);
+// Configure origin domain for keycloak
+var feOrigin = builder.AddParameter("fe-origin", "https://intra.kk92.net", true);
+
+// S3 Storage Key
+var s3Key = builder.AddParameter("s3-access-key-id", true);
+// S3 Storage Password
+var s3Password = builder.AddParameter("s3-secret-access-key", true);
+
+// Keycloak primary application id
+var kcId = builder.AddParameter("kc-id", "intra");
+// Keycloak primary application realm
+var kcRealm = builder.AddParameter("kc-realm", "student");
+// Keycloak Client Secret generated on the keycloak dashboard
+var kcSecret = builder.AddParameter("kc-secret", secret: true);
+// Keycloak cookie used for the frontend
+var kcCookie = builder.AddParameter("kc-cookie", "kc.session");
 
 // Storage
 // ============================================================================
@@ -47,29 +69,28 @@ var migration = builder.AddProject<Projects.Migrations>("migration-job")
 
 // ============================================================================
 
-var gitApi = builder.AddDockerfile("git-api", "./App.Repository", "Dockerfile.api")
+var api = builder.AddDockerfile("git-api", "./App.Repository", "Dockerfile.api")
     .WithVolume("git-repos", "/home/git/repos")
     .WithHttpEndpoint(port: 3000, targetPort: 3000, name: "http")
     .WithLifetime(ContainerLifetime.Persistent);
 
-var gitSsh = builder.AddDockerfile("git-ssh", "./App.Repository", "Dockerfile.ssh")
+var ssh = builder.AddDockerfile("git-ssh", "./App.Repository", "Dockerfile.ssh")
     .WithVolume("git-repos", "/home/git/repos")
     .WithEndpoint(port: 2222, targetPort: 22, scheme: "tcp", name: "ssh")
     .WithReference(database)
     .WaitFor(database)
-    .WaitFor(gitApi)
+    .WaitFor(api)
     .WithLifetime(ContainerLifetime.Persistent);
 
 // ============================================================================
 
-var kcHostname = builder.AddParameter("kc-hostname");
 var keycloak = builder.AddKeycloakContainer("keycloak")
     .WithDataVolume()
     .WithImport("./config/student-realm.json")
     .WithEnvironment("KC_HTTP_ENABLED", "true")
     .WithEnvironment("KC_PROXY_HEADERS", "xforwarded")
     .WithEnvironment("KC_HOSTNAME_STRICT", "false")
-    .WithEnvironment("KC_HOSTNAME", kcHostname)
+    .WithEnvironment("KC_HOSTNAME", kcOrigin)
     .WithExternalHttpEndpoints();
 
 var realm = keycloak.AddRealm("student");
@@ -82,7 +103,8 @@ var backend = builder.AddProject<Projects.App_Backend_API>("backend")
     .WaitFor(migration)
     .WaitFor(postgres)
     .WaitFor(cache)
-    .WaitFor(keycloak);
+    .WaitFor(keycloak)
+    .WaitFor(api);
 
 var frontend = builder.AddViteApp("frontend", "./App.Frontend")
     .WaitFor(cache)
@@ -92,15 +114,18 @@ var frontend = builder.AddViteApp("frontend", "./App.Frontend")
     .WaitFor(keycloak)
     .WithReference(realm)
     // Reverse proxy headers
-    .WithEnvironment("S3_ACCESS_KEY_ID", builder.AddParameter("s3-id", secret: true))
-    .WithEnvironment("S3_SECRET_ACCESS_KEY", builder.AddParameter("s3-password", secret: true))
-    .WithEnvironment("KC_SECRET", builder.AddParameter("keycloak-client-secret", secret: true))
-    .WithEnvironment("HOST_HEADER", "x-forwarded-host")
-    .WithEnvironment("PROTOCOL_HEADER", "x-forwarded-proto")
-    .WithEnvironment("PORT_HEADER", "x-forwarded-port")
+    .WithEnvironment("KC_ID", kcId)
+    .WithEnvironment("KC_REALM", kcRealm)
+    .WithEnvironment("KC_ORIGIN", kcOrigin)
+    .WithEnvironment("KC_SECRET", kcSecret)
+    .WithEnvironment("KC_COOKIE", kcCookie)
+    .WithEnvironment("S3_ACCESS_KEY_ID", s3Key)
+    .WithEnvironment("S3_SECRET_ACCESS_KEY", s3Password)
+    .WithEnvironment("ORIGIN", feOrigin)
     .WithEnvironment("XFF_DEPTH", "1")
-    .WithEnvironment("ORIGIN", builder.AddParameter("frontend-origin"))
-    .WithEnvironment("KC_ORIGIN", kcHostname)
+    .WithEnvironment("PROTOCOL_HEADER", "x-forwarded-proto")
+    .WithEnvironment("HOST_HEADER", "x-forwarded-host")
+    .WithEnvironment("PORT_HEADER", "x-forwarded-port")
     .WithEnvironment("ADDRESS_HEADER", "True-Client-IP")
     //TODO: Remove on Aspire 13.2: https://github.com/dotnet/aspire/issues/13686
     .WithAnnotation(new JavaScriptPackageManagerAnnotation("bun", runScriptCommand: "run", cacheMount: "/root/.bun")

@@ -1,14 +1,4 @@
 services:
-  env-dashboard:
-    image: "mcr.microsoft.com/dotnet/nightly/aspire-dashboard:latest"
-    ports:
-      - "18888"
-    expose:
-      - "18889"
-      - "18890"
-    networks:
-      - "aspire"
-    restart: "always"
   database:
     image: "docker.io/library/postgres:17.6"
     environment:
@@ -57,9 +47,6 @@ services:
       DB_URI: "postgresql://postgres:${DATABASE_PASSWORD}@database:5432/db"
       DB_JDBCCONNECTIONSTRING: "jdbc:postgresql://database:5432/db"
       DB_DATABASENAME: "db"
-      OTEL_EXPORTER_OTLP_ENDPOINT: "http://env-dashboard:18889"
-      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
-      OTEL_SERVICE_NAME: "migration-job"
     depends_on:
       database:
         condition: "service_started"
@@ -112,7 +99,7 @@ services:
       KC_HTTP_ENABLED: "true"
       KC_PROXY_HEADERS: "xforwarded"
       KC_HOSTNAME_STRICT: "false"
-      KC_HOSTNAME: "${KC_HOSTNAME}"
+      KC_HOSTNAME: "${KC_ORIGIN}"
     ports:
       - "8080:8080"
     volumes:
@@ -149,9 +136,6 @@ services:
       VALKEY_URI: "valkey://:${VALKEY_PASSWORD}@valkey:6379"
       KEYCLOAK_HTTP: "http://keycloak:8080"
       services__keycloak__http__0: "http://keycloak:8080"
-      OTEL_EXPORTER_OTLP_ENDPOINT: "http://env-dashboard:18889"
-      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
-      OTEL_SERVICE_NAME: "backend"
     ports:
       - "${BACKEND_PORT}"
     depends_on:
@@ -162,6 +146,8 @@ services:
       valkey:
         condition: "service_started"
       keycloak:
+        condition: "service_started"
+      git-api:
         condition: "service_started"
     networks:
       - "aspire"
@@ -180,19 +166,19 @@ services:
       BACKEND_HTTPS: "https://backend:${BACKEND_PORT}"
       Keycloak__AuthServerUrl: "http://keycloak:8080"
       Keycloak__Realm: "student"
-      S3_ACCESS_KEY_ID: "${S3_ID}"
-      S3_SECRET_ACCESS_KEY: "${S3_PASSWORD}"
-      KC_SECRET: "${KEYCLOAK_CLIENT_SECRET}"
-      HOST_HEADER: "x-forwarded-host"
-      PROTOCOL_HEADER: "x-forwarded-proto"
-      PORT_HEADER: "x-forwarded-port"
+      KC_ID: "${KC_ID}"
+      KC_REALM: "${KC_REALM}"
+      KC_ORIGIN: "${KC_ORIGIN}"
+      KC_SECRET: "${KC_SECRET}"
+      KC_COOKIE: "${KC_COOKIE}"
+      S3_ACCESS_KEY_ID: "${S3_ACCESS_KEY_ID}"
+      S3_SECRET_ACCESS_KEY: "${S3_SECRET_ACCESS_KEY}"
+      ORIGIN: "${FE_ORIGIN}"
       XFF_DEPTH: "1"
-      ORIGIN: "${FRONTEND_ORIGIN}"
-      KC_ORIGIN: "${KC_HOSTNAME}"
+      PROTOCOL_HEADER: "x-forwarded-proto"
+      HOST_HEADER: "x-forwarded-host"
+      PORT_HEADER: "x-forwarded-port"
       ADDRESS_HEADER: "True-Client-IP"
-      OTEL_EXPORTER_OTLP_ENDPOINT: "http://env-dashboard:18889"
-      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
-      OTEL_SERVICE_NAME: "frontend"
     expose:
       - "8000"
     depends_on:
