@@ -99,7 +99,7 @@ var frontend = builder.AddViteApp("frontend", "./App.Frontend")
     .WithEnvironment("PROTOCOL_HEADER", "x-forwarded-proto")
     .WithEnvironment("PORT_HEADER", "x-forwarded-port")
     .WithEnvironment("XFF_DEPTH", "1")
-    .WithEnvironment("ORIGIN", builder.AddParameter("frontend-origin"))
+    // .WithEnvironment("ORIGIN", builder.AddParameter("frontend-origin"))
     .WithEnvironment("KC_ORIGIN", kcHostname)
     .WithEnvironment("ADDRESS_HEADER", "True-Client-IP")
     //TODO: Remove on Aspire 13.2: https://github.com/dotnet/aspire/issues/13686
