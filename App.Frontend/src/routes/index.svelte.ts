@@ -37,7 +37,7 @@ const meta: Partial<Record<RouteId, MetaEntry>> = {
 	},
 	'/(app)/settings/features': {
 		icon: FlaskConical,
-		label: 'Features',
+		label: 'Features'
 	}
 };
 

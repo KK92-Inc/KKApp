@@ -325,44 +325,8 @@
       ],
       "intra": [
         {
-          "id": "f8e90935-4113-4068-908c-b51a7eeafc6f",
-          "name": "staff",
-          "description": "",
-          "composite": false,
-          "clientRole": true,
-          "containerId": "84a1545a-12dd-445c-bb6b-0bca4cc09c6b",
-          "attributes": {}
-        },
-        {
-          "id": "0542ff28-c22d-4de4-b311-92be767ee1e5",
-          "name": "student",
-          "description": "",
-          "composite": false,
-          "clientRole": true,
-          "containerId": "84a1545a-12dd-445c-bb6b-0bca4cc09c6b",
-          "attributes": {}
-        },
-        {
-          "id": "2179bcf3-6771-4d90-b6bd-6fcf8af4a7a5",
-          "name": "creator",
-          "description": "",
-          "composite": false,
-          "clientRole": true,
-          "containerId": "84a1545a-12dd-445c-bb6b-0bca4cc09c6b",
-          "attributes": {}
-        },
-        {
           "id": "4e56a593-763d-4d90-bb98-7220e9cdcdb8",
           "name": "uma_protection",
-          "composite": false,
-          "clientRole": true,
-          "containerId": "84a1545a-12dd-445c-bb6b-0bca4cc09c6b",
-          "attributes": {}
-        },
-        {
-          "id": "3e1ed47d-fd2b-432b-b037-2cc131978554",
-          "name": "developer",
-          "description": "",
           "composite": false,
           "clientRole": true,
           "containerId": "84a1545a-12dd-445c-bb6b-0bca4cc09c6b",
@@ -481,14 +445,7 @@
       "subGroups": [],
       "attributes": {},
       "realmRoles": [],
-      "clientRoles": {
-        "intra": [
-          "student",
-          "staff",
-          "creator",
-          "developer"
-        ]
-      }
+      "clientRoles": {}
     }
   ],
   "defaultRole": {
@@ -791,23 +748,16 @@
       "clientId": "intra",
       "name": "Intra",
       "description": "",
-      "rootUrl": "http://localhost:5173",
-      "adminUrl": "http://localhost:5173",
-      "baseUrl": "http://localhost:5173",
+      "rootUrl": "https://intra.kk92.net/",
+      "adminUrl": "https://intra.kk92.net/",
+      "baseUrl": "https://intra.kk92.net/",
       "surrogateAuthRequired": false,
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "secret": "**********",
       "redirectUris": [
-        "http://frontend-peeru.dev.localhost:5174/*",
-        "http://frontend-peeru.dev.localhost:59116/auth/callback",
-        "http://localhost*",
-        "http://localhost:42109/*",
-        "http://frontend-peeru.dev.localhost:59117/auth/callback",
-        "http://localhost:5174/*",
-        "http://frontend-peeru.dev.localhost:5173/auth/callback",
-        "https://docs.scalar.com/swagger-editor"
+        "https://intra.kk92.net/*"
       ],
       "webOrigins": [
         "+"
@@ -824,11 +774,11 @@
       "frontchannelLogout": true,
       "protocol": "openid-connect",
       "attributes": {
-        "client.secret.creation.time": "1751275935",
+        "client.secret.creation.time": "1769071761",
         "client.introspection.response.allow.jwt.claim.enabled": "false",
         "standard.token.exchange.enabled": "false",
         "login_theme": "keycloak.v2",
-        "post.logout.redirect.uris": "http://localhost:5173",
+        "post.logout.redirect.uris": "https://intra.kk92.net/",
         "frontchannel.logout.session.required": "true",
         "oauth2.device.authorization.grant.enabled": "false",
         "use.jwks.url": "false",
@@ -961,10 +911,10 @@
                 "name": "comments:write"
               },
               {
-                "name": "comments:read"
+                "name": "comments:delete"
               },
               {
-                "name": "comments:delete"
+                "name": "comments:read"
               }
             ],
             "icon_uri": ""
@@ -1080,6 +1030,9 @@
                 "name": "cursus:read"
               },
               {
+                "name": "cursus:graph:read"
+              },
+              {
                 "name": "cursus:write"
               },
               {
@@ -1186,13 +1139,24 @@
             }
           },
           {
+            "name": "Manage Comments",
+            "description": "",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "resources": "[\"comments\"]",
+              "scopes": "[\"comments:delete\",\"comments:read\",\"comments:write\"]",
+              "applyPolicies": "[\"Access: Basic\"]"
+            }
+          },
+          {
             "name": "View Projects",
             "description": "",
             "type": "scope",
             "logic": "POSITIVE",
             "decisionStrategy": "UNANIMOUS",
             "config": {
-              "defaultResourceType": "",
               "resources": "[\"projects\"]",
               "scopes": "[\"projects:read\"]",
               "applyPolicies": "[\"Access: Basic\"]"
@@ -1211,27 +1175,15 @@
             }
           },
           {
-            "name": "Manage Projects",
-            "description": "",
+            "name": "View Graph",
+            "description": "Allow access to see the cursus graph",
             "type": "scope",
             "logic": "POSITIVE",
             "decisionStrategy": "UNANIMOUS",
             "config": {
-              "resources": "[\"projects\"]",
-              "scopes": "[\"projects:write\",\"projects:delete\"]",
-              "applyPolicies": "[\"Access: Manage\"]"
-            }
-          },
-          {
-            "name": "Manage Goals",
-            "description": "",
-            "type": "scope",
-            "logic": "POSITIVE",
-            "decisionStrategy": "UNANIMOUS",
-            "config": {
-              "resources": "[\"goals\"]",
-              "scopes": "[\"goals:delete\",\"goals:write\"]",
-              "applyPolicies": "[\"Access: Manage\"]"
+              "resources": "[\"cursus\"]",
+              "scopes": "[\"cursus:graph:read\"]",
+              "applyPolicies": "[\"Access: Basic\"]"
             }
           },
           {
@@ -1247,6 +1199,18 @@
             }
           },
           {
+            "name": "Manage Projects",
+            "description": "",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "resources": "[\"projects\"]",
+              "scopes": "[\"projects:write\",\"projects:delete\"]",
+              "applyPolicies": "[\"Access: Manage\"]"
+            }
+          },
+          {
             "name": "Manage Cursus",
             "description": "",
             "type": "scope",
@@ -1254,8 +1218,91 @@
             "decisionStrategy": "UNANIMOUS",
             "config": {
               "resources": "[\"cursus\"]",
-              "scopes": "[\"cursus:delete\",\"cursus:write\"]",
+              "scopes": "[\"cursus:write\",\"cursus:delete\"]",
               "applyPolicies": "[\"Access: Manage\"]"
+            }
+          },
+          {
+            "name": "Manage Reviews",
+            "description": "",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "resources": "[\"reviews\"]",
+              "scopes": "[\"reviews:write\",\"reviews:delete\"]",
+              "applyPolicies": "[\"Access: Basic\"]"
+            }
+          },
+          {
+            "name": "View Reviews",
+            "description": "",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "resources": "[\"reviews\"]",
+              "scopes": "[\"reviews:read\"]",
+              "applyPolicies": "[\"Access: Basic\"]"
+            }
+          },
+          {
+            "name": "Manage Rubrics",
+            "description": "",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "resources": "[\"rubrics\"]",
+              "scopes": "[\"rubrics:delete\",\"rubrics:write\"]",
+              "applyPolicies": "[\"Access: Manage\"]"
+            }
+          },
+          {
+            "name": "View Rubrics",
+            "description": "",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "resources": "[\"rubrics\"]",
+              "scopes": "[\"rubrics:read\"]",
+              "applyPolicies": "[\"Access: Basic\"]"
+            }
+          },
+          {
+            "name": "Manage Goals",
+            "description": "",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "resources": "[\"goals\"]",
+              "scopes": "[\"goals:write\",\"goals:delete\"]",
+              "applyPolicies": "[\"Access: Manage\"]"
+            }
+          },
+          {
+            "name": "Manage Settings",
+            "description": "Allow to edit the user settings",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "resources": "[\"user\"]",
+              "scopes": "[\"user:settings:write\",\"user:settings:read\"]",
+              "applyPolicies": "[\"Access: Basic\"]"
+            }
+          },
+          {
+            "name": "Delete User",
+            "description": "Allow users to delete their own accounts",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "resources": "[\"user\"]",
+              "scopes": "[\"user:settings:delete\"]"
             }
           }
         ],
@@ -1364,6 +1411,10 @@
           },
           {
             "name": "rubrics:delete"
+          },
+          {
+            "name": "cursus:graph:read",
+            "displayName": "View Galaxy"
           }
         ],
         "decisionStrategy": "UNANIMOUS"
@@ -1757,8 +1808,9 @@
           "consentRequired": false,
           "config": {
             "user.session.note": "clientAddress",
-            "id.token.claim": "true",
             "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
             "access.token.claim": "true",
             "claim.name": "clientAddress",
             "jsonType.label": "String"
@@ -1772,8 +1824,9 @@
           "consentRequired": false,
           "config": {
             "user.session.note": "clientHost",
-            "id.token.claim": "true",
             "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
             "access.token.claim": "true",
             "claim.name": "clientHost",
             "jsonType.label": "String"
@@ -1787,8 +1840,9 @@
           "consentRequired": false,
           "config": {
             "user.session.note": "client_id",
-            "id.token.claim": "true",
             "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
             "access.token.claim": "true",
             "claim.name": "client_id",
             "jsonType.label": "String"
@@ -2235,20 +2289,35 @@
       "linkOnly": false,
       "hideOnLogin": false,
       "config": {
-        "userInfoUrl": "http://localhost:8080/realms/admin/protocol/openid-connect/userinfo",
+        "tokenUrl": "https://auth.kk92.net/realms/admin/protocol/openid-connect/token",
+        "acceptsPromptNoneForwardFromClient": "false",
+        "jwksUrl": "https://auth.kk92.net/realms/admin/protocol/openid-connect/certs",
+        "isAccessTokenJWT": "false",
+        "filteredByClaim": "false",
+        "backchannelSupported": "false",
+        "caseSensitiveOriginalUsername": "false",
+        "issuer": "https://auth.kk92.net/realms/admin",
+        "loginHint": "false",
+        "clientAuthMethod": "client_secret_post",
+        "syncMode": "LEGACY",
+        "clientSecret": "**********",
+        "requiresShortStateParameter": "false",
+        "allowedClockSkew": "0",
+        "userInfoUrl": "https://auth.kk92.net/realms/admin/protocol/openid-connect/userinfo",
         "validateSignature": "true",
-        "tokenUrl": "http://localhost:8080/realms/admin/protocol/openid-connect/token",
         "clientId": "student-realm-broker",
-        "jwksUrl": "http://localhost:8080/realms/admin/protocol/openid-connect/certs",
-        "issuer": "http://localhost:8080/realms/admin",
+        "uiLocales": "false",
+        "disableNonce": "false",
         "useJwksUrl": "true",
+        "sendClientIdOnLogout": "false",
         "pkceEnabled": "false",
         "metadataDescriptorUrl": "http://localhost:8080/realms/admin/.well-known/openid-configuration",
-        "authorizationUrl": "http://localhost:8080/realms/admin/protocol/openid-connect/auth",
-        "clientAuthMethod": "client_secret_post",
-        "logoutUrl": "http://localhost:8080/realms/admin/protocol/openid-connect/logout",
-        "syncMode": "LEGACY",
-        "clientSecret": "**********"
+        "authorizationUrl": "https://auth.kk92.net/realms/admin/protocol/openid-connect/auth",
+        "disableUserInfo": "false",
+        "logoutUrl": "https://auth.kk92.net/realms/admin/protocol/openid-connect/logout",
+        "sendIdTokenOnLogout": "true",
+        "passMaxAge": "false",
+        "disableTypeClaimCheck": "false"
       }
     }
   ],
@@ -2300,14 +2369,14 @@
         "subComponents": {},
         "config": {
           "allowed-protocol-mapper-types": [
-            "saml-user-property-mapper",
-            "oidc-address-mapper",
-            "saml-role-list-mapper",
-            "saml-user-attribute-mapper",
-            "oidc-usermodel-property-mapper",
-            "oidc-full-name-mapper",
             "oidc-sha256-pairwise-sub-mapper",
-            "oidc-usermodel-attribute-mapper"
+            "saml-role-list-mapper",
+            "oidc-address-mapper",
+            "oidc-usermodel-property-mapper",
+            "saml-user-property-mapper",
+            "oidc-usermodel-attribute-mapper",
+            "saml-user-attribute-mapper",
+            "oidc-full-name-mapper"
           ]
         }
       },
@@ -2334,14 +2403,14 @@
         "subComponents": {},
         "config": {
           "allowed-protocol-mapper-types": [
-            "saml-role-list-mapper",
-            "oidc-usermodel-property-mapper",
+            "saml-user-property-mapper",
             "saml-user-attribute-mapper",
             "oidc-usermodel-attribute-mapper",
-            "oidc-full-name-mapper",
-            "saml-user-property-mapper",
+            "saml-role-list-mapper",
             "oidc-sha256-pairwise-sub-mapper",
-            "oidc-address-mapper"
+            "oidc-address-mapper",
+            "oidc-usermodel-property-mapper",
+            "oidc-full-name-mapper"
           ]
         }
       },

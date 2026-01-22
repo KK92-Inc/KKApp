@@ -20,9 +20,8 @@ using App.Backend.Models.Requests.Cursus;
 
 namespace App.Backend.API.Controllers;
 
-[ApiController]
 [Route("cursus")]
-[ProtectedResource("cursus"), Authorize]
+[ApiController, Authorize]
 public class CursusController(ILogger<CursusController> log, ICursusService cursusService, ISubscriptionService subscriptions) : Controller
 {
     [HttpGet]
@@ -56,7 +55,7 @@ public class CursusController(ILogger<CursusController> log, ICursusService curs
     )
     {
         token.ThrowIfCancellationRequested();
-        var cursus = await cursusService.CreateAsync(new () 
+        var cursus = await cursusService.CreateAsync(new ()
         {
             Name = request.Name,
             Description = request.Description ?? string.Empty,
@@ -154,7 +153,7 @@ public class CursusController(ILogger<CursusController> log, ICursusService curs
 //     {
 //         var userId = User.GetSID();
 //         var subscribeRequest = request ?? new SubscribeToCursusRequestDTO { CursusId = id };
-        
+
 //         var userCursus = await cursusService.SubscribeToCursusAsync(userId, subscribeRequest);
 //         return CreatedAtAction(nameof(GetUserCursi), new { }, new UserCursusDO(userCursus));
 //     }
