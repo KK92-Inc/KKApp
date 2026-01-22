@@ -19,7 +19,7 @@ const env = (k: string, v?: string) => Bun.env[k] ?? v ?? fatal(`${k} not set`);
 const ID = env('KC_ID', 'intra');
 const REALM = env('KC_REALM', 'student');
 const ORIGIN = env('KC_ORIGIN', 'http://localhost:8080');
-const ADMIN = env('KC_ADMIN', 'wizar');
+const ADMIN = env('KC_ADMIN', 'admin');
 const PASSWORD = env('KC_ADMIN_PASSWORD', 'admin');
 
 // ============================================================================

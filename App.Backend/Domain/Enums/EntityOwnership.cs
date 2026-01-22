@@ -9,9 +9,6 @@ namespace App.Backend.Domain.Enums;
 
 /// <summary>
 /// Certain kinds of ownership for an entity.
-///
-/// <para>E.g: An API App can be owned by a User or an Organization.</para>
-/// <para>E.g: A repository can be owned by a User or an Organization.</para>
 /// </summary>
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum EntityOwnership

@@ -36,10 +36,10 @@ public class User : BaseEntity
     [Column("display")]
     public string? Display { get; set; }
 
-    [Column("avatar_url"), Url]
+    [Column("avatar_url")]
     public string? AvatarUrl { get; set; }
 
-    [JsonIgnore, Column("details_id")]
+    [Column("details_id")]
     public Guid? DetailsId { get; set; }
 
     [ForeignKey(nameof(DetailsId))]

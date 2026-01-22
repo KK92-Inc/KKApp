@@ -24,7 +24,12 @@ namespace App.Backend.API.Controllers;
 [ApiController]
 [Route("goals")]
 [ProtectedResource("goals"), Authorize]
-public class GoalController(ILogger<GoalController> log, IGoalService goals, ISubscriptionService subscriptions) : Controller
+public class GoalController(
+    ILogger<GoalController> log,
+    IGoalService goals,
+    IWorkspaceService workspace,
+    ISubscriptionService subscriptions
+) : Controller
 {
     [HttpGet]
     [ProtectedResource("goals", "goals:read")]
@@ -43,27 +48,34 @@ public class GoalController(ILogger<GoalController> log, IGoalService goals, ISu
         return Ok(page.Items.Select(g => new GoalDO(g)));
     }
 
-    [HttpPost]
-    [ProtectedResource("goals", "goals:write")]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [EndpointSummary("Create a new goal")]
-    [EndpointDescription("Create a new goal with optional project associations")]
-    public async Task<ActionResult<GoalDO>> Create([FromBody] PostGoalRequestDTO request)
-    {
-        await goals.CreateAsync(new () 
-        {
-            Name = request.Name,
-            Slug = request.Slug,
-            Description = request.Description ?? string.Empty,
-        });
+    // [HttpPost]
+    // [ProtectedResource("goals", "goals:write")]
+    // [ProducesResponseType(StatusCodes.Status201Created)]
+    // [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    // [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    // [ProducesErrorResponseType(typeof(ProblemDetails))]
+    // [EndpointSummary("Create a new goal")]
+    // [EndpointDescription("Create a new goal with optional project associations")]
+    // public async Task<ActionResult<GoalDO>> Create([FromBody] PostGoalRequestDTO request)
+    // {
 
-        // TODO: Project associations
+    //     // var space = await workspace.CreateAsync(new ()
+    //     // {
+    //     //     Owner = User.GetSID()
+    //     // });
 
-        return Created();
-    }
+    //     // await goals.CreateAsync(new ()
+    //     // {
+    //     //     Name = request.Name,
+    //     //     Slug = request.Slug,
+    //     //     Description = request.Description ?? string.Empty,
+    //     //     Workspace = space
+    //     // });
+
+    //     // TODO: Project associations
+
+    //     return Created();
+    // }
 
     [HttpDelete]
     [ProtectedResource("goals", "goals:delete")]
@@ -125,10 +137,10 @@ public class GoalController(ILogger<GoalController> log, IGoalService goals, ISu
         if (goal is null)
             return NotFound();
 
-        
+
         goal.Name = request.Name ?? goal.Name;
         goal.Description = request.Description ?? goal.Description;
-        goal.Slug = request.Slug ?? goal.Slug;
+        // goal.Slug = request.Name?.ToSlug() ?? goal.Slug;
         await goals.UpdateAsync(goal);
         return Ok(new GoalDO(goal));
     }
@@ -158,7 +170,7 @@ public class GoalController(ILogger<GoalController> log, IGoalService goals, ISu
     // {
     //     var userId = User.GetSID();
     //     var subscribeRequest = request ?? new SubscribeToGoalRequestDTO { GoalId = id };
-        
+
     //     var userGoal = await subscriptions.SubscribeToGoalAsync(userId, subscribeRequest);
     //     return CreatedAtAction(nameof(GetUserGoals), new { }, new UserGoalDO(userGoal));
     // }

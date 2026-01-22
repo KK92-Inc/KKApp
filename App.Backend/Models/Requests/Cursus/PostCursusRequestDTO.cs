@@ -20,13 +20,13 @@ public record PostCursusRequestDTO
     [Required, StringLength(256, MinimumLength = 1)]
     public required string Name { get; init; }
 
-    /// <summary>
-    /// The unique slug for the cursus.
-    /// </summary>
-    [Required, StringLength(256, MinimumLength = 1)]
-    [RegularExpression(@"^[a-z0-9]+(?:-[a-z0-9]+)*$",
-        ErrorMessage = "Slug must be lowercase alphanumeric with hyphens only")]
-    public required string Slug { get; init; }
+    // /// <summary>
+    // /// The unique slug for the cursus.
+    // /// </summary>
+    // [Required, StringLength(256, MinimumLength = 1)]
+    // [RegularExpression(@"^[a-z0-9]+(?:-[a-z0-9]+)*$",
+    //     ErrorMessage = "Slug must be lowercase alphanumeric with hyphens only")]
+    // public required string Slug { get; init; }
 
     /// <summary>
     /// Optional description of the cursus.
@@ -40,9 +40,9 @@ public record PostCursusRequestDTO
     public bool Active { get; init; } = true;
 
     /// <summary>
-    /// Whether the cursus is deprecated.
+    /// Whether the project is public.
     /// </summary>
-    public bool Deprecated { get; init; } = false;
+    public bool Public { get; init; } = false;
 
     /// <summary>
     /// The track definition as JSON.

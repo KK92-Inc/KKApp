@@ -22,7 +22,12 @@ namespace App.Backend.API.Controllers;
 
 [Route("cursus")]
 [ApiController, Authorize]
-public class CursusController(ILogger<CursusController> log, ICursusService cursusService, ISubscriptionService subscriptions) : Controller
+public class CursusController(
+    ILogger<CursusController> log,
+    ICursusService cursusService,
+    IWorkspaceService workspace,
+    ISubscriptionService subscriptions
+) : Controller
 {
     [HttpGet]
     [ProtectedResource("cursus", "cursus:read")]
@@ -33,39 +38,40 @@ public class CursusController(ILogger<CursusController> log, ICursusService curs
     [EndpointDescription("Retrieve a paginated list of all cursus")]
     public async Task<ActionResult> GetAll(
         [FromQuery] Sorting sorting,
-        [FromQuery] Pagination pagination
+        [FromQuery] Pagination pagination,
+        CancellationToken token
     )
     {
-        var page = await cursusService.GetAllAsync(sorting, pagination);
+        var page = await cursusService.GetAllAsync(sorting, pagination, token);
         page.AppendHeaders(Request.Headers);
         return Ok(page.Items.Select(c => new CursusDO(c)));
     }
 
-    [HttpPost]
-    [ProtectedResource("cursus", "cursus:write")]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [EndpointSummary("Create a new cursus")]
-    [EndpointDescription("Create a new cursus with optional track data")]
-    public async Task<ActionResult<CursusDO>> Create(
-        [FromBody] PostCursusRequestDTO request,
-        CancellationToken token
-    )
-    {
-        token.ThrowIfCancellationRequested();
-        var cursus = await cursusService.CreateAsync(new ()
-        {
-            Name = request.Name,
-            Description = request.Description ?? string.Empty,
-            Slug = request.Slug,
-            // TrackData = request.TrackData
-        }, token);
+    // [HttpPost]
+    // [ProtectedResource("cursus", "cursus:write")]
+    // [ProducesResponseType(StatusCodes.Status201Created)]
+    // [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    // [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    // [ProducesErrorResponseType(typeof(ProblemDetails))]
+    // [EndpointSummary("Create a new cursus")]
+    // [EndpointDescription("Create a new cursus with optional track data")]
+    // public async Task<ActionResult<CursusDO>> Create(
+    //     [FromBody] PostCursusRequestDTO dto,
+    //     CancellationToken token
+    // )
+    // {
+    //     // var space = await workspace.FindByIdAsync();
+    //     await cursusService.CreateAsync(new ()
+    //     {
+    //         Name = dto.Name,
+    //         Description = dto.Description ?? string.Empty,
+    //         Slug = dto.Name.ToSlug(),
+    //         // TrackData = request.TrackData
+    //     }, token);
 
-        // TODO: Goal association from track data
-        return Created();
-    }
+    //     // TODO: Goal association from track data
+    //     return Created();
+    // }
 
     [HttpDelete]
     [ProtectedResource("cursus", "cursus:delete")]

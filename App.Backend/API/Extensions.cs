@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 using App.Backend.Core;
 
 namespace App.Backend.API;
@@ -18,6 +19,19 @@ public static class Extensions
             return Guid.TryParse(claim, out var guid) ?
                 guid :
                 throw new ServiceException(403, "Unable to verify user");
+        }
+    }
+
+    extension(string value)
+    {
+        public string ToSlug()
+        {
+            return value
+                .ToLower()
+                .Replace(@"[^a-z0-9\s-]", string.Empty) // Invalid chars
+                .Replace(@"\s+", " ") // Convert multiple spaces into one space
+                .Trim()
+                .Replace(@"\s", "-"); // Hyphens
         }
     }
 

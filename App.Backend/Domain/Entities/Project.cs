@@ -3,30 +3,36 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-using App.Backend.Domain;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 // ============================================================================
 
 namespace App.Backend.Domain.Entities;
 
-
 /// <summary>
-/// Project entity.
+/// Represents a project entity within the application domain.
+/// Projects are associated with workspaces and contain information about the project's name,
+/// description, slug, and visibility settings.
+///
+/// The are templates for <see cref="Users.UserProject"/> instances.
 /// </summary>
-[Table("projects")]
+/// <remarks>
+/// This class inherits from <see cref="BaseEntity"/>.
+/// </remarks>
+[Table("tbl_projects")]
 [Index(nameof(Name)), Index(nameof(Slug))]
 public class Project : BaseEntity
 {
-    [Column("name")]
-    public string Name { get; set; }
+    [Column("name"), StringLength(255)]
+    public required string Name { get; set; }
 
-    [Column("description")]
-    public string Description { get; set; }
+    [Column("description"), StringLength(2048)]
+    public required string Description { get; set; }
 
-    [Column("slug")]
-    public string Slug { get; set; }
+    [Column("slug"), StringLength(255)]
+    public required string Slug { get; set; }
 
     [Column("active")]
     public bool Active { get; set; }
@@ -36,4 +42,10 @@ public class Project : BaseEntity
 
     [Column("deprecated")]
     public bool Deprecated { get; set; }
+
+    [Column("workspace_id")]
+    public Guid WorkspaceId { get; set; }
+
+    [ForeignKey(nameof(WorkspaceId))]
+    public virtual Workspace Workspace { get; set; }
 }

@@ -25,6 +25,7 @@ public class DatabaseContext(DbContextOptions<DatabaseContext> options) : DbCont
     public DbSet<Comment> Comments { get; set; }
     public DbSet<Cursus> Cursi { get; set; }
     public DbSet<Project> Projects { get; set; }
+    public DbSet<Workspace> Workspaces { get; set; }
     public DbSet<Goal> Goals { get; set; }
     public DbSet<UserProject> UserProjects { get; set; }
     public DbSet<UserCursus> UserCursi { get; set; }

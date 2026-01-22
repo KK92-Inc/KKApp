@@ -42,28 +42,29 @@ public class ProjectController(ILogger<ProjectController> log, IProjectService p
         return Ok(page.Items.Select(p => new ProjectDO(p)));
     }
 
-    [HttpPost]
-    [ProtectedResource("projects", "projects:write")]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [EndpointSummary("Create a new project")]
-    [EndpointDescription("Create a new project")]
-    public async Task<ActionResult<ProjectDO>> Create([FromBody] PostProjectRequestDTO request)
-    {
-        var project = await projects.CreateAsync(new ()
-        {
-            Name = request.Name,
-            Description = request.Description,
-            Slug = request.Slug,
-            Active = request.Active,
-            Public = request.Public,
-            Deprecated = request.Deprecated
-        });
+    // [HttpPost]
+    // [ProtectedResource("projects", "projects:write")]
+    // [ProducesResponseType(StatusCodes.Status201Created)]
+    // [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    // [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    // [ProducesErrorResponseType(typeof(ProblemDetails))]
+    // [EndpointSummary("Create a new project")]
+    // [EndpointDescription("Create a new project")]
+    // public async Task<ActionResult<ProjectDO>> Create([FromBody] PostProjectRequestDTO request)
+    // {
+    //     // var project = await projects.CreateAsync(new ()
+    //     // {
+    //     //     Name = request.Name,
+    //     //     Description = request.Description ?? string.Empty,
+    //     //     Slug = request.Slug,
+    //     //     Active = request.Active,
+    //     //     Public = request.Public,
+    //     //     Deprecated = request.Deprecated,
+    //     //     WorkspaceId =
+    //     // });
 
-        return Created();
-    }
+    //     return Created();
+    // }
 
     [HttpDelete]
     [ProtectedResource("projects", "projects:delete")]
@@ -114,7 +115,7 @@ public class ProjectController(ILogger<ProjectController> log, IProjectService p
 
         project.Name = request.Name ?? project.Name;
         project.Description = request.Description ?? project.Description;
-        project.Slug = request.Slug ?? project.Slug;
+        // project.Slug = request.Slug ?? project.Slug;
         project.Active = request.Active ?? project.Active;
         project.Public = request.Public ?? project.Public;
         project.Deprecated = request.Deprecated ?? project.Deprecated;

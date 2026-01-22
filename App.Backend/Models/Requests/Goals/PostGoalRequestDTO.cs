@@ -20,13 +20,13 @@ public record PostGoalRequestDTO
     [Required, StringLength(256, MinimumLength = 1)]
     public required string Name { get; init; }
 
-    /// <summary>
-    /// The unique slug for the goal.
-    /// </summary>
-    [Required, StringLength(256, MinimumLength = 1)]
-    [RegularExpression(@"^[a-z0-9]+(?:-[a-z0-9]+)*$",
-        ErrorMessage = "Slug must be lowercase alphanumeric with hyphens only")]
-    public required string Slug { get; init; }
+    // /// <summary>
+    // /// The unique slug for the goal.
+    // /// </summary>
+    // [Required, StringLength(256, MinimumLength = 1)]
+    // [RegularExpression(@"^[a-z0-9]+(?:-[a-z0-9]+)*$",
+    //     ErrorMessage = "Slug must be lowercase alphanumeric with hyphens only")]
+    // public required string Slug { get; init; }
 
     /// <summary>
     /// Optional description of the goal.
@@ -40,7 +40,7 @@ public record PostGoalRequestDTO
     public bool Active { get; init; } = true;
 
     /// <summary>
-    /// Whether the goal is deprecated.
+    /// Whether the project is public.
     /// </summary>
-    public bool Deprecated { get; init; } = false;
+    public bool Public { get; init; } = false;
 }

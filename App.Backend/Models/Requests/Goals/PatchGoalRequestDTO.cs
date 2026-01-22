@@ -21,14 +21,6 @@ public record PatchGoalRequestDTO
     public string? Name { get; init; }
 
     /// <summary>
-    /// Optional slug update.
-    /// </summary>
-    [StringLength(256, MinimumLength = 1)]
-    [RegularExpression(@"^[a-z0-9]+(?:-[a-z0-9]+)*$",
-        ErrorMessage = "Slug must be lowercase alphanumeric with hyphens only")]
-    public string? Slug { get; init; }
-
-    /// <summary>
     /// Optional description update.
     /// </summary>
     [StringLength(16384)]
@@ -38,6 +30,11 @@ public record PatchGoalRequestDTO
     /// Optional active status update.
     /// </summary>
     public bool? Active { get; init; }
+
+    /// <summary>
+    /// Optional active status update.
+    /// </summary>
+    public bool? Public { get; init; }
 
     /// <summary>
     /// Optional deprecated status update.

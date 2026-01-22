@@ -5,6 +5,7 @@ using App.Backend.Database;
 using App.Backend.Domain.Rules;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -13,9 +14,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Migrations.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    partial class DatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20260122121049_Workspaces")]
+    partial class Workspaces
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -134,7 +137,7 @@ namespace Migrations.Migrations
 
                     b.HasIndex("WorkspaceId");
 
-                    b.ToTable("tbl_cursus");
+                    b.ToTable("cursus");
                 });
 
             modelBuilder.Entity("App.Backend.Domain.Entities.Git", b =>
@@ -230,7 +233,7 @@ namespace Migrations.Migrations
 
                     b.HasIndex("WorkspaceId");
 
-                    b.ToTable("tbl_goals");
+                    b.ToTable("goals");
                 });
 
             modelBuilder.Entity("App.Backend.Domain.Entities.Notification", b =>
@@ -345,7 +348,7 @@ namespace Migrations.Migrations
 
                     b.HasIndex("WorkspaceId");
 
-                    b.ToTable("tbl_projects");
+                    b.ToTable("projects");
                 });
 
             modelBuilder.Entity("App.Backend.Domain.Entities.Projects.UserProjectMember", b =>
@@ -933,7 +936,7 @@ namespace Migrations.Migrations
 
                     b.HasIndex("OwnerId");
 
-                    b.ToTable("tbl_workspace");
+                    b.ToTable("workspace");
                 });
 
             modelBuilder.Entity("App.Backend.Domain.Relations.GoalProject", b =>
