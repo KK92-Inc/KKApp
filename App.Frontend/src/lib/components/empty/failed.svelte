@@ -4,17 +4,20 @@
 	import { Button } from '../button';
 	import type { HttpError } from '@sveltejs/kit';
 	import type { Snippet } from 'svelte';
+	import type { ClassValue } from 'clsx';
+	import { cn } from '$lib/utils';
 
 	interface Props {
 		error: unknown;
+		class?: ClassValue;
 		reset: () => void;
 		icon?: Snippet<[]>;
 	}
 
-	const { error, reset, icon }: Props = $props();
+	const { error, reset, icon, class: klass }: Props = $props();
 </script>
 
-<Empty.Root class="h-80 bg-card">
+<Empty.Root class={cn(klass, "h-80 bg-card")}>
 	<Empty.Header>
 		<Empty.Media variant="icon">
 			{#if icon}

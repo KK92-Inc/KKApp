@@ -19,4 +19,12 @@ public interface INotificationService : IDomainService<Notification>
     /// <param name="userId">The ID of the user</param>
     /// <param name="notificationIds">Optional list of specific notification IDs to mark as read. If null or empty, marks all notifications as read.</param>
     Task MarkAsAsync(Guid userId, IEnumerable<Guid>? guids = null, bool read = true, CancellationToken token = default);
+
+    /// <summary>
+    /// Constructs the feed
+    /// </summary>
+    /// <param name="userId"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    // Task<Notification> GetNotificationFeed(Guid userId, CancellationToken token = default);
 }

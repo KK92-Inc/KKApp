@@ -24,6 +24,10 @@ public static class Extensions
 
     extension(string value)
     {
+        /// <summary>
+        /// Generate a slug out of a string
+        /// </summary>
+        /// <returns>The string but slugified</returns>
         public string ToSlug()
         {
             return value

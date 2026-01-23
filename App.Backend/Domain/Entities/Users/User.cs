@@ -26,7 +26,6 @@ public class User : BaseEntity
         Login = string.Empty;
         Display = null;
         AvatarUrl = null;
-        DetailsId = null;
         Details = null;
     }
 
@@ -39,10 +38,6 @@ public class User : BaseEntity
     [Column("avatar_url")]
     public string? AvatarUrl { get; set; }
 
-    [Column("details_id")]
-    public Guid? DetailsId { get; set; }
-
-    [ForeignKey(nameof(DetailsId))]
     public virtual Details? Details { get; set; }
 
     //= Relations =//

@@ -24,10 +24,13 @@ public class CursusDO(Domain.Entities.Cursus cursus) : BaseEntityDO<Domain.Entit
     [Required]
     public string Slug { get; set; } = cursus.Slug;
 
+    [Required]
+    public WorkspaceDO? Workspace { get; set; } = cursus.Workspace;
+
     /// <summary>
     /// The track/path of the cursus in .graph format (optional for list views).
     /// </summary>
-    public string? Track { get; set; } = cursus.Track?.ToString();
+    // public string? Track { get; set; } = cursus.Track?.ToString();
 
     public static implicit operator CursusDO?(Domain.Entities.Cursus? cursus) =>
         cursus is null ? null : new(cursus);

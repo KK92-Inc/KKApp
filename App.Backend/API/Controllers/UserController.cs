@@ -35,7 +35,7 @@ public class UserController(
 ) : Controller
 {
     [HttpGet("/users/current")]
-    [ProtectedResource("users", "user:read")]
+    // [ProtectedResource("users", "users:read")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
@@ -48,13 +48,13 @@ public class UserController(
     }
 
     [HttpGet("/users/current/notifications")]
-    [ProtectedResource("users", "user:read")]
+    // [ProtectedResource("users", "users:read")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Get the currently authenticated user.")]
     [EndpointDescription("When authenticated it's useful to know who you currently are logged in as.")]
-    public async Task<ActionResult<UserDO>> CurrentNotifications(
+    public async Task<ActionResult<IEnumerable<NotificationDO>>> CurrentNotifications(
         [FromQuery(Name = "filter[read]")] bool read,
         [FromQuery(Name = "filter[variant]")] NotifiableVariant inclusive,
         [FromQuery(Name = "filter[not[variant]]")] NotifiableVariant exclusive,
@@ -73,19 +73,40 @@ public class UserController(
         return Ok(page.Items.Select(e => new NotificationDO(e)));
     }
 
-[HttpGet("/users/current/spotlights")]
+    // [HttpGet("/users/current/feed")]
+    // [ProtectedResource("users", "user:read")]
+    // [ProducesResponseType(StatusCodes.Status200OK)]
+    // [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    // [ProducesErrorResponseType(typeof(ProblemDetails))]
+    // [EndpointSummary("Get the currently authenticated user.")]
+    // [EndpointDescription("When authenticated it's useful to know who you currently are logged in as.")]
+    // public async Task<ActionResult<FeedDO>> CurrentFeed(
+    //     [FromQuery] Pagination pagination,
+    //     [FromQuery] Sorting sorting,
+    //     CancellationToken cancellationToken
+    // )
+    // {
+    //     var page = await notifications.GetAllAsync(sorting, pagination, cancellationToken
+
+    //     );
+
+    //     page.AppendHeaders(Request.Headers);
+    //     return Ok(page.Items.Select(e => new NotificationDO(e)));
+    // }
+
+    [HttpGet("/users/current/spotlights")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Get the currently authenticated user.")]
     [EndpointDescription("When authenticated it's useful to know who you currently are logged in as.")]
-    public async Task<ActionResult<UserDO>> CurrentSpotlights()
+    public async Task<ActionResult<SpotlightNotificationDO>> CurrentSpotlights()
     {
         // TODO: Implement spotlights service and remove this placeholder
         return Ok();
     }
 
-[HttpDelete("/users/current/spotlights/{id:guid}")]
+    [HttpDelete("/users/current/spotlights/{id:guid}")]
     [EndpointSummary("Dismiss a spotlighted event")]
     [EndpointDescription("If users dismiss a spotlight event, they won't shown in the future.")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -124,7 +145,7 @@ public class UserController(
     [EndpointDescription("Create a new user with optional details")]
     public async Task<ActionResult<UserDO>> Create([FromBody] PostUserRequestDTO request)
     {
-        var user = await users.CreateAsync(new () 
+        var user = await users.CreateAsync(new ()
         {
             Login = request.Login,
             Display = request.DisplayName,
@@ -176,7 +197,7 @@ public class UserController(
     public async Task<ActionResult<UserDO>> Update(Guid id, [FromBody] PatchUserRequestDTO request)
     {
         var currentUserId = User.GetSID();
-        
+
         // Authorization check: user can only update their own profile unless they are staff
         if (User.GetSID() != id && !User.Claims.Any(c => c.Type == "role" && c.Value == "staff"))
             return Forbid();
@@ -206,9 +227,8 @@ public class UserController(
     [EndpointDescription("Retrieve project instances subscribed by current user")]
     public async Task<ActionResult> UnsubscribeFromProject(Guid id, Guid projectId)
     {
-        
+
 
         return NoContent();
     }
 }
-

@@ -1084,6 +1084,28 @@
               }
             ],
             "icon_uri": ""
+          },
+          {
+            "name": "workspaces",
+            "type": "urn:intra:resources:workspaces",
+            "ownerManagedAccess": false,
+            "displayName": "Workspaces",
+            "attributes": {},
+            "uris": [
+              "/*"
+            ],
+            "scopes": [
+              {
+                "name": "workspaces:delete"
+              },
+              {
+                "name": "workspaces:read"
+              },
+              {
+                "name": "workspaces:write"
+              }
+            ],
+            "icon_uri": ""
           }
         ],
         "policies": [
@@ -1304,6 +1326,30 @@
               "resources": "[\"user\"]",
               "scopes": "[\"user:settings:delete\"]"
             }
+          },
+          {
+            "name": "View Workspaces",
+            "description": "",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "resources": "[\"workspaces\"]",
+              "scopes": "[\"workspaces:read\"]",
+              "applyPolicies": "[\"Access: Basic\"]"
+            }
+          },
+          {
+            "name": "Manage Workspaces",
+            "description": "Note: Does not allow for deletion as it is destructive",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "resources": "[\"workspaces\"]",
+              "scopes": "[\"workspaces:write\"]",
+              "applyPolicies": "[\"Access: Manage\"]"
+            }
           }
         ],
         "scopes": [
@@ -1415,6 +1461,18 @@
           {
             "name": "cursus:graph:read",
             "displayName": "View Galaxy"
+          },
+          {
+            "name": "workspaces:read",
+            "displayName": "Read Workspaces"
+          },
+          {
+            "name": "workspaces:write",
+            "displayName": "Write Workspaces"
+          },
+          {
+            "name": "workspaces:delete",
+            "displayName": "Delete Workspaces"
           }
         ],
         "decisionStrategy": "UNANIMOUS"

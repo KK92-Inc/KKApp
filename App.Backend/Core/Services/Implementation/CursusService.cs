@@ -19,10 +19,9 @@ public class CursusService(DatabaseContext ctx) : BaseService<Cursus>(ctx), ICur
 {
     private readonly DatabaseContext context = ctx;
 
-    public async Task<Cursus?> FindBySlug(string slug)
+    public async Task<Cursus?> FindBySlugAsync(string slug)
     {
-        await context.Comments.ToListAsync();
-        throw new NotImplementedException();
+        return await context.Cursi.FirstOrDefaultAsync(g => g.Slug == slug);
     }
 
     public Task<IEnumerable<Project>> GetCursusGoals(Guid goalId)

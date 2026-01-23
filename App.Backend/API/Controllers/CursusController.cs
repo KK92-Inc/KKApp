@@ -25,8 +25,7 @@ namespace App.Backend.API.Controllers;
 public class CursusController(
     ILogger<CursusController> log,
     ICursusService cursusService,
-    IWorkspaceService workspace,
-    ISubscriptionService subscriptions
+    IWorkspaceService workspace
 ) : Controller
 {
     [HttpGet]

@@ -24,14 +24,16 @@ using Scalar.Aspire;
 
 var builder = DistributedApplication.CreateBuilder(args);
 builder.AddDockerComposeEnvironment("env").WithDashboard(false);
+var isRun = builder.ExecutionContext.IsRunMode;
 
 // Paramaters
 // ============================================================================
 
+
 // Configure origin domain for frontend
-var kcOrigin = builder.AddParameter("kc-origin", "https://auth.kk92.net", true);
+var kcOrigin = builder.AddParameter("kc-origin", isRun ? "http://localhost:8080" : "https://auth.kk92.net", true);
 // Configure origin domain for keycloak
-var feOrigin = builder.AddParameter("fe-origin", "https://intra.kk92.net", true);
+var feOrigin = builder.AddParameter("fe-origin", isRun ? "http://localhost:46783" : "https://intra.kk92.net", true);
 
 // S3 Storage Key
 var s3Key = builder.AddParameter("s3-access-key-id", true);

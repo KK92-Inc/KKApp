@@ -31,7 +31,7 @@ namespace App.Backend.API.Controllers;
 [Route("workspace")]
 // [ProtectedResource("users"), Authorize]
 public class WorkspaceController(
-    ILogger<WorkspaceController> l,
+    ILogger<WorkspaceController> log,
     IWorkspaceService workspaceService,
     IProjectService projectService,
     IGoalService goalService,
@@ -40,7 +40,7 @@ public class WorkspaceController(
 {
     [HttpGet("current")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProtectedResource("workspace", "workspace:read")]
+    [ProtectedResource("workspaces", "workspaces:read")]
     [EndpointSummary("Get the workspace of the user")]
     [EndpointDescription("Retrieves the workspace of the currently authenticated user")]
     public async Task<ActionResult<WorkspaceDO>> GetWorkspace(CancellationToken token)
@@ -53,7 +53,7 @@ public class WorkspaceController(
     #region AddEntities
     [HttpPost("{workspace:guid}/cursus")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProtectedResource("workspace", ["workspace:write", "cursus:write"])]
+    // [ProtectedResource("workspaces", ["workspaces:write", "cursus:write"])]
     [EndpointSummary("Create a new cursus")]
     [EndpointDescription("Directly create a new project to be added to the workspace")]
     public async Task<ActionResult> AddCursus(
@@ -63,7 +63,19 @@ public class WorkspaceController(
     )
     {
         var space = await workspaceService.FindByIdAsync(workspace, token);
-        if (space is null) return NotFound();
+        if (space is null)
+            return NotFound();
+        // For Root level workspaces (Organization owned), we must be staff
+        if (space.Ownership is EntityOwnership.Organization && !User.IsInRole("Staff"))
+            return Forbid();
+
+        // If it's a personal workspace, ensure the SID matches the owner
+        var id = User.GetSID();
+        log.LogDebug("Owner: {OwnerId} => UserID: {Id}", space.OwnerId, id);
+        if (space.OwnerId is not null && space.OwnerId != id)
+            return Forbid();
+        if (await cursusService.FindBySlugAsync(dto.Name.ToSlug()) is not null)
+            return Conflict();
 
         await cursusService.CreateAsync(new()
         {
@@ -81,7 +93,8 @@ public class WorkspaceController(
 
     [HttpPost("{workspace:guid}/goal")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProtectedResource("workspace", ["workspace:write", "goals:write"])]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProtectedResource("workspaces", ["workspaces:write", "goals:write"])]
     [EndpointSummary("Create a new goal")]
     [EndpointDescription("Directly create a new goal to be added to the workspace")]
     public async Task<ActionResult> AddGoal(
@@ -91,18 +104,17 @@ public class WorkspaceController(
     )
     {
         var space = await workspaceService.FindByIdAsync(workspace, token);
-        if (space is null) return NotFound();
-
-        // For Root level workspaces (Organization owned), we must be staff
+        if (space is null)
+            return NotFound();
         if (space.Ownership is EntityOwnership.Organization && !User.IsInRole("Staff"))
             return Forbid();
 
-        // If it's a personal workspace, ensure the SID matches the owner
         var id = User.GetSID();
         if (space.OwnerId is not null && space.OwnerId != id)
             return Forbid();
+        if (await goalService.FindBySlugAsync(dto.Name.ToSlug()) is not null)
+            return Conflict();
 
-        // This call is crucial as it persists the object to the database
         await goalService.CreateAsync(new()
         {
             Name = dto.Name,
@@ -118,7 +130,8 @@ public class WorkspaceController(
 
     [HttpPost("{workspace:guid}/project")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProtectedResource("workspace", ["workspace:write", "projects:write"])]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProtectedResource("workspaces", ["workspaces:write", "projects:write"])]
     [EndpointSummary("Create a new project")]
     [EndpointDescription("Directly create a new project to be added to the workspace")]
     public async Task<ActionResult> AddProject(
@@ -128,14 +141,16 @@ public class WorkspaceController(
     )
     {
         var space = await workspaceService.FindByIdAsync(workspace, token);
-        if (space is null) return NotFound();
-
+        if (space is null)
+            return NotFound();
         if (space.Ownership is EntityOwnership.Organization && !User.IsInRole("Staff"))
             return Forbid();
 
         var id = User.GetSID();
         if (space.OwnerId is not null && space.OwnerId != id)
             return Forbid();
+        if (await projectService.FindBySlugAsync(dto.Name.ToSlug()) is not null)
+            return Conflict();
 
         await projectService.CreateAsync(new()
         {
@@ -156,7 +171,7 @@ public class WorkspaceController(
     [Authorize(Policy = "IsStaff")]
     [HttpPut("{workspace:guid}/cursus/{cursus:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProtectedResource("workspace", "workspace:write")]
+    [ProtectedResource("workspaces", "workspaces:write")]
     [EndpointSummary("Add a new cursus")]
     [EndpointDescription("Add an exisiting cursus to the workspace")]
     public async Task<ActionResult> AddCursus(Guid workspace, Guid cursus, CancellationToken token)
@@ -165,7 +180,6 @@ public class WorkspaceController(
         var targetCursus = await cursusService.FindByIdAsync(cursus, token);
         if (space is null || targetCursus is null)
             return NotFound();
-
         if (space.Ownership is EntityOwnership.Organization && !User.IsInRole("Staff"))
             return Forbid();
 
@@ -181,7 +195,7 @@ public class WorkspaceController(
     [Authorize(Policy = "IsStaff")]
     [HttpPut("{workspace:guid}/goal/{goal:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProtectedResource("workspace", "workspace:write")]
+    [ProtectedResource("workspacse", "workspaces:write")]
     [EndpointSummary("Add a new goal")]
     [EndpointDescription("Add an exisiting goal to the workspace")]
     public async Task<ActionResult> AddGoal(Guid workspace, Guid goal, CancellationToken token)
@@ -198,7 +212,7 @@ public class WorkspaceController(
 
     [Authorize(Policy = "IsStaff")]
     [HttpPut("{workspace:guid}/project/{project:guid}")]
-    [ProtectedResource("workspace", "workspace:write")]
+    [ProtectedResource("workspaces", "workspaces:write")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Add a new project")]

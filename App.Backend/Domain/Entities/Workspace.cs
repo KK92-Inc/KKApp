@@ -25,13 +25,13 @@ public class Workspace : BaseEntity
     [Column("owner_id")]
     public Guid? OwnerId { get; set; }
 
-    [ForeignKey(nameof(OwnerId))]
-    public required virtual User? Owner { get; set; }
-
     [Column("ownership")]
     public EntityOwnership Ownership { get; set; }
 
-    public ICollection<Cursus> Cursi { get; set; }
-    public ICollection<Goal> Goals { get; set; }
-    public ICollection<Project> Projects { get; set; }
+    [ForeignKey(nameof(OwnerId))]
+    public virtual User? Owner { get; set; }
+
+    public virtual ICollection<Cursus> Cursi { get; set; }
+    public virtual ICollection<Goal> Goals { get; set; }
+    public virtual ICollection<Project> Projects { get; set; }
 }

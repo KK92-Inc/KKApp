@@ -37,37 +37,39 @@
 	</div>
 {/snippet}
 
-<svelte:boundary>
-	{@const reviews = await getPendingReviews()}
-	{#snippet pending()}
-		<div class="w-full space-y-4">
-			<Skeleton class="h-8 w-full" />
-			<Skeleton class="h-8 w-full" />
-			<Skeleton class="h-8 w-full" />
-			<Skeleton class="h-8 w-full" />
-			<Skeleton class="h-8 w-full" />
-		</div>
-	{/snippet}
+<div>
+	<svelte:boundary>
+		{@const reviews = await getPendingReviews()}
+		{#snippet pending()}
+			<div class="w-full space-y-4">
+				<Skeleton class="h-8 w-full" />
+				<Skeleton class="h-8 w-full" />
+				<Skeleton class="h-8 w-full" />
+				<Skeleton class="h-8 w-full" />
+				<Skeleton class="h-8 w-full" />
+			</div>
+		{/snippet}
 
-	{#snippet failed(error, reset)}
-		<Failed {error} {reset} />
-	{/snippet}
+		{#snippet failed(error, reset)}
+			<Failed {error} {reset} />
+		{/snippet}
 
-	<Card.Root class="max-h-80 w-full overflow-auto">
-		<Card.Header>
-			<Card.Title>Upcoming Evaluations</Card.Title>
-			<Card.Description>These are your upcoming evaluations for your projects</Card.Description>
-		</Card.Header>
-		<Card.Content>
-			{#each reviews as review (review.id)}
-				{@render evaluation(review)}
-				{@render evaluation(review)}
-				{@render evaluation(review)}
-				{@render evaluation(review)}
-				{@render evaluation(review)}
-			{:else}
-				<div class="py-6 text-center text-sm text-muted-foreground">No pending evaluations</div>
-			{/each}
-		</Card.Content>
-	</Card.Root>
-</svelte:boundary>
+		<Card.Root class="max-h-80 w-full overflow-auto">
+			<Card.Header>
+				<Card.Title>Upcoming Evaluations</Card.Title>
+				<Card.Description>These are your upcoming evaluations for your projects</Card.Description>
+			</Card.Header>
+			<Card.Content>
+				{#each reviews as review (review.id)}
+					{@render evaluation(review)}
+					{@render evaluation(review)}
+					{@render evaluation(review)}
+					{@render evaluation(review)}
+					{@render evaluation(review)}
+				{:else}
+					<div class="py-6 text-center text-sm text-muted-foreground">No pending evaluations</div>
+				{/each}
+			</Card.Content>
+		</Card.Root>
+	</svelte:boundary>
+</div>

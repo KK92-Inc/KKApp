@@ -33,7 +33,7 @@ public class ProjectService(DatabaseContext ctx) : BaseService<Project>(ctx), IP
     public async Task<PaginatedList<UserProject>> GetUserProjectsAsync(Guid userId, ISorting sorting, IPagination pagination, CancellationToken token = default)
     {
         return await _dbSet.AsQueryable<Project>()
-            .Where(p => p.Active) // Example filter; adjust as needed.
+            .Where(p => p.Active)
             .Join(
                 context.UserProjects,
                 project => project.Id,

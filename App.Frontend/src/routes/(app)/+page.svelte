@@ -52,18 +52,16 @@
 		</ScrollArea>
 	{/snippet}
 	{#snippet right()}
-		<Tooltip.Provider delayDuration={125}>
-			<div class="pt-4 px-4">
-				<div class="flex gap-2">
-					{@render Galaxy()}
-					<Reviews />
-				</div>
-				<Scroller query={getFeed}>
-					{#snippet item(item)}
-						<Feed data={item} />
-					{/snippet}
-				</Scroller>
+		<div class="pt-4">
+			<div class="flex gap-2">
+				{@render Galaxy()}
+				<Reviews />
 			</div>
-		</Tooltip.Provider>
+			<Scroller query={getFeed}>
+				{#snippet item(item)}
+					<Feed data={item} />
+				{/snippet}
+			</Scroller>
+		</div>
 	{/snippet}
 </Layout>

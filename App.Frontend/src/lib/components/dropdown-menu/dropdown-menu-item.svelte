@@ -36,8 +36,8 @@
 {/snippet}
 
 {#if remote}
-	<form>
-		<button class="w-full" {...remote.buttonProps}>
+	<form {...remote}>
+		<button class="w-full">
 			{@render primitive()}
 		</button>
 	</form>

@@ -147,6 +147,9 @@ public static class Services
         builder.Services.AddScoped<IRuleService, RuleServiceN>();
         builder.Services.AddScoped<IReviewService, ReviewService>();
         builder.Services.AddScoped<IWorkspaceService, WorkspaceService>();
+        builder.Services.AddScoped<IGoalService, GoalService>();
+        builder.Services.AddScoped<ICursusService, CursusService>();
+        builder.Services.AddScoped<IProjectService, ProjectService>();
         // // builder.Services.AddScoped<IUserCursusService, UserCursusService>();
         // // builder.Services.AddScoped<IUserGoalService, UserGoalService>();
         // // builder.Services.AddScoped<IUserProjectService, UserProjectService>();

@@ -18,7 +18,7 @@ public interface ICursusService : IDomainService<Cursus>
     /// </summary>
     /// <param name="slug">The goal slug.</param>
     /// <returns>The goal.</returns>
-    public Task<Cursus?> FindBySlug(string slug);
+    public Task<Cursus?> FindBySlugAsync(string slug);
 
     /// <summary>
     /// Get users associated with a cursus.
