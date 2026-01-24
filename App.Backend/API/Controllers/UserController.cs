@@ -30,8 +30,7 @@ namespace App.Backend.API.Controllers;
 public class UserController(
     ILogger<UserController> log,
     IUserService users,
-    INotificationService notifications,
-    ISubscriptionService subscriptions
+    INotificationService notifications
 ) : Controller
 {
     [HttpGet("/users/current")]
@@ -56,17 +55,23 @@ public class UserController(
     [EndpointDescription("When authenticated it's useful to know who you currently are logged in as.")]
     public async Task<ActionResult<IEnumerable<NotificationDO>>> CurrentNotifications(
         [FromQuery(Name = "filter[read]")] bool read,
-        [FromQuery(Name = "filter[variant]")] NotifiableVariant inclusive,
-        [FromQuery(Name = "filter[not[variant]]")] NotifiableVariant exclusive,
+        [FromQuery(Name = "filter[variant]")] NotificationVariant inclusive,
+        [FromQuery(Name = "filter[not[variant]]")] NotificationVariant exclusive,
         [FromQuery] Pagination pagination,
         [FromQuery] Sorting sorting,
         CancellationToken cancellationToken
     )
     {
+        await notifications.CreateAsync(new ()
+        {
+            NotifiableId = User.GetSID(),
+            Type = nameof(MessageDO)
+        });
+
         var page = await notifications.GetAllAsync(sorting, pagination, cancellationToken,
-            n => read ? n.ReadAt != null : n.ReadAt == null,
-            n => (n.Descriptor & inclusive) != 0,
-            n => (n.Descriptor & exclusive) == 0
+            n => read ? n.ReadAt != null : n.ReadAt == null
+            // n => (n.Descriptor & inclusive) != 0,
+            // n => (n.Descriptor & exclusive) == 0
         );
 
         page.AppendHeaders(Request.Headers);

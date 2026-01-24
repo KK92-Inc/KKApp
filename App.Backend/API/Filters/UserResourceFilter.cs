@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using NXTBackend.API.Core.Services.Interface;
 using Wolverine;
 using App.Backend.Domain.Enums;
+using App.Backend.Models.Responses.Entities.Notifications;
 
 namespace App.Backend.API.Filters;
 
@@ -68,7 +69,7 @@ public class UserResourceFilter(
 
             logger.LogInformation("Creating new user: {Login}", login);
             await ctx.SaveChangesAsync();
-            await bus.PublishAsync(new UserRegistered(userId));
+            await bus.PublishAsync(new WelcomeNotification(userId));
         }
 
         await next();

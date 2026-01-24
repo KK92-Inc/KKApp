@@ -23,7 +23,7 @@ public static class NotificationFactory
         .RuleFor(n => n.Id, f => f.Random.Guid())
         .RuleFor(n => n.NotifiableId, f => notifiableId ?? f.Random.Guid())
         .RuleFor(n => n.Type, f => nameof(Notification))
-        .RuleFor(n => n.Descriptor, f => f.PickRandom<NotifiableVariant>())
+        .RuleFor(n => n.Descriptor, f => f.PickRandom<NotificationVariant>())
         .RuleFor(n => n.Data, f => "{}")
         .RuleFor(n => n.ReadAt, f => null)
         .RuleFor(n => n.ResourceId, f => f.Random.Bool() ? f.Random.Guid() : null)

@@ -41,7 +41,7 @@ public static class UserFactory
         .RuleFor(d => d.LinkedinUrl, f => $"https://linkedin.com/in/{f.Internet.UserName()}")
         .RuleFor(d => d.RedditUrl, f => $"https://reddit.com/u/{f.Internet.UserName()}")
         .RuleFor(d => d.WebsiteUrl, f => f.Internet.Url())
-        .RuleFor(d => d.EnabledNotifications, f => NotifiableVariant.All)
+        .RuleFor(d => d.EnabledNotifications, f => NotificationVariant.All)
         .RuleFor(d => d.CreatedAt, f => f.Date.PastOffset(1))
         .RuleFor(d => d.UpdatedAt, (f, d) => d.CreatedAt);
 

@@ -99,7 +99,6 @@ var keycloak = builder.AddKeycloakContainer("keycloak")
 var realm = keycloak.AddRealm("student");
 
 var backend = builder.AddProject<Projects.App_Backend_API>("backend")
-    .WithExternalHttpEndpoints()
     .WithReference(database)
     .WithReference(cache)
     .WithReference(keycloak)
@@ -143,9 +142,9 @@ var frontend = builder.AddViteApp("frontend", "./App.Frontend")
 
 // ============================================================================
 
-var scalar = builder.AddScalarApiReference(o => o.WithTheme(ScalarTheme.Kepler))
+var scalar = builder.AddScalarApiReference("scalar", o => o.WithTheme(ScalarTheme.Kepler))
     .WithReference(keycloak)
-    .WithExternalHttpEndpoints()
+    .WithReference(backend)
     .WithApiReference(backend, o =>
     {
         o.WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);

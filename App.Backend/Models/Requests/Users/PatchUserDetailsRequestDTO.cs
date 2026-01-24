@@ -30,7 +30,7 @@ public record PatchUserDetailsRequestDTO
     /// <summary>
     /// Notification preferences flags.
     /// </summary>
-    public NotifiableVariant? EnabledNotifications { get; init; }
+    public NotificationVariant? EnabledNotifications { get; init; }
 
     [Url]
     public string? GithubUrl { get; init; }

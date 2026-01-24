@@ -7,28 +7,27 @@ import * as v from 'valibot';
 import { Filters } from '$lib/api';
 import { getRequestEvent, query } from '$app/server';
 import { error } from '@sveltejs/kit';
-import type { components } from '$lib/api/api';
 
 // ============================================================================
 
-type Variant = components["schemas"]["NotifiableVariant"];
 const schema = v.object({ ...Filters.sort, ...Filters.pagination });
 export const getFeed = query(schema, async (filter) => {
 	const { locals } = getRequestEvent();
-	const { data, error } = await locals.api.GET("/users/current/notifications", {
+	const { data, error: err } = await locals.api.GET("/users/current/notifications", {
 		params: {
 			query: {
-				"filter[variant]":
+				"page[size]": filter.size,
+				"page[index]": filter.page,
+				"sort[by]": filter.sortBy,
+				"sort[order]": filter.sort,
+				// "filter[not[variant]]": 1 << 10
+				// "filter[not[variant]]": 1 << 10
 			}
 		}
 	});
 
-	// const { data, response } = await locals.api.GET('/users/current/notifications', {
-	// 	params: { query: { 'page[size]': filter.size, 'page[index]': filter.page, 'sort': 'Descending' } }
-	// });
-
-	if (!response.ok || !data) {
-		error(response.status, 'Failed to fetch feed');
+	if (err || !data) {
+		error(500, 'Failed to fetch feed');
 	}
 
 	return data;

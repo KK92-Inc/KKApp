@@ -1054,8 +1054,8 @@ export interface paths {
             parameters: {
                 query?: {
                     "filter[read]"?: boolean;
-                    "filter[variant]"?: components["schemas"]["NotifiableVariant"];
-                    "filter[not[variant]]"?: components["schemas"]["NotifiableVariant"];
+                    "filter[variant]"?: components["schemas"]["NotificationVariant"];
+                    "filter[not[variant]]"?: components["schemas"]["NotificationVariant"];
                     /** @description The page number/index */
                     "page[index]"?: number | string;
                     /** @description The amount of results per page */
@@ -1077,9 +1077,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["UserDO"];
-                        "application/json": components["schemas"]["UserDO"];
-                        "text/json": components["schemas"]["UserDO"];
+                        "text/plain": components["schemas"]["NotificationDO"][];
+                        "application/json": components["schemas"]["NotificationDO"][];
+                        "text/json": components["schemas"]["NotificationDO"][];
                     };
                 };
                 /** @description Unauthorized */
@@ -1150,9 +1150,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["UserDO"];
-                        "application/json": components["schemas"]["UserDO"];
-                        "text/json": components["schemas"]["UserDO"];
+                        "text/plain": components["schemas"]["SpotlightNotificationDO"];
+                        "application/json": components["schemas"]["SpotlightNotificationDO"];
+                        "text/json": components["schemas"]["SpotlightNotificationDO"];
                     };
                 };
                 /** @description Unauthorized */
@@ -2121,7 +2121,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/workspace/{workspace}/cursus/{cursus}": {
+    "/workspace/{from}/transfer/cursus/{to}": {
         parameters: {
             query?: never;
             header?: never;
@@ -2129,21 +2129,28 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
+        put?: never;
         /**
-         * Add a new cursus
-         * @description Add an exisiting cursus to the workspace
+         * Transfer cursus between workspaces
+         * @description Transfer one or more cursus from one workspace to another
          */
-        put: {
+        post: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
-                    workspace: string;
-                    cursus: string;
+                    from: string;
+                    to: string;
                 };
                 cookie?: never;
             };
-            requestBody?: never;
+            requestBody: {
+                content: {
+                    "application/json": string[];
+                    "text/json": string[];
+                    "application/*+json": string[];
+                };
+            };
             responses: {
                 /** @description No Content */
                 204: {
@@ -2171,7 +2178,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
                 };
                 /** @description Too Many Requests */
                 429: {
@@ -2182,14 +2193,13 @@ export interface paths {
                 };
             };
         };
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/workspace/{workspace}/goal/{goal}": {
+    "/workspace/{from}/transfer/goal/{to}": {
         parameters: {
             query?: never;
             header?: never;
@@ -2197,21 +2207,28 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
+        put?: never;
         /**
-         * Add a new goal
-         * @description Add an exisiting goal to the workspace
+         * Transfer goals between workspaces
+         * @description Transfer one or more goals from one workspace to another
          */
-        put: {
+        post: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
-                    workspace: string;
-                    goal: string;
+                    from: string;
+                    to: string;
                 };
                 cookie?: never;
             };
-            requestBody?: never;
+            requestBody: {
+                content: {
+                    "application/json": string[];
+                    "text/json": string[];
+                    "application/*+json": string[];
+                };
+            };
             responses: {
                 /** @description No Content */
                 204: {
@@ -2239,7 +2256,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
                 };
                 /** @description Too Many Requests */
                 429: {
@@ -2250,14 +2271,13 @@ export interface paths {
                 };
             };
         };
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/workspace/{workspace}/project/{project}": {
+    "/workspace/{from}/transfer/project/{to}": {
         parameters: {
             query?: never;
             header?: never;
@@ -2265,21 +2285,28 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
+        put?: never;
         /**
-         * Add a new project
-         * @description Add an exisiting project to the workspace
+         * Transfer projects between workspaces
+         * @description Transfer one or more projects from one workspace to another
          */
-        put: {
+        post: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
-                    workspace: string;
-                    project: string;
+                    from: string;
+                    to: string;
                 };
                 cookie?: never;
             };
-            requestBody?: never;
+            requestBody: {
+                content: {
+                    "application/json": string[];
+                    "text/json": string[];
+                    "application/*+json": string[];
+                };
+            };
             responses: {
                 /** @description No Content */
                 204: {
@@ -2307,7 +2334,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
                 };
                 /** @description Too Many Requests */
                 429: {
@@ -2318,7 +2349,6 @@ export interface paths {
                 };
             };
         };
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2339,7 +2369,7 @@ export interface components {
             name: string;
             description: string;
             slug: string;
-            track?: null | string;
+            workspace: null | components["schemas"]["WorkspaceDO"];
         };
         /** @enum {unknown} */
         EntityOwnership: "User" | "Organization";
@@ -2354,7 +2384,28 @@ export interface components {
             description: string;
             slug: string;
         };
-        NotifiableVariant: number;
+        NotificationData: components["schemas"]["NotificationDataMessageDO"];
+        NotificationDataMessageDO: {
+            /** @enum {string} */
+            type?: "Default";
+            text: string;
+            html: string;
+        };
+        NotificationDO: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            data?: components["schemas"]["NotificationData"];
+            descriptor?: components["schemas"]["NotificationVariant"];
+            /** Format: date-time */
+            readAt?: null | string;
+            /** Format: uuid */
+            resourceId?: null | string;
+        };
+        NotificationVariant: number;
         /** @enum {unknown} */
         Order: "Ascending" | "Descending";
         PatchGoalRequestDTO: {
@@ -2422,6 +2473,23 @@ export interface components {
             active: boolean;
             public: boolean;
             deprecated: boolean;
+        };
+        SpotlightNotificationDO: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            title?: string;
+            description?: string;
+            actionText?: string;
+            href?: string;
+            backgroundUrl?: string;
+            /** Format: date-time */
+            startsAt?: string;
+            /** Format: date-time */
+            endsAt?: null | string;
         };
         UserDetailsDO: {
             /** Format: uuid */

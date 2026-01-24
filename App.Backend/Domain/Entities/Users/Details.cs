@@ -18,7 +18,7 @@ public class Details : BaseEntity
         RedditUrl = null;
         WebsiteUrl = null;
         User = null!;
-        EnabledNotifications = NotifiableVariant.All;
+        EnabledNotifications = NotificationVariant.All;
     }
 
     [Column("user_id")]
@@ -44,7 +44,7 @@ public class Details : BaseEntity
     /// receive in the future.
     /// </summary>
     [Column("enabled_notifications")]
-    public NotifiableVariant EnabledNotifications { get; set; }
+    public NotificationVariant EnabledNotifications { get; set; }
 
     [Column("github_url")]
     public string? GithubUrl { get; set; }

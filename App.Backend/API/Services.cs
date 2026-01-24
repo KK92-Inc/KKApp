@@ -26,6 +26,7 @@ using App.Backend.API.Schemas.Operation;
 using Microsoft.OpenApi;
 using Keycloak.AuthServices.Common;
 using App.Backend.API.Filters;
+using NXTBackend.API.Core.Services.Interface;
 
 // ============================================================================
 
@@ -150,6 +151,7 @@ public static class Services
         builder.Services.AddScoped<IGoalService, GoalService>();
         builder.Services.AddScoped<ICursusService, CursusService>();
         builder.Services.AddScoped<IProjectService, ProjectService>();
+        builder.Services.AddScoped<INotificationService, NotificationService>();
         // // builder.Services.AddScoped<IUserCursusService, UserCursusService>();
         // // builder.Services.AddScoped<IUserGoalService, UserGoalService>();
         // // builder.Services.AddScoped<IUserProjectService, UserProjectService>();

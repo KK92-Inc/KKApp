@@ -33,7 +33,7 @@ public class NotificationDO : BaseEntityDO<Notification>
     /// <summary>
     /// The notification descriptor outlining what the notification basically is
     /// </summary>
-    public NotifiableVariant Descriptor { get; set; }
+    public NotificationVariant Descriptor { get; set; }
 
     /// <summary>
     /// Was created at.

@@ -3,16 +3,16 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-using System.Text.Json.Serialization;
 using App.Backend.Domain.Enums;
+using App.Backend.Models.Responses.Entities.Notifications;
 
 // ============================================================================
 
-namespace App.Backend.Models.Responses.Entities.Notifications;
+public sealed record WelcomeNotification(Guid UserId) : BaseNotification
+{
+    public override Guid NotifiableId => UserId;
 
-/// <summary>
-/// Base notification data object.
-/// </summary>
-[JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
-[JsonDerivedType(typeof(MessageDO), typeDiscriminator: nameof(NotificationVariant.Default))]
-public abstract record NotificationData;
+    public override NotificationData? Data => null;
+
+    public override NotificationVariant Descriptor => NotificationVariant.Welcome | NotificationVariant.Default;
+}

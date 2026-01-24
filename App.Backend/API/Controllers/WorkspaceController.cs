@@ -22,6 +22,7 @@ using App.Backend.Models.Requests.Users;
 using App.Backend.Models.Requests.Projects;
 using App.Backend.Models.Requests.Goals;
 using App.Backend.Models.Requests.Cursus;
+using App.Backend.Domain.Entities.Users;
 
 // ============================================================================
 
@@ -29,7 +30,6 @@ namespace App.Backend.API.Controllers;
 
 [ApiController]
 [Route("workspace")]
-// [ProtectedResource("users"), Authorize]
 public class WorkspaceController(
     ILogger<WorkspaceController> log,
     IWorkspaceService workspaceService,
@@ -53,7 +53,7 @@ public class WorkspaceController(
     #region AddEntities
     [HttpPost("{workspace:guid}/cursus")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    // [ProtectedResource("workspaces", ["workspaces:write", "cursus:write"])]
+    [ProtectedResource("workspaces", ["workspaces:write", "cursus:write"])]
     [EndpointSummary("Create a new cursus")]
     [EndpointDescription("Directly create a new project to be added to the workspace")]
     public async Task<ActionResult> AddCursus(
@@ -166,68 +166,106 @@ public class WorkspaceController(
     }
 
     #endregion AddEntities
-    #region AddExisitingEntities
+
+
+    #region TransferEntities
 
     [Authorize(Policy = "IsStaff")]
-    [HttpPut("{workspace:guid}/cursus/{cursus:guid}")]
+    [HttpPost("{from:guid}/transfer/cursus/{to:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProtectedResource("workspaces", "workspaces:write")]
-    [EndpointSummary("Add a new cursus")]
-    [EndpointDescription("Add an exisiting cursus to the workspace")]
-    public async Task<ActionResult> AddCursus(Guid workspace, Guid cursus, CancellationToken token)
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProtectedResource("workspaces", ["workspaces:write", "cursus:write"])]
+    [EndpointSummary("Transfer cursus between workspaces")]
+    [EndpointDescription("Transfer one or more cursus from one workspace to another")]
+    public async Task<ActionResult> TransferCursus(
+        Guid from,
+        Guid to,
+        [FromBody] IEnumerable<Guid> cursusIds,
+        CancellationToken token)
     {
-        var space = await workspaceService.FindByIdAsync(workspace, token);
-        var targetCursus = await cursusService.FindByIdAsync(cursus, token);
-        if (space is null || targetCursus is null)
+        var source = await workspaceService.FindByIdAsync(from, token);
+        var target = await workspaceService.FindByIdAsync(to, token);
+        if (source is null || target is null)
             return NotFound();
-        if (space.Ownership is EntityOwnership.Organization && !User.IsInRole("Staff"))
-            return Forbid();
+        if (!cursusService.Exists(cursusIds))
+            return Problem(detail: "Request contains invalid ID(s)");
 
-        var id = User.GetSID();
-        if (space.OwnerId is not null && space.OwnerId != id)
-            return Forbid();
-
-        targetCursus.WorkspaceId = space.Id;
-        await cursusService.UpdateAsync(targetCursus, token);
+        foreach (var id in cursusIds)
+        {
+            var cursus = await cursusService.FindByIdAsync(id, token);
+            if (cursus is not null && cursus.WorkspaceId == from)
+            {
+                cursus.WorkspaceId = to;
+                await cursusService.UpdateAsync(cursus, token);
+            }
+        }
         return NoContent();
     }
 
     [Authorize(Policy = "IsStaff")]
-    [HttpPut("{workspace:guid}/goal/{goal:guid}")]
+    [HttpPost("{from:guid}/transfer/goal/{to:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProtectedResource("workspacse", "workspaces:write")]
-    [EndpointSummary("Add a new goal")]
-    [EndpointDescription("Add an exisiting goal to the workspace")]
-    public async Task<ActionResult> AddGoal(Guid workspace, Guid goal, CancellationToken token)
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProtectedResource("workspaces", ["workspaces:write", "goals:write"])]
+    [EndpointSummary("Transfer goals between workspaces")]
+    [EndpointDescription("Transfer one or more goals from one workspace to another")]
+    public async Task<ActionResult> TransferGoals(
+        Guid from,
+        Guid to,
+        [FromBody] IEnumerable<Guid> goalIds,
+        CancellationToken token)
     {
-        var space = await workspaceService.FindByIdAsync(workspace, token);
-        var targetGoal = await goalService.FindByIdAsync(goal, token);
-        if (space is null || targetGoal is null)
+        var source = await workspaceService.FindByIdAsync(from, token);
+        var target = await workspaceService.FindByIdAsync(to, token);
+        if (source is null || target is null)
             return NotFound();
+        if (!cursusService.Exists(goalIds))
+            return Problem(detail: "Request contains invalid ID(s)");
 
-        targetGoal.WorkspaceId = space.Id;
-        await goalService.UpdateAsync(targetGoal, token);
+        foreach (var id in goalIds)
+        {
+            var goal = await goalService.FindByIdAsync(id, token);
+            if (goal is not null && goal.WorkspaceId == from)
+            {
+                goal.WorkspaceId = to;
+                await goalService.UpdateAsync(goal, token);
+            }
+        }
         return NoContent();
     }
 
     [Authorize(Policy = "IsStaff")]
-    [HttpPut("{workspace:guid}/project/{project:guid}")]
-    [ProtectedResource("workspaces", "workspaces:write")]
+    [HttpPost("{from:guid}/transfer/project/{to:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [EndpointSummary("Add a new project")]
-    [EndpointDescription("Add an exisiting project to the workspace")]
-    public async Task<ActionResult> AddProject(Guid workspace, Guid project, CancellationToken token)
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProtectedResource("workspaces", ["workspaces:write", "projects:write"])]
+    [EndpointSummary("Transfer projects between workspaces")]
+    [EndpointDescription("Transfer one or more projects from one workspace to another")]
+    public async Task<ActionResult> TransferProjects(
+        Guid from,
+        Guid to,
+        [FromBody] IEnumerable<Guid> projectIds,
+        CancellationToken token)
     {
-        var space = await workspaceService.FindByIdAsync(workspace, token);
-        var targetProject = await projectService.FindByIdAsync(project, token);
-        if (space is null || targetProject is null)
+        var source = await workspaceService.FindByIdAsync(from, token);
+        var target = await workspaceService.FindByIdAsync(to, token);
+        if (source is null || target is null)
             return NotFound();
+        if (!cursusService.Exists(projectIds))
+            return Problem(detail: "Request contains invalid ID(s)");
 
-        targetProject.WorkspaceId = space.Id;
-        await projectService.UpdateAsync(targetProject, token);
+        foreach (var id in projectIds)
+        {
+            var project = await projectService.FindByIdAsync(id, token);
+            if (project is not null && project.WorkspaceId == from)
+            {
+                project.WorkspaceId = to;
+                await projectService.UpdateAsync(project, token);
+            }
+        }
         return NoContent();
     }
 
-    #endregion AddExisitingEntities
+    #endregion TransferEntities
+
 }
