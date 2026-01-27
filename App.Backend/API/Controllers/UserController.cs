@@ -55,8 +55,8 @@ public class UserController(
     [EndpointDescription("When authenticated it's useful to know who you currently are logged in as.")]
     public async Task<ActionResult<IEnumerable<NotificationDO>>> CurrentNotifications(
         [FromQuery(Name = "filter[read]")] bool read,
-        [FromQuery(Name = "filter[variant]")] NotificationVariant inclusive,
-        [FromQuery(Name = "filter[not[variant]]")] NotificationVariant exclusive,
+        [FromQuery(Name = "filter[variant]")] NotificationMeta inclusive,
+        [FromQuery(Name = "filter[not[variant]]")] NotificationMeta exclusive,
         [FromQuery] Pagination pagination,
         [FromQuery] Sorting sorting,
         CancellationToken cancellationToken

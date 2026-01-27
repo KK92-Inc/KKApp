@@ -14,5 +14,5 @@ namespace App.Backend.Models.Responses.Entities.Notifications;
 /// Base notification data object.
 /// </summary>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
-[JsonDerivedType(typeof(MessageDO), typeDiscriminator: nameof(NotificationVariant.Default))]
+[JsonDerivedType(typeof(MessageDO), typeDiscriminator: nameof(NotificationMeta.User))]
 public abstract record NotificationData;

@@ -14,6 +14,8 @@ using App.Backend.Models.Responses.Entities.Notifications;
 using App.Backend.API.Notifications;
 using App.Backend.Domain.Entities.Users;
 using App.Backend.Domain.Entities;
+using App.Backend.Core.Services.Interface;
+using App.Backend.API.Notifications.Variants;
 
 namespace App.Backend.API.Filters;
 
@@ -24,7 +26,8 @@ namespace App.Backend.API.Filters;
 /// authenticated Keycloak user. Implements Just-In-Time (JIT) provisioning.
 /// </summary>
 public class UserResourceFilter(
-    DatabaseContext ctx,
+    IUserService users,
+    IWorkspaceService workspaces,
     ILogger<UserResourceFilter> logger,
     IMessageBus bus
 ) : IAsyncResourceFilter
@@ -32,6 +35,7 @@ public class UserResourceFilter(
     public async Task OnResourceExecutionAsync(ResourceExecutingContext context, ResourceExecutionDelegate next)
     {
         var user = context.HttpContext.User;
+        var token = context.HttpContext.RequestAborted;
         if (user.FindFirstValue(ClaimTypes.NameIdentifier) is not string sub)
         {
             await next();
@@ -46,13 +50,13 @@ public class UserResourceFilter(
 
         // NOTE(W2): Sync with Keycloak
         // TODO: Set this up with webhooks ideally to avoid constant queries
-        if (await ctx.Users.FirstOrDefaultAsync(u => u.Id == userId) is null)
+        if (await users.FindByIdAsync(userId, token) is null)
         {
             var first = user.FindFirstValue(ClaimTypes.GivenName);
             var last = user.FindFirstValue(ClaimTypes.Surname);
-            var login = user.FindFirstValue("preferred_username") ?? $"user_{userId:N}"[..16];
+            var login = user.FindFirstValue("preferred_username")!;
 
-            var newUser = new User()
+            await users.CreateAsync(new ()
             {
                 Id = userId,
                 Login = login,
@@ -63,24 +67,20 @@ public class UserResourceFilter(
                     Email = user.FindFirstValue(ClaimTypes.Email),
                     FirstName = first,
                     LastName = last
-                }
-            };
+                },
+            }, token);
 
-            var newWorkspace = new Workspace()
+            await workspaces.CreateAsync(new ()
             {
                 OwnerId = userId,
                 Ownership = EntityOwnership.User
-            };
-
-            await ctx.Users.AddAsync(newUser);
-            await ctx.Workspaces.AddAsync(newWorkspace);
-            await ctx.SaveChangesAsync();
+            }, token);
 
             logger.LogInformation("Creating new user: {Login}", login);
 
-            var welcomeFirst = first ?? login;
-            var welcomeLast = last ?? string.Empty;
-            await bus.PublishAsync(new WelcomeUserNotification(userId, welcomeFirst, welcomeLast));
+            var firstName = first ?? login;
+            var lastName = last ?? string.Empty;
+            await bus.PublishAsync(new WelcomeUserNotification(userId, firstName, lastName));
         }
 
         await next();

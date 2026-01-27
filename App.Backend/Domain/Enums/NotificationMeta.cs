@@ -13,7 +13,7 @@ namespace App.Backend.Domain.Enums;
 /// Different notification variants used to classify and control notification behaviour.
 /// </summary>
 [Flags]
-public enum NotificationVariant
+public enum NotificationMeta
 {
 	/// <summary>
 	/// Requires the recipient to accept or decline (e.g., invitations or requests).

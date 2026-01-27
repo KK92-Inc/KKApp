@@ -6,6 +6,8 @@
 using Quartz;
 using App.Backend.API.Jobs.Interfaces;
 using Wolverine;
+using App.Backend.Core.Services.Interface;
+using App.Backend.API.Notifications.Variants;
 
 // ============================================================================
 
@@ -15,7 +17,7 @@ namespace App.Backend.API.Jobs;
 /// A sample scheduled job that runs every minute.
 /// </summary>
 [DisallowConcurrentExecution]
-public class SampleJob(ILogger<SampleJob> logger, IMessageBus bus) : IScheduledJob
+public class SampleJob(ILogger<SampleJob> logger, IMessageBus bus, IUserService user) : IScheduledJob
 {
     public static string? Schedule => "0 0/1 * ? * *";
 
@@ -23,7 +25,16 @@ public class SampleJob(ILogger<SampleJob> logger, IMessageBus bus) : IScheduledJ
 
     public async Task Execute(IJobExecutionContext context)
     {
+        var usr = await user.FindByLoginAsync("demo");
+        if (usr is null) return;
+
+        await bus.PublishAsync(new WelcomeUserNotification (
+            usr.Id,
+            usr.Details?.FirstName ?? string.Empty,
+            usr.Details?.LastName ?? string.Empty
+        ));
+
         logger.LogInformation("Sample Job is running at {time}", DateTimeOffset.Now);
-        await bus.PublishAsync(new UserRegistered(Guid.CreateVersion7()));
+        // await bus.PublishAsync(new UserRegistered(Guid.CreateVersion7()));
     }
 }

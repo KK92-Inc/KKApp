@@ -108,6 +108,6 @@ public abstract class BaseService<T>(DatabaseContext context) : IDomainService<T
             .Where(f => f is not null)
             .Aggregate(_dbSet.AsQueryable(), (c, filter) => c.Where(filter!))
             .Sort(sorting)
-            .PaginateAsync(pagination);
+            .PaginateAsync(pagination, token);
     }
 }

@@ -13,40 +13,70 @@ using System.Text.RegularExpressions;
 using App.Backend.API.Notifications.Channels;
 using App.Backend.API.Views.Models;
 using App.Backend.API.Notifications;
+using App.Backend.Core.Services.Interface;
+using App.Backend.Domain.Enums;
 
 // ============================================================================
 
 [WolverineHandler]
-public class NotificationHandler(INotificationService service, IRazorTemplateEngine render, IResend client)
+public class NotificationHandler(
+    INotificationService service,
+    IUserService users,
+    ILogger<NotificationHandler> logger,
+    IRazorTemplateEngine render,
+    IResend client)
 {
-    public async Task Handle(BaseNotification message)
+    public async Task Handle(NotificationRequest notification)
     {
-        var notification = await service.CreateAsync(new()
-        {
-            Descriptor = message.Descriptor,
-            ResourceId = message.ResourceId,
-            NotifiableId = message.NotifiableId,
-            Data = JsonSerializer.Serialize(message.Descriptor)
-        });
+        logger.LogInformation("Handling notification: {@Notification}", notification);
 
-        // Pattern matching: message could implement any combination of the interfaces
-        if (message is IEmailChannel<BaseViewModel> email)
+        if (notification.Content is IEmailChannel<WelcomeViewModel> email)
         {
-            await client.EmailSendAsync(new()
+            logger.LogInformation("Notification is an email channel. Subject: {Subject}", email.Subject);
+            var entity = await users.FindByIdAsync(notification.Content.NotifiableId);
+            // var entity = notification.Content.Meta switch
+            // {
+            //     NotificationMeta.User => await users.FindByIdAsync(notification.Content.NotifiableId),
+            //     NotificationMeta.Organization => throw new NotImplementedException(),
+            //     _ => null
+            // };
+
+            logger.LogDebug("Resolved entity: {@Entity}", entity);
+
+            if (entity?.Details?.Email is not null)
             {
-                Subject = email.Subject,
-                HtmlBody = await render.RenderAsync(email.View, email.Model)
+                var htmlBody = await render.RenderAsync(email.View, email.Model);
+                logger.LogInformation("Sending email to {Email}", entity.Details.Email);
+
+                await client.EmailSendAsync(new()
+                {
+                    To = entity.Details.Email,
+                    From = "portal@resend.dev",
+                    Subject = email.Subject,
+                    HtmlBody = htmlBody
+                });
+
+                logger.LogInformation("Email sent to {Email}", entity.Details.Email);
+            }
+            else
+            {
+                logger.LogWarning("No email found for entity: {@Entity}", entity);
+            }
+        }
+
+        if (notification.Content is IDatabaseChannel content)
+        {
+            logger.LogInformation("Notification is a database channel. NotifiableId: {NotifiableId}", notification.Content.NotifiableId);
+
+            await service.CreateAsync(new()
+            {
+                Descriptor = notification.Content.Meta,
+                ResourceId = notification.Content.ResourceId,
+                NotifiableId = notification.Content.NotifiableId,
+                Data = JsonSerializer.Serialize(content)
             });
-        }
 
-        if (message is IDefaultChannel)
-        {
-            // Handle default channel logic here
-        }
-
-        if (message is IFeedChannel)
-        {
-            // Handle feed channel logic here
+            logger.LogInformation("Database notification created for NotifiableId: {NotifiableId}", notification.Content.NotifiableId);
         }
     }
 }

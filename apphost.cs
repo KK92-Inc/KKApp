@@ -22,6 +22,7 @@ using Scalar.Aspire;
 // Setup
 // ============================================================================
 
+//re_bMA78duQ_MuU8p7uzs7PwMkwx6wC8kRmj
 var builder = DistributedApplication.CreateBuilder(args);
 builder.AddDockerComposeEnvironment("env").WithDashboard(false);
 var isRun = builder.ExecutionContext.IsRunMode;
@@ -45,9 +46,13 @@ var kcId = builder.AddParameter("kc-id", "intra");
 // Keycloak primary application realm
 var kcRealm = builder.AddParameter("kc-realm", "student");
 // Keycloak Client Secret generated on the keycloak dashboard
-var kcSecret = builder.AddParameter("kc-secret", secret: true);
+var kcSecret = builder.AddParameter("kc-secret", true);
 // Keycloak cookie used for the frontend
 var kcCookie = builder.AddParameter("kc-cookie", "kc.session");
+
+// Resend email token
+var resendToken = builder.AddParameter("be-resend-token", true);
+
 
 // Storage
 // ============================================================================
@@ -102,6 +107,7 @@ var backend = builder.AddProject<Projects.App_Backend_API>("backend")
     .WithReference(database)
     .WithReference(cache)
     .WithReference(keycloak)
+    .WithEnvironment("RESEND_APITOKEN", resendToken)
     .WaitFor(migration)
     .WaitFor(postgres)
     .WaitFor(cache)

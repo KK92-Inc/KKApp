@@ -28,6 +28,7 @@ using Keycloak.AuthServices.Common;
 using App.Backend.API.Filters;
 using NXTBackend.API.Core.Services.Interface;
 using Wolverine.Postgresql;
+using Resend;
 
 // ============================================================================
 
@@ -40,6 +41,7 @@ public static class Services
 {
     public static WebApplicationBuilder Register(WebApplicationBuilder builder)
     {
+        builder.Services.AddOptions();
         builder.Services.AddRazorTemplating();
         builder.Services.AddProblemDetails();
         builder.Services.AddControllers(o =>
@@ -51,6 +53,12 @@ public static class Services
         {
             // Let's us configure the casing for out JSON DTOs for example.
             o.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        });
+
+        builder.Services.AddHttpClient<ResendClient>();
+        builder.Services.Configure<ResendClientOptions>(o =>
+        {
+            o.ApiToken = Environment.GetEnvironmentVariable("RESEND_APITOKEN")!;
         });
 
         // builder.Services
@@ -147,7 +155,7 @@ public static class Services
         {
             opts.PersistMessagesWithPostgresql(cs!).EnableMessageTransport(o =>
             {
-               o.AutoProvision();
+                o.AutoProvision();
             });
 
             // Outgoing async messages go here
@@ -181,7 +189,7 @@ public static class Services
         // // builder.Services.AddScoped<IGitService, GitService2>();
         // // builder.Services.AddScoped<INotificationService, NotificationService>();
         // // builder.Services.AddScoped<ISpotlightEventActionService, SpotlightEventActionService>();
-        // // builder.Services.AddTransient<IResend, ResendClient>();
+        builder.Services.AddTransient<IResend, ResendClient>();
         // // builder.Services.AddSingleton<INotificationQueue, InMemoryNotificationQueue>();
         builder.Services.AddSingleton(TimeProvider.System);
         // builder.Services.AddSingleton(sp =>
@@ -200,6 +208,8 @@ public static class Services
         // builder.Services.Configure<GitServiceOptions>(
         //     builder.Configuration.GetSection(GitServiceOptions.SectionName));
         // builder.Services.AddSingleton<IGitService, GitService>();
+
+
 
         // Quartz
         builder.Services.AddQuartz(quartz =>

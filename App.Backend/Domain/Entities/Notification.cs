@@ -21,7 +21,7 @@ public class Notification : BaseEntity
     {
         ReadAt = null;
         Type = nameof(Notification);
-        Descriptor = NotificationVariant.Default;
+        Descriptor = default;
         ResourceId = null;
     }
 
@@ -35,7 +35,7 @@ public class Notification : BaseEntity
     /// The notification descriptor outlining what the notification basically is
     /// </summary>
     [Column("descriptor")]
-    public NotificationVariant Descriptor { get; set; }
+    public NotificationMeta Descriptor { get; set; }
 
 
     /// <summary>
