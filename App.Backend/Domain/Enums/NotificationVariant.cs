@@ -22,18 +22,6 @@ public enum NotificationVariant
 	AcceptOrDecline = 1 << 0,
 
 	/// <summary>
-	/// Standard informational notification that informs the recipient about an event; usually requires no action.
-	/// </summary>
-	[JsonPropertyName(nameof(Default))]
-	Default = 1 << 3,
-
-	/// <summary>
-	/// Read-only notification that directs the user to view further details (no accept/decline actions).
-	/// </summary>
-	[JsonPropertyName(nameof(Viewable))]
-	Viewable = 1 << 4,
-
-	/// <summary>
 	/// Notification that references a project (should include the associated project identifier).
 	/// </summary>
 	[JsonPropertyName(nameof(Project))]
@@ -57,21 +45,22 @@ public enum NotificationVariant
 	[JsonPropertyName(nameof(Review))]
 	Review = 1 << 8,
 
-	/// <summary>
-	/// Welcome notification, typically sent when a user registers or is onboarded.
-	/// </summary>
-	[JsonPropertyName(nameof(Welcome))]
-	Welcome = 1 << 9,
+    /// <summary>
+    /// The notification is intented for a user.
+    /// </summary>
+	[JsonPropertyName(nameof(User))]
+	User = 1 << 9,
 
     /// <summary>
-	/// Notification shall not be shown as a feed.
-	/// </summary>
-	[JsonPropertyName(nameof(NonFeed))]
-	NonFeed = 1 << 10,
+    /// The notification is intented for a organizaton.
+    /// </summary>
+    [JsonPropertyName(nameof(Organization))]
+	Organization = 1 << 10,
 
-	/// <summary>
-	/// Represents all flags combined (bitwise all ones).
+    /// <summary>
+	/// Show the notification as a feed notification
+    /// I.e: Show up on the homepage feed
 	/// </summary>
-	[JsonPropertyName(nameof(All))]
-	All = ~0,
+	[JsonPropertyName(nameof(Feed))]
+	Feed = 1 << 10,
 }

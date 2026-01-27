@@ -21,12 +21,12 @@ public class DatabaseContext(DbContextOptions<DatabaseContext> options) : DbCont
     {
         optionsBuilder.UseAsyncSeeding(async (context, _, cancellationToken) =>
         {
-            var testBlog = await context.Set<Blog>().FirstOrDefaultAsync(b => b.Url == "http://test.com", cancellationToken);
-            if (testBlog == null)
-            {
-                context.Set<Blog>().Add(new Blog { Url = "http://test.com" });
-                await context.SaveChangesAsync(cancellationToken);
-            }
+            // var testBlog = await context.Set<Blog>().FirstOrDefaultAsync(b => b.Url == "http://test.com", cancellationToken);
+            // if (testBlog == null)
+            // {
+            //     context.Set<Blog>().Add(new Blog { Url = "http://test.com" });
+            //     await context.SaveChangesAsync(cancellationToken);
+            // }
         });
     }
 

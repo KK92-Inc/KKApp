@@ -11,6 +11,9 @@ using NXTBackend.API.Core.Services.Interface;
 using Wolverine;
 using App.Backend.Domain.Enums;
 using App.Backend.Models.Responses.Entities.Notifications;
+using App.Backend.API.Notifications;
+using App.Backend.Domain.Entities.Users;
+using App.Backend.Domain.Entities;
 
 namespace App.Backend.API.Filters;
 
@@ -45,31 +48,39 @@ public class UserResourceFilter(
         // TODO: Set this up with webhooks ideally to avoid constant queries
         if (await ctx.Users.FirstOrDefaultAsync(u => u.Id == userId) is null)
         {
+            var first = user.FindFirstValue(ClaimTypes.GivenName);
+            var last = user.FindFirstValue(ClaimTypes.Surname);
             var login = user.FindFirstValue("preferred_username") ?? $"user_{userId:N}"[..16];
-            await ctx.Users.AddAsync(new()
+
+            var newUser = new User()
             {
                 Id = userId,
                 Login = login,
                 Display = login,
-                Details = new ()
+                Details = new()
                 {
                     UserId = userId,
                     Email = user.FindFirstValue(ClaimTypes.Email),
-                    FirstName = user.FindFirstValue(ClaimTypes.GivenName),
-                    LastName = user.FindFirstValue(ClaimTypes.Surname)
+                    FirstName = first,
+                    LastName = last
                 }
-            });
+            };
 
-            // Always create their own dedicated workspace
-            await ctx.Workspaces.AddAsync(new ()
+            var newWorkspace = new Workspace()
             {
-               OwnerId = userId,
-               Ownership = EntityOwnership.User
-            });
+                OwnerId = userId,
+                Ownership = EntityOwnership.User
+            };
+
+            await ctx.Users.AddAsync(newUser);
+            await ctx.Workspaces.AddAsync(newWorkspace);
+            await ctx.SaveChangesAsync();
 
             logger.LogInformation("Creating new user: {Login}", login);
-            await ctx.SaveChangesAsync();
-            await bus.PublishAsync(new WelcomeNotification(userId));
+
+            var welcomeFirst = first ?? login;
+            var welcomeLast = last ?? string.Empty;
+            await bus.PublishAsync(new WelcomeUserNotification(userId, welcomeFirst, welcomeLast));
         }
 
         await next();

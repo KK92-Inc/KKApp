@@ -62,11 +62,11 @@ public class UserController(
         CancellationToken cancellationToken
     )
     {
-        await notifications.CreateAsync(new ()
-        {
-            NotifiableId = User.GetSID(),
-            Type = nameof(MessageDO)
-        });
+        // await notifications.CreateAsync(new ()
+        // {
+        //     NotifiableId = User.GetSID(),
+        //     Type = nameof(MessageDO)
+        // });
 
         var page = await notifications.GetAllAsync(sorting, pagination, cancellationToken,
             n => read ? n.ReadAt != null : n.ReadAt == null

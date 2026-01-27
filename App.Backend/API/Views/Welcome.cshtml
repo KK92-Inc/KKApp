@@ -1,0 +1,27 @@
+@using App.Backend.API.Views.Models
+@model WelcomeViewModel
+@{ Layout = "_Layout"; }
+
+<h2 style="margin-top:0;">Welcome, @Model.FirstName! 🎉</h2>
+
+<p>
+	We're excited to have you join <strong>@Model.BrandName</strong>.
+</p>
+
+<p>
+	Get started by exploring your dashboard and setting up your profile.
+</p>
+
+@*
+<p style="margin:24px 0;">
+    <a href="@Model.ActionUrl"
+       style="background:#2563eb;color:#ffffff;text-decoration:none;
+              padding:12px 20px;border-radius:6px;display:inline-block;">
+        Get Started
+    </a>
+</p>
+*@
+
+<p>
+	If you have any questions, just reply to this email — we're happy to help.
+</p>

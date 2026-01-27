@@ -27,6 +27,7 @@ using Microsoft.OpenApi;
 using Keycloak.AuthServices.Common;
 using App.Backend.API.Filters;
 using NXTBackend.API.Core.Services.Interface;
+using Wolverine.Postgresql;
 
 // ============================================================================
 
@@ -39,8 +40,7 @@ public static class Services
 {
     public static WebApplicationBuilder Register(WebApplicationBuilder builder)
     {
-        // Messaging Bus (confusingly named use?)
-        builder.Host.UseWolverine();
+        builder.Services.AddRazorTemplating();
         builder.Services.AddProblemDetails();
         builder.Services.AddControllers(o =>
         {
@@ -78,7 +78,6 @@ public static class Services
                 builder.Configuration,
                 keycloakClientSectionName: KeycloakProtectionClientOptions.Section
             );
-
 
         // Misc Services
         builder.Services.AddOpenApi(o =>
@@ -132,14 +131,29 @@ public static class Services
         });
 
         // Database
+        var cs = builder.Configuration.GetConnectionString("db");
         builder.AddNpgsqlDbContext<DatabaseContext>("db", null, options =>
         {
+            options.UseNpgsql(cs);
             options.UseLazyLoadingProxies();
             options.AddInterceptors(new SshKeyInterceptor());
             options.AddInterceptors(new SavingChangesInterceptor(TimeProvider.System));
-            options.UseNpgsql(builder.Configuration.GetConnectionString("db"));
             if (builder.Environment.IsDevelopment())
                 options.EnableSensitiveDataLogging();
+        });
+
+        // Messaging Bus (confusingly named use?)
+        builder.Host.UseWolverine(opts =>
+        {
+            opts.PersistMessagesWithPostgresql(cs!).EnableMessageTransport(o =>
+            {
+               o.AutoProvision();
+            });
+
+            // Outgoing async messages go here
+            opts.PublishAllMessages().ToPostgresqlQueue("outbound");
+            // Background workers listen here
+            opts.ListenToPostgresqlQueue("outbound").MaximumMessagesToReceive(50);
         });
 
         // // Register Transient, Scoped, Singletons, ...

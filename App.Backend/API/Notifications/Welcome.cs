@@ -4,15 +4,31 @@
 // ============================================================================
 
 using App.Backend.Domain.Enums;
-using App.Backend.Models.Responses.Entities.Notifications;
+using App.Backend.API.Views.Models;
+using App.Backend.API.Notifications.Channels;
+
+namespace App.Backend.API.Notifications;
 
 // ============================================================================
 
-public sealed record WelcomeNotification(Guid UserId) : BaseNotification
+/// <summary>
+/// Notification for when a user is newly registered.
+/// </summary>
+/// <param name="UserId">The user ID</param>
+public sealed record WelcomeUserNotification(Guid UserId, string FirstName, string LastName) :
+    BaseNotification,
+    IDatabaseChannel,
+    IEmailChannel<WelcomeViewModel>
 {
+    public string View => "~/Views/Welcome.cshtml";
+
+    public string Subject => $"Welcome {FirstName} {LastName}";
+
+
+    public WelcomeViewModel Model => new (FirstName, LastName);
+
     public override Guid NotifiableId => UserId;
 
-    public override NotificationData? Data => null;
+    public override NotificationVariant Descriptor => NotificationVariant.Feed | NotificationVariant.User;
 
-    public override NotificationVariant Descriptor => NotificationVariant.Welcome | NotificationVariant.Default;
 }
