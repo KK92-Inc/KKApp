@@ -22,7 +22,6 @@ using Scalar.Aspire;
 // Setup
 // ============================================================================
 
-//re_bMA78duQ_MuU8p7uzs7PwMkwx6wC8kRmj
 var builder = DistributedApplication.CreateBuilder(args);
 builder.AddDockerComposeEnvironment("env").WithDashboard(false);
 var isRun = builder.ExecutionContext.IsRunMode;
@@ -162,3 +161,4 @@ var scalar = builder.AddScalarApiReference("scalar", o => o.WithTheme(ScalarThem
 
 
 builder.Build().Run();
+
