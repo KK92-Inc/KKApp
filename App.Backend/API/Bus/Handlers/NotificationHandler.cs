@@ -15,6 +15,8 @@ using App.Backend.API.Views.Models;
 using App.Backend.API.Notifications;
 using App.Backend.Core.Services.Interface;
 using App.Backend.Domain.Enums;
+using Microsoft.AspNetCore.SignalR;
+using System.Threading.Channels;
 
 // ============================================================================
 
@@ -24,15 +26,17 @@ public class NotificationHandler(
     IUserService users,
     ILogger<NotificationHandler> logger,
     IRazorTemplateEngine render,
-    IResend client)
+    Channel<IBroadcastMessage> broadcastChannel,
+    IResend client) : Hub
 {
     public async Task Handle(NotificationRequest notification)
     {
         logger.LogInformation("Handling notification: {@Notification}", notification);
 
-        if (notification.Content is IEmailChannel<WelcomeViewModel> email)
+        if (notification.Content is IEmailChannel email)
         {
-            logger.LogInformation("Notification is an email channel. Subject: {Subject}", email.Subject);
+            var mail = email.ToMail();
+            logger.LogInformation("Notification is an email channel. Subject: {Subject}", mail.Subject);
             var entity = await users.FindByIdAsync(notification.Content.NotifiableId);
             // var entity = notification.Content.Meta switch
             // {
@@ -45,15 +49,14 @@ public class NotificationHandler(
 
             if (entity?.Details?.Email is not null)
             {
-                var htmlBody = await render.RenderAsync(email.View, email.Model);
                 logger.LogInformation("Sending email to {Email}", entity.Details.Email);
-
                 await client.EmailSendAsync(new()
                 {
-                    To = entity.Details.Email,
+                    // TODO: Convert it to what Resend wants
+                    ReplyTo = mail.To.First().Address,
                     From = "portal@resend.dev",
-                    Subject = email.Subject,
-                    HtmlBody = htmlBody
+                    Subject = mail.Subject,
+                    HtmlBody = mail.Body
                 });
 
                 logger.LogInformation("Email sent to {Email}", entity.Details.Email);
@@ -78,5 +81,12 @@ public class NotificationHandler(
 
             logger.LogInformation("Database notification created for NotifiableId: {NotifiableId}", notification.Content.NotifiableId);
         }
+
+        if (notification.Content is IBroadcastChannel broadcast)
+        {
+            var message = broadcast.ToBroadcast();
+            await broadcastChannel.Writer.WriteAsync(message);
+        }
+
     }
 }

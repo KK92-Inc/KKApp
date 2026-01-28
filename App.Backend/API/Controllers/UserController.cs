@@ -9,7 +9,9 @@ using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.AspNetCore.Authorization;
 using App.Backend.Core.Query;
 using App.Backend.API.Params;
+using Microsoft.AspNetCore.Http;
 using App.Backend.Core.Services.Implementation;
+using System.Net.ServerSentEvents;
 using App.Backend.Domain;
 using App.Backend.Core.Services.Interface;
 using App.Backend.Models;
@@ -19,6 +21,8 @@ using NXTBackend.API.Core.Services.Interface;
 using App.Backend.Models.Responses.Entities;
 using App.Backend.Models.Responses.Entities.Notifications;
 using App.Backend.Models.Requests.Users;
+using System.Threading.Channels;
+using App.Backend.API.Notifications.Channels;
 
 // ============================================================================
 
@@ -78,26 +82,35 @@ public class UserController(
         return Ok(page.Items.Select(e => new NotificationDO(e)));
     }
 
-    // [HttpGet("/users/current/feed")]
-    // [ProtectedResource("users", "user:read")]
-    // [ProducesResponseType(StatusCodes.Status200OK)]
-    // [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    // [ProducesErrorResponseType(typeof(ProblemDetails))]
-    // [EndpointSummary("Get the currently authenticated user.")]
-    // [EndpointDescription("When authenticated it's useful to know who you currently are logged in as.")]
-    // public async Task<ActionResult<FeedDO>> CurrentFeed(
-    //     [FromQuery] Pagination pagination,
-    //     [FromQuery] Sorting sorting,
-    //     CancellationToken cancellationToken
-    // )
-    // {
-    //     var page = await notifications.GetAllAsync(sorting, pagination, cancellationToken
 
-    //     );
 
-    //     page.AppendHeaders(Request.Headers);
-    //     return Ok(page.Items.Select(e => new NotificationDO(e)));
-    // }
+    [HttpGet("/users/current/feed")]
+    [ProtectedResource("users", "user:read")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Get the currently authenticated user.")]
+    [EndpointDescription("When authenticated it's useful to know who you currently are logged in as.")]
+    public async Task<IResult> CurrentFeed(
+        [FromQuery] Pagination pagination,
+        [FromQuery] Sorting sorting,
+        Channel<IBroadcastMessage> channel,
+        CancellationToken cancellationToken
+    )
+    {
+        async IAsyncEnumerable<SseItem<object>> Stream()
+        {
+            await foreach (var message in channel.Reader.ReadAllAsync(cancellationToken))
+            {
+                yield return new SseItem<object>(
+                    data: message.Payload,
+                    eventType: message.Event
+                );
+            }
+        }
+
+        return Results.ServerSentEvents(Stream());
+    }
 
     [HttpGet("/users/current/spotlights")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -150,7 +163,7 @@ public class UserController(
     [EndpointDescription("Create a new user with optional details")]
     public async Task<ActionResult<UserDO>> Create([FromBody] PostUserRequestDTO request)
     {
-        var user = await users.CreateAsync(new ()
+        var user = await users.CreateAsync(new()
         {
             Login = request.Login,
             Display = request.DisplayName,

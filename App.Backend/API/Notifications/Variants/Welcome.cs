@@ -9,21 +9,42 @@ using App.Backend.API.Notifications.Channels;
 using Wolverine;
 using System.Net.Mail;
 using App.Backend.Domain.Entities.Users;
+using Microsoft.AspNetCore.SignalR;
+using App.Backend.Models.Responses.Entities;
 
 namespace App.Backend.API.Notifications.Variants;
 
 // ============================================================================
 
-public sealed record WelcomeUserNotification(User User) : INotificationMessage, IDatabaseChannel, IEmailChannel
+public sealed record WelcomeUserNotification(User User) : INotificationMessage, IDatabaseChannel, IEmailChannel, IBroadcastChannel
 {
     public Guid NotifiableId => User.Id;
 
-    public NotificationMeta Meta => throw new NotImplementedException();
+    public NotificationMeta Meta => NotificationMeta.Feed | NotificationMeta.User;
 
     public Guid? ResourceId => null;
 
+    public IBroadcastMessage ToBroadcast()
+    {
+        return new BroadcastMessage("User.Welcome", new UserDO(User));
+    }
+
+    public MailMessage ToMail()
+    {
+        return new ();
+    }
+
+
     public NotificationRequest Transform() => new(this);
 }
+
+    // public class ChatHub : Hub
+    // {
+    //     public async Task SendMessage(string user, string message)
+    //     {
+    //         await Clients.All.SendAsync("ReceiveMessage", user, message);
+    //     }
+    // }
 
 /// <summary>
 /// Notification for when a user is newly registered.

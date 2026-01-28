@@ -8,6 +8,7 @@ using App.Backend.API.Jobs.Interfaces;
 using Wolverine;
 using App.Backend.Core.Services.Interface;
 using App.Backend.API.Notifications.Variants;
+using Microsoft.EntityFrameworkCore;
 
 // ============================================================================
 
@@ -25,16 +26,14 @@ public class SampleJob(ILogger<SampleJob> logger, IMessageBus bus, IUserService 
 
     public async Task Execute(IJobExecutionContext context)
     {
-        var usr = await user.FindByLoginAsync("demo");
+        var usr = await user
+            .Query(false)
+            .Include(u => u.Details)
+            .FirstOrDefaultAsync(u => u.Login == "demo");
+
         if (usr is null) return;
 
-        await bus.PublishAsync(new WelcomeUserNotification (
-            usr.Id,
-            usr.Details?.FirstName ?? string.Empty,
-            usr.Details?.LastName ?? string.Empty
-        ));
-
+        await bus.PublishAsync(new WelcomeUserNotification(usr));
         logger.LogInformation("Sample Job is running at {time}", DateTimeOffset.Now);
-        // await bus.PublishAsync(new UserRegistered(Guid.CreateVersion7()));
     }
 }
