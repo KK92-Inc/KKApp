@@ -7,7 +7,6 @@ using App.Backend.Database;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc.Filters;
-using NXTBackend.API.Core.Services.Interface;
 using Wolverine;
 using App.Backend.Domain.Enums;
 using App.Backend.Models.Responses.Entities.Notifications;
@@ -56,7 +55,7 @@ public class UserResourceFilter(
             var last = user.FindFirstValue(ClaimTypes.Surname);
             var login = user.FindFirstValue("preferred_username")!;
 
-            await users.CreateAsync(new ()
+            var account = await users.CreateAsync(new ()
             {
                 Id = userId,
                 Login = login,
@@ -77,10 +76,7 @@ public class UserResourceFilter(
             }, token);
 
             logger.LogInformation("Creating new user: {Login}", login);
-
-            var firstName = first ?? login;
-            var lastName = last ?? string.Empty;
-            await bus.PublishAsync(new WelcomeUserNotification(userId, firstName, lastName));
+            await bus.PublishAsync(new WelcomeUserNotification(account));
         }
 
         await next();

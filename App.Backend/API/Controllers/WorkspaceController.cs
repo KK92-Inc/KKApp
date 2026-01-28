@@ -15,7 +15,6 @@ using App.Backend.Core.Services.Interface;
 using App.Backend.Models;
 using Keycloak.AuthServices.Authorization;
 using App.Backend.Domain.Enums;
-using NXTBackend.API.Core.Services.Interface;
 using App.Backend.Models.Responses.Entities;
 using App.Backend.Models.Responses.Entities.Notifications;
 using App.Backend.Models.Requests.Users;

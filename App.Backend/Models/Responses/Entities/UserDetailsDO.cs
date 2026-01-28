@@ -14,31 +14,38 @@ namespace App.Backend.Models.Responses.Entities;
 /// A detailed data object representing user details.
 /// </summary>
 /// <param name="details"></param>
-public class UserDetailsDO(Details details) : BaseEntityDO<Details>(details)
+public class UserDetailsDO : BaseEntityDO<Details>
 {
-    [Required]
-    public string? Email { get; set; } = details.Email;
+    public UserDetailsDO() { }
+
+    public UserDetailsDO(Details details) : base(details)
+    {
+        Email = details.Email;
+        Markdown = details.Markdown;
+        FirstName = details.FirstName;
+        LastName = details.LastName;
+        GithubUrl = details.GithubUrl;
+        LinkedinUrl = details.LinkedinUrl;
+        RedditUrl = details.RedditUrl;
+        WebsiteUrl = details.WebsiteUrl;
+    }
 
     [Required]
-    public string? Markdown { get; set; } = details.Markdown;
-
+    public string? Email { get; set; }
     [Required]
-    public string? FirstName { get; set; } = details.FirstName;
-
+    public string? Markdown { get; set; }
     [Required]
-    public string? LastName { get; set; } = details.LastName;
-
+    public string? FirstName { get; set; }
     [Required]
-    public string? GithubUrl { get; set; } = details.GithubUrl;
-
+    public string? LastName { get; set; }
     [Required]
-    public string? LinkedinUrl { get; set; } = details.LinkedinUrl;
-
+    public string? GithubUrl { get; set; }
     [Required]
-    public string? RedditUrl { get; set; } = details.RedditUrl;
-
+    public string? LinkedinUrl { get; set; }
     [Required]
-    public string? WebsiteUrl { get; set; } = details.WebsiteUrl;
+    public string? RedditUrl { get; set; }
+    [Required]
+    public string? WebsiteUrl { get; set; }
 
     public static implicit operator UserDetailsDO?(Details? data) => data is null ? null : new(data);
 }

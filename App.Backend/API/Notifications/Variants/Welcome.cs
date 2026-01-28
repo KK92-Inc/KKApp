@@ -11,66 +11,33 @@ using System.Net.Mail;
 using App.Backend.Domain.Entities.Users;
 using Microsoft.AspNetCore.SignalR;
 using App.Backend.Models.Responses.Entities;
+using App.Backend.API.Bus.Messages;
 
 namespace App.Backend.API.Notifications.Variants;
 
 // ============================================================================
 
-public sealed record WelcomeUserNotification(User User) : INotificationMessage, IDatabaseChannel, IEmailChannel, IBroadcastChannel
+public sealed record WelcomeUserNotification(UserDO User) : INotificationMessage, IDatabaseChannel, IBroadcastChannel
 {
-    public Guid NotifiableId => User.Id;
-
-    public NotificationMeta Meta => NotificationMeta.Feed | NotificationMeta.User;
-
     public Guid? ResourceId => null;
+    public Guid NotifiableId => User.Id;
+    public NotificationMeta Meta => NotificationMeta.User | NotificationMeta.Feed;
 
-    public IBroadcastMessage ToBroadcast()
-    {
-        return new BroadcastMessage("User.Welcome", new UserDO(User));
-    }
+    public BroadcastMessage ToBroadcast() => new("DemoEvent", User);
 
-    public MailMessage ToMail()
+    public object ToDatabase()
     {
         return new ();
     }
 
+    public EmailMessage ToMail()
+    {
+        return new EmailMessage(
+            "Welcome to the App",
+            "~/Views/Welcome.cshtml",
+            new WelcomeViewModel(User.Details?.FirstName ?? User.Login)
+        );
+    }
 
     public NotificationRequest Transform() => new(this);
 }
-
-    // public class ChatHub : Hub
-    // {
-    //     public async Task SendMessage(string user, string message)
-    //     {
-    //         await Clients.All.SendAsync("ReceiveMessage", user, message);
-    //     }
-    // }
-
-/// <summary>
-/// Notification for when a user is newly registered.
-/// </summary>
-/// <param name="UserId">The user ID</param>
-// public sealed record WelcomeUserNotification(
-//     Guid UserId,
-//     string FirstName,
-//     string LastName
-// ) : INotificationMessage,
-//     IDatabaseChannel,
-//     IEmailChannel
-// {
-//     public string View => "~/Views/Welcome.cshtml";
-//     public string Subject => $"Welcome {FirstName} {LastName}";
-//     public WelcomeViewModel Model => new(FirstName, LastName);
-
-//     public Guid NotifiableId => UserId;
-
-//     public Guid? ResourceId => null;
-
-//     public NotificationMeta Meta => NotificationMeta.Feed | NotificationMeta.User;
-
-//     public MailMessage ToMail() => new()
-//     {
-//         To =
-//     };
-//     public NotificationRequest Transform() => new(this);
-// }

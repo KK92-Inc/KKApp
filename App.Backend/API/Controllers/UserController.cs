@@ -17,12 +17,13 @@ using App.Backend.Core.Services.Interface;
 using App.Backend.Models;
 using Keycloak.AuthServices.Authorization;
 using App.Backend.Domain.Enums;
-using NXTBackend.API.Core.Services.Interface;
 using App.Backend.Models.Responses.Entities;
 using App.Backend.Models.Responses.Entities.Notifications;
 using App.Backend.Models.Requests.Users;
 using System.Threading.Channels;
 using App.Backend.API.Notifications.Channels;
+using App.Backend.API.Bus.Messages;
+using System.Runtime.CompilerServices;
 
 // ============================================================================
 
@@ -82,34 +83,25 @@ public class UserController(
         return Ok(page.Items.Select(e => new NotificationDO(e)));
     }
 
-
-
-    [HttpGet("/users/current/feed")]
-    [ProtectedResource("users", "user:read")]
+    [HttpGet("/users/current/stream")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Get the currently authenticated user.")]
     [EndpointDescription("When authenticated it's useful to know who you currently are logged in as.")]
-    public async Task<IResult> CurrentFeed(
-        [FromQuery] Pagination pagination,
-        [FromQuery] Sorting sorting,
-        Channel<IBroadcastMessage> channel,
-        CancellationToken cancellationToken
-    )
+    public async Task<IResult> StreamData(Channel<BroadcastMessage> channel, CancellationToken token)
     {
-        async IAsyncEnumerable<SseItem<object>> Stream()
+        async IAsyncEnumerable<SseItem<object>> GetChannelBroadcasts([EnumeratorCancellation] CancellationToken token)
         {
-            await foreach (var message in channel.Reader.ReadAllAsync(cancellationToken))
-            {
-                yield return new SseItem<object>(
-                    data: message.Payload,
-                    eventType: message.Event
-                );
-            }
+            while (!token.IsCancellationRequested)
+                await foreach (var message in channel.Reader.ReadAllAsync(token))
+                    yield return new SseItem<object>(message.Payload, message.Event)
+                    {
+                        ReconnectionInterval = TimeSpan.FromMinutes(1)
+                    };
         }
 
-        return Results.ServerSentEvents(Stream());
+        return TypedResults.ServerSentEvents(GetChannelBroadcasts(token));
     }
 
     [HttpGet("/users/current/spotlights")]

@@ -4,7 +4,6 @@
 // ============================================================================
 
 using Microsoft.OpenApi;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.OpenApi;
 
 // ============================================================================

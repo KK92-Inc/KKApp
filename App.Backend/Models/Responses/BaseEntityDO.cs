@@ -20,23 +20,23 @@ namespace App.Backend.Models.Responses;
 /// </remarks>
 /// <typeparam name="T">Any object that is a Base Entity</typeparam>
 /// <param name="entity"></param>
-public abstract class BaseEntityDO<T>(T entity) where T : BaseEntity
+public abstract class BaseEntityDO<T> where T : BaseEntity
 {
-    /// <summary>
-    /// The unique identifier for this object.
-    /// </summary>
+    protected BaseEntityDO() { }
+
+    protected BaseEntityDO(T entity)
+    {
+        Id = entity.Id;
+        CreatedAt = entity.CreatedAt;
+        UpdatedAt = entity.UpdatedAt;
+    }
+
     [JsonPropertyOrder(-3), Required]
-    public Guid Id { get; set; } = entity.Id;
+    public Guid Id { get; set; }
 
-    /// <summary>
-    /// Was created at.
-    /// </summary>
     [JsonPropertyOrder(-2), Required]
-    public DateTimeOffset CreatedAt { get; set; } = entity.CreatedAt;
+    public DateTimeOffset CreatedAt { get; set; }
 
-    /// <summary>
-    /// Updated at.
-    /// </summary>
     [JsonPropertyOrder(-1), Required]
-    public DateTimeOffset UpdatedAt { get; set; } = entity.UpdatedAt;
+    public DateTimeOffset UpdatedAt { get; set; }
 }

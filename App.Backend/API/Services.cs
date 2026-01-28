@@ -26,9 +26,10 @@ using App.Backend.API.Schemas.Operation;
 using Microsoft.OpenApi;
 using Keycloak.AuthServices.Common;
 using App.Backend.API.Filters;
-using NXTBackend.API.Core.Services.Interface;
 using Wolverine.Postgresql;
 using Resend;
+using System.Threading.Channels;
+using App.Backend.API.Bus.Messages;
 
 // ============================================================================
 
@@ -192,6 +193,8 @@ public static class Services
         builder.Services.AddTransient<IResend, ResendClient>();
         // // builder.Services.AddSingleton<INotificationQueue, InMemoryNotificationQueue>();
         builder.Services.AddSingleton(TimeProvider.System);
+        builder.Services.AddSingleton(Channel.CreateUnbounded<BroadcastMessage>());
+
         // builder.Services.AddSingleton(sp =>
         // {
         //     var sshClient = new SshClient(

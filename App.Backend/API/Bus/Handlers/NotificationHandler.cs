@@ -3,90 +3,65 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-using Wolverine;
+using Resend;
 using System.Text.Json;
-using NXTBackend.API.Core.Services.Interface;
 using Wolverine.Attributes;
 using Razor.Templating.Core;
-using Resend;
-using System.Text.RegularExpressions;
 using App.Backend.API.Notifications.Channels;
-using App.Backend.API.Views.Models;
 using App.Backend.API.Notifications;
 using App.Backend.Core.Services.Interface;
-using App.Backend.Domain.Enums;
-using Microsoft.AspNetCore.SignalR;
 using System.Threading.Channels;
+using App.Backend.API.Bus.Messages;
 
 // ============================================================================
 
 [WolverineHandler]
 public class NotificationHandler(
-    INotificationService service,
-    IUserService users,
+    IUserService userService,
+    INotificationService notificationService,
     ILogger<NotificationHandler> logger,
-    IRazorTemplateEngine render,
-    Channel<IBroadcastMessage> broadcastChannel,
-    IResend client) : Hub
+    Channel<BroadcastMessage> channel,
+    IRazorTemplateEngine razor,
+    IResend resend
+)
 {
-    public async Task Handle(NotificationRequest notification)
+    public async Task Handle(NotificationRequest notification, CancellationToken token)
     {
         logger.LogInformation("Handling notification: {@Notification}", notification);
-
         if (notification.Content is IEmailChannel email)
         {
+            logger.LogDebug("Submitting email for notification...");
             var mail = email.ToMail();
-            logger.LogInformation("Notification is an email channel. Subject: {Subject}", mail.Subject);
-            var entity = await users.FindByIdAsync(notification.Content.NotifiableId);
-            // var entity = notification.Content.Meta switch
-            // {
-            //     NotificationMeta.User => await users.FindByIdAsync(notification.Content.NotifiableId),
-            //     NotificationMeta.Organization => throw new NotImplementedException(),
-            //     _ => null
-            // };
-
-            logger.LogDebug("Resolved entity: {@Entity}", entity);
-
-            if (entity?.Details?.Email is not null)
+            var user = await userService.FindByIdAsync(notification.Content.NotifiableId);
+            if (user is not null && user.Details?.Email is not null)
             {
-                logger.LogInformation("Sending email to {Email}", entity.Details.Email);
-                await client.EmailSendAsync(new()
+                await resend.EmailSendAsync(new()
                 {
-                    // TODO: Convert it to what Resend wants
-                    ReplyTo = mail.To.First().Address,
-                    From = "portal@resend.dev",
+                    From = "portal@resend.dev", // TODO: Retrieve from configuration
                     Subject = mail.Subject,
-                    HtmlBody = mail.Body
-                });
-
-                logger.LogInformation("Email sent to {Email}", entity.Details.Email);
-            }
-            else
-            {
-                logger.LogWarning("No email found for entity: {@Entity}", entity);
+                    To = user.Details.Email,
+                    HtmlBody = await razor.RenderAsync(mail.View, mail.Model)
+                }, token);
+                logger.LogDebug("Submitting email for notification... [OK]");
             }
         }
-
-        if (notification.Content is IDatabaseChannel content)
+        if (notification.Content is IBroadcastChannel broadcast)
         {
-            logger.LogInformation("Notification is a database channel. NotifiableId: {NotifiableId}", notification.Content.NotifiableId);
-
-            await service.CreateAsync(new()
+            logger.LogDebug("Broadcasting notification...");
+            await channel.Writer.WriteAsync(broadcast.ToBroadcast(), token);
+            logger.LogDebug("Broadcasting notification... [OK]");
+        }
+        if (notification.Content is IDatabaseChannel message)
+        {
+            logger.LogDebug("Writing notification to database...");
+            await notificationService.CreateAsync(new()
             {
                 Descriptor = notification.Content.Meta,
                 ResourceId = notification.Content.ResourceId,
                 NotifiableId = notification.Content.NotifiableId,
-                Data = JsonSerializer.Serialize(content)
-            });
-
-            logger.LogInformation("Database notification created for NotifiableId: {NotifiableId}", notification.Content.NotifiableId);
+                Data = JsonSerializer.Serialize(message.ToDatabase())
+            }, token);
+            logger.LogDebug("Writing notification to database.... [OK]");
         }
-
-        if (notification.Content is IBroadcastChannel broadcast)
-        {
-            var message = broadcast.ToBroadcast();
-            await broadcastChannel.Writer.WriteAsync(message);
-        }
-
     }
 }

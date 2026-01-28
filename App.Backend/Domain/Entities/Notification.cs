@@ -20,16 +20,9 @@ public class Notification : BaseEntity
     public Notification()
     {
         ReadAt = null;
-        Type = nameof(Notification);
         Descriptor = default;
         ResourceId = null;
     }
-
-    /// <summary>
-    /// The notification class.
-    /// </summary>
-    [Column("type")]
-    public string Type { get; set; }
 
 	/// <summary>
     /// The notification descriptor outlining what the notification basically is

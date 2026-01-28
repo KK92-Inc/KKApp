@@ -3,18 +3,20 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-using System.Net.Mail;
-using App.Backend.API.Views.Models;
+using App.Backend.API.Bus.Messages;
 
 namespace App.Backend.API.Notifications.Channels;
 
-// ============================================================================
-
 /// <summary>
-/// Interface that mandates that the notification is to be sent via Email.
+/// Notification can be sent via email.
 /// </summary>
-/// <typeparam name="T">The View Model</typeparam>
 public interface IEmailChannel
 {
-    public MailMessage ToMail();
+    /// <summary>
+    /// Represents an email notification channel capable of converting notification data into an <see cref="EmailMessage"/>.
+    /// </summary>
+    /// <returns>
+    /// An <see cref="EmailMessage"/> instance containing the email content to be sent.
+    /// </returns>
+    public EmailMessage ToMail();
 }

@@ -3,37 +3,18 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using App.Backend.API.Bus.Messages;
+
 namespace App.Backend.API.Notifications.Channels;
 
 /// <summary>
-/// Describes a SignalR broadcast event.
-/// </summary>
-public interface IBroadcastMessage
-{
-    /// <summary>
-    /// The SignalR method name (event identifier).
-    /// </summary>
-    string Event { get; }
-
-    /// <summary>
-    /// Payload sent to connected clients.
-    /// </summary>
-    object Payload { get; }
-}
-
-/// <summary>
-/// Default broadcast message implementation.
-/// </summary>
-/// <typeparam name="T">Payload type.</typeparam>
-public sealed record BroadcastMessage(string Event, object Payload) : IBroadcastMessage;
-
-/// <summary>
-/// Marks a notification as eligible for real-time broadcasting.
+/// Represents a channel capable of broadcasting messages.
 /// </summary>
 public interface IBroadcastChannel
 {
     /// <summary>
-    /// Creates the broadcast message for this notification.
+    /// Converts the current notification into a <see cref="BroadcastMessage"/> for broadcasting.
     /// </summary>
-    IBroadcastMessage ToBroadcast();
+    /// <returns>A <see cref="BroadcastMessage"/> representing the broadcastable message.</returns>
+    public BroadcastMessage ToBroadcast();
 }

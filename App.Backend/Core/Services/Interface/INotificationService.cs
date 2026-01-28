@@ -3,10 +3,9 @@
 // See README in the root project for more information.
 // ============================================================================
 
-using App.Backend.Core.Services;
 using App.Backend.Domain.Entities;
 
-namespace NXTBackend.API.Core.Services.Interface;
+namespace App.Backend.Core.Services.Interface;
 
 /// <summary>
 /// Service for managing notifications

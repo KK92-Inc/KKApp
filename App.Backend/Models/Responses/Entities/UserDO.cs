@@ -14,23 +14,26 @@ namespace App.Backend.Models.Responses.Entities;
 /// A detailed data object representing a user.
 /// </summary>
 /// <param name="user"></param>
-public class UserDO(User user) : BaseEntityDO<User>(user)
+public class UserDO : BaseEntityDO<User>
 {
-    [Required]
-    public string Login { get; set; } = user.Login;
+    public UserDO() { } // REQUIRED for deserialization
+
+    public UserDO(User user) : base(user)
+    {
+        Login = user.Login;
+        DisplayName = user.Display;
+        AvatarUrl = user.AvatarUrl;
+        Details = user.Details;
+    }
 
     [Required]
-    public string? DisplayName { get; set; } = user.Display;
+    public string Login { get; set; } = default!;
 
-    [Required]
-    public string? AvatarUrl { get; set; } = user.AvatarUrl;
+    public string? DisplayName { get; set; }
 
-    [Required]
-    public virtual UserDetailsDO? Details { get; set; } = user.Details;
+    public string? AvatarUrl { get; set; }
 
-    /// <summary>
-    /// Utility operator to let us just pass the user entity into the constructor
-    /// </summary>
-    /// <param name="user">The entity</param>
+    public UserDetailsDO? Details { get; set; }
+
     public static implicit operator UserDO?(User? user) => user is null ? null : new(user);
 }

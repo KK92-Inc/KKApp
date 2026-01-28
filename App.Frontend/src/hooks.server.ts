@@ -61,7 +61,10 @@ export const handle = sequence(init, Keycloak.handle, authorize);
 
 // Our API request go to a different HOST, thus we need to attach the token
 export async function handleFetch({ fetch, request, event }) {
-	if (BACKEND_URI && request.url.startsWith(BACKEND_URI)) {
+	Log.dbg("TRIGGAH")
+
+	if (BACKEND_URI && request.url.startsWith(BACKEND_URI) || request.url.startsWith("http://localhost:5145/")) {
+		Log.dbg("TRIGGAH2")
 		const accessToken = event.cookies.get(Keycloak.COOKIE_ACCESS);
 		if (accessToken) {
 			// Log.dbg(request.method, '=>', request.url);

@@ -3,6 +3,9 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-namespace App.Backend.API.Views.Models;
+namespace App.Backend.API.Bus.Messages;
 
-public record WelcomeViewModel(string Name) : BaseViewModel;
+/// <summary>
+/// Default broadcast message implementation.
+/// </summary>
+public sealed record BroadcastMessage(string Event, object Payload);
