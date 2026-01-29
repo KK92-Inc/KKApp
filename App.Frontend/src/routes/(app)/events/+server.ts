@@ -1,29 +1,22 @@
 import { BACKEND_URI } from '$lib/config';
-import { Keycloak } from '$lib/oauth';
 
-// src/routes/api/stream/+server.ts
-export async function GET({ cookies, fetch }) {
-	const token = cookies.get(Keycloak.COOKIE_ACCESS);
-
-	const response = await fetch(`${BACKEND_URI}/users/current/stream`, {
+export async function GET({ fetch, request }) {
+	const stream = await fetch(`${BACKEND_URI}/users/current/stream`, {
+		signal: request.signal,
 		headers: {
-			Authorization: `Bearer ${token}`,
 			Accept: 'text/event-stream'
 		}
 	});
 
-	if (!response.ok) {
-		console.error('Stream failed:', response.status, response.statusText);
-		return new Response(null, { status: response.status });
+	if (!stream.ok || !stream.body) {
+		return new Response(null, { status: stream.status });
 	}
 
-	// Set standard SSE headers
-	return new Response(response.body, {
+	return new Response(stream.body, {
 		headers: {
 			'Content-Type': 'text/event-stream',
 			'Cache-Control': 'no-cache',
-			Connection: 'keep-alive'
-			// 'X-Accel-Buffering': 'no' // Uncomment if you use Nginx in front later
+			'Connection': 'keep-alive'
 		}
 	});
 }

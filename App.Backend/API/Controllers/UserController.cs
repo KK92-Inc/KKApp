@@ -91,17 +91,20 @@ public class UserController(
     [EndpointDescription("When authenticated it's useful to know who you currently are logged in as.")]
     public async Task<IResult> StreamData(Channel<BroadcastMessage> channel, CancellationToken token)
     {
+        return TypedResults.ServerSentEvents(GetChannelBroadcasts(token));
+
         async IAsyncEnumerable<SseItem<object>> GetChannelBroadcasts([EnumeratorCancellation] CancellationToken token)
         {
-            while (!token.IsCancellationRequested)
-                await foreach (var message in channel.Reader.ReadAllAsync(token))
-                    yield return new SseItem<object>(message.Payload, message.Event)
-                    {
-                        ReconnectionInterval = TimeSpan.FromMinutes(1)
-                    };
+            // Initial heartbeat/sync
+            yield return new SseItem<object>("ping", "heartbeat");
+            await foreach (var message in channel.Reader.ReadAllAsync(token))
+            {
+                yield return new SseItem<object>(message.Payload, message.Event)
+                {
+                    ReconnectionInterval = TimeSpan.FromSeconds(30)
+                };
+            }
         }
-
-        return TypedResults.ServerSentEvents(GetChannelBroadcasts(token));
     }
 
     [HttpGet("/users/current/spotlights")]

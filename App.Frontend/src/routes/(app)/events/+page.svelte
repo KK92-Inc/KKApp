@@ -2,10 +2,9 @@
 	import { onMount } from 'svelte';
 
 	let messages = $state.raw<string[]>([]);
-	let es: EventSource;
 
 	onMount(() => {
-		es = new EventSource('/events');
+		let es = new EventSource('/events');
 
 		es.onmessage = (event) => {
 			// Svelte 5 rune reactivity
@@ -18,7 +17,8 @@
 		};
 
 		return () => {
-			if (es) es.close(); // cleanup on navigation
+			console.log("Ok bye!")
+			es.close();
 		};
 	});
 </script>
