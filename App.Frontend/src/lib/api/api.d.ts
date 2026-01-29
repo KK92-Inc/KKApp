@@ -1054,8 +1054,8 @@ export interface paths {
             parameters: {
                 query?: {
                     "filter[read]"?: boolean;
-                    "filter[variant]"?: components["schemas"]["NotificationVariant"];
-                    "filter[not[variant]]"?: components["schemas"]["NotificationVariant"];
+                    "filter[variant]"?: components["schemas"]["NotificationMeta"];
+                    "filter[not[variant]]"?: components["schemas"]["NotificationMeta"];
                     /** @description The page number/index */
                     "page[index]"?: number | string;
                     /** @description The amount of results per page */
@@ -1081,6 +1081,75 @@ export interface paths {
                         "application/json": components["schemas"]["NotificationDO"][];
                         "text/json": components["schemas"]["NotificationDO"][];
                     };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/current/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the currently authenticated user.
+         * @description When authenticated it's useful to know who you currently are logged in as.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
                 };
                 /** @description Unauthorized */
                 401: {
@@ -2387,7 +2456,7 @@ export interface components {
         NotificationData: components["schemas"]["NotificationDataMessageDO"];
         NotificationDataMessageDO: {
             /** @enum {string} */
-            type?: "Default";
+            type?: "User";
             text: string;
             html: string;
         };
@@ -2399,13 +2468,13 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
             data?: components["schemas"]["NotificationData"];
-            descriptor?: components["schemas"]["NotificationVariant"];
+            descriptor?: components["schemas"]["NotificationMeta"];
             /** Format: date-time */
             readAt?: null | string;
             /** Format: uuid */
             resourceId?: null | string;
         };
-        NotificationVariant: number;
+        NotificationMeta: number;
         /** @enum {unknown} */
         Order: "Ascending" | "Descending";
         PatchGoalRequestDTO: {
@@ -2515,9 +2584,9 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
             login: string;
-            displayName: null | string;
-            avatarUrl: null | string;
-            details: null | components["schemas"]["UserDetailsDO"];
+            displayName?: null | string;
+            avatarUrl?: null | string;
+            details?: null | components["schemas"]["UserDetailsDO"];
         };
         UserLightDO: {
             /** Format: uuid */
