@@ -69,7 +69,6 @@ public static class Services
         builder.Services.AddKeycloakWebApiAuthentication(builder.Configuration, options =>
         {
             options.Audience = "intra";
-            options.RequireHttpsMetadata = false;
         });
 
         builder.Services

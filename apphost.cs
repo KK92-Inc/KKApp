@@ -94,10 +94,10 @@ var keycloak = builder.AddKeycloakContainer("keycloak")
     .WithDataVolume()
     .WithImport("./config/student-realm.json")
     .WithImport("./config/admin-realm.json")
-    // .WithEnvironment("KC_HTTP_ENABLED", "true")
-    // .WithEnvironment("KC_PROXY_HEADERS", "xforwarded")
-    // .WithEnvironment("KC_HOSTNAME_STRICT", "false")
-    // .WithEnvironment("KC_HOSTNAME", kcOrigin)
+    .WithEnvironment("KC_HTTP_ENABLED", "true")
+    .WithEnvironment("KC_PROXY_HEADERS", "xforwarded")
+    .WithEnvironment("KC_HOSTNAME_STRICT", "false")
+    .WithEnvironment("KC_HOSTNAME", kcOrigin)
     .WithExternalHttpEndpoints();
 
 var realm = keycloak.AddRealm("student");
@@ -161,4 +161,3 @@ var scalar = builder.AddScalarApiReference("scalar", o => o.WithTheme(ScalarThem
 
 
 builder.Build().Run();
-

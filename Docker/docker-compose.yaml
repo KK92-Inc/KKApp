@@ -140,7 +140,8 @@ services:
       VALKEY_URI: "valkey://:${VALKEY_PASSWORD}@valkey:6379"
       KEYCLOAK_HTTP: "http://keycloak:8080"
       services__keycloak__http__0: "http://keycloak:8080"
-    ports:
+      RESEND_APITOKEN: "${BE_RESEND_TOKEN}"
+    expose:
       - "${BACKEND_PORT}"
     depends_on:
       migration-job:
@@ -206,7 +207,7 @@ services:
       BACKEND_HTTP: "http://backend:${BACKEND_PORT}"
       services__backend__http__0: "http://backend:${BACKEND_PORT}"
       BACKEND_HTTPS: "https://backend:${BACKEND_PORT}"
-    ports:
+    expose:
       - "8080"
     networks:
       - "aspire"
