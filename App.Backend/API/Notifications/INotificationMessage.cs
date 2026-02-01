@@ -11,20 +11,11 @@ namespace App.Backend.API.Notifications;
 // ============================================================================
 
 /// <summary>
-/// Wrapper for INotificationMessage which allows *any* variant of it to be
-/// discovered by WolverineFX.
-/// </summary>
-/// <param name="Content">The Notification to deliver.</param>
-public record NotificationRequest(INotificationMessage Content);
-
-// ============================================================================
-
-/// <summary>
 /// Interface for defining notification messages.
 /// </summary>
-public interface INotificationMessage : IForwardsTo<NotificationRequest>
+public interface INotificationMessage
 {
-    Guid NotifiableId { get; }
-    NotificationMeta Meta { get; }
-    Guid? ResourceId { get; }
+    public Guid NotifiableId { get; }
+    public Guid? ResourceId { get; }
+    public NotificationMeta Meta { get; }
 }

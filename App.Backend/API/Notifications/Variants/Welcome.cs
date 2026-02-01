@@ -17,27 +17,36 @@ namespace App.Backend.API.Notifications.Variants;
 
 // ============================================================================
 
-public sealed record WelcomeUserNotification(UserDO User) : INotificationMessage, IDatabaseChannel, IBroadcastChannel
+// Change 'class' to 'record'
+// Capitalize 'User' to follow property naming conventions
+public sealed record WelcomeUserNotification(UserDO User) : INotificationMessage, IBroadcastChannel
 {
     public Guid? ResourceId => null;
+
     public Guid NotifiableId => User.Id;
     public NotificationMeta Meta => NotificationMeta.User | NotificationMeta.Feed;
 
     public BroadcastMessage ToBroadcast() => new("DemoEvent", User);
-
-    public object ToDatabase()
-    {
-        return new ();
-    }
-
-    public EmailMessage ToMail()
-    {
-        return new EmailMessage(
-            "Welcome to the App",
-            "~/Views/Welcome.cshtml",
-            new WelcomeViewModel(User.Details?.FirstName ?? User.Login)
-        );
-    }
-
-    public NotificationRequest Transform() => new(this);
 }
+
+// public sealed record WelcomeUserNotification(Guid UserId) : INotificationMessage
+// {
+//     public Guid? ResourceId => null;
+//     public Guid NotifiableId => UserId;
+//     public NotificationMeta Meta => NotificationMeta.User | NotificationMeta.Feed;
+
+
+//     // public EmailMessage ToMail()
+//     // {
+//     //     return new EmailMessage(
+//     //         "Welcome to the App",
+//     //         "~/Views/Welcome.cshtml",
+//     //         new WelcomeViewModel(User.Details?.FirstName ?? User.Login)
+//     //     );
+//     // }
+
+//     public NotificationRequest Transform() => new(this)
+//     {
+//         Content = this
+//     };
+// }

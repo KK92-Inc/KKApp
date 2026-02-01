@@ -12,6 +12,8 @@ using App.Backend.API.Notifications;
 using App.Backend.Core.Services.Interface;
 using System.Threading.Channels;
 using App.Backend.API.Bus.Messages;
+using App.Backend.API.Notifications.Registers.Interface;
+using App.Backend.API.Notifications.Variants;
 
 // ============================================================================
 
@@ -20,19 +22,21 @@ public class NotificationHandler(
     IUserService userService,
     INotificationService notificationService,
     ILogger<NotificationHandler> logger,
-    Channel<BroadcastMessage> channel,
+    IBroadcastRegistry registry,
     IRazorTemplateEngine razor,
     IResend resend
 )
 {
-    public async Task Handle(NotificationRequest notification, CancellationToken token)
+    public async Task Handle(WelcomeUserNotification payload, CancellationToken token) => await Internal(payload, token);
+
+    private async Task Internal(INotificationMessage notification, CancellationToken token)
     {
         logger.LogInformation("Handling notification: {@Notification}", notification);
-        if (notification.Content is IEmailChannel email)
+        if (notification is IEmailChannel email)
         {
             logger.LogDebug("Submitting email for notification...");
             var mail = email.ToMail();
-            var user = await userService.FindByIdAsync(notification.Content.NotifiableId);
+            var user = await userService.FindByIdAsync(notification.NotifiableId);
             if (user is not null && user.Details?.Email is not null)
             {
                 await resend.EmailSendAsync(new()
@@ -45,20 +49,23 @@ public class NotificationHandler(
                 logger.LogDebug("Submitting email for notification... [OK]");
             }
         }
-        if (notification.Content is IBroadcastChannel broadcast)
+        if (notification is IBroadcastChannel broadcast)
         {
             logger.LogDebug("Broadcasting notification...");
-            await channel.Writer.WriteAsync(broadcast.ToBroadcast(), token);
+
+            var notifiableId = notification.NotifiableId;
+            await registry.PublishAsync(notifiableId, broadcast.ToBroadcast(), token);
+
             logger.LogDebug("Broadcasting notification... [OK]");
         }
-        if (notification.Content is IDatabaseChannel message)
+        if (notification is IDatabaseChannel message)
         {
             logger.LogDebug("Writing notification to database...");
             await notificationService.CreateAsync(new()
             {
-                Descriptor = notification.Content.Meta,
-                ResourceId = notification.Content.ResourceId,
-                NotifiableId = notification.Content.NotifiableId,
+                Descriptor = notification.Meta,
+                ResourceId = notification.ResourceId,
+                NotifiableId = notification.NotifiableId,
                 Data = JsonSerializer.Serialize(message.ToDatabase())
             }, token);
             logger.LogDebug("Writing notification to database.... [OK]");

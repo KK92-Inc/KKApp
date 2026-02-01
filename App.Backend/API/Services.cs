@@ -30,6 +30,9 @@ using Wolverine.Postgresql;
 using Resend;
 using System.Threading.Channels;
 using App.Backend.API.Bus.Messages;
+using App.Backend.API.Notifications.Registers.Interface;
+using App.Backend.API.Notifications.Registers.Implementation;
+using JasperFx.Core;
 
 // ============================================================================
 
@@ -192,7 +195,7 @@ public static class Services
         builder.Services.AddTransient<IResend, ResendClient>();
         // // builder.Services.AddSingleton<INotificationQueue, InMemoryNotificationQueue>();
         builder.Services.AddSingleton(TimeProvider.System);
-        builder.Services.AddSingleton(Channel.CreateUnbounded<BroadcastMessage>());
+        builder.Services.AddSingleton<IBroadcastRegistry, MemoryBroadcastRegistry>();
 
         // builder.Services.AddSingleton(sp =>
         // {

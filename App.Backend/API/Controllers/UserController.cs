@@ -24,6 +24,7 @@ using System.Threading.Channels;
 using App.Backend.API.Notifications.Channels;
 using App.Backend.API.Bus.Messages;
 using System.Runtime.CompilerServices;
+using App.Backend.API.Notifications.Registers.Interface;
 
 // ============================================================================
 
@@ -89,15 +90,15 @@ public class UserController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Get the currently authenticated user.")]
     [EndpointDescription("When authenticated it's useful to know who you currently are logged in as.")]
-    public async Task<IResult> StreamData(Channel<BroadcastMessage> channel, CancellationToken token)
+    public async Task<IResult> StreamData(IBroadcastRegistry registry, CancellationToken token)
     {
-        return TypedResults.ServerSentEvents(GetChannelBroadcasts(token));
+        return TypedResults.ServerSentEvents(GetChannel(User.GetSID(), token));
 
-        async IAsyncEnumerable<SseItem<object>> GetChannelBroadcasts([EnumeratorCancellation] CancellationToken token)
+        async IAsyncEnumerable<SseItem<object>> GetChannel(Guid id, [EnumeratorCancellation] CancellationToken token)
         {
             // Initial heartbeat/sync
             yield return new SseItem<object>("ping", "heartbeat");
-            await foreach (var message in channel.Reader.ReadAllAsync(token))
+            await foreach (var message in registry.SubscribeAsync(id, token))
             {
                 yield return new SseItem<object>(message.Payload, message.Event)
                 {
