@@ -52,7 +52,7 @@ public class WorkspaceController(
     #region AddEntities
     [HttpPost("{workspace:guid}/cursus")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProtectedResource("workspaces", ["workspaces:write", "cursus:write"])]
+    [ProtectedResource("workspaces", "workspaces:read")]
     [EndpointSummary("Create a new cursus")]
     [EndpointDescription("Directly create a new project to be added to the workspace")]
     public async Task<ActionResult> AddCursus(

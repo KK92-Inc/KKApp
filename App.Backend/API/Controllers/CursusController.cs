@@ -15,6 +15,7 @@ using App.Backend.Models;
 using Keycloak.AuthServices.Authorization;
 using App.Backend.Models.Responses.Entities.Cursus;
 using App.Backend.Models.Requests.Cursus;
+using Microsoft.EntityFrameworkCore;
 
 // ============================================================================
 
@@ -35,42 +36,24 @@ public class CursusController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Query all cursus")]
     [EndpointDescription("Retrieve a paginated list of all cursus")]
-    public async Task<ActionResult> GetAll(
+    public async Task<ActionResult<CursusDO>> GetAll(
+        [FromQuery(Name = "filter[id]")] Guid? id,
+        [FromQuery(Name = "filter[name]")] string? name,
+        [FromQuery(Name = "filter[slug]")] string? slug,
         [FromQuery] Sorting sorting,
         [FromQuery] Pagination pagination,
         CancellationToken token
     )
     {
-        var page = await cursusService.GetAllAsync(sorting, pagination, token);
+        var page = await cursusService.GetAllAsync(sorting, pagination, token,
+            id is null ? null : n => n.Id == id,
+            string.IsNullOrWhiteSpace(name) ? null : n => EF.Functions.ILike(n.Name, $"%{name}%"),
+            string.IsNullOrWhiteSpace(slug) ? null : n => n.Slug == slug
+        );
+
         page.AppendHeaders(Request.Headers);
         return Ok(page.Items.Select(c => new CursusDO(c)));
     }
-
-    // [HttpPost]
-    // [ProtectedResource("cursus", "cursus:write")]
-    // [ProducesResponseType(StatusCodes.Status201Created)]
-    // [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    // [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    // [ProducesErrorResponseType(typeof(ProblemDetails))]
-    // [EndpointSummary("Create a new cursus")]
-    // [EndpointDescription("Create a new cursus with optional track data")]
-    // public async Task<ActionResult<CursusDO>> Create(
-    //     [FromBody] PostCursusRequestDTO dto,
-    //     CancellationToken token
-    // )
-    // {
-    //     // var space = await workspace.FindByIdAsync();
-    //     await cursusService.CreateAsync(new ()
-    //     {
-    //         Name = dto.Name,
-    //         Description = dto.Description ?? string.Empty,
-    //         Slug = dto.Name.ToSlug(),
-    //         // TrackData = request.TrackData
-    //     }, token);
-
-    //     // TODO: Goal association from track data
-    //     return Created();
-    // }
 
     [HttpDelete]
     [ProtectedResource("cursus", "cursus:delete")]

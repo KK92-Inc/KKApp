@@ -3,8 +3,30 @@
 	import { toggleMode } from 'mode-watcher';
 	import { Button } from '$lib/components/button';
 	import { login } from './auth.remote';
-	import { fade } from 'svelte/transition';
+	import { fade, slide } from 'svelte/transition';
 	import WhiteLabel from '$lib/components/white-label.svelte';
+
+	const quotes = [
+		{ text: "The only true wisdom is in knowing you know nothing.", author: "Socrates" },
+		{ text: "Education is not the filling of a pail, but the lighting of a fire.", author: "W.B. Yeats" },
+		{ text: "The mind is not a vessel to be filled, but a fire to be kindled.", author: "Plutarch" },
+		{ text: "Live as if you were to die tomorrow. Learn as if you were to live forever.", author: "Mahatma Gandhi" },
+		{ text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
+		{ text: "In the middle of difficulty lies opportunity.", author: "Albert Einstein" },
+		{ text: "The more I learn, the more I realize how much I don't know.", author: "Albert Einstein" }
+	];
+
+	let index = $state(0);
+	let qoute = $derived(quotes[index]);
+	$effect(() => {
+		let interval = setInterval(() => {
+			index = Math.floor(Math.random() * quotes.length)
+		}, 4000);
+
+		return () => {
+			clearInterval(interval);
+		};
+	})
 </script>
 
 <div class="grid min-h-dvh grid-cols-[var(--padding)_1px_1fr_1px_var(--padding)] grid-rows-[var(--padding)_1px_1fr_1px_var(--padding)] [--padding:--spacing(4)] sm:[--padding:--spacing(10)]">
@@ -25,9 +47,11 @@
 				<h1 class="max-w-7xl text-[min(8.5vw,128px)]/[1] font-[450] tracking-tighter text-black dark:text-white" in:fade={{ delay: 0 }}>
 					Be your own Future
 				</h1>
-				<p class="mt-7 max-w-2xl text-lg/8 text-neutral-700 sm:text-xl/9 md:text-2xl/10 dark:text-neutral-400" in:fade={{ delay: 0 }}>
-					Continue your project-based learning experience.
-				</p>
+				{#key index}
+					<p class="mt-7 max-w-2xl text-lg/8 text-neutral-700 sm:text-xl/9 md:text-2xl/10 dark:text-neutral-400" transition:slide>
+						"{qoute.text}" <span class="text-neutral-500">— {qoute.author}</span>
+					</p>
+				{/key}
 				<div class="mt-10 flex flex-col gap-10 md:flex-row md:items-end md:justify-between">
 					<form {...login} class="flex gap-4">
 						<Button onclick={toggleMode} variant="outline" size="icon" class="size-12">

@@ -4,6 +4,7 @@
 	import * as Header from "$lib/components/header";
 	import Button from '$lib/components/button/button.svelte';
 	import { EventSourceContext, init } from '$lib/contexts/events.svelte';
+	import WhiteLabel from '$lib/components/white-label.svelte';
 
 	let open = $state(false);
 	let { children }: LayoutProps = $props();
@@ -24,9 +25,9 @@
 				<Button
 					href="/"
 					variant="ghost"
-					class="text-lg leading-none font-semibold"
+					class="text-lg leading-none font-semibold [&>svg]:size-20!"
 				>
-					Home
+					<WhiteLabel />
 				</Button>
 			</div>
 

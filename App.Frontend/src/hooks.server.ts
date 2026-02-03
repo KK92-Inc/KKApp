@@ -28,7 +28,11 @@ const authorize: Handle = async ({ event, resolve }) => {
 
 	const data = MetaData.get(event.route.id);
 	const perms: string[] = event.locals.session.permissions;
-	console.log('Route Permissions:', data?.scopes, 'User Permissions:', perms);
+	if (data) {
+		Log.dbg(`User has: '${perms}'`)
+		Log.dbg(`Route requires: ${data.scopes}`);
+	}
+
 	if (!data?.scopes || data.scopes.length === 0) {
 		return resolve(event);
 	} else if (data.scopes.some((s: string) => perms.includes(s))) {
@@ -61,24 +65,12 @@ export const handle = sequence(init, Keycloak.handle, authorize);
 
 // Our API request go to a different HOST, thus we need to attach the token
 export async function handleFetch({ fetch, request, event }) {
-	Log.dbg("TRIGGAH")
 
 	if (BACKEND_URI && request.url.startsWith(BACKEND_URI)) {
-		Log.dbg("TRIGGAH2")
 		const accessToken = event.cookies.get(Keycloak.COOKIE_ACCESS);
 		if (accessToken) {
-			// Log.dbg(request.method, '=>', request.url);
 			request.headers.set('authorization', `Bearer ${accessToken}`);
 		}
-		// if (accessToken) {
-		// 	try {
-		// 		const claims = jose.decodeJwt(accessToken);
-		// 		Log.dbg('handleFetch token exp:', claims.exp, 'now:', Math.floor(Date.now() / 1000));
-		// 	} catch (e) {
-		// 		Log.dbg('handleFetch token decode error:', e);
-		// 	}
-		// }
-		// request.headers.set('authorization', `Bearer ${accessToken}`);
 	}
 
 	const response = await fetch(request);

@@ -1,12 +1,17 @@
 import { getRequestEvent, query } from '$app/server';
+import { Log } from '$lib/log';
 import { error } from '@sveltejs/kit';
 
 export const getSpotlights = query(async () => {
-	const { locals } = getRequestEvent();
-	const { data, response } = await locals.api.GET('/users/current/spotlights');
-	if (!response.ok || !data) {
-		error(response.status, 'Failed to fetch spotlights');
-	}
+	error(501, "Not Implemented");
+	// const { locals } = getRequestEvent();
+	// const { data, response, error: err } = await locals.api.GET('/users/current/spotlights');
 
-	return data;
+	// Log.dbg(response.status)
+
+	// if (!response.ok || err) {
+	// 	error(response.status, 'Failed to fetch projects');
+	// }
+
+	// return data ?? [];
 });

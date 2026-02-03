@@ -18,6 +18,9 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
+                    "filter[id]"?: string;
+                    "filter[name]"?: string;
+                    "filter[slug]"?: string;
                     /** @description The name of the property to use for sorting. */
                     "sort[by]"?: string;
                     /** @description The sort direction. */
@@ -38,7 +41,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["CursusDO"];
+                        "application/json": components["schemas"]["CursusDO"];
+                        "text/json": components["schemas"]["CursusDO"];
+                    };
                 };
                 /** @description Unauthorized */
                 401: {
@@ -964,6 +971,378 @@ export interface paths {
                 };
             };
         };
+        trace?: never;
+    };
+    "/subscribe/{userId}/cursus/{goalId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Subscribe a user to a cursus
+         * @description Enroll the specified user in the cursus associated with the provided goalId.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    userId: string;
+                    goalId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["UserCursusDO"];
+                        "application/json": components["schemas"]["UserCursusDO"];
+                        "text/json": components["schemas"]["UserCursusDO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        /**
+         * Unsubscribe a user from a cursus
+         * @description Remove the specified user's enrollment from the cursus associated with the provided goalId.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    userId: string;
+                    goalId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/subscribe/{userId}/goals/{goalId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Subscribe a user to a goal
+         * @description Create a subscription for the specified user to the goal identified by goalId.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    userId: string;
+                    goalId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["UserGoalDO"];
+                        "application/json": components["schemas"]["UserGoalDO"];
+                        "text/json": components["schemas"]["UserGoalDO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        /**
+         * Unsubscribe a user from a goal
+         * @description Remove the specified user's subscription to the goal identified by goalId.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    userId: string;
+                    goalId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/subscribe/{userId}/projects/{goalId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Subscribe a user to a project
+         * @description Create a subscription for the specified user to the project identified by goalId.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    userId: string;
+                    goalId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["UserProjectDO"];
+                        "application/json": components["schemas"]["UserProjectDO"];
+                        "text/json": components["schemas"]["UserProjectDO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        /**
+         * Unsubscribe a user from a project
+         * @description Remove the specified user's subscription to the project identified by goalId.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    userId: string;
+                    goalId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/users/current": {
@@ -2441,7 +2820,20 @@ export interface components {
             workspace: null | components["schemas"]["WorkspaceDO"];
         };
         /** @enum {unknown} */
+        EntityObjectState: "Inactive" | "Active" | "Awaiting" | "Completed";
+        /** @enum {unknown} */
         EntityOwnership: "User" | "Organization";
+        GitDO: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            name: string;
+            owner: string;
+            ownership: components["schemas"]["EntityOwnership"];
+        };
         GoalDO: {
             /** Format: uuid */
             id: string;
@@ -2543,6 +2935,27 @@ export interface components {
             public: boolean;
             deprecated: boolean;
         };
+        ReviewKinds: string;
+        RubricDO: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            name: string;
+            slug: string;
+            markdown: string;
+            public: boolean;
+            enabled: boolean;
+            supportedReviewKinds: components["schemas"]["ReviewKinds"];
+            /** Format: uuid */
+            creatorId: string;
+            /** Format: uuid */
+            gitInfoId?: null | string;
+            creator?: null | components["schemas"]["UserLightDO"];
+            gitInfo?: null | components["schemas"]["GitDO"];
+        };
         SpotlightNotificationDO: {
             /** Format: uuid */
             id: string;
@@ -2559,6 +2972,22 @@ export interface components {
             startsAt?: string;
             /** Format: date-time */
             endsAt?: null | string;
+        };
+        UserCursusDO: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            state: components["schemas"]["EntityObjectState"];
+            /** Format: uuid */
+            userId: string;
+            /** Format: uuid */
+            cursusId: string;
+            track?: null | string;
+            cursus?: null | components["schemas"]["CursusDO"];
+            user?: null | components["schemas"]["UserLightDO"];
         };
         UserDetailsDO: {
             /** Format: uuid */
@@ -2588,6 +3017,20 @@ export interface components {
             avatarUrl?: null | string;
             details?: null | components["schemas"]["UserDetailsDO"];
         };
+        UserGoalDO: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: uuid */
+            userId: string;
+            /** Format: uuid */
+            goalId: string;
+            goal?: null | components["schemas"]["GoalDO"];
+            user?: null | components["schemas"]["UserLightDO"];
+        };
         UserLightDO: {
             /** Format: uuid */
             id: string;
@@ -2598,6 +3041,22 @@ export interface components {
             login: string;
             displayName: null | string;
             avatarUrl: null | string;
+        };
+        UserProjectDO: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            state: components["schemas"]["EntityObjectState"];
+            /** Format: uuid */
+            projectId: string;
+            /** Format: uuid */
+            rubricId?: null | string;
+            project?: null | components["schemas"]["ProjectDO"];
+            gitInfo?: null | components["schemas"]["GitDO"];
+            rubric?: null | components["schemas"]["RubricDO"];
         };
         WorkspaceDO: {
             /** Format: date-time */

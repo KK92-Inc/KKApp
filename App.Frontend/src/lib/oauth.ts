@@ -14,14 +14,7 @@
 import * as v from 'valibot';
 import * as jose from 'jose';
 import { dev } from '$app/environment';
-import {
-	KC_ORIGIN,
-	KC_REALM,
-	KC_COOKIE,
-	KC_ID,
-	KC_CALLBACK,
-	KC_SECRET,
-} from '$lib/config';
+import { KC_ORIGIN, KC_REALM, KC_COOKIE, KC_ID, KC_CALLBACK, KC_SECRET } from '$lib/config';
 import { JWSInvalid, JWTClaimValidationFailed, JWTExpired, JWTInvalid } from 'jose/errors';
 import { ensure } from './utils';
 import type { Handle, RequestEvent } from '@sveltejs/kit';
@@ -90,6 +83,8 @@ const umaSchema = v.object({
 	})
 });
 
+const permissionRequests = new Map<string, Promise<string[]>>();
+
 /**
  * SvelteKit Handle implementation that enforces Keycloak-based authentication and session creation.
  * Notes:
@@ -106,7 +101,10 @@ const handle: Handle = async ({ event, resolve }) => {
 		const pathname = event.url.pathname;
 		if (!pathname.startsWith('/auth')) {
 			const target = pathname !== '/' ? `/auth?from=${encodeURIComponent(pathname)}` : '/auth';
-			return Response.redirect(target, 302);
+			return new Response(null, {
+				status: 307,
+				headers: { location: target }
+			});
 		}
 
 		return resolve(event);
@@ -119,40 +117,30 @@ const handle: Handle = async ({ event, resolve }) => {
 	const useSession = async (payload: unknown, _: RequestEvent): Promise<Session> => {
 		const claims = v.parse(tokenSchema, payload);
 		const roles = Object.values(claims.resource_access).flatMap((r) => r.roles);
+		const permissions = async () => {
+			if (!accessToken) return [];
 
-		const fetchPermissions = async (): Promise<string[]> => {
-			const cacheKey = `permissions:${claims.sub}`;
+			const key = `permissions:${claims.sub}`;
+			const cached = await redis.get(key);
 
-			// 1. Try Cache
-			const cached = await redis.get(cacheKey);
 			if (cached) {
 				return cached.split(',');
 			}
 
-			try {
-				// 2. Cache Miss - Fetch UMA Ticket (RPT)
-				Log.dbg(`Cache miss for ${claims.sub}, fetching UMA ticket...`);
-				const umaTokens = await Keycloak.ticket(accessToken!);
-				const rptPayload = jose.decodeJwt(umaTokens.access());
+			Log.dbg(`Cache miss for ${claims.sub}, fetching UMA ticket...`);
+			const umaTokens = await Keycloak.ticket(accessToken);
+			const rptPayload = jose.decodeJwt(umaTokens.access());
+			const parsedUma = v.parse(umaSchema, rptPayload);
 
-				// 3. Parse permissions
-				const parsedUma = v.parse(umaSchema, rptPayload);
+			const permissions = parsedUma.authorization.permissions.flatMap((p) =>
+				p.scopes && p.scopes.length > 0 ? p.scopes : [p.rsname]
+			);
 
-				// Extract scopes (e.g., ["read", "write"]) or resource names
-				const permissions = parsedUma.authorization.permissions.flatMap((p) =>
-					p.scopes && p.scopes.length > 0 ? p.scopes : [p.rsname]
-				);
-
-				// 4. Save to Redis (e.g., expire in 5 minutes)
-				if (permissions.length > 0) {
-					await redis.set(cacheKey, permissions.join(','), 'EX', 300);
-				}
-
-				return permissions;
-			} catch (e) {
-				Log.err('Failed to fetch/parse UMA permissions:', e);
-				return [];
+			if (permissions.length > 0) {
+				await redis.set(key, permissions.join(','), 'EX', 60);
 			}
+
+			return permissions;
 		};
 
 		return {
@@ -161,7 +149,7 @@ const handle: Handle = async ({ event, resolve }) => {
 			username: claims.preferred_username,
 			email: claims.email,
 			roles: claims.realm_access.roles.concat(roles),
-			permissions: await fetchPermissions()
+			permissions: await permissions()
 		};
 	};
 
@@ -363,16 +351,14 @@ async function exchange(code: string, verifier: string): Promise<Tokens> {
 		body: params.toString()
 	});
 
-	if (!response.ok) {
-		throw new Error(await response.text());
-	}
-
-	const data = await response.json();
-	return new Tokens(data);
+	if (!response.ok) throw new Error(await response.text());
+	return new Tokens(await response.json());
 }
 
 /**
- * Refreshes access token using refresh token
+ *
+ * @param refreshToken
+ * @returns
  */
 async function refresh(refreshToken: string): Promise<Tokens> {
 	const params = new URLSearchParams({
@@ -399,11 +385,16 @@ async function refresh(refreshToken: string): Promise<Tokens> {
 /**
  * Exchanges access token for UMA ticket (RPT - Requesting Party Token)
  * This gives you a JWT with permissions for protected resources
+ * @param accessToken
+ * @param audience
+ * @returns
  */
 async function ticket(accessToken: string, audience: string = KC_ID!) {
 	const params = new URLSearchParams({
 		audience,
-		grant_type: 'urn:ietf:params:oauth:grant-type:uma-ticket'
+		grant_type: 'urn:ietf:params:oauth:grant-type:uma-ticket',
+		client_id: KC_ID!,
+		client_secret: KC_SECRET!
 	});
 
 	const response = await fetch(TOKEN_URL(), {
@@ -461,8 +452,6 @@ async function revoke(token?: string, hint?: 'access_token' | 'refresh_token') {
 	}
 }
 
-// ============================================================================
-// Exported
 // ============================================================================
 
 export const Keycloak = {
