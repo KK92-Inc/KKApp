@@ -11,19 +11,9 @@
 	import { invalidate } from '$app/navigation';
 	import { getCursi } from '$lib/remotes/cursus.remote';
 	import Paginate from '$lib/components/paginate.svelte';
+	import { init, LayoutContext } from './context.svelte';
 
-	const url = useSearchParams({
-		search: v.fallback(v.string(), ''),
-		state: v.fallback(v.picklist(['subscribed', 'available']), 'available'),
-		page: v.fallback(
-			v.pipe(
-				v.string(),
-				v.transform(Number),
-				v.check((n) => !isNaN(n))
-			),
-			0
-		)
-	});
+	const { url } = init(new LayoutContext());
 
 	const page = url.query('page');
 	const state = url.query('state');
@@ -35,7 +25,6 @@
 		} else {
 			search.clear();
 		}
-		invalidate('cursus');
 	});
 
 	const promise = $derived(

@@ -17,7 +17,7 @@ import { dev } from '$app/environment';
 import { KC_ORIGIN, KC_REALM, KC_COOKIE, KC_ID, KC_CALLBACK, KC_SECRET } from '$lib/config';
 import { JWSInvalid, JWTClaimValidationFailed, JWTExpired, JWTInvalid } from 'jose/errors';
 import { ensure } from './utils';
-import type { Handle, RequestEvent } from '@sveltejs/kit';
+import { type Handle, type RequestEvent, redirect as direct } from '@sveltejs/kit';
 import { Log } from './log';
 import { redis } from './redis';
 
@@ -83,8 +83,6 @@ const umaSchema = v.object({
 	})
 });
 
-const permissionRequests = new Map<string, Promise<string[]>>();
-
 /**
  * SvelteKit Handle implementation that enforces Keycloak-based authentication and session creation.
  * Notes:
@@ -95,18 +93,20 @@ const handle: Handle = async ({ event, resolve }) => {
 	const accessToken = event.cookies.get(Keycloak.COOKIE_ACCESS);
 	const refreshToken = event.cookies.get(Keycloak.COOKIE_REFRESH);
 	const redirect = () => {
+		const isAuthPage = event.url.pathname.startsWith("/auth");
 		event.cookies.delete(Keycloak.COOKIE_ACCESS, { path: '/' });
 		event.cookies.delete(Keycloak.COOKIE_REFRESH, { path: '/' });
 
-		const pathname = event.url.pathname;
-		if (!pathname.startsWith('/auth')) {
-			const target = pathname !== '/' ? `/auth?from=${encodeURIComponent(pathname)}` : '/auth';
-			return new Response(null, {
-				status: 307,
-				headers: { location: target }
-			});
+		// Data request → never redirect
+		// We then should handle this on the client and tell them
+		// to goto /auth (if they for example reload it also does the trick)
+		if (!isAuthPage && (event.isDataRequest || event.isRemoteRequest)) {
+			return new Response(null, { status: 401 });
 		}
 
+		// Real page navigation
+		if (!isAuthPage)
+			return Response.redirect(`/auth?from=${encodeURIComponent(event.url.pathname)}`);
 		return resolve(event);
 	};
 
@@ -139,7 +139,6 @@ const handle: Handle = async ({ event, resolve }) => {
 			if (permissions.length > 0) {
 				await redis.set(key, permissions.join(','), 'EX', 60);
 			}
-
 			return permissions;
 		};
 
@@ -196,10 +195,10 @@ const handle: Handle = async ({ event, resolve }) => {
 				return new Response('Invalid token claims', { status: 401 });
 			}
 
-			if (jwt?.payload?.exp) {
-				const mins = Math.floor((jwt.payload.exp - Date.now() / 1000) / 60);
-				Log.dbg(`Token valid for ${mins} minutes`);
-			}
+			// if (jwt?.payload?.exp) {
+			// 	const mins = Math.floor((jwt.payload.exp - Date.now() / 1000) / 60);
+			// 	Log.dbg(`Token valid for ${mins} minutes`);
+			// }
 
 			// If token is expired but we have a refresh token, use it
 			if (
@@ -342,7 +341,6 @@ async function exchange(code: string, verifier: string): Promise<Tokens> {
 		code_verifier: verifier
 	});
 
-	console.log(params);
 	const response = await fetch(TOKEN_URL(), {
 		method: 'POST',
 		headers: {

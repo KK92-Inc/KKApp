@@ -14,9 +14,7 @@ import { BACKEND_URI } from '$lib/config';
 
 // ============================================================================
 
-export const main: ServerInit = async () => {
-
-};
+export const main: ServerInit = async () => {};
 
 // ============================================================================
 
@@ -26,27 +24,29 @@ const authorize: Handle = async ({ event, resolve }) => {
 		return resolve(event);
 	}
 
+	const session = event.locals.session;
+	if (!session) {
+		return new Response('Unauthorized', { status: 401 });
+	}
+
 	const data = MetaData.get(event.route.id);
-	const perms: string[] = event.locals.session.permissions;
-	if (data) {
-		Log.dbg(`User has: '${perms}'`)
-		Log.dbg(`Route requires: ${data.scopes}`);
-	}
+	const perms = session.permissions ?? [];
 
-	if (!data?.scopes || data.scopes.length === 0) {
+	if (!data?.scopes?.length) {
 		return resolve(event);
-	} else if (data.scopes.some((s: string) => perms.includes(s))) {
+	}
+	if (data.scopes.some((s) => perms.includes(s))) {
 		return resolve(event);
 	}
 
-	// These are not the droids you're looking for.
 	return new Response(null, { status: 404 });
 };
+
 
 const init: Handle = async ({ event, resolve }) => {
 	event.setHeaders({
 		server: `Bun ${Bun.version}`,
-		'x-app': "KKApp"
+		'x-app': 'KKApp'
 	});
 
 	event.locals.api ??= createClient<paths>({
@@ -65,15 +65,13 @@ export const handle = sequence(init, Keycloak.handle, authorize);
 
 // Our API request go to a different HOST, thus we need to attach the token
 export async function handleFetch({ fetch, request, event }) {
-
 	if (BACKEND_URI && request.url.startsWith(BACKEND_URI)) {
 		const accessToken = event.cookies.get(Keycloak.COOKIE_ACCESS);
 		if (accessToken) {
+			Log.dbg(request.method, '<=', request.url);
 			request.headers.set('authorization', `Bearer ${accessToken}`);
 		}
 	}
 
-	const response = await fetch(request);
-	Log.dbg(request.method, '<=', request.url, response.status);
-	return response;
+	return fetch(request);
 }
