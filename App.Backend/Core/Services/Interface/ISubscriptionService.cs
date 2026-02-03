@@ -20,7 +20,7 @@ public interface ISubscriptionService
     /// <param name="userId">The user ID.</param>
     /// <param name="request">The subscription request.</param>
     /// <returns>The created user goal.</returns>
-    public Task<UserGoal> SubscribeToGoalAsync(Guid userId, Guid goalId);
+    public Task<UserGoal> SubscribeToGoalAsync(Guid userId, Guid goalId, CancellationToken token);
 
     /// <summary>
     /// Subscribe a user to a project.
@@ -28,7 +28,7 @@ public interface ISubscriptionService
     /// <param name="userId"></param>
     /// <param name="projectId"></param>
     /// <returns></returns>
-    public Task<UserProject> SubscribeToProjectAsync(Guid userId, Guid projectId);
+    public Task<UserProject> SubscribeToProjectAsync(Guid userId, Guid projectId, CancellationToken token);
 
     /// <summary>
     /// Subscribe a user to a cursus.
@@ -36,7 +36,7 @@ public interface ISubscriptionService
     /// <param name="userId"></param>
     /// <param name="cursusId"></param>
     /// <returns></returns>
-    public Task<UserCursus> SubscribeToCursusAsync(Guid userId, Guid cursusId);
+    public Task<UserCursus> SubscribeToCursusAsync(Guid userId, Guid cursusId, CancellationToken token);
 
     /// <summary>
     /// Unsubscribe a user from a project.
@@ -44,7 +44,7 @@ public interface ISubscriptionService
     /// <param name="userId"></param>
     /// <param name="projectId"></param>
     /// <returns></returns>
-    public Task UnsubscribeFromProjectAsync(Guid userId, Guid projectId);
+    public Task UnsubscribeFromProjectAsync(Guid userId, Guid projectId, CancellationToken token);
 
     /// <summary>
     /// Unsubscribe a user from a goal.
@@ -52,7 +52,7 @@ public interface ISubscriptionService
     /// <param name="userId"></param>
     /// <param name="goalId"></param>
     /// <returns></returns>
-    public Task UnsubscribeFromGoalAsync(Guid userId, Guid goalId);
+    public Task UnsubscribeFromGoalAsync(Guid userId, Guid goalId, CancellationToken token);
 
     /// <summary>
     /// Unsubscribe a user from a cursus.
@@ -60,5 +60,5 @@ public interface ISubscriptionService
     /// <param name="userId"></param>
     /// <param name="cursusId"></param>
     /// <returns></returns>
-    public Task UnsubscribeFromCursusAsync(Guid userId, Guid cursusId);
+    public Task UnsubscribeFromCursusAsync(Guid userId, Guid cursusId, CancellationToken token);
 }

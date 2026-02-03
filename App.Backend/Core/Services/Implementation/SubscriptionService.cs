@@ -5,12 +5,8 @@
 
 using App.Backend.Database;
 using App.Backend.Core.Services.Interface;
-using App.Backend.Domain.Entities;
 using App.Backend.Domain.Entities.Users;
-using App.Backend.Domain.Relations;
-using App.Backend.Models;
 using Microsoft.EntityFrameworkCore;
-using App.Backend.Domain.Entities.Projects;
 using App.Backend.Domain.Enums;
 
 // ============================================================================
@@ -19,7 +15,7 @@ namespace App.Backend.Core.Services.Implementation;
 
 public class SubscriptionService(DatabaseContext ctx) : ISubscriptionService
 {
-    public async Task<UserCursus> SubscribeToCursusAsync(Guid userId, Guid cursusId)
+    public async Task<UserCursus> SubscribeToCursusAsync(Guid userId, Guid cursusId, CancellationToken token)
     {
         // 1. A user can subscribe and unsubscribe to cursi
         // 2. A user cannot subscribe to the same cursus twice
@@ -31,7 +27,7 @@ public class SubscriptionService(DatabaseContext ctx) : ISubscriptionService
 
         var userCursus = await ctx.UserCursi
             .Where(uc => uc.CursusId == cursusId && uc.UserId == userId)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(token);
 
         // Instance already exists
         if (userCursus is not null)
@@ -43,7 +39,7 @@ public class SubscriptionService(DatabaseContext ctx) : ISubscriptionService
 
             userCursus.State = EntityObjectState.Active;
             ctx.UserCursi.Update(userCursus);
-            await ctx.SaveChangesAsync();
+            await ctx.SaveChangesAsync(token);
             return userCursus;
         }
 
@@ -52,27 +48,27 @@ public class SubscriptionService(DatabaseContext ctx) : ISubscriptionService
             CursusId = cursusId,
             UserId = userId,
             State = EntityObjectState.Active
-        });
+        }, token);
 
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(token);
         return result.Entity;
     }
 
-    public async Task UnsubscribeFromCursusAsync(Guid userId, Guid cursusId)
+    public async Task UnsubscribeFromCursusAsync(Guid userId, Guid cursusId, CancellationToken token)
     {
         var cursus = await ctx.UserCursi
             .Where(uc => uc.CursusId == cursusId && uc.UserId == userId)
-            .FirstOrDefaultAsync() ?? throw new ServiceException(404, "Not subscribed to this cursus");
+            .FirstOrDefaultAsync(token) ?? throw new ServiceException(404, "Not subscribed to this cursus");
 
         if (cursus.State is EntityObjectState.Inactive)
             throw new ServiceException(409, "Already unsubscribed from this cursus");
 
         cursus.State = EntityObjectState.Inactive;
         ctx.UserCursi.Update(cursus);
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(token);
     }
 
-    public async Task<UserGoal> SubscribeToGoalAsync(Guid userId, Guid goalId)
+    public async Task<UserGoal> SubscribeToGoalAsync(Guid userId, Guid goalId, CancellationToken token)
     {
         // 1. Goals are project aggregate roots
         // 2. A user can subscribe and unsubscribe to goals
@@ -83,7 +79,7 @@ public class SubscriptionService(DatabaseContext ctx) : ISubscriptionService
 
         var userGoal = await ctx.UserGoals
             .Where(ug => ug.GoalId == goalId && ug.UserId == userId)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(token);
 
         // Instance already exists
         if (userGoal is not null)
@@ -95,7 +91,7 @@ public class SubscriptionService(DatabaseContext ctx) : ISubscriptionService
 
             userGoal.State = EntityObjectState.Active;
             ctx.UserGoals.Update(userGoal);
-            await ctx.SaveChangesAsync();
+            await ctx.SaveChangesAsync(token);
             return userGoal;
         }
 
@@ -109,7 +105,7 @@ public class SubscriptionService(DatabaseContext ctx) : ISubscriptionService
                     up.Members.Any(m => m.UserId == userId) &&
                     up.State == EntityObjectState.Completed)
             })
-            .ToListAsync();
+            .ToListAsync(token);
 
         var state = projectStats.Count > 0 && projectStats.All(p => p.IsCompleted)
             ? EntityObjectState.Completed
@@ -120,29 +116,29 @@ public class SubscriptionService(DatabaseContext ctx) : ISubscriptionService
             GoalId = goalId,
             UserId = userId,
             State = state
-        });
+        }, token);
 
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(token);
         return result.Entity;
     }
 
-    public async Task UnsubscribeFromGoalAsync(Guid userId, Guid goalId)
+    public async Task UnsubscribeFromGoalAsync(Guid userId, Guid goalId, CancellationToken token)
     {
         var goal = await ctx.UserGoals
             .Where(ug => ug.GoalId == goalId && ug.UserId == userId)
-            .FirstOrDefaultAsync() ?? throw new ServiceException(404, "Not subscribed to this goal");
+            .FirstOrDefaultAsync(token) ?? throw new ServiceException(404, "Not subscribed to this goal");
         if (goal.State is EntityObjectState.Inactive)
             throw new ServiceException(409, "Already unsubscribed from this goal");
 
         goal.State = EntityObjectState.Inactive;
         ctx.UserGoals.Update(goal);
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(token);
     }
 
-    public async Task<UserProject> SubscribeToProjectAsync(Guid userId, Guid projectId)
+    public async Task<UserProject> SubscribeToProjectAsync(Guid userId, Guid projectId, CancellationToken token)
     {
         var up = await ctx.UserProjects
-            .FirstOrDefaultAsync(up => up.ProjectId == projectId && up.Members.Any(m => m.UserId == userId));
+            .FirstOrDefaultAsync(up => up.ProjectId == projectId && up.Members.Any(m => m.UserId == userId), token);
 
         if (up is not null)
         {
@@ -159,9 +155,9 @@ public class SubscriptionService(DatabaseContext ctx) : ISubscriptionService
                 UserId = userId,
                 UserProjectId = up.Id,
                 Type = UserProjectTransactionVariant.StateChangedToActive,
-            });
+            }, token);
 
-            await ctx.SaveChangesAsync();
+            await ctx.SaveChangesAsync(token);
             return up;
         }
 
@@ -172,24 +168,24 @@ public class SubscriptionService(DatabaseContext ctx) : ISubscriptionService
             Members = [new() { UserId = userId, Role = UserProjectRole.Leader }]
         };
 
-        await ctx.UserProjects.AddAsync(up);
+        await ctx.UserProjects.AddAsync(up, token);
         await ctx.UserProjectTransactions.AddAsync(new ()
         {
             UserId = userId,
             UserProjectId = up.Id,
             Type = UserProjectTransactionVariant.Started,
-        });
+        }, token);
 
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(token);
         return up;
     }
 
-    public async Task UnsubscribeFromProjectAsync(Guid userId, Guid projectId)
+    public async Task UnsubscribeFromProjectAsync(Guid userId, Guid projectId, CancellationToken token)
     {
         var up = await ctx.UserProjects
             .Include(up => up.Members)
             .Where(up => up.ProjectId == projectId && up.Members.Any(m => m.UserId == userId))
-            .FirstOrDefaultAsync() ?? throw new ServiceException(404, "Not subscribed to this project");
+            .FirstOrDefaultAsync(token) ?? throw new ServiceException(404, "Not subscribed to this project");
 
         var member = up.Members.First(m => m.UserId == userId);
 
@@ -203,8 +199,8 @@ public class SubscriptionService(DatabaseContext ctx) : ISubscriptionService
                 UserId = userId,
                 UserProjectId = up.Id,
                 Type = UserProjectTransactionVariant.StateChangedToActive,
-            });
-            await ctx.SaveChangesAsync();
+            }, token);
+            await ctx.SaveChangesAsync(token);
         }
 
         // Rule 2: If the user is just a member, remove them from the session.
@@ -215,7 +211,8 @@ public class SubscriptionService(DatabaseContext ctx) : ISubscriptionService
             UserId = userId,
             UserProjectId = up.Id,
             Type = UserProjectTransactionVariant.MemberLeft,
-        });
-        await ctx.SaveChangesAsync();
+        }, token);
+
+        await ctx.SaveChangesAsync(token);
     }
 }
