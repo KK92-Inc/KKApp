@@ -27,4 +27,4 @@ export class LayoutContext {
 
 // ============================================================================
 
-export const [get, init] = createContext<LayoutContext>();
+export const [getContext, initContext] = createContext<LayoutContext>();

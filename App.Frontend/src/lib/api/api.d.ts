@@ -42,9 +42,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["CursusDO"];
-                        "application/json": components["schemas"]["CursusDO"];
-                        "text/json": components["schemas"]["CursusDO"];
+                        "text/plain": components["schemas"]["CursusDO"][];
+                        "application/json": components["schemas"]["CursusDO"][];
+                        "text/json": components["schemas"]["CursusDO"][];
                     };
                 };
                 /** @description Unauthorized */

@@ -1,20 +1,15 @@
 <script lang="ts">
 	import { Sparkles } from '@lucide/svelte';
 	import Spotlight from './spotlight.svelte';
-	import Changelog from './changelog.svelte';
 	import Layout from '$lib/components/layout.svelte';
 	import Button from '$lib/components/button/button.svelte';
 	import Scroller from '$lib/components/scroller.svelte';
 	import { Separator } from '$lib/components/separator';
 	import { Feed } from '$lib/components/feed';
-	import * as Table from "$lib/components/table";
 	import ScrollArea from '$lib/components/scroll-area/scroll-area.svelte';
-	import * as Tooltip from '$lib/components/tooltip';
 
 	// Remotes
 	import { getFeed } from '$lib/remotes/feed.remote';
-	import { getPendingReviews } from '$lib/remotes/reviews.remote';
-	import { Skeleton } from '$lib/components/skeleton';
 	import Reviews from './reviews.svelte';
 </script>
 
@@ -48,7 +43,7 @@
 		<ScrollArea class="h-full overflow-auto py-4" scrollbarYClasses='ml-2'>
 			<Spotlight />
 			<Separator orientation="horizontal" class="my-2" />
-			<Changelog />
+			<!-- <Changelog /> -->
 		</ScrollArea>
 	{/snippet}
 	{#snippet right()}

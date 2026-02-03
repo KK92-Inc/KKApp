@@ -36,7 +36,7 @@ public class CursusController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Query all cursus")]
     [EndpointDescription("Retrieve a paginated list of all cursus")]
-    public async Task<ActionResult<CursusDO>> GetAll(
+    public async Task<ActionResult<IEnumerable<CursusDO>>> GetAll(
         [FromQuery(Name = "filter[id]")] Guid? id,
         [FromQuery(Name = "filter[name]")] string? name,
         [FromQuery(Name = "filter[slug]")] string? slug,
