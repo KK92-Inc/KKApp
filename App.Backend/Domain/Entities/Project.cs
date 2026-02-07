@@ -43,6 +43,12 @@ public class Project : BaseEntity
     [Column("deprecated")]
     public bool Deprecated { get; set; }
 
+    [Column("git_id")]
+    public Guid GitId { get; set; }
+
+    [ForeignKey(nameof(GitId))]
+    public virtual Git Git { get; set; }
+
     [Column("workspace_id")]
     public Guid WorkspaceId { get; set; }
 

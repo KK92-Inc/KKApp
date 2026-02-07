@@ -33,6 +33,7 @@ using App.Backend.API.Bus.Messages;
 using App.Backend.API.Notifications.Registers.Interface;
 using App.Backend.API.Notifications.Registers.Implementation;
 using JasperFx.Core;
+using App.Backend.Core.Services.Options;
 
 // ============================================================================
 
@@ -58,6 +59,11 @@ public static class Services
             // Let's us configure the casing for out JSON DTOs for example.
             o.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
         });
+
+        builder.Services.AddHttpClient<GitService>();
+        builder.Services.Configure<GitServiceOptions>(
+            builder.Configuration.GetSection(GitServiceOptions.SectionName)
+        );
 
         builder.Services.AddHttpClient<ResendClient>();
         builder.Services.Configure<ResendClientOptions>(o =>
@@ -167,15 +173,16 @@ public static class Services
             opts.ListenToPostgresqlQueue("outbound").MaximumMessagesToReceive(50);
         });
 
-        // // Register Transient, Scoped, Singletons, ...
-        // // builder.Services.AddScoped<ICursusService, CursusService>();
+        // Register Transient, Scoped, Singletons, ...
         builder.Services.AddScoped<IUserService, UserService>();
         builder.Services.AddScoped<IRuleService, RuleServiceN>();
         builder.Services.AddScoped<IReviewService, ReviewService>();
         builder.Services.AddScoped<IWorkspaceService, WorkspaceService>();
         builder.Services.AddScoped<IGoalService, GoalService>();
+        builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
         builder.Services.AddScoped<ICursusService, CursusService>();
         builder.Services.AddScoped<IProjectService, ProjectService>();
+        builder.Services.AddScoped<IGitService, GitService>();
         builder.Services.AddScoped<INotificationService, NotificationService>();
         // // builder.Services.AddScoped<IUserCursusService, UserCursusService>();
         // // builder.Services.AddScoped<IUserGoalService, UserGoalService>();
@@ -193,6 +200,7 @@ public static class Services
         // // builder.Services.AddScoped<INotificationService, NotificationService>();
         // // builder.Services.AddScoped<ISpotlightEventActionService, SpotlightEventActionService>();
         builder.Services.AddTransient<IResend, ResendClient>();
+
         // // builder.Services.AddSingleton<INotificationQueue, InMemoryNotificationQueue>();
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddSingleton<IBroadcastRegistry, MemoryBroadcastRegistry>();
@@ -222,7 +230,7 @@ public static class Services
             quartz.SchedulerName = "NXT";
             quartz.SchedulerId = "Queue";
             quartz.UseDefaultThreadPool(x => x.MaxConcurrency = 5);
-            quartz.Register<SampleJob>();
+            // quartz.Register<SampleJob>();
         });
 
         builder.Services.AddQuartzHostedService(o => o.WaitForJobsToComplete = true);

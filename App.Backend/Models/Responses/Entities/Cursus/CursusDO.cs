@@ -25,7 +25,7 @@ public class CursusDO(Domain.Entities.Cursus cursus) : BaseEntityDO<Domain.Entit
     public string Slug { get; set; } = cursus.Slug;
 
     [Required]
-    public WorkspaceDO? Workspace { get; set; } = cursus.Workspace;
+    public WorkspaceDO Workspace { get; set; } = cursus.Workspace;
 
     /// <summary>
     /// The track/path of the cursus in .graph format (optional for list views).

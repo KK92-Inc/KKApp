@@ -14,8 +14,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Migrations.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    [Migration("20260123191620_FixDeadlock")]
-    partial class FixDeadlock
+    [Migration("20260207130458_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -269,11 +269,6 @@ namespace Migrations.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("type");
-
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
@@ -311,8 +306,9 @@ namespace Migrations.Migrations
                         .HasColumnType("character varying(2048)")
                         .HasColumnName("description");
 
-                    b.Property<Guid?>("GitId")
-                        .HasColumnType("uuid");
+                    b.Property<Guid>("GitId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("git_id");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -998,15 +994,19 @@ namespace Migrations.Migrations
 
             modelBuilder.Entity("App.Backend.Domain.Entities.Project", b =>
                 {
-                    b.HasOne("App.Backend.Domain.Entities.Git", null)
+                    b.HasOne("App.Backend.Domain.Entities.Git", "Git")
                         .WithMany("Projects")
-                        .HasForeignKey("GitId");
+                        .HasForeignKey("GitId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("App.Backend.Domain.Entities.Workspace", "Workspace")
                         .WithMany("Projects")
                         .HasForeignKey("WorkspaceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Git");
 
                     b.Navigation("Workspace");
                 });

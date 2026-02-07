@@ -24,34 +24,27 @@ using Scalar.Aspire;
 
 var builder = DistributedApplication.CreateBuilder(args);
 builder.AddDockerComposeEnvironment("env").WithDashboard(false);
-var isRun = builder.ExecutionContext.IsRunMode;
+var isPublish = builder.ExecutionContext.IsPublishMode;
 
-// Paramaters
+// Parameters
 // ============================================================================
 
-
-// Configure origin domain for frontend
-var kcOrigin = builder.AddParameter("kc-origin", isRun ? "http://localhost:8080" : "https://auth.kk92.net", true);
-// Configure origin domain for keycloak
-var feOrigin = builder.AddParameter("fe-origin", isRun ? "http://localhost:46783" : "https://intra.kk92.net", true);
-
-// S3 Storage Key
+// S3 Storage credentials
 var s3Key = builder.AddParameter("s3-access-key-id", true);
-// S3 Storage Password
 var s3Password = builder.AddParameter("s3-secret-access-key", true);
 
-// Keycloak primary application id
+// Keycloak settings
 var kcId = builder.AddParameter("kc-id", "intra");
-// Keycloak primary application realm
 var kcRealm = builder.AddParameter("kc-realm", "student");
-// Keycloak Client Secret generated on the keycloak dashboard
 var kcSecret = builder.AddParameter("kc-secret", true);
-// Keycloak cookie used for the frontend
 var kcCookie = builder.AddParameter("kc-cookie", "kc.session");
 
 // Resend email token
 var resendToken = builder.AddParameter("be-resend-token", true);
 
+// Production-only: external origin overrides
+var kcOrigin = isPublish ? builder.AddParameter("kc-origin", true) : null;
+var feOrigin = isPublish ? builder.AddParameter("fe-origin", true) : null;
 
 // Storage
 // ============================================================================
@@ -73,34 +66,49 @@ var migration = builder.AddProject<Projects.Migrations>("migration-job")
     .WithReference(database)
     .WaitFor(postgres);
 
+// Git Services
 // ============================================================================
 
 var api = builder.AddDockerfile("git-api", "./App.Repository", "Dockerfile.api")
     .WithVolume("git-repos", "/home/git/repos")
-    .WithHttpEndpoint(port: 3000, targetPort: 3000, name: "http")
+    .WithHttpEndpoint(targetPort: 3000, name: "http")
     .WithLifetime(ContainerLifetime.Persistent);
 
 var ssh = builder.AddDockerfile("git-ssh", "./App.Repository", "Dockerfile.ssh")
     .WithVolume("git-repos", "/home/git/repos")
-    .WithEndpoint(port: 2222, targetPort: 22, scheme: "tcp", name: "ssh")
+    .WithEndpoint(targetPort: 22, scheme: "tcp", name: "ssh")
     .WithReference(database)
     .WaitFor(database)
     .WaitFor(api)
     .WithLifetime(ContainerLifetime.Persistent);
 
+// Keycloak
 // ============================================================================
 
 var keycloak = builder.AddKeycloakContainer("keycloak")
     .WithDataVolume()
     .WithImport("./Configurations/student-realm.json")
     .WithImport("./Configurations/admin-realm.json")
-    .WithEnvironment("KC_HTTP_ENABLED", "true")
-    .WithEnvironment("KC_PROXY_HEADERS", "xforwarded")
-    .WithEnvironment("KC_HOSTNAME_STRICT", "false")
-    .WithEnvironment("KC_HOSTNAME", kcOrigin)
     .WithExternalHttpEndpoints();
 
+if (isPublish)
+{
+    // Production: keycloak sits behind a reverse proxy
+    keycloak
+        .WithEnvironment("KC_PROXY_HEADERS", "xforwarded")
+        .WithEnvironment("KC_HOSTNAME_STRICT", "false")
+        .WithEnvironment("KC_HOSTNAME", kcOrigin!);
+}
+else
+{
+    // Local dev: enable plain HTTP
+    keycloak.WithEnvironment("KC_HTTP_ENABLED", "true");
+}
+
 var realm = keycloak.AddRealm("student");
+
+// Backend
+// ============================================================================
 
 var backend = builder.AddProject<Projects.App_Backend_API>("backend")
     .WithReference(database)
@@ -113,27 +121,22 @@ var backend = builder.AddProject<Projects.App_Backend_API>("backend")
     .WaitFor(keycloak)
     .WaitFor(api);
 
-var frontend = builder.AddViteApp("frontend", "./App.Frontend")
+// Frontend
+// ============================================================================
+
+var frontendBuilder = builder.AddViteApp("frontend", "./App.Frontend")
     .WaitFor(cache)
     .WithReference(cache)
     .WaitFor(backend)
     .WithReference(backend)
     .WaitFor(keycloak)
     .WithReference(realm)
-    // Reverse proxy headers
     .WithEnvironment("KC_ID", kcId)
     .WithEnvironment("KC_REALM", kcRealm)
-    .WithEnvironment("KC_ORIGIN", kcOrigin)
     .WithEnvironment("KC_SECRET", kcSecret)
     .WithEnvironment("KC_COOKIE", kcCookie)
     .WithEnvironment("S3_ACCESS_KEY_ID", s3Key)
     .WithEnvironment("S3_SECRET_ACCESS_KEY", s3Password)
-    .WithEnvironment("ORIGIN", feOrigin)
-    .WithEnvironment("XFF_DEPTH", "1")
-    .WithEnvironment("PROTOCOL_HEADER", "x-forwarded-proto")
-    .WithEnvironment("HOST_HEADER", "x-forwarded-host")
-    .WithEnvironment("PORT_HEADER", "x-forwarded-port")
-    .WithEnvironment("ADDRESS_HEADER", "True-Client-IP")
     //TODO: Remove on Aspire 13.2: https://github.com/dotnet/aspire/issues/13686
     .WithAnnotation(new JavaScriptPackageManagerAnnotation("bun", runScriptCommand: "run", cacheMount: "/root/.bun")
     {
@@ -145,9 +148,28 @@ var frontend = builder.AddViteApp("frontend", "./App.Frontend")
     })
     .WithAnnotation(new JavaScriptInstallCommandAnnotation(["install"]));
 
+if (isPublish)
+{
+    // Production: behind a reverse proxy, set explicit origins and proxy headers
+    frontendBuilder
+        .WithEnvironment("ORIGIN", feOrigin!)
+        .WithEnvironment("KC_ORIGIN", kcOrigin!)
+        .WithEnvironment("XFF_DEPTH", "1")
+        .WithEnvironment("PROTOCOL_HEADER", "x-forwarded-proto")
+        .WithEnvironment("HOST_HEADER", "x-forwarded-host")
+        .WithEnvironment("PORT_HEADER", "x-forwarded-port")
+        .WithEnvironment("ADDRESS_HEADER", "True-Client-IP");
+}
+else
+{
+    // Local dev: KC_ORIGIN is resolved via service discovery from the keycloak reference
+    // ORIGIN is not needed locally — SvelteKit infers it from the listening address
+}
+
+// Scalar API Reference
 // ============================================================================
 
-var scalar = builder.AddScalarApiReference("scalar", o => o.WithTheme(ScalarTheme.Kepler))
+builder.AddScalarApiReference("scalar", o => o.WithTheme(ScalarTheme.Kepler))
     .WithReference(keycloak)
     .WithReference(backend)
     .WithApiReference(backend, o =>
@@ -158,6 +180,5 @@ var scalar = builder.AddScalarApiReference("scalar", o => o.WithTheme(ScalarThem
     });
 
 // ============================================================================
-
 
 builder.Build().Run();

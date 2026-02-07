@@ -33,5 +33,11 @@ public class ProjectDO(Project project) : BaseEntityDO<Project>(project)
     [Required]
     public bool Deprecated { get; set; } = project.Deprecated;
 
+    // [Required]
+    // public WorkspaceDO Workspace { get; set; } = project.;
+
+    [Required]
+    public WorkspaceDO Workspace { get; set; } = project.Workspace;
+
     public static implicit operator ProjectDO?(Project? project) => project is null ? null : new(project);
 }

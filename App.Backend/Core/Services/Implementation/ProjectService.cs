@@ -25,9 +25,9 @@ public class ProjectService(DatabaseContext ctx) : BaseService<Project>(ctx), IP
         return UpdateAsync(entity, token);
     }
 
-    public async Task<Project?> FindBySlugAsync(string slug)
+    public async Task<Project?> FindBySlugAsync(string slug,CancellationToken token = default)
     {
-        return await _dbSet.FirstOrDefaultAsync(p => p.Slug == slug);
+        return await _dbSet.FirstOrDefaultAsync(p => p.Slug == slug, token);
     }
 
     public async Task<PaginatedList<UserProject>> GetUserProjectsAsync(Guid userId, ISorting sorting, IPagination pagination, CancellationToken token = default)
@@ -44,8 +44,5 @@ public class ProjectService(DatabaseContext ctx) : BaseService<Project>(ctx), IP
             .Select(joined => joined.userProject)
             .Sort(sorting)
             .PaginateAsync(pagination, token);
-        // return await _dbSet.AsQueryable()
-        //     .Sort(sorting)
-        //     .PaginateAsync(pagination, token);
     }
 }

@@ -9,7 +9,7 @@ using App.Backend.Domain.Entities;
 
 namespace App.Backend.Core.Services.Interface;
 
-public interface IWorkspaceService : IDomainService<Workspace>
+public interface IWorkspaceService : IDomainService<Workspace>, IUserQueryable<Workspace>
 {
     /// <summary>
     /// The root workspace is where all the official / system wide
@@ -18,12 +18,33 @@ public interface IWorkspaceService : IDomainService<Workspace>
     /// For example projects curated by staff/faculty are placed here.
     /// </summary>
     /// <returns>The root workspace.</returns>
-    public Task<Workspace> GetRootWorkspace();
+    public Task<Workspace> GetRootWorkspace(CancellationToken token = default);
 
     /// <summary>
-    /// Find the workspace by user id.
+    /// Creates a new project into the specified workspace.
     /// </summary>
-    /// <param name="login">The login.</param>
-    /// <returns>The user.</returns>
-    public Task<Workspace?> FindByUserId(Guid id);
+    /// <param name="workspaceId"></param>
+    /// <param name="project"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public Task<Project> AddProjectAsync(Guid workspaceId, Project project, CancellationToken token = default);
+
+    /// <summary>
+    ///
+    /// </summary>
+    /// <param name="workspaceId"></param>
+    /// <param name="project"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public Task<Goal> AddGoalAsync(Guid workspaceId, Goal goal, CancellationToken token = default);
+
+    /// <summary>
+    ///
+    /// </summary>
+    /// <param name="workspaceId"></param>
+    /// <param name="project"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public Task<Cursus> AddCursusAsync(Guid workspaceId, Cursus cursus, CancellationToken token = default);
+
 }

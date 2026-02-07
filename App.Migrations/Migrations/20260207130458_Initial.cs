@@ -8,44 +8,11 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Migrations.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class Initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.CreateTable(
-                name: "cursus",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    name = table.Column<string>(type: "text", nullable: false),
-                    description = table.Column<string>(type: "text", nullable: false),
-                    slug = table.Column<string>(type: "text", nullable: false),
-                    track = table.Column<string>(type: "jsonb", nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_cursus", x => x.id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "goals",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    name = table.Column<string>(type: "text", nullable: false),
-                    description = table.Column<string>(type: "text", nullable: false),
-                    slug = table.Column<string>(type: "text", nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_goals", x => x.id);
-                });
-
             migrationBuilder.CreateTable(
                 name: "tbl_git",
                 columns: table => new
@@ -67,7 +34,6 @@ namespace Migrations.Migrations
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
-                    type = table.Column<string>(type: "text", nullable: false),
                     descriptor = table.Column<int>(type: "integer", nullable: false),
                     read_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     notifiable_id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -103,90 +69,19 @@ namespace Migrations.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "projects",
+                name: "tbl_user",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
-                    name = table.Column<string>(type: "text", nullable: false),
-                    description = table.Column<string>(type: "text", nullable: false),
-                    slug = table.Column<string>(type: "text", nullable: false),
-                    active = table.Column<bool>(type: "boolean", nullable: false),
-                    @public = table.Column<bool>(name: "public", type: "boolean", nullable: false),
-                    deprecated = table.Column<bool>(type: "boolean", nullable: false),
-                    GitId = table.Column<Guid>(type: "uuid", nullable: true),
+                    login = table.Column<string>(type: "text", nullable: false),
+                    display = table.Column<string>(type: "text", nullable: true),
+                    avatar_url = table.Column<string>(type: "text", nullable: true),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_projects", x => x.id);
-                    table.ForeignKey(
-                        name: "FK_projects_tbl_git_GitId",
-                        column: x => x.GitId,
-                        principalTable: "tbl_git",
-                        principalColumn: "id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "rel_goal_project",
-                columns: table => new
-                {
-                    GoalId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProjectId = table.Column<Guid>(type: "uuid", nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_rel_goal_project", x => new { x.ProjectId, x.GoalId });
-                    table.ForeignKey(
-                        name: "FK_rel_goal_project_goals_GoalId",
-                        column: x => x.GoalId,
-                        principalTable: "goals",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_rel_goal_project_projects_ProjectId",
-                        column: x => x.ProjectId,
-                        principalTable: "projects",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "tbl_comment",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    entity_type = table.Column<string>(type: "text", nullable: false),
-                    entity_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    body = table.Column<string>(type: "text", nullable: false),
-                    user_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ReviewId = table.Column<Guid>(type: "uuid", nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_tbl_comment", x => x.id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "tbl_review",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    kind = table.Column<int>(type: "integer", nullable: false),
-                    state = table.Column<int>(type: "integer", nullable: false),
-                    reviewer_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    user_project_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    rubric_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_tbl_review", x => x.id);
+                    table.PrimaryKey("PK_tbl_user", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
@@ -215,39 +110,12 @@ namespace Migrations.Migrations
                         column: x => x.git_info_id,
                         principalTable: "tbl_git",
                         principalColumn: "id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "tbl_user_project",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    state = table.Column<int>(type: "integer", nullable: false),
-                    project_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    git_info_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    rubric_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_tbl_user_project", x => x.id);
                     table.ForeignKey(
-                        name: "FK_tbl_user_project_projects_project_id",
-                        column: x => x.project_id,
-                        principalTable: "projects",
+                        name: "FK_tbl_rubric_tbl_user_creator_id",
+                        column: x => x.creator_id,
+                        principalTable: "tbl_user",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_tbl_user_project_tbl_git_git_info_id",
-                        column: x => x.git_info_id,
-                        principalTable: "tbl_git",
-                        principalColumn: "id");
-                    table.ForeignKey(
-                        name: "FK_tbl_user_project_tbl_rubric_rubric_id",
-                        column: x => x.rubric_id,
-                        principalTable: "tbl_rubric",
-                        principalColumn: "id");
                 });
 
             migrationBuilder.CreateTable(
@@ -267,6 +135,12 @@ namespace Migrations.Migrations
                         principalTable: "tbl_spotlights",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_tbl_spotlight_dismissals_tbl_user_user_id",
+                        column: x => x.user_id,
+                        principalTable: "tbl_user",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -284,48 +158,8 @@ namespace Migrations.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_tbl_ssh_key", x => x.fingerprint);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "tbl_user",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    login = table.Column<string>(type: "text", nullable: false),
-                    display = table.Column<string>(type: "text", nullable: true),
-                    avatar_url = table.Column<string>(type: "text", nullable: true),
-                    details_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_tbl_user", x => x.id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "tbl_user_cursus",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    state = table.Column<int>(type: "integer", nullable: false),
-                    user_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    cursus_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    track = table.Column<string>(type: "jsonb", nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_tbl_user_cursus", x => x.id);
                     table.ForeignKey(
-                        name: "FK_tbl_user_cursus_cursus_cursus_id",
-                        column: x => x.cursus_id,
-                        principalTable: "cursus",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_tbl_user_cursus_tbl_user_user_id",
+                        name: "FK_tbl_ssh_key_tbl_user_user_id",
                         column: x => x.user_id,
                         principalTable: "tbl_user",
                         principalColumn: "id",
@@ -362,6 +196,141 @@ namespace Migrations.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "tbl_workspace",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    owner_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    ownership = table.Column<int>(type: "integer", nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_tbl_workspace", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_tbl_workspace_tbl_user_owner_id",
+                        column: x => x.owner_id,
+                        principalTable: "tbl_user",
+                        principalColumn: "id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "tbl_cursus",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    name = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    description = table.Column<string>(type: "character varying(2048)", maxLength: 2048, nullable: false),
+                    slug = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    active = table.Column<bool>(type: "boolean", nullable: false),
+                    @public = table.Column<bool>(name: "public", type: "boolean", nullable: false),
+                    deprecated = table.Column<bool>(type: "boolean", nullable: false),
+                    track = table.Column<string>(type: "jsonb", nullable: true),
+                    workspace_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_tbl_cursus", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_tbl_cursus_tbl_workspace_workspace_id",
+                        column: x => x.workspace_id,
+                        principalTable: "tbl_workspace",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "tbl_goals",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    name = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    description = table.Column<string>(type: "character varying(2048)", maxLength: 2048, nullable: false),
+                    slug = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    active = table.Column<bool>(type: "boolean", nullable: false),
+                    @public = table.Column<bool>(name: "public", type: "boolean", nullable: false),
+                    deprecated = table.Column<bool>(type: "boolean", nullable: false),
+                    workspace_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_tbl_goals", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_tbl_goals_tbl_workspace_workspace_id",
+                        column: x => x.workspace_id,
+                        principalTable: "tbl_workspace",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "tbl_projects",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    name = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    description = table.Column<string>(type: "character varying(2048)", maxLength: 2048, nullable: false),
+                    slug = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    active = table.Column<bool>(type: "boolean", nullable: false),
+                    @public = table.Column<bool>(name: "public", type: "boolean", nullable: false),
+                    deprecated = table.Column<bool>(type: "boolean", nullable: false),
+                    git_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    workspace_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_tbl_projects", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_tbl_projects_tbl_git_git_id",
+                        column: x => x.git_id,
+                        principalTable: "tbl_git",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_tbl_projects_tbl_workspace_workspace_id",
+                        column: x => x.workspace_id,
+                        principalTable: "tbl_workspace",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "tbl_user_cursus",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    state = table.Column<int>(type: "integer", nullable: false),
+                    user_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    cursus_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    track = table.Column<string>(type: "jsonb", nullable: true),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_tbl_user_cursus", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_tbl_user_cursus_tbl_cursus_cursus_id",
+                        column: x => x.cursus_id,
+                        principalTable: "tbl_cursus",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_tbl_user_cursus_tbl_user_user_id",
+                        column: x => x.user_id,
+                        principalTable: "tbl_user",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "tbl_user_goal",
                 columns: table => new
                 {
@@ -376,9 +345,9 @@ namespace Migrations.Migrations
                 {
                     table.PrimaryKey("PK_tbl_user_goal", x => x.id);
                     table.ForeignKey(
-                        name: "FK_tbl_user_goal_goals_goal_id",
+                        name: "FK_tbl_user_goal_tbl_goals_goal_id",
                         column: x => x.goal_id,
-                        principalTable: "goals",
+                        principalTable: "tbl_goals",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
@@ -387,6 +356,100 @@ namespace Migrations.Migrations
                         principalTable: "tbl_user",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "rel_goal_project",
+                columns: table => new
+                {
+                    GoalId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProjectId = table.Column<Guid>(type: "uuid", nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_rel_goal_project", x => new { x.ProjectId, x.GoalId });
+                    table.ForeignKey(
+                        name: "FK_rel_goal_project_tbl_goals_GoalId",
+                        column: x => x.GoalId,
+                        principalTable: "tbl_goals",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_rel_goal_project_tbl_projects_ProjectId",
+                        column: x => x.ProjectId,
+                        principalTable: "tbl_projects",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "tbl_user_project",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    state = table.Column<int>(type: "integer", nullable: false),
+                    project_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    git_info_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    rubric_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_tbl_user_project", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_tbl_user_project_tbl_git_git_info_id",
+                        column: x => x.git_info_id,
+                        principalTable: "tbl_git",
+                        principalColumn: "id");
+                    table.ForeignKey(
+                        name: "FK_tbl_user_project_tbl_projects_project_id",
+                        column: x => x.project_id,
+                        principalTable: "tbl_projects",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_tbl_user_project_tbl_rubric_rubric_id",
+                        column: x => x.rubric_id,
+                        principalTable: "tbl_rubric",
+                        principalColumn: "id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "tbl_review",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    kind = table.Column<int>(type: "integer", nullable: false),
+                    state = table.Column<int>(type: "integer", nullable: false),
+                    reviewer_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    user_project_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    rubric_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_tbl_review", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_tbl_review_tbl_rubric_rubric_id",
+                        column: x => x.rubric_id,
+                        principalTable: "tbl_rubric",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_tbl_review_tbl_user_project_user_project_id",
+                        column: x => x.user_project_id,
+                        principalTable: "tbl_user_project",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_tbl_review_tbl_user_reviewer_id",
+                        column: x => x.reviewer_id,
+                        principalTable: "tbl_user",
+                        principalColumn: "id");
                 });
 
             migrationBuilder.CreateTable(
@@ -445,40 +508,34 @@ namespace Migrations.Migrations
                         principalColumn: "id");
                 });
 
-            migrationBuilder.CreateIndex(
-                name: "IX_cursus_name",
-                table: "cursus",
-                column: "name");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_cursus_slug",
-                table: "cursus",
-                column: "slug");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_goals_name",
-                table: "goals",
-                column: "name");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_goals_slug",
-                table: "goals",
-                column: "slug");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_projects_GitId",
-                table: "projects",
-                column: "GitId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_projects_name",
-                table: "projects",
-                column: "name");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_projects_slug",
-                table: "projects",
-                column: "slug");
+            migrationBuilder.CreateTable(
+                name: "tbl_comment",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    entity_type = table.Column<string>(type: "text", nullable: false),
+                    entity_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    body = table.Column<string>(type: "text", nullable: false),
+                    user_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ReviewId = table.Column<Guid>(type: "uuid", nullable: true),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_tbl_comment", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_tbl_comment_tbl_review_ReviewId",
+                        column: x => x.ReviewId,
+                        principalTable: "tbl_review",
+                        principalColumn: "id");
+                    table.ForeignKey(
+                        name: "FK_tbl_comment_tbl_user_user_id",
+                        column: x => x.user_id,
+                        principalTable: "tbl_user",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
 
             migrationBuilder.CreateIndex(
                 name: "IX_rel_goal_project_GoalId",
@@ -501,9 +558,59 @@ namespace Migrations.Migrations
                 column: "user_id");
 
             migrationBuilder.CreateIndex(
+                name: "IX_tbl_cursus_name",
+                table: "tbl_cursus",
+                column: "name");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_tbl_cursus_slug",
+                table: "tbl_cursus",
+                column: "slug");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_tbl_cursus_workspace_id",
+                table: "tbl_cursus",
+                column: "workspace_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_tbl_goals_name",
+                table: "tbl_goals",
+                column: "name");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_tbl_goals_slug",
+                table: "tbl_goals",
+                column: "slug");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_tbl_goals_workspace_id",
+                table: "tbl_goals",
+                column: "workspace_id");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_tbl_notifications_notifiable_id_read_at",
                 table: "tbl_notifications",
                 columns: new[] { "notifiable_id", "read_at" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_tbl_projects_git_id",
+                table: "tbl_projects",
+                column: "git_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_tbl_projects_name",
+                table: "tbl_projects",
+                column: "name");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_tbl_projects_slug",
+                table: "tbl_projects",
+                column: "slug");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_tbl_projects_workspace_id",
+                table: "tbl_projects",
+                column: "workspace_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_tbl_review_reviewer_id",
@@ -556,11 +663,6 @@ namespace Migrations.Migrations
                 column: "user_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_tbl_user_details_id",
-                table: "tbl_user",
-                column: "details_id");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_tbl_user_login",
                 table: "tbl_user",
                 column: "login",
@@ -584,7 +686,8 @@ namespace Migrations.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_tbl_user_details_user_id",
                 table: "tbl_user_details",
-                column: "user_id");
+                column: "user_id",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_tbl_user_goal_goal_id",
@@ -631,83 +734,15 @@ namespace Migrations.Migrations
                 table: "tbl_user_project_transactions",
                 column: "user_project_id");
 
-            migrationBuilder.AddForeignKey(
-                name: "FK_tbl_comment_tbl_review_ReviewId",
-                table: "tbl_comment",
-                column: "ReviewId",
-                principalTable: "tbl_review",
-                principalColumn: "id");
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_tbl_comment_tbl_user_user_id",
-                table: "tbl_comment",
-                column: "user_id",
-                principalTable: "tbl_user",
-                principalColumn: "id",
-                onDelete: ReferentialAction.Cascade);
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_tbl_review_tbl_rubric_rubric_id",
-                table: "tbl_review",
-                column: "rubric_id",
-                principalTable: "tbl_rubric",
-                principalColumn: "id",
-                onDelete: ReferentialAction.Cascade);
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_tbl_review_tbl_user_project_user_project_id",
-                table: "tbl_review",
-                column: "user_project_id",
-                principalTable: "tbl_user_project",
-                principalColumn: "id",
-                onDelete: ReferentialAction.Cascade);
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_tbl_review_tbl_user_reviewer_id",
-                table: "tbl_review",
-                column: "reviewer_id",
-                principalTable: "tbl_user",
-                principalColumn: "id");
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_tbl_rubric_tbl_user_creator_id",
-                table: "tbl_rubric",
-                column: "creator_id",
-                principalTable: "tbl_user",
-                principalColumn: "id",
-                onDelete: ReferentialAction.Cascade);
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_tbl_spotlight_dismissals_tbl_user_user_id",
-                table: "tbl_spotlight_dismissals",
-                column: "user_id",
-                principalTable: "tbl_user",
-                principalColumn: "id",
-                onDelete: ReferentialAction.Cascade);
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_tbl_ssh_key_tbl_user_user_id",
-                table: "tbl_ssh_key",
-                column: "user_id",
-                principalTable: "tbl_user",
-                principalColumn: "id",
-                onDelete: ReferentialAction.Cascade);
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_tbl_user_tbl_user_details_details_id",
-                table: "tbl_user",
-                column: "details_id",
-                principalTable: "tbl_user_details",
-                principalColumn: "id");
+            migrationBuilder.CreateIndex(
+                name: "IX_tbl_workspace_owner_id",
+                table: "tbl_workspace",
+                column: "owner_id");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_tbl_user_details_tbl_user_user_id",
-                table: "tbl_user_details");
-
             migrationBuilder.DropTable(
                 name: "rel_goal_project");
 
@@ -727,6 +762,9 @@ namespace Migrations.Migrations
                 name: "tbl_user_cursus");
 
             migrationBuilder.DropTable(
+                name: "tbl_user_details");
+
+            migrationBuilder.DropTable(
                 name: "tbl_user_goal");
 
             migrationBuilder.DropTable(
@@ -742,28 +780,28 @@ namespace Migrations.Migrations
                 name: "tbl_spotlights");
 
             migrationBuilder.DropTable(
-                name: "cursus");
+                name: "tbl_cursus");
 
             migrationBuilder.DropTable(
-                name: "goals");
+                name: "tbl_goals");
 
             migrationBuilder.DropTable(
                 name: "tbl_user_project");
 
             migrationBuilder.DropTable(
-                name: "projects");
+                name: "tbl_projects");
 
             migrationBuilder.DropTable(
                 name: "tbl_rubric");
+
+            migrationBuilder.DropTable(
+                name: "tbl_workspace");
 
             migrationBuilder.DropTable(
                 name: "tbl_git");
 
             migrationBuilder.DropTable(
                 name: "tbl_user");
-
-            migrationBuilder.DropTable(
-                name: "tbl_user_details");
         }
     }
 }

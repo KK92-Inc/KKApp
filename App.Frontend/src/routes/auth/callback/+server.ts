@@ -6,6 +6,8 @@
 import { dev } from '$app/environment';
 import { Keycloak } from '$lib/oauth';
 import type { RequestHandler } from './$types';
+import { PORT, KC_ORIGIN, ORIGIN } from '$lib/config';
+import { Log } from '$lib/log';
 
 // ============================================================================
 
@@ -19,6 +21,16 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 	cookies.delete(Keycloak.COOKIE_STATE, { path: '/' });
 	cookies.delete(Keycloak.COOKIE_VERIFIER, { path: '/' });
 	if (!code || !state || !original || state !== original || !verifier) {
+		// NOTE(W2): Here it usually craps out because for instance you tried a subdomain
+		// to fix this in the future, Keycloak needs to support wildcard subdomains
+		Log.dbg('Code:', code);
+		Log.dbg('State:', state);
+		Log.dbg('Original:', original);
+		Log.dbg('State mismatch:', state !== original);
+		Log.dbg('Missing verifier:', !verifier);
+		Log.dbg('PORT:', PORT);
+		Log.dbg('ORIGIN:', ORIGIN);
+		Log.dbg('KC_ORIGIN:', KC_ORIGIN);
 		return new Response('Invalid request', { status: 400 });
 	}
 

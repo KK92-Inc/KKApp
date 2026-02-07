@@ -65,6 +65,7 @@ export const handle = sequence(init, Keycloak.handle, authorize);
 
 // Our API request go to a different HOST, thus we need to attach the token
 export async function handleFetch({ fetch, request, event }) {
+	Log.dbg("URI", BACKEND_URI)
 	if (BACKEND_URI && request.url.startsWith(BACKEND_URI)) {
 		const accessToken = event.cookies.get(Keycloak.COOKIE_ACCESS);
 		if (accessToken) {

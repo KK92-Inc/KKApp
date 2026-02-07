@@ -22,6 +22,8 @@ using App.Backend.Models.Requests.Projects;
 using App.Backend.Models.Requests.Goals;
 using App.Backend.Models.Requests.Cursus;
 using App.Backend.Domain.Entities.Users;
+using App.Backend.Models.Responses.Entities.Projects;
+using App.Backend.Models.Responses.Entities.Cursus;
 
 // ============================================================================
 
@@ -39,7 +41,7 @@ public class WorkspaceController(
 {
     [HttpGet("current")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProtectedResource("workspaces", "workspaces:read")]
+    // [ProtectedResource("workspaces", "workspaces:read")]
     [EndpointSummary("Get the workspace of the user")]
     [EndpointDescription("Retrieves the workspace of the currently authenticated user")]
     public async Task<ActionResult<WorkspaceDO>> GetWorkspace(CancellationToken token)
@@ -52,10 +54,10 @@ public class WorkspaceController(
     #region AddEntities
     [HttpPost("{workspace:guid}/cursus")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProtectedResource("workspaces", "workspaces:read")]
+    // [ProtectedResource("workspaces", "workspaces:read")]
     [EndpointSummary("Create a new cursus")]
     [EndpointDescription("Directly create a new project to be added to the workspace")]
-    public async Task<ActionResult> AddCursus(
+    public async Task<ActionResult<CursusDO>> AddCursus(
         Guid workspace,
         [FromBody] PostCursusRequestDTO dto,
         CancellationToken token
@@ -76,7 +78,7 @@ public class WorkspaceController(
         if (await cursusService.FindBySlugAsync(dto.Name.ToSlug()) is not null)
             return Conflict();
 
-        await cursusService.CreateAsync(new()
+        var cursus = await workspaceService.AddCursusAsync(space.Id, new()
         {
             Name = dto.Name,
             WorkspaceId = workspace,
@@ -87,16 +89,16 @@ public class WorkspaceController(
             Public = dto.Public
         }, token);
 
-        return NoContent();
+        return Ok(new CursusDO(cursus));
     }
 
     [HttpPost("{workspace:guid}/goal")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    [ProtectedResource("workspaces", ["workspaces:write", "goals:write"])]
+    // [ProtectedResource("workspaces", ["workspaces:write", "goals:write"])]
     [EndpointSummary("Create a new goal")]
     [EndpointDescription("Directly create a new goal to be added to the workspace")]
-    public async Task<ActionResult> AddGoal(
+    public async Task<ActionResult<GoalDO>> AddGoal(
         Guid workspace,
         [FromBody] PostGoalRequestDTO dto,
         CancellationToken token
@@ -114,26 +116,26 @@ public class WorkspaceController(
         if (await goalService.FindBySlugAsync(dto.Name.ToSlug()) is not null)
             return Conflict();
 
-        await goalService.CreateAsync(new()
+        var goal = await workspaceService.AddGoalAsync(space.Id, new()
         {
             Name = dto.Name,
             WorkspaceId = workspace,
             Description = dto.Description ?? string.Empty,
             Slug = dto.Name.ToSlug(),
             Active = dto.Active,
-            Public = dto.Public
+            Public = dto.Public,
         }, token);
 
-        return NoContent();
+        return Ok(new GoalDO(goal));
     }
 
     [HttpPost("{workspace:guid}/project")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    [ProtectedResource("workspaces", ["workspaces:write", "projects:write"])]
+    // [ProtectedResource("workspaces", ["workspaces:write", "projects:write"])]
     [EndpointSummary("Create a new project")]
     [EndpointDescription("Directly create a new project to be added to the workspace")]
-    public async Task<ActionResult> AddProject(
+    public async Task<ActionResult<ProjectDO>> AddProject(
         Guid workspace,
         [FromBody] PostProjectRequestDTO dto,
         CancellationToken token
@@ -151,7 +153,7 @@ public class WorkspaceController(
         if (await projectService.FindBySlugAsync(dto.Name.ToSlug()) is not null)
             return Conflict();
 
-        await projectService.CreateAsync(new()
+        var project = await workspaceService.AddProjectAsync(space.Id, new()
         {
             Name = dto.Name,
             WorkspaceId = workspace,
@@ -161,7 +163,7 @@ public class WorkspaceController(
             Public = dto.Public
         }, token);
 
-        return NoContent();
+        return Ok(new ProjectDO(project));
     }
 
     #endregion AddEntities

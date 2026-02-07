@@ -19,7 +19,7 @@ public interface IProjectService : IDomainService<Project>
     /// </summary>
     /// <param name="slug">The project slug.</param>
     /// <returns>The project.</returns>
-    public Task<Project?> FindBySlugAsync(string slug);
+    public Task<Project?> FindBySlugAsync(string slug, CancellationToken token = default);
 
     /// <summary>
     /// Get user projects for a user.

@@ -1,5 +1,3 @@
-import type useSearchParams from "./url.svelte";
-
 export default function useDebounce<Args extends unknown[]>(
 	fn: (...args: Args) => void,
 	wait = 500
@@ -20,7 +18,7 @@ export default function useDebounce<Args extends unknown[]>(
 		}
 	};
 	return {
-		get debounce() {
+		get fn() {
 			return debounced;
 		}
 	};
