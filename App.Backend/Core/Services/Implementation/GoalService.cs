@@ -16,9 +16,9 @@ using App.Backend.Domain.Entities.Users;
 
 namespace App.Backend.Core.Services.Implementation;
 
-public class GoalService(DatabaseContext ctx) : BaseService<Goal>(ctx), IGoalService
+public class GoalService(DatabaseContext ctx, IProjectService projectService) : BaseService<Goal>(ctx), IGoalService
 {
-    private readonly DatabaseContext context = ctx;
+    private readonly DatabaseContext _context = ctx;
 
     public Task<Goal?> FindBySlugAsync(string slug)
     {
@@ -32,7 +32,7 @@ public class GoalService(DatabaseContext ctx) : BaseService<Goal>(ctx), IGoalSer
 
     public async Task<IEnumerable<Project>> GetGoalProjectsAsync(Guid goalId)
     {
-        return await context.GoalProject
+        return await _context.GoalProject
             .Where(gp => gp.GoalId == goalId)
             .Include(gp => gp.Project)
             .Select(gp => gp.Project)
@@ -47,5 +47,23 @@ public class GoalService(DatabaseContext ctx) : BaseService<Goal>(ctx), IGoalSer
     public Task<PaginatedList<UserGoal>> GetUsersAsync(Guid goalId, ISorting sorting, IPagination pagination, CancellationToken token = default)
     {
         throw new NotImplementedException();
+    }
+
+    /// <inheritdoc />
+    public async Task<Goal> SetProjectsAsync(Guid goalId, IEnumerable<Guid> projects, CancellationToken token = default)
+    {
+        var goal = await FindByIdAsync(goalId, token) ?? throw new ServiceException(404, "Goal not found");
+
+        var valid = await projectService.ExistsAsync(projects, token);
+        if (!valid) throw new ServiceException(404, "One or more projects not found");
+
+        // NOTE(W2): Goals may have up to 5 Projects
+        var existing = await _context.GoalProject.Where(gp => gp.GoalId == goalId).ToListAsync(token);
+        _context.GoalProject.RemoveRange(existing);
+
+        var relations = projects.Select(pid => new GoalProject { GoalId = goalId, ProjectId = pid });
+        await _context.GoalProject.AddRangeAsync(relations, token);
+        await _context.SaveChangesAsync(token);
+        return goal;
     }
 }

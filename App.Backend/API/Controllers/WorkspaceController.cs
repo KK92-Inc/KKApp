@@ -188,7 +188,7 @@ public class WorkspaceController(
         var target = await workspaceService.FindByIdAsync(to, token);
         if (source is null || target is null)
             return NotFound();
-        if (!cursusService.Exists(cursusIds))
+        if (!await cursusService.ExistsAsync(cursusIds, token))
             return Problem(detail: "Request contains invalid ID(s)");
 
         foreach (var id in cursusIds)
@@ -220,7 +220,7 @@ public class WorkspaceController(
         var target = await workspaceService.FindByIdAsync(to, token);
         if (source is null || target is null)
             return NotFound();
-        if (!cursusService.Exists(goalIds))
+        if (!await cursusService.ExistsAsync(goalIds, token))
             return Problem(detail: "Request contains invalid ID(s)");
 
         foreach (var id in goalIds)
@@ -252,7 +252,7 @@ public class WorkspaceController(
         var target = await workspaceService.FindByIdAsync(to, token);
         if (source is null || target is null)
             return NotFound();
-        if (!cursusService.Exists(projectIds))
+        if (!await cursusService.ExistsAsync(projectIds, token))
             return Problem(detail: "Request contains invalid ID(s)");
 
         foreach (var id in projectIds)

@@ -26,6 +26,8 @@ public interface IGoalService : IDomainService<Goal>
     /// </summary>
     /// <param name="goalId">The goal ID.</param>
     /// <returns>List of projects.</returns>
+    public Task<Goal> SetProjectsAsync(Guid goalId, IEnumerable<Guid> projects, CancellationToken token = default);
+
     public Task<IEnumerable<Project>> GetProjectsAsync(Guid goalId, CancellationToken token = default);
 
     /// <summary>

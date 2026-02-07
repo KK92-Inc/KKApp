@@ -1,5 +1,5 @@
 // ============================================================================
-// Copyright (c) 2026 - W2Inc, All Rights Reserved.
+// Copyright (c) 2025 - W2Inc, All Rights Reserved.
 // See README.md in the project root for license information.
 // ============================================================================
 
@@ -73,10 +73,12 @@ public abstract class BaseService<T>(DatabaseContext context) : IDomainService<T
     /// </summary>
     /// <param name="ids"></param>
     /// <returns></returns>
-    public bool Exists(IEnumerable<Guid> ids)
+    public async Task<bool> ExistsAsync(IEnumerable<Guid> ids, CancellationToken token = default)
     {
-        return ids.Any(id => !_dbSet.Any(f => f.Id == id));
+        var valid = await _dbSet.Select(x => x.Id).ToListAsync();
+        return ids.All(valid.Contains);
     }
+
 
     /// <summary>
     /// Find the entity by its ID.

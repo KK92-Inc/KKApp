@@ -26,7 +26,7 @@ namespace App.Backend.API.Controllers;
 [ProtectedResource("goals"), Authorize]
 public class GoalController(
     ILogger<GoalController> log,
-    IGoalService goals,
+    IGoalService goalService,
     IWorkspaceService workspace,
     ISubscriptionService subscriptions
 ) : Controller
@@ -43,39 +43,10 @@ public class GoalController(
         [FromQuery] Pagination pagination
     )
     {
-        var page = await goals.GetAllAsync(sorting, pagination);
+        var page = await goalService.GetAllAsync(sorting, pagination);
         page.AppendHeaders(Request.Headers);
         return Ok(page.Items.Select(g => new GoalDO(g)));
     }
-
-    // [HttpPost]
-    // [ProtectedResource("goals", "goals:write")]
-    // [ProducesResponseType(StatusCodes.Status201Created)]
-    // [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    // [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    // [ProducesErrorResponseType(typeof(ProblemDetails))]
-    // [EndpointSummary("Create a new goal")]
-    // [EndpointDescription("Create a new goal with optional project associations")]
-    // public async Task<ActionResult<GoalDO>> Create([FromBody] PostGoalRequestDTO request)
-    // {
-
-    //     // var space = await workspace.CreateAsync(new ()
-    //     // {
-    //     //     Owner = User.GetSID()
-    //     // });
-
-    //     // await goals.CreateAsync(new ()
-    //     // {
-    //     //     Name = request.Name,
-    //     //     Slug = request.Slug,
-    //     //     Description = request.Description ?? string.Empty,
-    //     //     Workspace = space
-    //     // });
-
-    //     // TODO: Project associations
-
-    //     return Created();
-    // }
 
     [HttpDelete]
     [ProtectedResource("goals", "goals:delete")]
@@ -87,10 +58,10 @@ public class GoalController(
     [EndpointDescription("Delete a goal and its associations")]
     public async Task<IActionResult> Delete([FromQuery] Guid id)
     {
-        var goal = await goals.FindByIdAsync(id);
+        var goal = await goalService.FindByIdAsync(id);
         if (goal is null)
             return NotFound();
-        await goals.DeleteAsync(goal);
+        await goalService.DeleteAsync(goal);
         return NoContent();
     }
 
@@ -104,21 +75,7 @@ public class GoalController(
     [EndpointDescription("Retrieve a specific goal by ID")]
     public async Task<ActionResult<GoalDO>> GetById(Guid id)
     {
-        var goal = await goals.FindByIdAsync(id);
-        return goal is null ? NotFound() : Ok(new GoalDO(goal));
-    }
-
-    [HttpGet("slug/{slug}")]
-    [ProtectedResource("goals", "goals:read")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [EndpointSummary("Query a goal by slug")]
-    [EndpointDescription("Retrieve a specific goal by slug")]
-    public async Task<ActionResult<GoalDO>> GetBySlug(string slug)
-    {
-        var goal = await goals.FindBySlugAsync(slug);
+        var goal = await goalService.FindByIdAsync(id);
         return goal is null ? NotFound() : Ok(new GoalDO(goal));
     }
 
@@ -133,7 +90,7 @@ public class GoalController(
     [EndpointDescription("Update goal and project associations")]
     public async Task<ActionResult<GoalDO>> Update(Guid id, [FromBody] PatchGoalRequestDTO request)
     {
-        var goal = await goals.FindByIdAsync(id);
+        var goal = await goalService.FindByIdAsync(id);
         if (goal is null)
             return NotFound();
 
@@ -141,7 +98,7 @@ public class GoalController(
         goal.Name = request.Name ?? goal.Name;
         goal.Description = request.Description ?? goal.Description;
         // goal.Slug = request.Name?.ToSlug() ?? goal.Slug;
-        await goals.UpdateAsync(goal);
+        await goalService.UpdateAsync(goal);
         return Ok(new GoalDO(goal));
     }
 
@@ -155,7 +112,22 @@ public class GoalController(
     [EndpointDescription("Retrieve projects associated with a goal")]
     public async Task<ActionResult> GetGoalProjects(Guid id)
     {
-        var projects = await goals.GetProjectsAsync(id);
+        var projects = await goalService.GetProjectsAsync(id);
+        return Ok(projects.Select(p => new ProjectDO(p)));
+    }
+
+    [HttpGet("{id:guid}/projects")]
+    [ProtectedResource("goals", "goals:write")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Add projects to a goal")]
+    [EndpointDescription("Add projects to be part of a goal")]
+    public async Task<ActionResult> AddGoalProjects(Guid id)
+    {
+
+        var projects = await goalService.GetProjectsAsync(id);
         return Ok(projects.Select(p => new ProjectDO(p)));
     }
 

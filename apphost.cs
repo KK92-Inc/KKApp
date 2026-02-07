@@ -4,7 +4,7 @@
 // ============================================================================
 
 #:sdk Aspire.AppHost.Sdk@13.1.0
-#:package Scalar.Aspire@0.7.4
+#:package Scalar.Aspire@0.8.45
 #:package Aspire.Npgsql@13.1.0
 #:package Aspire.Hosting.JavaScript@13.1.0
 #:package Aspire.Hosting.Docker@13.1.0-preview.1.25616.3
@@ -169,12 +169,12 @@ else
 // Scalar API Reference
 // ============================================================================
 
-builder.AddScalarApiReference("scalar", o => o.WithTheme(ScalarTheme.Kepler))
+builder.AddScalarApiReference("scalar", o => o.WithTheme(ScalarTheme.Saturn))
     .WithReference(keycloak)
     .WithReference(backend)
     .WithApiReference(backend, o =>
     {
-        o.WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
+        o.WithDefaultHttpClient(ScalarTarget.C, ScalarClient.HttpClient);
         o.AddPreferredSecuritySchemes("OAuth2");
         o.AddImplicitFlow("OAuth2", flow => flow.WithClientId("intra"));
     });

@@ -39,7 +39,7 @@ public interface IDomainService<T> where T : BaseEntity
     /// </summary>
     /// <param name="ids">Collection of IDs to validate.</param>
     /// <returns>True if all IDs are valid, false otherwise.</returns>
-    public bool Exists(IEnumerable<Guid> ids);
+    public Task<bool> ExistsAsync(IEnumerable<Guid> ids, CancellationToken token = default);
 
     /// <summary>
     /// Delete the entity.
