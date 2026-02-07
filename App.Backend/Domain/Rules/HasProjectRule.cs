@@ -1,5 +1,5 @@
 // ============================================================================
-// Copyright (c) 2025 - W2Inc, All Rights Reserved.
+// Copyright (c) 2026 - W2Inc, All Rights Reserved.
 // See README.md in the project root for license information.
 // ============================================================================
 
@@ -17,5 +17,5 @@ public sealed class HasProjectRule : Rule
     /// </summary>
     [JsonPropertyName("project_id")]
     public required Guid ProjectId { get; set; }
-    
+
 }

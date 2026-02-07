@@ -1,39 +1,39 @@
 // ============================================================================
-// Copyright (c) 2025 - W2Inc, All Rights Reserved.
+// Copyright (c) 2026 - W2Inc, All Rights Reserved.
 // See README.md in the project root for license information.
 // ============================================================================
 
 using System.Text.Json;
-using App.Backend.Database;
-using App.Backend.Database.Interceptors;
+using System.Security.Claims;
+using System.Threading.RateLimiting;
+
+using Microsoft.OpenApi;
+using Microsoft.EntityFrameworkCore;
+
 using Keycloak.AuthServices.Authentication;
 using Keycloak.AuthServices.Authorization;
+using Keycloak.AuthServices.Common;
+using Keycloak.AuthServices.Sdk;
+
+using Quartz;
+using Resend;
 using Serilog;
 using Serilog.Templates;
 using Serilog.Templates.Themes;
+
 using Wolverine;
-using Microsoft.EntityFrameworkCore;
-using App.Backend.Core.Services.Interface;
-using App.Backend.Core.Services.Implementation;
-using System.Threading.RateLimiting;
-using Quartz;
-using App.Backend.API.Jobs;
-using App.Backend.API.Jobs.Extensions;
-using Keycloak.AuthServices.Sdk;
-using System.Security.Claims;
-using App.Backend.API.Schemas.Document;
-using App.Backend.API.Schemas.Operation;
-using Microsoft.OpenApi;
-using Keycloak.AuthServices.Common;
-using App.Backend.API.Filters;
 using Wolverine.Postgresql;
-using Resend;
-using System.Threading.Channels;
-using App.Backend.API.Bus.Messages;
+
+using App.Backend.API.Filters;
 using App.Backend.API.Notifications.Registers.Interface;
 using App.Backend.API.Notifications.Registers.Implementation;
-using JasperFx.Core;
+using App.Backend.API.Schemas.Document;
+using App.Backend.API.Schemas.Operation;
+using App.Backend.Core.Services.Implementation;
+using App.Backend.Core.Services.Interface;
 using App.Backend.Core.Services.Options;
+using App.Backend.Database;
+using App.Backend.Database.Interceptors;
 
 // ============================================================================
 
@@ -56,7 +56,6 @@ public static class Services
             o.Filters.Add<ServiceExceptionFilter>();
         }).AddJsonOptions(o =>
         {
-            // Let's us configure the casing for out JSON DTOs for example.
             o.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
         });
 
@@ -184,45 +183,11 @@ public static class Services
         builder.Services.AddScoped<IProjectService, ProjectService>();
         builder.Services.AddScoped<IGitService, GitService>();
         builder.Services.AddScoped<INotificationService, NotificationService>();
-        // // builder.Services.AddScoped<IUserCursusService, UserCursusService>();
-        // // builder.Services.AddScoped<IUserGoalService, UserGoalService>();
-        // // builder.Services.AddScoped<IUserProjectService, UserProjectService>();
-        // // builder.Services.AddScoped<IFeatureService, FeatureService>();
-        // // builder.Services.AddScoped<IGoalService, GoalService>();
-        // // builder.Services.AddScoped<IFeedbackService, FeedbackService>();
-        // // builder.Services.AddScoped<ICommentService, CommentService>();
-        // // builder.Services.AddScoped<IProjectService, ProjectService>();
-        // // builder.Services.AddScoped<IRubricService, RubricService>();
-        // // builder.Services.AddScoped<IReviewService, ReviewService>();
-        // // builder.Services.AddScoped<IResourceOwnerService, ResourceOwnerService>();
-        // // builder.Services.AddScoped<ISpotlightEventService, SpotlightEventService>();
-        // // builder.Services.AddScoped<IGitService, GitService2>();
-        // // builder.Services.AddScoped<INotificationService, NotificationService>();
-        // // builder.Services.AddScoped<ISpotlightEventActionService, SpotlightEventActionService>();
         builder.Services.AddTransient<IResend, ResendClient>();
 
         // // builder.Services.AddSingleton<INotificationQueue, InMemoryNotificationQueue>();
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddSingleton<IBroadcastRegistry, MemoryBroadcastRegistry>();
-
-        // builder.Services.AddSingleton(sp =>
-        // {
-        //     var sshClient = new SshClient(
-        //         builder.Configuration.GetValue<string>("GitService:Host"),
-        //         builder.Configuration.GetValue<int>("GitService:Port"),
-        //         builder.Configuration.GetValue<string>("GitService:User"),
-        //         new PrivateKeyFile(builder.Configuration.GetValue<string>("GitService:PrivateKeyPath"))
-        //     );
-        //     sshClient.Connect();
-        //     return sshClient;
-        // });
-
-        // Git Service
-        // builder.Services.Configure<GitServiceOptions>(
-        //     builder.Configuration.GetSection(GitServiceOptions.SectionName));
-        // builder.Services.AddSingleton<IGitService, GitService>();
-
-
 
         // Quartz
         builder.Services.AddQuartz(quartz =>
