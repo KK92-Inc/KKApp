@@ -12,15 +12,8 @@ using App.Backend.Models;
 
 namespace App.Backend.Core.Services.Interface;
 
-public interface IGoalService : IDomainService<Goal>
+public interface IGoalService : IDomainService<Goal>, ISlugQueryable<Goal>
 {
-    /// <summary>
-    /// Find a goal by its slug.
-    /// </summary>
-    /// <param name="slug">The goal slug.</param>
-    /// <returns>The goal.</returns>
-    public Task<Goal?> FindBySlugAsync(string slug, CancellationToken token = default);
-
     /// <summary>
     /// Get projects associated with a goal.
     /// </summary>

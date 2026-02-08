@@ -80,6 +80,7 @@ public class WorkspaceService(DatabaseContext ctx, IGitService git) : BaseServic
 
         goal.WorkspaceId = workspace.Id;
         var output = await _context.Goals.AddAsync(goal);
+        await _context.SaveChangesAsync(token);
         return output.Entity;
     }
 
@@ -89,6 +90,7 @@ public class WorkspaceService(DatabaseContext ctx, IGitService git) : BaseServic
 
         cursus.WorkspaceId = workspace.Id;
         var output = await _context.Cursi.AddAsync(cursus);
+        await _context.SaveChangesAsync(token);
         return output.Entity;
     }
 }

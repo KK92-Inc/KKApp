@@ -27,6 +27,7 @@ namespace App.Backend.API.Controllers;
 public class GoalController(
     ILogger<GoalController> log,
     IGoalService goalService,
+    IProjectService projectService,
     IWorkspaceService workspace,
     ISubscriptionService subscriptions
 ) : Controller
@@ -116,19 +117,30 @@ public class GoalController(
         return Ok(projects.Select(p => new ProjectDO(p)));
     }
 
-    [HttpGet("{id:guid}/projects")]
-    [ProtectedResource("goals", "goals:write")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [HttpPost("{id:guid}/projects")]
+    // [ProtectedResource("goals", "goals:write")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Add projects to a goal")]
     [EndpointDescription("Add projects to be part of a goal")]
-    public async Task<ActionResult> AddGoalProjects(Guid id)
+    public async Task<ActionResult> AddGoalProjects(
+        Guid id,
+        [FromBody] IEnumerable<Guid> projectIds,
+        CancellationToken token
+    )
     {
+        // TODO: Configurable somehow, maybe we want a goal to have 20 ?
+        const int MAX_PROJECT = 5;
+        if (projectIds.Count() > MAX_PROJECT)
+            return UnprocessableEntity($"Too many projects, max: {MAX_PROJECT}");
+        if (!await projectService.ExistsAsync(projectIds, token))
+            return UnprocessableEntity("One or more projects not found");
 
-        var projects = await goalService.GetProjectsAsync(id);
-        return Ok(projects.Select(p => new ProjectDO(p)));
+        var goal = await goalService.SetProjectsAsync(id, projectIds, token);
+        if (goal is null)
+            return NotFound();
+        return NoContent();
     }
 
     // [HttpPost("{id:guid}/subscribe")]

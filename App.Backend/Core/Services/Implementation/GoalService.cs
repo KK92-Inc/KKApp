@@ -11,24 +11,15 @@ using App.Backend.Models;
 using Microsoft.EntityFrameworkCore;
 using App.Backend.Core.Query;
 using App.Backend.Domain.Entities.Users;
+using Microsoft.Extensions.Logging;
 
 // ============================================================================
 
 namespace App.Backend.Core.Services.Implementation;
 
-public class GoalService(DatabaseContext ctx, IProjectService projectService) : BaseService<Goal>(ctx), IGoalService
+public class GoalService(DatabaseContext ctx, ILogger<GoalService> log) : BaseService<Goal>(ctx), IGoalService
 {
     private readonly DatabaseContext _context = ctx;
-
-    public Task<Goal?> FindBySlugAsync(string slug)
-    {
-        return _dbSet.FirstOrDefaultAsync(g => g.Slug == slug);
-    }
-
-    public Task<Goal?> FindBySlugAsync(string slug, CancellationToken token = default)
-    {
-        throw new NotImplementedException();
-    }
 
     public async Task<IEnumerable<Project>> GetGoalProjectsAsync(Guid goalId)
     {
@@ -39,9 +30,9 @@ public class GoalService(DatabaseContext ctx, IProjectService projectService) : 
             .ToListAsync();
     }
 
-    public Task<IEnumerable<Project>> GetProjectsAsync(Guid goalId, CancellationToken token = default)
+    public async Task<Goal?> FindBySlugAsync(string slug, CancellationToken token = default)
     {
-        throw new NotImplementedException();
+        return await _context.Goals.FirstOrDefaultAsync(g => g.Slug == slug);
     }
 
     public Task<PaginatedList<UserGoal>> GetUsersAsync(Guid goalId, ISorting sorting, IPagination pagination, CancellationToken token = default)
@@ -53,17 +44,48 @@ public class GoalService(DatabaseContext ctx, IProjectService projectService) : 
     public async Task<Goal> SetProjectsAsync(Guid goalId, IEnumerable<Guid> projects, CancellationToken token = default)
     {
         var goal = await FindByIdAsync(goalId, token) ?? throw new ServiceException(404, "Goal not found");
+        var strategy = _context.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async (ct) =>
+        {
+            await using var transaction = await _context.Database.BeginTransactionAsync(ct);
+            try
+            {
+                var existing = await _context.GoalProject
+                    .Where(gp => gp.GoalId == goalId)
+                    .ToListAsync(ct);
 
-        var valid = await projectService.ExistsAsync(projects, token);
-        if (!valid) throw new ServiceException(404, "One or more projects not found");
+                _context.GoalProject.RemoveRange(existing);
 
-        // NOTE(W2): Goals may have up to 5 Projects
-        var existing = await _context.GoalProject.Where(gp => gp.GoalId == goalId).ToListAsync(token);
-        _context.GoalProject.RemoveRange(existing);
+                var updated = projects.Select(pid => new GoalProject
+                {
+                    GoalId = goalId,
+                    ProjectId = pid
+                });
 
-        var relations = projects.Select(pid => new GoalProject { GoalId = goalId, ProjectId = pid });
-        await _context.GoalProject.AddRangeAsync(relations, token);
-        await _context.SaveChangesAsync(token);
-        return goal;
+                await _context.GoalProject.AddRangeAsync(updated, ct);
+                await _context.SaveChangesAsync(ct);
+                await transaction.CommitAsync(ct);
+                return goal;
+            }
+            catch (Exception e)
+            {
+                await transaction.RollbackAsync(ct);
+                log.LogCritical(e, "Failed to set projects for goal {GoalId}", goalId);
+                throw new ServiceException(500, $"Failed to set projects: {e.Message}");
+            }
+        }, token);
+    }
+
+    /// <inheritdoc />
+    public async Task<IEnumerable<Project>> GetProjectsAsync(Guid goalId, CancellationToken token = default)
+    {
+        return await _context.GoalProject
+            .AsNoTracking()
+            .Include(gp => gp.Project)
+            .Include(gp => gp.Project.Workspace)
+            .Include(gp => gp.Project.Workspace.Owner)
+            .Where(gp => gp.GoalId == goalId)
+            .Select(r => r.Project)
+            .ToListAsync(token);
     }
 }

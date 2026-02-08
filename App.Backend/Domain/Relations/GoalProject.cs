@@ -19,10 +19,10 @@ namespace App.Backend.Domain.Relations;
 [PrimaryKey(nameof(ProjectId), nameof(GoalId))]
 public class GoalProject : BaseTimestampEntity
 {
-    [Column(Order = 0)]
+    [Column("goal_id", Order = 0)]
     public Guid GoalId { get; set; }
 
-    [Column(Order = 1)]
+    [Column("project_id", Order = 1)]
     public Guid ProjectId { get; set; }
 
     public virtual Project Project { get; set; }

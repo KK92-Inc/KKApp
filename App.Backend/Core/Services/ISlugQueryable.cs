@@ -16,5 +16,5 @@ public interface ISlugQueryable<T> where T : BaseEntity
     /// </summary>
     /// <param name="id">The ID.</param>
     /// <returns>The entity found by that ID or null if not found.</returns>
-    public Task<T?> FindBySlugAsync(Guid id, CancellationToken token = default);
+    public Task<T?> FindBySlugAsync(string slug, CancellationToken token = default);
 }
