@@ -4,6 +4,7 @@
 // ============================================================================
 
 using System.ComponentModel.DataAnnotations;
+using App.Backend.Domain.Enums;
 
 namespace App.Backend.Models.Requests.Cursus;
 
@@ -45,7 +46,8 @@ public record PostCursusRequestDTO
     public bool Public { get; init; } = false;
 
     /// <summary>
-    /// The track definition as JSON.
+    /// The cursus variant (Fixed track or Dynamic free-roam).
+    /// Defaults to Fixed.
     /// </summary>
-    public string? Track { get; init; }
+    public CursusVariant Variant { get; init; } = CursusVariant.Fixed;
 }

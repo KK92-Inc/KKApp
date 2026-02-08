@@ -38,9 +38,17 @@ public class Cursus : BaseEntity
     public bool Deprecated { get; set; }
 
     /// <summary>
-    /// The track / path of the Cursus stored in the .graph format.
+    /// Whether this cursus follows a fixed track or allows dynamic/free-roam.
+    /// </summary>
+    [Column("variant")]
+    public Enums.CursusVariant Variant { get; set; } = Enums.CursusVariant.Fixed;
+
+    /// <summary>
+    /// Legacy: The track / path of the Cursus stored in the .graph format.
+    /// Deprecated in favor of the relational CursusGoal table.
     /// </summary>
     [Column("track", TypeName = "jsonb")]
+    [Obsolete("Use the CursusGoal relation table instead. This column is kept for migration compatibility.")]
     public string? Track { get; set; }
 
     [Column("workspace_id")]

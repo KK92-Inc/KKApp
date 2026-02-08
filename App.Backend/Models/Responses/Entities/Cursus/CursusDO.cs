@@ -5,6 +5,7 @@
 
 using System.ComponentModel.DataAnnotations;
 using App.Backend.Domain.Entities;
+using App.Backend.Domain.Enums;
 
 // ============================================================================
 
@@ -25,12 +26,10 @@ public class CursusDO(Domain.Entities.Cursus cursus) : BaseEntityDO<Domain.Entit
     public string Slug { get; set; } = cursus.Slug;
 
     [Required]
-    public WorkspaceDO Workspace { get; set; } = cursus.Workspace;
+    public CursusVariant Variant { get; set; } = cursus.Variant;
 
-    /// <summary>
-    /// The track/path of the cursus in .graph format (optional for list views).
-    /// </summary>
-    // public string? Track { get; set; } = cursus.Track?.ToString();
+    [Required]
+    public WorkspaceDO Workspace { get; set; } = cursus.Workspace;
 
     public static implicit operator CursusDO?(Domain.Entities.Cursus? cursus) =>
         cursus is null ? null : new(cursus);

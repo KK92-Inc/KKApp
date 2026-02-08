@@ -84,7 +84,7 @@ public class WorkspaceController(
             WorkspaceId = workspace,
             Description = dto.Description ?? string.Empty,
             Slug = dto.Name.ToSlug(),
-            Track = dto.Track,
+            Variant = dto.Variant,
             Active = dto.Active,
             Public = dto.Public
         }, token);
