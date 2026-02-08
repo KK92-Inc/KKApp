@@ -24,14 +24,14 @@ public record CursusTrackNodeDTO
     /// The parent goal ID within this cursus track.
     /// Null for root-level goals.
     /// </summary>
-    public Guid? ParentGoalId { get; init; }
+    public Guid? ParentId { get; init; }
 
     /// <summary>
     /// Optional choice group identifier. Siblings sharing the same non-null
     /// value are alternatives — the user must complete at least one from
     /// the group. Null means the goal is required.
     /// </summary>
-    public Guid? ChoiceGroup { get; init; }
+    public Guid? Group { get; init; }
 }
 
 /// <summary>

@@ -21,26 +21,6 @@ public class CursusService(DatabaseContext ctx, ILogger<CursusService> log) : Ba
 {
     private readonly DatabaseContext context = ctx;
 
-    public async Task<Cursus?> FindBySlugAsync(string slug)
-    {
-        return await context.Cursi.FirstOrDefaultAsync(g => g.Slug == slug);
-    }
-
-    public Task<IEnumerable<Project>> GetCursusGoals(Guid goalId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<IEnumerable<Project>> GetCursusProjects(Guid cursusId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<IEnumerable<User>> GetCursusUsers(Guid cursusId)
-    {
-        throw new NotImplementedException();
-    }
-
     /// <inheritdoc />
     public async Task<IEnumerable<CursusGoal>> SetTrackAsync(
         Guid cursusId,
@@ -90,7 +70,7 @@ public class CursusService(DatabaseContext ctx, ILogger<CursusService> log) : Ba
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyDictionary<Guid, EntityObjectState>> GetUserTrackStatesAsync(
+    public async Task<IReadOnlyDictionary<Guid, EntityObjectState>> GetTrackForUserAsync(
         Guid cursusId,
         Guid userId,
         CancellationToken token = default)
@@ -107,5 +87,10 @@ public class CursusService(DatabaseContext ctx, ILogger<CursusService> log) : Ba
             .ToDictionaryAsync(ug => ug.GoalId, ug => ug.State, token);
 
         return states;
+    }
+
+    public async Task<Cursus?> FindBySlugAsync(string slug, CancellationToken token = default)
+    {
+        return await context.Cursi.FirstOrDefaultAsync(g => g.Slug == slug);
     }
 }

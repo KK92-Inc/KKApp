@@ -96,6 +96,7 @@ services:
     environment:
       KEYCLOAK_ADMIN: "admin"
       KEYCLOAK_ADMIN_PASSWORD: "admin"
+      KC_HTTP_ENABLED: "true"
       KC_PROXY_HEADERS: "xforwarded"
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME: "${KC_ORIGIN}"
@@ -195,9 +196,9 @@ services:
     networks:
       - "aspire"
   scalar:
-    image: "scalarapi/aspire-api-reference:0.7.4"
+    image: "scalarapi/aspire-api-reference:0.8.45"
     environment:
-      API_REFERENCE_CONFIG: "W3sicHJveHlVcmwiOiIvc2NhbGFyLXByb3h5Iiwic2VydmVycyI6W3sidXJsIjoiaHR0cDovL2JhY2tlbmQiLCJkZXNjcmlwdGlvbiI6ImJhY2tlbmQifV0sImRlZmF1bHRIdHRwQ2xpZW50Ijp7InRhcmdldEtleSI6IkNTaGFycCIsImNsaWVudEtleSI6Ikh0dHBDbGllbnQifSwiYXV0aGVudGljYXRpb24iOnsicHJlZmVycmVkU2VjdXJpdHlTY2hlbWUiOlsiT0F1dGgyIl0sInNlY3VyaXR5U2NoZW1lcyI6eyJPQXV0aDIiOnsiZmxvd3MiOnsiaW1wbGljaXQiOnsieC1zY2FsYXItY2xpZW50LWlkIjoiaW50cmEifX19fX0sInRoZW1lIjoiS2VwbGVyIiwiZmF2aWNvbiI6ImZhdmljb24uc3ZnIiwiX2ludGVncmF0aW9uIjoiZG90bmV0Iiwic291cmNlcyI6W3sidGl0bGUiOiJiYWNrZW5kIHwgdjEiLCJ1cmwiOiJodHRwOi8vYmFja2VuZC9vcGVuYXBpL3YxLmpzb24ifV19XQ=="
+      API_REFERENCE_CONFIG: "W3sicHJveHlVcmwiOiIvc2NhbGFyLXByb3h5Iiwic2VydmVycyI6W3sidXJsIjoiaHR0cDovL2JhY2tlbmQiLCJkZXNjcmlwdGlvbiI6ImJhY2tlbmQifV0sImRlZmF1bHRIdHRwQ2xpZW50Ijp7InRhcmdldEtleSI6ImMiLCJjbGllbnRLZXkiOiJodHRwY2xpZW50In0sImF1dGhlbnRpY2F0aW9uIjp7InByZWZlcnJlZFNlY3VyaXR5U2NoZW1lIjpbIk9BdXRoMiJdLCJzZWN1cml0eVNjaGVtZXMiOnsiT0F1dGgyIjp7ImZsb3dzIjp7ImltcGxpY2l0Ijp7Ingtc2NhbGFyLWNsaWVudC1pZCI6ImludHJhIn19fX19LCJ0aGVtZSI6InNhdHVybiIsImZhdmljb24iOiJmYXZpY29uLnN2ZyIsIl9pbnRlZ3JhdGlvbiI6ImRvdG5ldCIsInNvdXJjZXMiOlt7InRpdGxlIjoiYmFja2VuZCB8IHYxIiwidXJsIjoiaHR0cDovL2JhY2tlbmQvb3BlbmFwaS92MS5qc29uIn1dfV0="
       CDN_URL: "scalar.js"
       ALLOW_SELF_SIGNED_CERTIFICATES: "False"
       DEFAULT_PROXY: "True"
