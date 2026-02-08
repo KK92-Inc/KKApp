@@ -87,6 +87,7 @@ var ssh = builder.AddDockerfile("git-ssh", "./App.Repository", "Dockerfile.ssh")
 
 var keycloak = builder.AddKeycloakContainer("keycloak")
     .WithDataVolume()
+    .WithEnvironment("KC_HTTP_ENABLED", "true")
     .WithImport("./Configurations/student-realm.json")
     .WithImport("./Configurations/admin-realm.json")
     .WithExternalHttpEndpoints();
@@ -98,11 +99,6 @@ if (isPublish)
         .WithEnvironment("KC_PROXY_HEADERS", "xforwarded")
         .WithEnvironment("KC_HOSTNAME_STRICT", "false")
         .WithEnvironment("KC_HOSTNAME", kcOrigin!);
-}
-else
-{
-    // Local dev: enable plain HTTP
-    keycloak.WithEnvironment("KC_HTTP_ENABLED", "true");
 }
 
 var realm = keycloak.AddRealm("student");
