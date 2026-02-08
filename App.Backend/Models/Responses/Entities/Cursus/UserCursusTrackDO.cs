@@ -30,6 +30,12 @@ public class UserCursusTrackDO
     public CursusVariant Variant { get; set; }
 
     /// <summary>
+    /// How users progress through this track.
+    /// </summary>
+    [Required]
+    public CompletionMode CompletionMode { get; set; }
+
+    /// <summary>
     /// The user ID whose state is reflected.
     /// </summary>
     [Required]
@@ -53,6 +59,7 @@ public class UserCursusTrackDO
         {
             CursusId = cursus.Id,
             Variant = cursus.Variant,
+            CompletionMode = cursus.CompletionMode,
             UserId = userId,
             Nodes = UserCursusTrackNodeDO.BuildTree(relations, userGoalStates)
         };

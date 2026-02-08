@@ -30,6 +30,12 @@ public class CursusTrackDO
     public CursusVariant Variant { get; set; }
 
     /// <summary>
+    /// How users progress through this track.
+    /// </summary>
+    [Required]
+    public CompletionMode CompletionMode { get; set; }
+
+    /// <summary>
     /// The hierarchical tree of goal nodes.
     /// Only populated for Fixed cursus types.
     /// </summary>
@@ -44,6 +50,7 @@ public class CursusTrackDO
         {
             CursusId = cursus.Id,
             Variant = cursus.Variant,
+            CompletionMode = cursus.CompletionMode,
             Nodes = CursusTrackNodeDO.BuildTree(relations)
         };
     }

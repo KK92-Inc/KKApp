@@ -25,17 +25,17 @@ public class UserCursusTrackNodeDO
     public required GoalLightDO Goal { get; set; }
 
     /// <summary>
-    /// Position/order among siblings at the same level.
-    /// </summary>
-    [Required]
-    public int Position { get; set; }
-
-    /// <summary>
     /// The user's computed state for this goal.
     /// Inactive = not started, Active = in progress, Completed = done, etc.
     /// </summary>
     [Required]
     public EntityObjectState State { get; set; } = EntityObjectState.Inactive;
+
+    /// <summary>
+    /// If non-null, this goal is part of a choice group — siblings sharing
+    /// the same value are alternatives the user picks from.
+    /// </summary>
+    public Guid? ChoiceGroup { get; set; }
 
     /// <summary>
     /// Child nodes in the hierarchy.
@@ -53,13 +53,12 @@ public class UserCursusTrackNodeDO
         IReadOnlyDictionary<Guid, EntityObjectState> userGoalStates)
     {
         var lookup = nodes
-            .OrderBy(n => n.Position)
             .Select(n => new
             {
                 Node = new UserCursusTrackNodeDO
                 {
                     Goal = new GoalLightDO(n.Goal),
-                    Position = n.Position,
+                    ChoiceGroup = n.ChoiceGroup,
                     State = userGoalStates.TryGetValue(n.GoalId, out var state)
                         ? state
                         : EntityObjectState.Inactive

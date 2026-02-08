@@ -18,7 +18,6 @@ namespace App.Backend.Domain.Relations;
 /// Uses an adjacency list pattern to form a tree/DAG:
 /// - Root nodes have <see cref="ParentGoalId"/> set to null.
 /// - Child nodes reference another goal in the same cursus via <see cref="ParentGoalId"/>.
-/// - <see cref="Position"/> determines ordering among siblings at the same level.
 /// </summary>
 [Table("rel_cursus_goal")]
 [PrimaryKey(nameof(CursusId), nameof(GoalId))]
@@ -32,18 +31,19 @@ public class CursusGoal : BaseTimestampEntity
     public Guid GoalId { get; set; }
 
     /// <summary>
-    /// The position/order of this goal among its siblings.
-    /// Goals with the same parent are ordered by this value.
-    /// </summary>
-    [Column("position")]
-    public int Position { get; set; }
-
-    /// <summary>
     /// References another GoalId within the same cursus to form the hierarchy.
     /// Null for root-level goals.
     /// </summary>
     [Column("parent_goal_id")]
     public Guid? ParentGoalId { get; set; }
+
+    /// <summary>
+    /// Groups sibling goals into a choice set. Siblings sharing the same
+    /// non-null value are alternatives — the user must complete at least one.
+    /// Null means the goal is required (not part of any choice).
+    /// </summary>
+    [Column("choice_group")]
+    public Guid? ChoiceGroup { get; set; }
 
     [ForeignKey(nameof(CursusId))]
     public virtual Cursus Cursus { get; set; }

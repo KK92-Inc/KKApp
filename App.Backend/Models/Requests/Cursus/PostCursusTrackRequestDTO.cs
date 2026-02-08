@@ -21,15 +21,17 @@ public record CursusTrackNodeDTO
     public required Guid GoalId { get; init; }
 
     /// <summary>
-    /// Position/order among siblings with the same parent.
-    /// </summary>
-    public int Position { get; init; } = 0;
-
-    /// <summary>
     /// The parent goal ID within this cursus track.
     /// Null for root-level goals.
     /// </summary>
     public Guid? ParentGoalId { get; init; }
+
+    /// <summary>
+    /// Optional choice group identifier. Siblings sharing the same non-null
+    /// value are alternatives — the user must complete at least one from
+    /// the group. Null means the goal is required.
+    /// </summary>
+    public Guid? ChoiceGroup { get; init; }
 }
 
 /// <summary>

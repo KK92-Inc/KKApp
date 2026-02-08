@@ -50,4 +50,10 @@ public record PostCursusRequestDTO
     /// Defaults to Fixed.
     /// </summary>
     public CursusVariant Variant { get; init; } = CursusVariant.Static;
+
+    /// <summary>
+    /// How users progress through the track: level-by-level (Ring) or
+    /// branch-independent (FreeStyle). Defaults to Ring.
+    /// </summary>
+    public CompletionMode CompletionMode { get; init; } = CompletionMode.Ring;
 }

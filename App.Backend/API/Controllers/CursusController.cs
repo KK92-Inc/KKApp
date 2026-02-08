@@ -171,13 +171,25 @@ public class CursusController(
         if (goalIds.Count != dto.Nodes.Count)
             return Problem(statusCode: 400, detail: "Duplicate goal IDs are not allowed in a track");
 
+        // Validate choice groups: all members of a group must share the same parent
+        var choiceGroupNodes = dto.Nodes.Where(n => n.ChoiceGroup.HasValue);
+        foreach (var group in choiceGroupNodes.GroupBy(n => n.ChoiceGroup!.Value))
+        {
+            var parents = group.Select(n => n.ParentGoalId).Distinct().ToList();
+            if (parents.Count > 1)
+                return Problem(
+                    statusCode: 400,
+                    detail: $"All goals in choice group {group.Key} must share the same parent"
+                );
+        }
+
         // Map DTO nodes to CursusGoal entities
         var nodes = dto.Nodes.Select(n => new CursusGoal
         {
             CursusId = id,
             GoalId = n.GoalId,
-            Position = n.Position,
-            ParentGoalId = n.ParentGoalId
+            ParentGoalId = n.ParentGoalId,
+            ChoiceGroup = n.ChoiceGroup
         });
 
         var created = await cursusService.SetTrackAsync(id, nodes, token);

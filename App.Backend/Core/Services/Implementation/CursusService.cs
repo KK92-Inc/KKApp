@@ -86,7 +86,6 @@ public class CursusService(DatabaseContext ctx, ILogger<CursusService> log) : Ba
         return await context.CursusGoal
             .Where(cg => cg.CursusId == cursusId)
             .Include(cg => cg.Goal)
-            .OrderBy(cg => cg.Position)
             .ToListAsync(token);
     }
 

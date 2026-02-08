@@ -3,6 +3,7 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using App.Backend.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -41,7 +42,14 @@ public class Cursus : BaseEntity
     /// Whether this cursus follows a fixed track or allows dynamic/free-roam.
     /// </summary>
     [Column("variant")]
-    public Enums.CursusVariant Variant { get; set; } = Enums.CursusVariant.Static;
+    public CursusVariant Variant { get; set; } = CursusVariant.Static;
+
+    /// <summary>
+    /// How users progress through the track: level-by-level (Ring) or
+    /// branch-independent (FreeStyle).
+    /// </summary>
+    [Column("completion")]
+    public CompletionMode CompletionMode { get; set; } = CompletionMode.Ring;
 
     /// <summary>
     /// Legacy: The track / path of the Cursus stored in the .graph format.

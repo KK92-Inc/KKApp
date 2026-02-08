@@ -13,7 +13,7 @@ namespace App.Backend.Models.Responses.Entities.Cursus;
 
 /// <summary>
 /// A single node in the cursus track tree.
-/// Contains the goal information plus its position and children.
+/// Contains the goal information and its children.
 /// </summary>
 public class CursusTrackNodeDO
 {
@@ -24,10 +24,10 @@ public class CursusTrackNodeDO
     public required GoalLightDO Goal { get; set; }
 
     /// <summary>
-    /// Position/order among siblings at the same level.
+    /// If non-null, this goal is part of a choice group — siblings sharing
+    /// the same value are alternatives the user picks from.
     /// </summary>
-    [Required]
-    public int Position { get; set; }
+    public Guid? ChoiceGroup { get; set; }
 
     /// <summary>
     /// Child nodes in the hierarchy.
@@ -40,13 +40,12 @@ public class CursusTrackNodeDO
     public static IList<CursusTrackNodeDO> BuildTree(IEnumerable<CursusGoal> nodes)
     {
         var lookup = nodes
-            .OrderBy(n => n.Position)
             .Select(n => new
             {
                 Node = new CursusTrackNodeDO
                 {
                     Goal = new GoalLightDO(n.Goal),
-                    Position = n.Position
+                    ChoiceGroup = n.ChoiceGroup
                 },
                 n.GoalId,
                 n.ParentGoalId
