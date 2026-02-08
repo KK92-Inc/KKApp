@@ -41,7 +41,7 @@ public class Cursus : BaseEntity
     /// Whether this cursus follows a fixed track or allows dynamic/free-roam.
     /// </summary>
     [Column("variant")]
-    public Enums.CursusVariant Variant { get; set; } = Enums.CursusVariant.Fixed;
+    public Enums.CursusVariant Variant { get; set; } = Enums.CursusVariant.Static;
 
     /// <summary>
     /// Legacy: The track / path of the Cursus stored in the .graph format.

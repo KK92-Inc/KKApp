@@ -55,7 +55,7 @@ public class CursusService(DatabaseContext ctx, ILogger<CursusService> log) : Ba
             var cursus = await FindByIdAsync(cursusId, ct)
                 ?? throw new ServiceException(404, "Cursus not found");
 
-            if (cursus.Variant != CursusVariant.Fixed)
+            if (cursus.Variant != CursusVariant.Static)
                 throw new ServiceException(400, "Track can only be set on Fixed cursus types");
 
             // Remove all existing track nodes
@@ -88,5 +88,25 @@ public class CursusService(DatabaseContext ctx, ILogger<CursusService> log) : Ba
             .Include(cg => cg.Goal)
             .OrderBy(cg => cg.Position)
             .ToListAsync(token);
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyDictionary<Guid, EntityObjectState>> GetUserTrackStatesAsync(
+        Guid cursusId,
+        Guid userId,
+        CancellationToken token = default)
+    {
+        // Get all goal IDs in this cursus track
+        var trackGoalIds = await context.CursusGoal
+            .Where(cg => cg.CursusId == cursusId)
+            .Select(cg => cg.GoalId)
+            .ToListAsync(token);
+
+        // Join with user goals to get the state for each
+        var states = await context.UserGoals
+            .Where(ug => ug.UserId == userId && trackGoalIds.Contains(ug.GoalId))
+            .ToDictionaryAsync(ug => ug.GoalId, ug => ug.State, token);
+
+        return states;
     }
 }

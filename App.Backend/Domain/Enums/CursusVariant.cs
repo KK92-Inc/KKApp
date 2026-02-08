@@ -28,6 +28,19 @@ public enum CursusVariant
     /// <summary>
     /// A fixed traditional path for a cursus with set in goals that need to be achieved.
     /// </summary>
-    [JsonPropertyName(nameof(Fixed))]
-    Fixed,
+    [JsonPropertyName(nameof(Static))]
+    Static,
+
+    /// <summary>
+    /// A 'hybrid' approach of <see cref="Dynamic"/> and <see cref="Static"/>.
+    /// This cursus variant allows for setting a static starting point and leaves
+    /// the rest to be dynamic.
+    ///
+    /// E.g: The core cursus is made up of 3 goals. Afterwards the user can branch out in
+    /// any way they see fit.
+    ///
+    /// TODO: Implement this at a later stage
+    /// </summary>
+    [JsonPropertyName(nameof(Partial))]
+    Partial,
 }

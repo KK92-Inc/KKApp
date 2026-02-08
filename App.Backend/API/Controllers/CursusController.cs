@@ -107,6 +107,26 @@ public class CursusController(
         return Ok(CursusTrackDO.FromRelations(cursus, relations));
     }
 
+    [HttpGet("{id:guid}/track/me")]
+    // [ProtectedResource("cursus", "cursus:read")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Get user's cursus track state")]
+    [EndpointDescription("Retrieve the cursus track with the authenticated user's progress state computed per goal node. Goals the user hasn't started default to Inactive.")]
+    public async Task<ActionResult<UserCursusTrackDO>> GetMyTrack(Guid id, CancellationToken token)
+    {
+        var cursus = await cursusService.FindByIdAsync(id, token);
+        if (cursus is null)
+            return NotFound();
+
+        var userId = User.GetSID();
+        var relations = await cursusService.GetTrackAsync(id, token);
+        var userStates = await cursusService.GetUserTrackStatesAsync(id, userId, token);
+
+        return Ok(UserCursusTrackDO.FromRelations(cursus, userId, relations, userStates));
+    }
+
     [HttpPost("{id:guid}/track")]
     // [ProtectedResource("cursus", "cursus:write")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -125,7 +145,7 @@ public class CursusController(
         if (cursus is null)
             return NotFound();
 
-        if (cursus.Variant != CursusVariant.Fixed)
+        if (cursus.Variant != CursusVariant.Static)
             return Problem(
                 statusCode: 400,
                 detail: "Track can only be set on Fixed cursus types. Dynamic cursus do not have predefined tracks."

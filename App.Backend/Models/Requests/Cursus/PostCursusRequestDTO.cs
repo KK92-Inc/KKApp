@@ -49,5 +49,5 @@ public record PostCursusRequestDTO
     /// The cursus variant (Fixed track or Dynamic free-roam).
     /// Defaults to Fixed.
     /// </summary>
-    public CursusVariant Variant { get; init; } = CursusVariant.Fixed;
+    public CursusVariant Variant { get; init; } = CursusVariant.Static;
 }
