@@ -52,19 +52,19 @@ public class AccountController(
     [EndpointSummary("Get current user's notifications")]
     [EndpointDescription("Retrieve a paginated list of notifications for the authenticated user.")]
     public async Task<ActionResult<IEnumerable<NotificationDO>>> GetNotifications(
-        [FromQuery(Name = "filter[read]")] bool read,
-        [FromQuery(Name = "filter[variant]")] NotificationMeta inclusive,
-        [FromQuery(Name = "filter[not[variant]]")] NotificationMeta exclusive,
-        [FromQuery] Pagination pagination,
+        [FromQuery(Name = "filter[read]")] bool? read,
+        [FromQuery(Name = "filter[variant]")] NotificationMeta? inclusive,
+        [FromQuery(Name = "filter[not[variant]]")] NotificationMeta? exclusive,
         [FromQuery] Sorting sorting,
+        [FromQuery] Pagination pagination,
         CancellationToken cancellationToken
     )
     {
         var page = await notifications.GetAllAsync(sorting, pagination, cancellationToken,
             n => n.NotifiableId == User.GetSID(),
-            n => read ? n.ReadAt != null : n.ReadAt == null
-            // n => (n.Descriptor & inclusive) != 0,
-            // n => (n.Descriptor & exclusive) == 0
+            read is null ? null : n => n.ReadAt.HasValue,
+            inclusive is null ? null : n => (n.Descriptor & inclusive) != 0,
+            exclusive is null ? null : n => (n.Descriptor & exclusive) == 0
         );
 
         page.AppendHeaders(Request.Headers);

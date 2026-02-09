@@ -63,4 +63,13 @@ public enum UserProjectTransactionVariant
     /// </summary>
     [JsonPropertyName(nameof(StateChangedToAwaiting))]
     StateChangedToAwaiting,
+
+    [JsonPropertyName(nameof(MemberInvited))]
+    MemberInvited,
+
+    [JsonPropertyName(nameof(MemberAccepted))]
+    MemberAccepted,
+
+    [JsonPropertyName(nameof(MemberDeclined))]
+    MemberDeclined,
 }
