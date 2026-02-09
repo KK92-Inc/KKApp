@@ -19,6 +19,15 @@ public class UserProjectService(DatabaseContext ctx) : BaseService<UserProject>(
 {
     private readonly DatabaseContext context = ctx;
 
+    public async Task<UserProject?> FindByUserAndProjectAsync(Guid userId, Guid projectId, CancellationToken token = default)
+    {
+        return await Query(false)
+            .Include(up => up.Members)
+            .FirstOrDefaultAsync(
+                up => up.ProjectId == projectId && up.Members.Any(m => m.UserId == userId), token
+            );
+    }
+
     // public async Task<UserProjectTransaction?> RecordAsync(Guid upId, Guid? userId, UserProjectTransactionVariant type)
     // {
     //     var transaction = await ctx.UserProjectTransactions.AddAsync(new UserProjectTransaction()

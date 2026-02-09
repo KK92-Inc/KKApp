@@ -108,7 +108,7 @@ public class CursusController(
     }
 
     [HttpGet("{id:guid}/track/user/{userId:guid}")]
-    // [ProtectedResource("cursus", "cursus:read")]
+    [ProtectedResource("cursus", "cursus:read")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]

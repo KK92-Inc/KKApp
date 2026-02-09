@@ -34,10 +34,7 @@ public interface ICursusService : IDomainService<Cursus>, ISlugQueryable<Cursus>
     public Task<IEnumerable<CursusGoal>> GetTrackAsync(Guid cursusId, CancellationToken token = default);
 
     /// <summary>
-    /// Get the user's goal states for all goals in a cursus track.
-    /// Returns a dictionary mapping GoalId to the user's EntityObjectState.
-    /// Goals the user has no record for will not appear in the dictionary
-    /// (callers should default to Inactive).
+    /// Compute the cursus track for a user
     /// </summary>
     /// <param name="cursusId">The cursus ID.</param>
     /// <param name="userId">The user ID.</param>
