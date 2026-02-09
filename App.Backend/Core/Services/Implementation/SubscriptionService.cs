@@ -5,16 +5,23 @@
 
 using App.Backend.Database;
 using App.Backend.Core.Services.Interface;
+using App.Backend.Core.Services.Options;
 using App.Backend.Domain.Entities.Users;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using App.Backend.Domain.Enums;
 
 // ============================================================================
 
 namespace App.Backend.Core.Services.Implementation;
 
-public class SubscriptionService(DatabaseContext ctx) : ISubscriptionService
+public class SubscriptionService(
+    DatabaseContext ctx,
+    IOptions<SubscriptionOptions> options
+) : ISubscriptionService
 {
+    private bool IsRestricted => options.Value.Mode == SubscriptionMode.Restricted;
+
     public async Task<UserCursus> SubscribeToCursusAsync(Guid userId, Guid cursusId, CancellationToken token)
     {
         // 1. A user can subscribe and unsubscribe to cursi
@@ -77,6 +84,38 @@ public class SubscriptionService(DatabaseContext ctx) : ISubscriptionService
         // 5. If they are completed before subscribing, the goal is marked as completed immediately
         // 6. Unsubscribing from a goal does not remove progress on its projects
 
+        // Chain enforcement: if this goal is in a system workspace and belongs to a cursus,
+        // the user must be enrolled in at least one. User-owned workspace goals are always free.
+        if (IsRestricted)
+        {
+            var isSystemGoal = await ctx.Goals
+                .Where(g => g.Id == goalId)
+                .Select(g => g.Workspace.OwnerId == null)
+                .FirstOrDefaultAsync(token);
+
+            if (isSystemGoal)
+            {
+                var parentCursusIds = await ctx.CursusGoal
+                    .Where(cg => cg.GoalId == goalId)
+                    .Select(cg => cg.CursusId)
+                    .ToListAsync(token);
+
+                if (parentCursusIds.Count > 0)
+                {
+                    var enrolledInAny = await ctx.UserCursi.AnyAsync(
+                        uc => uc.UserId == userId
+                            && parentCursusIds.Contains(uc.CursusId)
+                            && uc.State == EntityObjectState.Active,
+                        token
+                    );
+
+                    if (!enrolledInAny)
+                        throw new ServiceException(422,
+                            "This goal belongs to a cursus — you must be enrolled in the cursus first");
+                }
+            }
+        }
+
         var userGoal = await ctx.UserGoals
             .Where(ug => ug.GoalId == goalId && ug.UserId == userId)
             .FirstOrDefaultAsync(token);
@@ -137,82 +176,130 @@ public class SubscriptionService(DatabaseContext ctx) : ISubscriptionService
 
     public async Task<UserProject> SubscribeToProjectAsync(Guid userId, Guid projectId, CancellationToken token)
     {
-        var up = await ctx.UserProjects
-            .FirstOrDefaultAsync(up => up.ProjectId == projectId && up.Members.Any(m => m.UserId == userId), token);
-
-        if (up is not null)
+        // Chain enforcement: if this project is in a system workspace and belongs to a goal,
+        // the user must be subscribed to at least one. User-owned workspace projects are always free.
+        if (IsRestricted)
         {
-            if (up.State == EntityObjectState.Active)
-                throw new ServiceException(409, "Already subscribed to this project");
+            var isSystemProject = await ctx.Projects
+                .Where(p => p.Id == projectId)
+                .Select(p => p.Workspace.OwnerId == null)
+                .FirstOrDefaultAsync(token);
 
-            if (up.State != EntityObjectState.Inactive)
-                throw new ServiceException(400, "Cannot subscribe to this project in its current state");
+            if (isSystemProject)
+            {
+                var parentGoalIds = await ctx.GoalProject
+                    .Where(gp => gp.ProjectId == projectId)
+                    .Select(gp => gp.GoalId)
+                    .ToListAsync(token);
 
-            up.State = EntityObjectState.Active;
-            ctx.UserProjects.Update(up);
-            await ctx.UserProjectTransactions.AddAsync(new ()
+                if (parentGoalIds.Count > 0)
+                {
+                    var subscribedToAny = await ctx.UserGoals.AnyAsync(
+                        ug => ug.UserId == userId
+                            && parentGoalIds.Contains(ug.GoalId)
+                            && ug.State == EntityObjectState.Active,
+                        token
+                    );
+
+                    if (!subscribedToAny)
+                        throw new ServiceException(422,
+                            "This project belongs to a goal — you must be subscribed to the goal first");
+                }
+            }
+        }
+
+        var strategy = ctx.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async (ct) =>
+        {
+            await using var transaction = await ctx.Database.BeginTransactionAsync(ct);
+
+            var up = await ctx.UserProjects
+                .FirstOrDefaultAsync(up => up.ProjectId == projectId && up.Members.Any(m => m.UserId == userId), ct);
+
+            if (up is not null)
+            {
+                if (up.State == EntityObjectState.Active)
+                    throw new ServiceException(409, "Already subscribed to this project");
+
+                if (up.State != EntityObjectState.Inactive)
+                    throw new ServiceException(400, "Cannot subscribe to this project in its current state");
+
+                up.State = EntityObjectState.Active;
+                ctx.UserProjects.Update(up);
+                await ctx.UserProjectTransactions.AddAsync(new()
+                {
+                    UserId = userId,
+                    UserProjectId = up.Id,
+                    Type = UserProjectTransactionVariant.StateChangedToActive,
+                }, ct);
+
+                await ctx.SaveChangesAsync(ct);
+                await transaction.CommitAsync(ct);
+                return up;
+            }
+
+            up = new UserProject
+            {
+                ProjectId = projectId,
+                State = EntityObjectState.Active,
+                Members = [new() { UserId = userId, Role = UserProjectRole.Leader }]
+            };
+
+            await ctx.UserProjects.AddAsync(up, ct);
+            await ctx.UserProjectTransactions.AddAsync(new()
             {
                 UserId = userId,
                 UserProjectId = up.Id,
-                Type = UserProjectTransactionVariant.StateChangedToActive,
-            }, token);
+                Type = UserProjectTransactionVariant.Started,
+            }, ct);
 
-            await ctx.SaveChangesAsync(token);
+            await ctx.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
             return up;
-        }
-
-        up = new UserProject
-        {
-            ProjectId = projectId,
-            State = EntityObjectState.Active,
-            Members = [new() { UserId = userId, Role = UserProjectRole.Leader }]
-        };
-
-        await ctx.UserProjects.AddAsync(up, token);
-        await ctx.UserProjectTransactions.AddAsync(new ()
-        {
-            UserId = userId,
-            UserProjectId = up.Id,
-            Type = UserProjectTransactionVariant.Started,
         }, token);
-
-        await ctx.SaveChangesAsync(token);
-        return up;
     }
 
     public async Task UnsubscribeFromProjectAsync(Guid userId, Guid projectId, CancellationToken token)
     {
-        var up = await ctx.UserProjects
-            .Include(up => up.Members)
-            .Where(up => up.ProjectId == projectId && up.Members.Any(m => m.UserId == userId))
-            .FirstOrDefaultAsync(token) ?? throw new ServiceException(404, "Not subscribed to this project");
-
-        var member = up.Members.First(m => m.UserId == userId);
-
-        // Rule 1: If the user is a leader (and presumably the only one or the session owner), set to inactive.
-        if (member.Role is UserProjectRole.Leader)
+        var strategy = ctx.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async (ct) =>
         {
-            up.State = EntityObjectState.Inactive;
-            ctx.UserProjects.Update(up);
-            await ctx.UserProjectTransactions.AddAsync(new ()
+            await using var transaction = await ctx.Database.BeginTransactionAsync(ct);
+
+            var up = await ctx.UserProjects
+                .Include(up => up.Members)
+                .Where(up => up.ProjectId == projectId && up.Members.Any(m => m.UserId == userId))
+                .FirstOrDefaultAsync(ct) ?? throw new ServiceException(404, "Not subscribed to this project");
+
+            var member = up.Members.First(m => m.UserId == userId);
+
+            if (member.Role is UserProjectRole.Leader)
             {
-                UserId = userId,
-                UserProjectId = up.Id,
-                Type = UserProjectTransactionVariant.StateChangedToActive,
-            }, token);
-            await ctx.SaveChangesAsync(token);
-        }
+                // Leader leaving deactivates the entire session.
+                up.State = EntityObjectState.Inactive;
+                ctx.UserProjects.Update(up);
+                await ctx.UserProjectTransactions.AddAsync(new()
+                {
+                    UserId = userId,
+                    UserProjectId = up.Id,
+                    Type = UserProjectTransactionVariant.StateChangedToInActive,
+                }, ct);
+            }
+            else
+            {
+                // Regular member just leaves the session.
+                up.Members.Remove(member);
+                ctx.UserProjects.Update(up);
+                await ctx.UserProjectTransactions.AddAsync(new()
+                {
+                    UserId = userId,
+                    UserProjectId = up.Id,
+                    Type = UserProjectTransactionVariant.MemberLeft,
+                }, ct);
+            }
 
-        // Rule 2: If the user is just a member, remove them from the session.
-        up.Members.Remove(member);
-        ctx.UserProjects.Update(up);
-        await ctx.UserProjectTransactions.AddAsync(new ()
-        {
-            UserId = userId,
-            UserProjectId = up.Id,
-            Type = UserProjectTransactionVariant.MemberLeft,
+            await ctx.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
         }, token);
-
-        await ctx.SaveChangesAsync(token);
     }
 }

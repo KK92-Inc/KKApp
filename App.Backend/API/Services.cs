@@ -33,6 +33,7 @@ using App.Backend.Core.Services.Implementation;
 using App.Backend.Core.Services.Interface;
 using App.Backend.Core.Services.Options;
 using App.Backend.Database;
+using App.Backend.Domain.Enums;
 using App.Backend.Database.Interceptors;
 
 // ============================================================================
@@ -62,6 +63,9 @@ public static class Services
         builder.Services.AddHttpClient<GitService>();
         builder.Services.Configure<GitServiceOptions>(
             builder.Configuration.GetSection(GitServiceOptions.SectionName)
+        );
+        builder.Services.Configure<SubscriptionOptions>(
+            builder.Configuration.GetSection(SubscriptionOptions.SectionName)
         );
 
         builder.Services.AddHttpClient<ResendClient>();

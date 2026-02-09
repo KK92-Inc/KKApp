@@ -21,15 +21,6 @@ public class GoalService(DatabaseContext ctx, ILogger<GoalService> log) : BaseSe
 {
     private readonly DatabaseContext _context = ctx;
 
-    public async Task<IEnumerable<Project>> GetGoalProjectsAsync(Guid goalId)
-    {
-        return await _context.GoalProject
-            .Where(gp => gp.GoalId == goalId)
-            .Include(gp => gp.Project)
-            .Select(gp => gp.Project)
-            .ToListAsync();
-    }
-
     public async Task<Goal?> FindBySlugAsync(string slug, CancellationToken token = default)
     {
         return await _context.Goals.FirstOrDefaultAsync(g => g.Slug == slug);
@@ -48,31 +39,23 @@ public class GoalService(DatabaseContext ctx, ILogger<GoalService> log) : BaseSe
         return await strategy.ExecuteAsync(async (ct) =>
         {
             await using var transaction = await _context.Database.BeginTransactionAsync(ct);
-            try
+
+            var existing = await _context.GoalProject
+                .Where(gp => gp.GoalId == goalId)
+                .ToListAsync(ct);
+
+            _context.GoalProject.RemoveRange(existing);
+
+            var updated = projects.Select(pid => new GoalProject
             {
-                var existing = await _context.GoalProject
-                    .Where(gp => gp.GoalId == goalId)
-                    .ToListAsync(ct);
+                GoalId = goalId,
+                ProjectId = pid
+            });
 
-                _context.GoalProject.RemoveRange(existing);
-
-                var updated = projects.Select(pid => new GoalProject
-                {
-                    GoalId = goalId,
-                    ProjectId = pid
-                });
-
-                await _context.GoalProject.AddRangeAsync(updated, ct);
-                await _context.SaveChangesAsync(ct);
-                await transaction.CommitAsync(ct);
-                return goal;
-            }
-            catch (Exception e)
-            {
-                await transaction.RollbackAsync(ct);
-                log.LogCritical(e, "Failed to set projects for goal {GoalId}", goalId);
-                throw new ServiceException(500, $"Failed to set projects: {e.Message}");
-            }
+            await _context.GoalProject.AddRangeAsync(updated, ct);
+            await _context.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+            return goal;
         }, token);
     }
 
