@@ -11,10 +11,26 @@ namespace App.Backend.Core.Services.Interface;
 
 public interface IInviteService
 {
+
     /// <summary>
     /// Invite a user to an existing project session. Adds a Pending member row.
     /// </summary>
+    /// <param name="inviterId"></param>
+    /// <param name="inviteeId"></param>
+    /// <param name="userProjectId"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
     Task<UserProjectMember> InviteToProjectAsync(Guid inviterId, Guid inviteeId, Guid userProjectId, CancellationToken token);
+
+    /// <summary>
+    ///
+    /// </summary>
+    /// <param name="inviterId"></param>
+    /// <param name="inviteeId"></param>
+    /// <param name="userProjectId"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    Task<UserProjectMember> UninviteFromProjectAsync(Guid inviterId, Guid inviteeId, Guid userProjectId, CancellationToken token);
 
     /// <summary>
     /// Accept a pending invite — flips Pending → Member.

@@ -33,7 +33,7 @@ public class InviteService(DatabaseContext ctx) : IInviteService
                 ?? throw new ServiceException(404, "Project session not found");
 
             if (up.State is not EntityObjectState.Active)
-                throw new ServiceException(422, "Project session is not active");
+                throw new ServiceException("Project session is not active");
 
             // Only the leader can invite
             var inviter = up.Members.FirstOrDefault(m => m.UserId == inviterId);
@@ -74,6 +74,37 @@ public class InviteService(DatabaseContext ctx) : IInviteService
             await transaction.CommitAsync(ct);
             return member;
         }, token);
+    }
+
+    public async Task<UserProjectMember> UninviteFromProjectAsync(Guid inviterId, Guid inviteeId, Guid userProjectId, CancellationToken token)
+    {
+        if (inviterId == inviteeId)
+            throw new ServiceException(400, "You cannot uninvite yourself");
+
+        var up = await ctx.UserProjects
+            .Include(p => p.Members)
+            .Include(p => p.Project)
+            .FirstOrDefaultAsync(p => p.Id == userProjectId, token)
+            ?? throw new ServiceException(404, "Project session not found");
+
+        if (up.State is not EntityObjectState.Active)
+            throw new ServiceException("Project session is not active");
+
+        // Only the leader can cancel invites
+        var inviter = up.Members.FirstOrDefault(m => m.UserId == inviterId);
+        if (inviter is null || inviter.Role is not UserProjectRole.Leader)
+            throw new ServiceException(403, "Only the session leader can cancel invites");
+
+        // Check if the invitee is a member or has a pending invite
+        var existing = up.Members.FirstOrDefault(m => m.UserId == inviteeId)
+            ?? throw new ServiceException(409, "User was never invited to be a member of this session");
+
+        if (existing.Role is not UserProjectRole.Pending)
+            throw new ServiceException(409, "User is a member");
+
+        ctx.UserProjectMembers.Remove(existing);
+        await ctx.SaveChangesAsync(token);
+        return existing;
     }
 
     public async Task<UserProjectMember> AcceptInviteAsync(Guid userId, Guid userProjectId, CancellationToken token)
