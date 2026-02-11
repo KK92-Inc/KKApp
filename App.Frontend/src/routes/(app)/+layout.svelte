@@ -11,10 +11,10 @@
 	let open = $state(false);
 	let { children }: LayoutProps = $props();
 
-	const events = init(new EventSourceContext('/proxy/events'));
-	events.listen('DemoEvent', (data) => {
-		console.log(data);
-	});
+	// const events = init(new EventSourceContext('/proxy/events'));
+	// events.listen('DemoEvent', (data) => {
+	// 	console.log(data);
+	// });
 
 	afterNavigate(() => (open = false));
 </script>

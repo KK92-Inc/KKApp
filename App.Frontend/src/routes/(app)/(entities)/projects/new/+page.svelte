@@ -9,6 +9,7 @@
 	import Thumbnail from '$lib/components/thumbnail.svelte';
 	import Separator from '$lib/components/separator/separator.svelte';
 	import { Info } from '@lucide/svelte';
+	import MarkdownTextarea from '$lib/components/markdown/markdown-textarea.svelte';
 </script>
 
 <form>
@@ -73,6 +74,8 @@
 					</Alert.Description>
 				</Alert.Root>
 				<Separator />
+
+				<MarkdownTextarea />
 			</div>
 		{/snippet}
 	</Layout>
