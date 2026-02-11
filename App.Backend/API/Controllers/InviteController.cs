@@ -43,6 +43,26 @@ public class InviteController(
         return Ok(new UserProjectMemberDO(member));
     }
 
+    [HttpDelete("{inviteeId:guid}/project/{userProjectId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Remove a pending invite from a project session")]
+    [EndpointDescription("Reject a pending invite")]
+    public async Task<ActionResult<UserProjectMemberDO>> UninviteToProject(
+        Guid inviteeId, Guid userProjectId, CancellationToken token)
+    {
+        var inviterId = User.GetSID();
+        var member = await service.UninviteFromProjectAsync(inviterId, inviteeId, userProjectId, token);
+
+        await bus.PublishAsync(new ProjectInviteNotification(
+            InviteeId: inviteeId,
+            InviterUserId: inviterId,
+            UserProjectId: userProjectId
+        ));
+
+        return Ok(new UserProjectMemberDO(member));
+    }
+
     [HttpPost("{userProjectId:guid}/accept")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
@@ -66,6 +86,45 @@ public class InviteController(
     {
         var userId = User.GetSID();
         await service.DeclineInviteAsync(userId, userProjectId, token);
+        return NoContent();
+    }
+
+    [HttpPost("{userProjectId:guid}/transfer/{newLeaderId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Transfer session leadership")]
+    [EndpointDescription("Transfer leadership of a project session to another active member. The caller must be the current leader.")]
+    public async Task<ActionResult> TransferLeadership(
+        Guid userProjectId, Guid newLeaderId, CancellationToken token)
+    {
+        var currentLeaderId = User.GetSID();
+        await service.TransferLeadershipAsync(currentLeaderId, newLeaderId, userProjectId, token);
+        return NoContent();
+    }
+
+    [HttpPost("{userProjectId:guid}/leave")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Leave a project session")]
+    [EndpointDescription("Voluntarily leave a project session as an accepted member. Leaders must transfer leadership first.")]
+    public async Task<ActionResult> LeaveProject(
+        Guid userProjectId, CancellationToken token)
+    {
+        var userId = User.GetSID();
+        await service.LeaveProjectAsync(userId, userProjectId, token);
+        return NoContent();
+    }
+
+    [HttpDelete("{memberId:guid}/project/{userProjectId:guid}/kick")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Kick a member from a project session")]
+    [EndpointDescription("The session leader kicks a member or cancels a pending invite.")]
+    public async Task<ActionResult> KickMember(
+        Guid memberId, Guid userProjectId, CancellationToken token)
+    {
+        var leaderId = User.GetSID();
+        await service.KickMemberAsync(leaderId, memberId, userProjectId, token);
         return NoContent();
     }
 }

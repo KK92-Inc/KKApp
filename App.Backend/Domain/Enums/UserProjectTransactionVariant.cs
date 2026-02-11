@@ -72,4 +72,16 @@ public enum UserProjectTransactionVariant
 
     [JsonPropertyName(nameof(MemberDeclined))]
     MemberDeclined,
+
+    /// <summary>
+    /// Indicates that a member was kicked from the project session by the leader.
+    /// </summary>
+    [JsonPropertyName(nameof(MemberKicked))]
+    MemberKicked,
+
+    /// <summary>
+    /// Indicates that leadership was transferred to another member.
+    /// </summary>
+    [JsonPropertyName(nameof(LeadershipTransferred))]
+    LeadershipTransferred,
 }

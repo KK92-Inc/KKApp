@@ -41,4 +41,22 @@ public interface IInviteService
     /// Decline a pending invite — removes the pending member row.
     /// </summary>
     Task DeclineInviteAsync(Guid userId, Guid userProjectId, CancellationToken token);
+
+    /// <summary>
+    /// Transfer leadership of a project session to another active member.
+    /// The current leader becomes a regular member.
+    /// </summary>
+    Task TransferLeadershipAsync(Guid currentLeaderId, Guid newLeaderId, Guid userProjectId, CancellationToken token);
+
+    /// <summary>
+    /// An accepted (non-leader) member voluntarily leaves a project session.
+    /// Sets LeftAt on their membership row rather than deleting it (preserves history).
+    /// </summary>
+    Task LeaveProjectAsync(Guid userId, Guid userProjectId, CancellationToken token);
+
+    /// <summary>
+    /// Leader kicks an accepted member from the project session.
+    /// Sets LeftAt on the member and records a MemberKicked transaction.
+    /// </summary>
+    Task KickMemberAsync(Guid leaderId, Guid memberId, Guid userProjectId, CancellationToken token);
 }

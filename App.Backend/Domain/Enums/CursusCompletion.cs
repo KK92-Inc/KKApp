@@ -8,13 +8,13 @@ namespace App.Backend.Domain.Enums;
 /// <summary>
 /// Controls how subscription chain enforcement works.
 /// </summary>
-public enum SubscriptionMode
+public enum CursusCompletion
 {
     /// <summary>
     /// Anyone can subscribe to any cursus, goal, or project independently.
     /// No hierarchy enforcement.
     /// </summary>
-    FreeForAll,
+    Free,
 
     /// <summary>
     /// Subscriptions enforce the hierarchy when relationships exist:

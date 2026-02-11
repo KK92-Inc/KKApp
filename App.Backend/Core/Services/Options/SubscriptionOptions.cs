@@ -16,7 +16,7 @@ public class SubscriptionOptions
 
     /// <summary>
     /// The subscription enforcement mode.
-    /// Defaults to <see cref="SubscriptionMode.FreeForAll"/>.
+    /// Defaults to <see cref="CursusCompletion.Free"/>.
     /// </summary>
-    public SubscriptionMode Mode { get; set; } = SubscriptionMode.FreeForAll;
+    public CursusCompletion Mode { get; set; } = CursusCompletion.Free;
 }

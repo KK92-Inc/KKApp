@@ -20,7 +20,7 @@ public class SubscriptionService(
     IOptions<SubscriptionOptions> options
 ) : ISubscriptionService
 {
-    private bool IsRestricted => options.Value.Mode == SubscriptionMode.Restricted;
+    private bool IsRestricted => options.Value.Mode is CursusCompletion.Restricted;
 
     public async Task<UserCursus> SubscribeToCursusAsync(Guid userId, Guid cursusId, CancellationToken token)
     {
@@ -54,7 +54,6 @@ public class SubscriptionService(
         {
             CursusId = cursusId,
             UserId = userId,
-            State = EntityObjectState.Active
         }, token);
 
         await ctx.SaveChangesAsync(token);
@@ -89,9 +88,9 @@ public class SubscriptionService(
         if (IsRestricted)
         {
             var isSystemGoal = await ctx.Goals
-                .Where(g => g.Id == goalId)
-                .Select(g => g.Workspace.OwnerId == null)
-                .FirstOrDefaultAsync(token);
+            .Where(g => g.Id == goalId)
+            .Select(g => g.Workspace.OwnerId == null)
+            .FirstOrDefaultAsync(token);
 
             if (isSystemGoal)
             {
@@ -102,16 +101,15 @@ public class SubscriptionService(
 
                 if (parentCursusIds.Count > 0)
                 {
-                    var enrolledInAny = await ctx.UserCursi.AnyAsync(
-                        uc => uc.UserId == userId
-                            && parentCursusIds.Contains(uc.CursusId)
-                            && uc.State == EntityObjectState.Active,
+                    var isEnrolled = await ctx.UserCursi.AnyAsync(uc =>
+                        uc.UserId == userId &&
+                        parentCursusIds.Contains(uc.CursusId) &&
+                        uc.State == EntityObjectState.Active,
                         token
                     );
 
-                    if (!enrolledInAny)
-                        throw new ServiceException(422,
-                            "This goal belongs to a cursus — you must be enrolled in the cursus first");
+                    if (!isEnrolled)
+                        throw new ServiceException(422, "This goal belongs to a cursus — you must be enrolled in the cursus first");
                 }
             }
         }
@@ -273,11 +271,31 @@ public class SubscriptionService(
 
             var member = up.Members.First(m => m.UserId == userId);
 
+            if (member.LeftAt is not null)
+                throw new ServiceException(409, "Already left this project session");
+
             if (member.Role is UserProjectRole.Leader)
             {
-                // Leader leaving deactivates the entire session.
+                // If other active members exist, the leader must transfer leadership first.
+                var hasOtherActiveMembers = up.Members.Any(m =>
+                    m.UserId != userId &&
+                    m.LeftAt == null &&
+                    m.Role is UserProjectRole.Member or UserProjectRole.Leader);
+
+                if (hasOtherActiveMembers)
+                    throw new ServiceException(422,
+                        "Transfer leadership or remove all members before leaving the session");
+
+                // Leader is the sole remaining member — deactivate the session.
                 up.State = EntityObjectState.Inactive;
+                member.LeftAt = DateTimeOffset.UtcNow;
                 ctx.UserProjects.Update(up);
+
+                // Cancel any orphaned pending invites
+                var pendingMembers = up.Members.Where(m => m.Role == UserProjectRole.Pending).ToList();
+                foreach (var pending in pendingMembers)
+                    ctx.UserProjectMembers.Remove(pending);
+
                 await ctx.UserProjectTransactions.AddAsync(new()
                 {
                     UserId = userId,
@@ -287,9 +305,9 @@ public class SubscriptionService(
             }
             else
             {
-                // Regular member just leaves the session.
-                up.Members.Remove(member);
-                ctx.UserProjects.Update(up);
+                // Regular member leaves — preserve history via LeftAt.
+                member.LeftAt = DateTimeOffset.UtcNow;
+                ctx.UserProjectMembers.Update(member);
                 await ctx.UserProjectTransactions.AddAsync(new()
                 {
                     UserId = userId,
