@@ -1,6 +1,6 @@
 @import 'tailwindcss';
-
 @import 'tw-animate-css';
+@import 'katex/dist/katex.min.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -127,5 +127,71 @@
 	}
 	.h-page {
 		@apply h-[calc(100svh-var(--header-height))]!;
+	}
+}
+
+.markdown {
+	@apply text-foreground text-sm leading-relaxed;
+
+	& h1 { @apply text-2xl font-bold mt-6 mb-3; }
+	& h2 { @apply text-xl font-semibold mt-5 mb-2; }
+	& h3 { @apply text-lg font-semibold mt-4 mb-2; }
+	& h4 { @apply text-base font-semibold mt-3 mb-1; }
+	& h5, & h6 { @apply text-sm font-semibold mt-3 mb-1; }
+
+	& p { @apply my-2; }
+
+	& a {
+		@apply text-primary underline underline-offset-2;
+	}
+
+	& strong { @apply font-semibold; }
+	& em { @apply italic; }
+	& del { @apply line-through opacity-70; }
+
+	& ul { @apply my-2 ml-6 list-disc; }
+	& ol { @apply my-2 ml-6 list-decimal; }
+	& li { @apply my-0.5; }
+
+	& blockquote {
+		@apply border-l-4 border-border pl-4 my-3 text-muted-foreground italic;
+	}
+
+	& code:not(pre code) {
+		@apply bg-muted text-foreground rounded px-1.5 py-0.5 text-xs font-mono;
+	}
+
+	& pre {
+		@apply my-3 overflow-x-auto rounded-md p-4 text-sm leading-relaxed;
+	}
+
+	& pre code {
+		@apply bg-transparent p-0 text-inherit;
+	}
+
+	& hr {
+		@apply my-6 border-border;
+	}
+
+	& table {
+		@apply my-3 w-full border-collapse text-sm;
+	}
+	& th {
+		@apply border border-border bg-muted px-3 py-2 text-left font-semibold;
+	}
+	& td {
+		@apply border border-border px-3 py-2;
+	}
+
+	& img {
+		@apply my-3 max-w-full rounded-md;
+	}
+
+	/* Task lists (GFM) */
+	& .task-list-item {
+		@apply list-none;
+	}
+	& .task-list-item input[type="checkbox"] {
+		@apply mr-2;
 	}
 }

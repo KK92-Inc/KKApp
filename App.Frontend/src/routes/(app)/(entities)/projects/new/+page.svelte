@@ -75,7 +75,7 @@
 				</Alert.Root>
 				<Separator />
 
-				<MarkdownTextarea />
+				<MarkdownTextarea value="# Hello World!"/>
 			</div>
 		{/snippet}
 	</Layout>

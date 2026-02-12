@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { Textarea } from '../textarea';
 	import { cn } from 'tailwind-variants';
-	import { plugins } from './context.svelte';
 	import { buttonVariants } from '../button';
 	import * as Popover from '../popover';
 	import {
@@ -14,26 +13,29 @@
 		Code,
 		Heading,
 		Quote,
-		Ellipsis
+		Ellipsis,
+		type Icon,
+
+		ExternalLink
+
 	} from '@lucide/svelte';
-	import type { Component } from 'svelte';
 	import * as Tabs from '$lib/components/tabs';
+	import Markdown from './markdown.svelte';
 
 	interface Props {
 		value?: string;
 		class?: string;
+		placeholder?: string;
 	}
 
 	interface Shortcut {
-		icon: Component<{ size?: number; class?: string }>;
+		icon: typeof Icon;
 		label: string;
 		action: () => void;
 	}
 
-	// State
-
 	let textarea = $state<HTMLTextAreaElement>(null!);
-	let { class: className, value = $bindable('') }: Props = $props();
+	let { class: className, value = $bindable(''), placeholder = "# Hello World" }: Props = $props();
 
 	let mode = $state<'write' | 'preview'>('write');
 
@@ -93,117 +95,74 @@
 	</button>
 {/snippet}
 
-<Tabs.Root value="account" class={cn("gap-0", className)}>
+<Tabs.Root bind:value={mode} class={cn('gap-0', className)}>
 	<Tabs.List class="h-fit w-full justify-between rounded-b-none border border-b-0">
 		<div class="w-fit p-1">
-			<Tabs.Trigger value="account">Write</Tabs.Trigger>
-			<Tabs.Trigger value="password">Preview</Tabs.Trigger>
+			<Tabs.Trigger value="write">Write</Tabs.Trigger>
+			<Tabs.Trigger value="preview">Preview</Tabs.Trigger>
 		</div>
-		<menu class="flex items-center gap-px">
-			{#each shortcuts.slice(0, 5) as props}
-				{@render shortcutButton(props)}
-			{/each}
-			{#if shortcuts.length > 5}
-				<Popover.Root>
-					<Popover.Trigger
-						class={buttonVariants({
-							variant: 'ghost',
-							size: 'icon',
-							class: 'shadow-none'
-						})}
-					>
-						<Ellipsis size={16} class="m-auto" />
-					</Popover.Trigger>
-					<Popover.Content class="w-10 p-2 py-1">
-						<menu class="flex flex-col items-center gap-1">
-							{#each shortcuts.slice(5) as props}
-								{@render shortcutButton(props)}
-							{/each}
-						</menu>
-					</Popover.Content>
-				</Popover.Root>
-			{/if}
-		</menu>
+		{#if mode === 'write'}
+			<menu class="flex items-center gap-px">
+				{#each shortcuts.slice(0, 5) as props}
+					{@render shortcutButton(props)}
+				{/each}
+				{#if shortcuts.length > 5}
+					<Popover.Root>
+						<Popover.Trigger
+							class={buttonVariants({
+								variant: 'ghost',
+								size: 'icon',
+								class: 'shadow-none'
+							})}
+						>
+							<Ellipsis size={16} class="m-auto" />
+						</Popover.Trigger>
+						<Popover.Content class="w-10 p-2 py-1">
+							<menu class="flex flex-col items-center gap-1">
+								{#each shortcuts.slice(5) as props}
+									{@render shortcutButton(props)}
+								{/each}
+							</menu>
+						</Popover.Content>
+					</Popover.Root>
+				{/if}
+			</menu>
+		{/if}
 	</Tabs.List>
-	<Tabs.Content value="account">
+	<Tabs.Content value="write">
 		<Textarea
 			data-mode={mode}
 			bind:ref={textarea}
 			draggable="false"
+			{placeholder}
 			bind:value
-			class="rounded-t-none shadow-none focus-visible:ring-0"
+			class="field-sizing-content rounded-none shadow-none focus-visible:ring-0"
 		/>
+		<div class="text-muted-foreground flex items-center gap-1.5 px-2 py-1.5 text-xs border border-t-0 border-input bg-muted rounded-b">
+			<svg
+				aria-hidden="true"
+				xmlns="http://www.w3.org/2000/svg"
+				width={18}
+				height={18}
+				viewBox="0 0 24 24"
+				fill="currentColor"
+			>
+				<path
+					d="M20.553 18.15H3.447a1.443 1.443 0 0 1-1.442-1.441V7.291c0-.795.647-1.441 1.442-1.441h17.105c.795 0 1.442.646 1.442 1.441v9.418a1.441 1.441 0 0 1-1.441 1.441zM6.811 15.268V11.52l1.922 2.402 1.922-2.402v3.748h1.922V8.732h-1.922l-1.922 2.403-1.922-2.403H4.889v6.535h1.922zM19.688 12h-1.922V8.732h-1.923V12h-1.922l2.884 3.364L19.688 12z"
+				/>
+			</svg>
+			<a
+				href="https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax"
+				target="_blank"
+				rel="noopener noreferrer"
+				class="hover:text-foreground transition-colors hover:underline flex items-center gap-1"
+			>
+				Markdown is supported
+				<ExternalLink size={12}/>
+			</a>
+		</div>
 	</Tabs.Content>
-	<Tabs.Content value="password" class={cn('markdown rounded-t-none border-0 dark:bg-input/30 ')}>
-		<!-- <Markdown md={value} /> -->
+	<Tabs.Content value="preview" class={cn('markdown rounded-t-none border-0 dark:bg-input/30 ')}>
+		<Markdown {value} class="min-h-20 rounded-md rounded-t-none border p-3" />
 	</Tabs.Content>
 </Tabs.Root>
-
-<!-- <div class={cn('rounded-md border', className)}>
-	<div class="flex items-center justify-between border-b px-2 py-1">
-		<menu class="flex items-center gap-1">
-			<button
-				type="button"
-				class={buttonVariants({
-					variant: mode === 'write' ? 'secondary' : 'ghost',
-					size: 'sm',
-					class: 'shadow-none'
-				})}
-				onclick={() => (mode = 'write')}
-			>
-				Write
-			</button>
-			<button
-				type="button"
-				class={buttonVariants({
-					variant: mode === 'preview' ? 'secondary' : 'ghost',
-					size: 'sm',
-					class: 'shadow-none'
-				})}
-				onclick={() => (mode = 'preview')}
-			>
-				Preview
-			</button>
-		</menu>
-
-		<menu class="flex items-center gap-px">
-			{#each shortcuts.slice(0, 5) as props}
-				{@render shortcutButton(props)}
-			{/each}
-			{#if shortcuts.length > 5}
-				<Popover.Root>
-					<Popover.Trigger
-						class={buttonVariants({
-							variant: 'ghost',
-							size: 'icon',
-							class: 'shadow-none'
-						})}
-					>
-						<Ellipsis size={16} class="m-auto" />
-					</Popover.Trigger>
-					<Popover.Content class="w-10 p-2 py-1">
-						<menu class="flex flex-col items-center gap-1">
-							{#each shortcuts.slice(5) as props}
-								{@render shortcutButton(props)}
-							{/each}
-						</menu>
-					</Popover.Content>
-				</Popover.Root>
-			{/if}
-		</menu>
-	</div>
-
-	{#if mode === 'write'}
-		<Textarea
-			data-mode={mode}
-			bind:ref={textarea}
-			draggable="false"
-			bind:value
-			class="rounded-t-none border-0 shadow-none focus-visible:ring-0"
-		/>
-	{:else}
-		<div class={cn('markdown prose prose-sm min-h-20 p-3')}>
-			<Markdown md={value} />
-		</div>
-	{/if}
-</div> -->
