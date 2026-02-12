@@ -10,50 +10,59 @@
 	import Separator from '$lib/components/separator/separator.svelte';
 	import { Info } from '@lucide/svelte';
 	import MarkdownTextarea from '$lib/components/markdown/markdown-textarea.svelte';
+	import { createProject } from '$lib/remotes/project.remote';
 </script>
 
-<form>
+<form {...createProject} enctype="multipart/form-data">
 	<Layout variant="center">
 		{#snippet left()}
-			<Field.Set class="gap-2">
-				<Field.Legend>New Goal</Field.Legend>
-				<Field.Description>Create a new learning goal to track your progress.</Field.Description>
+			<Field.Set>
+				<Field.Legend>New Project</Field.Legend>
+				<Field.Description>Set up a new project to organize goals and track progress.</Field.Description>
 				<Field.Group>
 					<Field.Field>
 						<Thumbnail src="https://github.com/w2wizard.png" />
-						<Field.Description>This will be the thumbnail of the goal.</Field.Description>
+						<Field.Description>This will be the thumbnail of the project.</Field.Description>
 					</Field.Field>
 					<Field.Field>
-						<Field.Label for="goal-name">Name</Field.Label>
-						<Input id="goal-name" autocomplete="off" placeholder="C# : Dependency Injection" />
-						<Field.Description>A short, descriptive name for your goal.</Field.Description>
-					</Field.Field>
-					<Field.Field>
-						<Field.Label for="goal-description">Description</Field.Label>
-						<Textarea
-							id="goal-description"
+						<Field.Label for="project-name">Name</Field.Label>
+						<Input
+							id="project-name"
 							autocomplete="off"
-							placeholder="Describe what this goal covers..."
-							class="resize-none"
+							placeholder="C# : Dependency Injection"
+							{...createProject.fields.name.as('text')}
 						/>
-						<Field.Description>Provide additional context about this goal.</Field.Description>
+						<Field.Description>A short, descriptive name for your project.</Field.Description>
+						<Field.Error errors={createProject.fields.name.issues()} />
+					</Field.Field>
+					<Field.Field>
+						<Field.Label for="project-description">Description</Field.Label>
+						<Textarea
+							id="project-description"
+							autocomplete="off"
+							placeholder="Describe what this project covers..."
+							class="resize-none"
+							{...createProject.fields.description.as('text')}
+						/>
+						<Field.Description>Provide additional context about this project.</Field.Description>
+						<Field.Error errors={createProject.fields.description.issues()} />
 					</Field.Field>
 				</Field.Group>
 				<Field.Separator />
 				<Field.Group>
 					<Field.Field orientation="horizontal">
 						<Field.Content>
-							<Field.Label for="goal-public">Public</Field.Label>
-							<Field.Description>Make this goal visible to other users.</Field.Description>
+							<Field.Label for="project-public">Public</Field.Label>
+							<Field.Description>Make this project visible to other users.</Field.Description>
 						</Field.Content>
-						<Switch id="goal-public" />
+						<Switch id="project-public" {...createProject.fields.public.as('checkbox')} />
 					</Field.Field>
 					<Field.Field orientation="horizontal">
 						<Field.Content>
-							<Field.Label for="goal-enabled">Enabled</Field.Label>
-							<Field.Description>Enable this goal for active tracking.</Field.Description>
+							<Field.Label for="project-active">Active</Field.Label>
+							<Field.Description>Enable this project for active tracking.</Field.Description>
 						</Field.Content>
-						<Switch id="goal-enabled" />
+						<Switch id="project-active" {...createProject.fields.active.as('checkbox')} />
 					</Field.Field>
 				</Field.Group>
 				<Field.Separator />
@@ -69,13 +78,11 @@
 				<Alert.Root variant="default">
 					<Info class="h-4 w-4" />
 					<Alert.Title>Project</Alert.Title>
-					<Alert.Description>
-						A project is just that a project
-					</Alert.Description>
+					<Alert.Description>A project is just that a project</Alert.Description>
 				</Alert.Root>
 				<Separator />
 
-				<MarkdownTextarea value="# Hello World!"/>
+				<MarkdownTextarea value="# Hello World!" />
 			</div>
 		{/snippet}
 	</Layout>

@@ -25,6 +25,7 @@
 	interface Props {
 		value?: string;
 		class?: string;
+		name?: string;
 		placeholder?: string;
 	}
 
@@ -35,7 +36,7 @@
 	}
 
 	let textarea = $state<HTMLTextAreaElement>(null!);
-	let { class: className, value = $bindable(''), placeholder = "# Hello World" }: Props = $props();
+	let { class: className, value = $bindable(''), placeholder = "# Hello World", name }: Props = $props();
 
 	let mode = $state<'write' | 'preview'>('write');
 
@@ -134,6 +135,7 @@
 			data-mode={mode}
 			bind:ref={textarea}
 			draggable="false"
+			{name}
 			{placeholder}
 			bind:value
 			class="field-sizing-content rounded-none shadow-none focus-visible:ring-0"

@@ -4,9 +4,37 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import { getRequestEvent, query } from '$app/server';
+import { form, getRequestEvent, query } from '$app/server';
 import { Filters, getPagination } from '$lib/api';
-import { error } from '@sveltejs/kit';
+import { error, invalid } from '@sveltejs/kit';
+import { getWorkspace } from './workspace.remote';
+import { unkestrel } from './utils';
+
+// ============================================================================
+
+const schema = v.object({
+	name: v.string(),
+	description: v.string(),
+	active: v.optional(v.boolean(), false),
+	public: v.optional(v.boolean(), false),
+});
+
+export const createProject = form(schema, async (project, issue) => {
+	const { locals } = getRequestEvent();
+	const workspace = await getWorkspace();
+
+	const request = await unkestrel(locals.api.POST("/workspace/{workspace}/project", {
+		params: { path: { workspace: workspace.id } },
+		body: {
+			name: project.name,
+			description: project.description,
+			public: project.public,
+			active: project.active
+		}
+	}), issue);
+
+	return {  };
+});
 
 // ============================================================================
 

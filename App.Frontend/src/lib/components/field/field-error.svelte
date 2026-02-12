@@ -13,23 +13,11 @@
 		errors?: { message?: string }[];
 	} = $props();
 
-	const hasContent = $derived.by(() => {
-		// has slotted error
-		if (children) return true;
+	const messages = $derived(
+		(errors ?? []).map((e) => e?.message).filter((m): m is string => !!m)
+	);
 
-		// no errors
-		if (!errors) return false;
-
-		// has an error but no message
-		if (errors.length === 1 && !errors[0]?.message) {
-			return false;
-		}
-
-		return true;
-	});
-
-	const isMultipleErrors = $derived(errors && errors.length > 1);
-	const singleErrorMessage = $derived(errors && errors.length === 1 && errors[0]?.message);
+	const hasContent = $derived(!!children || messages.length > 0);
 </script>
 
 {#if hasContent}
@@ -41,14 +29,12 @@
 	>
 		{#if children}
 			{@render children()}
-		{:else if singleErrorMessage}
-			{singleErrorMessage}
-		{:else if isMultipleErrors}
-			<ul class="ml-4 flex list-disc flex-col gap-1">
-				{#each errors ?? [] as error, index (index)}
-					{#if error?.message}
-						<li>{error.message}</li>
-					{/if}
+		{:else if messages.length === 1}
+			{messages[0]}
+		{:else}
+			<ul class="ml-4 flex list-disc flex-col gap-0.5 text-xs">
+				{#each messages as msg (msg)}
+					<li>{msg}</li>
 				{/each}
 			</ul>
 		{/if}
