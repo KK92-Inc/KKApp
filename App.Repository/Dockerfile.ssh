@@ -38,12 +38,14 @@ COPY --from=builder /app/output/ssh-shell /home/git/shell
 COPY --from=builder /app/output/ssh-auth /usr/local/bin/auth
 COPY ./config/sshd_config /etc/ssh/sshd_config
 COPY ./config/sevice.toml /etc/service/config.toml
+COPY ./config/entrypoint.sh /usr/local/bin/entrypoint.sh
 
 # Create git user and set permissions
 RUN useradd -m -d /home/git -s /bin/bash git && passwd -d git
 RUN chown root:root /usr/local/bin/auth && chmod u=rwx,go=rx /usr/local/bin/auth
 RUN chown -R git:git /home/git
 RUN chmod +x /home/git/shell
+RUN chmod +x /usr/local/bin/entrypoint.sh
 RUN ssh-keygen -A
 
 # Mark repos directory as safe for git operations (handles volume ownership issues)
@@ -52,4 +54,4 @@ RUN git config --system --add safe.directory '*'
 EXPOSE 22
 VOLUME ["/home/git/repos"]
 
-CMD ["/usr/sbin/sshd", "-D", "-e"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

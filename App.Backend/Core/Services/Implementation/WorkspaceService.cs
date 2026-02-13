@@ -45,13 +45,14 @@ public class WorkspaceService(DatabaseContext ctx, IGitService git) : BaseServic
 
             try
             {
-                if (!await git.CreateAsync(owner, project.Name, ct))
+                var name = project.Name.ToSlug();
+                if (!await git.CreateAsync(owner, name, ct))
                     throw new ServiceException(409, "Repository for such project already exists");
 
                 var repo = await _context.GitInfo.AddAsync(new()
                 {
                     Owner = owner,
-                    Name = project.Name,
+                    Name = name,
                     Ownership = workspace.Owner is null ? EntityOwnership.Organization : EntityOwnership.User
                 }, ct);
 

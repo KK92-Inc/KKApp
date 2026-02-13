@@ -53,6 +53,12 @@ var postgres = builder.AddPostgres("database")
     .WithDataVolume(name: "database-volume")
     .WithLifetime(ContainerLifetime.Persistent);
 
+if (!isPublish)
+{
+    // Pin to a consistent host port for tools to avoid reconfiguration
+    postgres.WithEndpoint("tcp", e => e.Port = 5432);
+}
+
 var cache = builder.AddValkey("valkey")
     .WithDataVolume(name: "cache-volume")
     .WithLifetime(ContainerLifetime.Persistent);
@@ -81,6 +87,13 @@ var ssh = builder.AddDockerfile("git-ssh", "./App.Repository", "Dockerfile.ssh")
     .WaitFor(database)
     .WaitFor(api)
     .WithLifetime(ContainerLifetime.Persistent);
+
+if (!isPublish)
+{
+    // Pin to a consistent host port so we don't fill our authorized_hosts
+    // with garbage
+    ssh.WithEndpoint("ssh", e => e.Port = 2222);
+}
 
 // Keycloak
 // ============================================================================
@@ -111,6 +124,7 @@ var backend = builder.AddProject<Projects.App_Backend_API>("backend")
     .WithReference(cache)
     .WithReference(keycloak)
     .WithEnvironment("RESEND_APITOKEN", resendToken)
+    .WithEnvironment("Git__BaseUrl", api.GetEndpoint("http"))
     .WaitFor(migration)
     .WaitFor(postgres)
     .WaitFor(cache)

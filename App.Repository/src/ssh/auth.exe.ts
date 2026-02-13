@@ -20,24 +20,65 @@ if (!fingerprint || !keyType || !keyBlob) {
 	process.exit(1);
 }
 
-// Build connection string from individual env vars provided by Aspire
-// The PEERU_DB_HOST (postgres-server.dev.internal) isn't resolvable from Docker containers
-// so we use host.docker.internal to reach the host-exposed port
+// sshd's AuthorizedKeysCommand runs with a sanitized environment,
+// so Aspire-injected env vars are NOT available here.
+// The entrypoint script persists them to /etc/aspire-env before starting sshd.
+
+function loadAspireEnv(): Record<string, string> {
+	const env: Record<string, string> = {};
+	try {
+		const text = require("fs").readFileSync("/etc/aspire-env", "utf-8") as string;
+		for (const line of text.split("\n")) {
+			const idx = line.indexOf("=");
+			if (idx > 0) {
+				env[line.slice(0, idx)] = line.slice(idx + 1);
+			}
+		}
+	} catch {
+		// File not found — fall back to process.env
+	}
+	return env;
+}
+
+/**
+ * Parse an ADO.NET-style connection string (Host=...;Port=...;...)
+ * into a postgresql:// URL that Bun.SQL understands.
+ */
+function adoNetToUrl(connStr: string): string {
+	const parts: Record<string, string> = {};
+	for (const segment of connStr.split(";")) {
+		const idx = segment.indexOf("=");
+		if (idx > 0) {
+			parts[segment.slice(0, idx).trim().toLowerCase()] = segment.slice(idx + 1).trim();
+		}
+	}
+	const host = parts["host"] ?? "localhost";
+	const port = parts["port"] ?? "5432";
+	const user = encodeURIComponent(parts["username"] ?? parts["user id"] ?? "postgres");
+	const pass = encodeURIComponent(parts["password"] ?? "");
+	const db   = parts["database"] ?? "db";
+	return `postgresql://${user}:${pass}@${host}:${port}/${db}`;
+}
+
 function getConnectionString(): string {
-	// First try explicit DATABASE_URL if set
-	if (process.env.DATABASE_URL) {
-		return process.env.DATABASE_URL;
+	const env = loadAspireEnv();
+
+	// 1. Explicit DATABASE_URL (from either real env or persisted file)
+	const dbUrl = process.env.DATABASE_URL ?? env["DATABASE_URL"];
+	if (dbUrl) return dbUrl;
+
+	// 2. Aspire-injected ConnectionStrings__db
+	const aspireConn = process.env["ConnectionStrings__db"] ?? env["ConnectionStrings__db"];
+	if (aspireConn) {
+		// Could be a postgresql:// URL or an ADO.NET string
+		if (aspireConn.startsWith("postgresql://") || aspireConn.startsWith("postgres://")) {
+			return aspireConn;
+		}
+		return adoNetToUrl(aspireConn);
 	}
 
-	// Build from individual Aspire-provided env vars, but use host.docker.internal
-	const user = process.env.PEERU_DB_USERNAME ?? "postgres";
-	const pass = process.env.PEERU_DB_PASSWORD ?? "postgres";
-	const db = process.env.PEERU_DB_DATABASENAME ?? "peeru-db";
-	// Use host.docker.internal to reach host-exposed postgres port (52843)
-	const host = "host.docker.internal";
-	const port = "52843";
-
-	return `postgresql://${user}:${pass}@${host}:${port}/${db}`;
+	// 3. Fallback: not expected to work, but keeps the old behaviour
+	return "postgresql://postgres:postgres@localhost:5432/db";
 }
 
 const connectionString = getConnectionString();

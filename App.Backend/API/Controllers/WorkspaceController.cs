@@ -24,6 +24,7 @@ using App.Backend.Models.Requests.Cursus;
 using App.Backend.Domain.Entities.Users;
 using App.Backend.Models.Responses.Entities.Projects;
 using App.Backend.Models.Responses.Entities.Cursus;
+using App.Backend.Core;
 
 // ============================================================================
 
