@@ -65,6 +65,7 @@
 		type="file"
 		{name}
 		value=""
+		accept={allowed.join()}
 		class="absolute inset-0 z-10 cursor-pointer opacity-0"
 	/>
 	<div class="relative">

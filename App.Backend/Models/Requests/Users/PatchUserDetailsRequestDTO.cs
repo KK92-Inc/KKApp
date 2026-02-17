@@ -15,8 +15,8 @@ namespace App.Backend.Models.Requests.Users;
 /// </summary>
 public record PatchUserDetailsRequestDTO
 {
-    [EmailAddress]
-    public string? Email { get; init; }
+    // [EmailAddress]
+    // public string? Email { get; init; }
 
     [StringLength(16384)]
     public string? Markdown { get; init; }

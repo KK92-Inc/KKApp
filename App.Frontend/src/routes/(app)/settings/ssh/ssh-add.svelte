@@ -30,7 +30,6 @@
 				</Alert.Root>
 			{/if}
 		</Dialog.Header>
-		<Separator />
 		<form {...addKey}>
 			<Field.Set>
 				<Field.Group>

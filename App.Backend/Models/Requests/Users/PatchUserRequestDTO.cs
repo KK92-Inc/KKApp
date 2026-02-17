@@ -25,4 +25,6 @@ public record PatchUserRequestDTO
     /// </summary>
     [Url]
     public string? AvatarUrl { get; init; }
+
+    public PatchUserDetailsRequestDTO? Details { get; init; }
 }

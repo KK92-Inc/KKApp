@@ -2775,7 +2775,76 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Get a user by ID
+         * @description Retrieve a specific user by their unique identifier
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    userId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PatchUserRequestDTO"];
+                    "text/json": components["schemas"]["PatchUserRequestDTO"];
+                    "application/*+json": components["schemas"]["PatchUserRequestDTO"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["UserDO"];
+                        "application/json": components["schemas"]["UserDO"];
+                        "text/json": components["schemas"]["UserDO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         trace?: never;
     };
     "/users/{userId}/cursus": {
@@ -4298,6 +4367,26 @@ export interface components {
             active?: null | boolean;
             public?: null | boolean;
             deprecated?: null | boolean;
+        };
+        PatchUserDetailsRequestDTO: {
+            markdown?: null | string;
+            firstName?: null | string;
+            lastName?: null | string;
+            enabledNotifications?: null | components["schemas"]["NotificationMeta"];
+            /** Format: uri */
+            githubUrl?: null | string;
+            /** Format: uri */
+            linkedinUrl?: null | string;
+            /** Format: uri */
+            redditUrl?: null | string;
+            /** Format: uri */
+            websiteUrl?: null | string;
+        };
+        PatchUserRequestDTO: {
+            displayName?: null | string;
+            /** Format: uri */
+            avatarUrl?: null | string;
+            details?: null | components["schemas"]["PatchUserDetailsRequestDTO"];
         };
         PostCursusRequestDTO: {
             name: string;

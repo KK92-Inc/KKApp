@@ -4,7 +4,7 @@
 	import { Moon, Sun } from "@lucide/svelte";
 </script>
 
-<Button onclick={toggleMode} variant="outline" size="icon" aria-label="Notifications">
+<Button onclick={toggleMode} variant="outline" size="icon" aria-label="Notifications" class="max-md:hidden">
 	{#if theme.current === 'dark'}
 		<Moon />
 	{:else}

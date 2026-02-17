@@ -15,11 +15,11 @@
 </script>
 
 <DropdownMenu.Root>
-	<DropdownMenu.Trigger>
+	<DropdownMenu.Trigger class="max-md:hidden">
 		{#snippet child({ props })}
 			<Button {...props} variant="outline">
 				<Plus />
-				<ChevronDown />
+				<ChevronDown class="max-md:hidden"/>
 			</Button>
 		{/snippet}
 	</DropdownMenu.Trigger>

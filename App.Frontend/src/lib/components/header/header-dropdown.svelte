@@ -17,12 +17,12 @@
 </script>
 
 <ButtonGroup.Root>
-	<Button variant="outline" href="/users/{page.data.session.userId}">
+	<Button variant="outline" href="/users/{page.data.session.userId}" class="max-md:p-2">
 		<Avatar.Root class="size-6">
 			<Avatar.Image src="https://github.com/w2wizard.png" alt="@evilrabbit" />
 			<Avatar.Fallback>ER</Avatar.Fallback>
 		</Avatar.Root>
-		Account
+		<span class="max-md:hidden">Account</span>
 	</Button>
 	<DropdownMenu.Root>
 		<DropdownMenu.Trigger>

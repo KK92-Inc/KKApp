@@ -21,11 +21,11 @@
 	} from '@lucide/svelte';
 	import * as Tabs from '$lib/components/tabs';
 	import Markdown from './markdown.svelte';
+	import type { HTMLTextareaAttributes } from 'svelte/elements';
 
-	interface Props {
+	interface Props extends HTMLTextareaAttributes {
 		value?: string;
 		class?: string;
-		name?: string;
 		placeholder?: string;
 	}
 
@@ -36,7 +36,7 @@
 	}
 
 	let textarea = $state<HTMLTextAreaElement>(null!);
-	let { class: className, value = $bindable(''), placeholder = "# Hello World", name }: Props = $props();
+	let { class: className, value = $bindable(''), placeholder = "# Hello World", ...rest }: Props = $props();
 
 	let mode = $state<'write' | 'preview'>('write');
 
@@ -135,10 +135,10 @@
 			data-mode={mode}
 			bind:ref={textarea}
 			draggable="false"
-			{name}
 			{placeholder}
 			bind:value
 			class="field-sizing-content rounded-none shadow-none focus-visible:ring-0"
+			{...rest}
 		/>
 		<div class="text-muted-foreground flex items-center gap-1.5 px-2 py-1.5 text-xs border border-t-0 border-input bg-muted rounded-b">
 			<svg

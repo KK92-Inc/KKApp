@@ -57,7 +57,7 @@
 			>
 				{@render left()}
 			</div>
-			<div class="h-full w-full">
+			<div class="h-full w-full max-md:px-2">
 				{@render right()}
 			</div>
 		</div>

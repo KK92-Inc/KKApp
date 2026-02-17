@@ -66,14 +66,14 @@
 
 <svelte:document onkeydown={handleKeydown} />
 
-<InputGroup.Root class="[&>*]:cursor-pointer" style="cursor: pointer" onclick={() => (open = true)}>
-	<InputGroup.Button disabled class="w-50 cursor-pointer justify-start text-muted-foreground">
-		Search
+<InputGroup.Root class="*:cursor-pointer cursor-pointer" onclick={() => (open = true)}>
+	<InputGroup.Button disabled class="md:w-40 w-25 max-sm:w-0 cursor-pointer justify-start text-muted-foreground">
+		<span class="max-sm:hidden">Search</span>
 	</InputGroup.Button>
-	<InputGroup.Addon>
+	<InputGroup.Addon class="">
 		<Search />
 	</InputGroup.Addon>
-	<InputGroup.Addon align="inline-end">
+	<InputGroup.Addon align="inline-end" class="max-md:hidden">
 		<Kbd.Group>
 			<Kbd.Root>Ctrl</Kbd.Root>
 			<span>+</span>
