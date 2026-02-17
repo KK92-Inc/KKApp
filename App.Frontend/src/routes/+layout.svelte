@@ -4,6 +4,7 @@
 	import { ModeWatcher } from 'mode-watcher';
 	import type { LayoutProps } from './$types';
 	import { TooltipProvider } from '$lib/components/tooltip';
+	import { DialogProvider } from '$lib/components/dialog';
 	let { children }: LayoutProps = $props();
 </script>
 
@@ -13,5 +14,7 @@
 
 <ModeWatcher />
 <TooltipProvider>
-	{@render children?.()}
+	<DialogProvider>
+		{@render children?.()}
+	</DialogProvider>
 </TooltipProvider>

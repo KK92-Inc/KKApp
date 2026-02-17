@@ -9,13 +9,19 @@
 	import Thumbnail from '$lib/components/thumbnail.svelte';
 	import { buttonVariants } from '$lib/components/button/index.js';
 	import { CircleQuestionMark, Copy, CopyCheck } from '@lucide/svelte';
-	import * as Dialog from '$lib/components/dialog/index.js';
 	import * as InputGroup from '$lib/components/input-group';
 	import * as Tooltip from '$lib/components/tooltip';
 	import { fade } from 'svelte/transition';
+	import { useDialog } from '$lib/components/dialog';
+
+	const dialog = useDialog();
+	async function kek() {
+		await dialog.confirm();
+	}
 </script>
 
 <form method="POST" enctype="multipart/form-data" class="rounded bg-card p-6">
+	<Button onclick={kek}>Hello</Button>
 	<Field.Set class="grid grid-cols-1 gap-6 md:grid-cols-3">
 		<Field.Group>
 			<Field.Field>

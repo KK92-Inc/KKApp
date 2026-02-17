@@ -9,6 +9,9 @@
 	import Separator from '$lib/components/separator/separator.svelte';
 	import SSHAdd from './ssh-add.svelte';
 	import SSHHelp from './ssh-help.svelte';
+	import { useDialog } from '$lib/components/dialog';
+
+	const dialog = useDialog();
 	const formatter = new Intl.DateTimeFormat(page.data.locale, {
 		dateStyle: 'medium',
 		timeStyle: 'short'
@@ -53,7 +56,7 @@
 						<Item.Root variant="outline">
 							<Item.Content class="min-w-0">
 								<Item.Title>
-									<KeyRound size={16}/>
+									<KeyRound size={16} />
 									<span>{key.title}</span>
 								</Item.Title>
 								<Item.Description>
@@ -66,7 +69,25 @@
 								</Item.Description>
 							</Item.Content>
 							<Item.Actions>
-								<Button type="submit" variant="ghost" size="icon" aria-label="Delete SSH Key">
+								<Button
+									onclick={async (e) => {
+										e.preventDefault();
+										const form = e.currentTarget.closest('form');
+										await dialog
+											.confirm(
+												'Delete SSH Key?',
+												`
+											This action CANNOT be undone. This will permanently delete the SSH key and if you'd like to use it in the future, you will need to upload it again.
+											`
+											)
+											.confirmLabel('Delete')
+											.ok(() => form?.requestSubmit());
+									}}
+									type="submit"
+									variant="ghost"
+									size="icon"
+									aria-label="Delete SSH Key"
+								>
 									<Trash2Icon class="size-4 text-destructive" />
 								</Button>
 							</Item.Actions>
