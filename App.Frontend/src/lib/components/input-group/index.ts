@@ -4,6 +4,7 @@ import Button from "./input-group-button.svelte";
 import Input from "./input-group-input.svelte";
 import Text from "./input-group-text.svelte";
 import Textarea from "./input-group-textarea.svelte";
+import Copy from "./input-group-addon-copy.svelte"
 
 export {
 	Root,
@@ -12,6 +13,7 @@ export {
 	Input,
 	Text,
 	Textarea,
+	Copy,
 	//
 	Root as InputGroup,
 	Addon as InputGroupAddon,
@@ -19,4 +21,5 @@ export {
 	Input as InputGroupInput,
 	Text as InputGroupText,
 	Textarea as InputGroupTextarea,
+	Copy as InputGroupAddonCopy
 };

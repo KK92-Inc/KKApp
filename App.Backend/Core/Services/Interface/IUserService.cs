@@ -18,12 +18,12 @@ public interface IUserService : IDomainService<User>
     /// </summary>
     /// <param name="login">The login.</param>
     /// <returns>The user.</returns>
-    public Task<User?> FindByLoginAsync(string login);
+    public Task<User?> FindByLoginAsync(string login, CancellationToken token = default);
 
     /// <summary>
     /// Find the user by its display name.
     /// </summary>
     /// <param name="displayName">The Display name</param>
     /// <returns>The user.</returns>
-    public Task<User?> FindByNameAsync(string displayName);
+    public Task<User?> FindByNameAsync(string displayName, CancellationToken token = default);
 }

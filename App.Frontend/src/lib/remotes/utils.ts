@@ -1,5 +1,10 @@
-import type { FetchResponse } from "openapi-fetch";
+// ============================================================================
+// W2Inc, 2025, All Rights Reserved.
+// See README in the root project for more information.
+// ============================================================================
+
 import { invalid } from "@sveltejs/kit";
+import type { FetchResponse } from "openapi-fetch";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 
 // ============================================================================
@@ -15,10 +20,11 @@ interface ProblemDetails {
 	title?: string | null;
 	status?: number | null;
 	detail?: string | null;
-	instance?: string | null;
 	errors?: Record<string, string[]>;
 	traceId?: string;
 }
+
+// ============================================================================
 
 /**
  * Check whether an error body looks like a problem+json response with
@@ -80,9 +86,9 @@ type UnkestrelResult<Data, Error> = {
  * // ^ automatically calls `invalid(issue.name("..."), issue.description("..."))` etc.
  * ```
  */
-export async function unkestrel<T extends Record<string, any>, O, M extends `${string}/${string}`>(
+export async function unkestrel<T extends Record<string, unknown>, O, M extends `${string}/${string}`>(
 	request: Promise<FetchResponse<T, O, M>>,
-	issue?: any,
+	issue?: unknown,
 ): Promise<UnkestrelResult<
 	FetchResponse<T, O, M>["data"],
 	FetchResponse<T, O, M>["error"]
@@ -100,7 +106,7 @@ export async function unkestrel<T extends Record<string, any>, O, M extends `${s
 
 	return {
 		data,
-		error: error ? { ...error as any, status: response.status } : undefined,
+		error: error ? { ...error, status: response.status } : undefined,
 		response,
 	};
 }

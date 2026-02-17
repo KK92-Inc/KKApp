@@ -12,9 +12,12 @@ declare global {
 			api: Client<paths>;
 			session: Session;
 			tz: string;
+			locale: string;
 		}
 		interface PageData {
-			session: Session
+			session: Session;
+			tz: string;
+			locale: string;
 		}
 		// interface PageState {}
 		// interface Platform {}

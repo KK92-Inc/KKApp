@@ -6,23 +6,20 @@
 using App.Backend.Database;
 using App.Backend.Core.Services.Interface;
 using App.Backend.Domain.Entities.Users;
-using App.Backend.Models;
 using Microsoft.EntityFrameworkCore;
-using App.Backend.Domain.Enums;
-using App.Backend.Domain.Entities.Projects;
 
 // ============================================================================
 
 namespace App.Backend.Core.Services.Implementation;
 
-public class UserService(DatabaseContext context) : BaseService<User>(context), IUserService
+public class UserService(DatabaseContext ctx) : BaseService<User>(ctx), IUserService
 {
-    public async Task<User?> FindByLoginAsync(string login)
+    public async Task<User?> FindByLoginAsync(string login, CancellationToken token = default)
     {
         return await _dbSet.FirstOrDefaultAsync(u => u.Login == login);
     }
 
-    public async Task<User?> FindByNameAsync(string displayName)
+    public async Task<User?> FindByNameAsync(string displayName, CancellationToken token = default)
     {
         return await _dbSet.FirstOrDefaultAsync(u => u.Display == displayName);
     }

@@ -20,14 +20,16 @@ if (!fingerprint || !keyType || !keyBlob) {
 	process.exit(1);
 }
 
+// TODO: Clean up this slop
 // sshd's AuthorizedKeysCommand runs with a sanitized environment,
 // so Aspire-injected env vars are NOT available here.
 // The entrypoint script persists them to /etc/aspire-env before starting sshd.
 
-function loadAspireEnv(): Record<string, string> {
+async function loadAspireEnv(): Promise<Record<string, string>> {
 	const env: Record<string, string> = {};
 	try {
-		const text = require("fs").readFileSync("/etc/aspire-env", "utf-8") as string;
+		// const text = fs.readFileSync("/etc/aspire-env", "utf-8") as string;
+		const text = await Bun.file("/etc/aspire-env").text();
 		for (const line of text.split("\n")) {
 			const idx = line.indexOf("=");
 			if (idx > 0) {
@@ -60,8 +62,8 @@ function adoNetToUrl(connStr: string): string {
 	return `postgresql://${user}:${pass}@${host}:${port}/${db}`;
 }
 
-function getConnectionString(): string {
-	const env = loadAspireEnv();
+async function getConnectionString(): Promise<string> {
+	const env = await loadAspireEnv();
 
 	// 1. Explicit DATABASE_URL (from either real env or persisted file)
 	const dbUrl = process.env.DATABASE_URL ?? env["DATABASE_URL"];
@@ -81,7 +83,7 @@ function getConnectionString(): string {
 	return "postgresql://postgres:postgres@localhost:5432/db";
 }
 
-const connectionString = getConnectionString();
+const connectionString = await getConnectionString();
 
 const sql = new Bun.SQL({
 	url: connectionString,

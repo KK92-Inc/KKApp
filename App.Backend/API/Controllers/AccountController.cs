@@ -15,6 +15,8 @@ using App.Backend.Domain.Enums;
 using App.Backend.Models.Responses.Entities;
 using App.Backend.Models.Responses.Entities.Notifications;
 using App.Backend.API.Notifications.Registers.Interface;
+using App.Backend.Models.Requests.SshKeys;
+using App.Backend.Domain.Entities.Users;
 
 // ============================================================================
 
@@ -116,6 +118,65 @@ public class AccountController(
     public async Task<IActionResult> DismissSpotlight(Guid id)
     {
         // TODO: Implement spotlights service
+        return NoContent();
+    }
+
+    [HttpGet("ssh-keys")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("List SSH keys")]
+    [EndpointDescription("Retrieve the SSH keys associated with the authenticated user.")]
+    public async Task<ActionResult<IEnumerable<SshKeyResponseDO>>> GetSshKeys()
+    {
+        var user = await users.FindByIdAsync(User.GetSID());
+        if (user is null) return Forbid();
+        return Ok(user.SshKeys.Select(k => new SshKeyResponseDO(k)));
+    }
+
+    [HttpDelete("ssh-keys/{fingerprint}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Remove an SSH key")]
+    [EndpointDescription("Delete an SSH key by its fingerprint for the authenticated user.")]
+    public async Task<IActionResult> RemoveSshKey(string fingerprint)
+    {
+        var user = await users.FindByIdAsync(User.GetSID());
+        if (user is null) return Forbid();
+
+        var key = user.SshKeys.FirstOrDefault(k => k.Fingerprint == fingerprint);
+        if (key is null) return NotFound();
+
+        user.SshKeys.Remove(key);
+        await users.UpdateAsync(user);
+        return NoContent();
+    }
+
+    [HttpPost("ssh-keys")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Add an SSH key")]
+    [EndpointDescription("Add a new SSH public key for the authenticated user.")]
+    public async Task<ActionResult> AddSshKey([FromBody] PostSshKeyRequestDTO data)
+    {
+        var user = await users.FindByIdAsync(User.GetSID());
+        if (user is null) return Forbid();
+
+        var parts = data.PublicKey.Trim().Split(' ', 3);
+        if (parts.Length < 2)
+            return Problem("Invalid SSH public key format.", statusCode: 422);
+
+        user.SshKeys.Add(new ()
+        {
+            Title = data.Title,
+            KeyType = parts[0],
+            KeyBlob = parts[1],
+        });
+
+        await users.UpdateAsync(user);
         return NoContent();
     }
 }

@@ -9,7 +9,11 @@
 	{#snippet left()}
 		<Navgroup
 			title="Profile Settings"
-			routes={['/(app)/settings/profile', '/(app)/settings/features']}
+			routes={[
+				'/(app)/settings/profile',
+				'/(app)/settings/features',
+				'/(app)/settings/ssh'
+			]}
 		/>
 	{/snippet}
 

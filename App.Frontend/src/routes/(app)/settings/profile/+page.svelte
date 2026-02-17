@@ -7,14 +7,65 @@
 	import * as Select from '$lib/components/select';
 	import { Textarea } from '$lib/components/textarea';
 	import Thumbnail from '$lib/components/thumbnail.svelte';
-
-	let month = $state<string>();
-	let year = $state<string>();
+	import { buttonVariants } from '$lib/components/button/index.js';
+	import { CircleQuestionMark, Copy, CopyCheck } from '@lucide/svelte';
+	import * as Dialog from '$lib/components/dialog/index.js';
+	import * as InputGroup from '$lib/components/input-group';
+	import * as Tooltip from '$lib/components/tooltip';
+	import { fade } from 'svelte/transition';
 </script>
 
-<form method="POST" enctype="multipart/form-data" class=" p-6 bg-card rounded-lg">
+<form method="POST" enctype="multipart/form-data" class="rounded bg-card p-6">
+	<Field.Set class="grid grid-cols-1 gap-6 md:grid-cols-3">
+		<Field.Group>
+			<Field.Field>
+				<Field.Label>Avatar</Field.Label>
+				<Field.Description>Upload a profile image.</Field.Description>
+				<div class="flex flex-col items-center gap-4">
+					<Thumbnail src="https://github.com/w2wizard.png" />
+					<Field.Description class="text-xs text-muted-foreground"
+						>PNG, JPG — max 2MB</Field.Description
+					>
+				</div>
+			</Field.Field>
+
+			<Field.Separator />
+
+			<Field.Field>
+				<Field.Label for="id">User ID</Field.Label>
+				<InputGroup.Root>
+					<InputGroup.Input
+						id="id"
+						autocomplete="off"
+						autocorrect="off"
+						readonly
+						value={page.data.session.userId}
+					/>
+					<InputGroup.Addon align="inline-end">
+						<InputGroup.Copy value={page.data.session.userId} />
+					</InputGroup.Addon>
+				</InputGroup.Root>
+				<Field.Description class="text-xs">Your unique, non-editable identifier</Field.Description>
+			</Field.Field>
+
+			<Field.Field>
+				<Field.Label for="login">Login</Field.Label>
+				<Input
+					id="login"
+					type="text"
+					name="login"
+					disabled
+					readonly
+					value={page.data.session.username}
+				/>
+				<Field.Description class="text-xs">Your login handle</Field.Description>
+			</Field.Field>
+		</Field.Group>
+	</Field.Set>
+</form>
+
+<!-- <form method="POST" enctype="multipart/form-data" class=" p-6 bg-card rounded-lg">
 	<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-		<!-- Avatar / Identity column -->
 		<div class="flex flex-col items-center gap-2 md:items-start">
 			<Field.Field>
 				<Field.Label>Avatar</Field.Label>
@@ -22,9 +73,6 @@
 				<div class="flex items-center gap-4 flex-col">
 					<Thumbnail src="https://github.com/w2wizard.png" />
 					<Field.Description class="text-muted-foreground text-xs">PNG, JPG — max 2MB</Field.Description>
-					<!-- <div class="flex flex-col gap-2"> -->
-						<!-- <input aria-label="Upload avatar" name="avatar" type="file" accept="image/*" class="text-sm" /> -->
-					<!-- </div> -->
 				</div>
 			</Field.Field>
 
@@ -43,7 +91,6 @@
 			</Field.Field>
 		</div>
 
-		<!-- Main details column -->
 		<div class="md:col-span-2">
 			<Field.Set>
 				<Field.Legend>Profile Settings</Field.Legend>
@@ -173,4 +220,4 @@
 			</Field.Set>
 		</div>
 	</div>
-</form>
+</form> -->

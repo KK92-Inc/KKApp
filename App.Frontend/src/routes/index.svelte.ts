@@ -3,7 +3,16 @@
 // See README in the root project for more information.
 // ============================================================================
 
-import { Archive, FlaskConical, GraduationCap, Sparkles, Trophy, UserPen } from '@lucide/svelte';
+import {
+	Archive,
+	FlaskConical,
+	GraduationCap,
+	Key,
+	KeyRound,
+	Sparkles,
+	Trophy,
+	UserPen
+} from '@lucide/svelte';
 import type { RouteId } from '$app/types';
 
 // ============================================================================
@@ -38,6 +47,10 @@ const meta: Partial<Record<RouteId, MetaEntry>> = {
 	'/(app)/settings/features': {
 		icon: FlaskConical,
 		label: 'Features'
+	},
+	'/(app)/settings/ssh': {
+		icon: KeyRound,
+		label: 'SSH Keys'
 	}
 };
 
