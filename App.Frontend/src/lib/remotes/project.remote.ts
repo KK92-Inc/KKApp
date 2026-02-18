@@ -4,28 +4,24 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import { form, getRequestEvent, query } from '$app/server';
-import { Filters, getPagination } from '$lib/api';
-import { error, invalid } from '@sveltejs/kit';
+import { Filters } from '$lib/api';
 import { getWorkspace } from './workspace.remote';
-import { unkestrel } from './utils';
+import { call, get, paginated, mutate } from './index.svelte.js';
 
 // Create Project
 // ============================================================================
 
-const schema = v.object({
+const createSchema = v.object({
 	name: v.string(),
 	description: v.string(),
 	active: v.optional(v.boolean(), false),
 	public: v.optional(v.boolean(), false)
 });
 
-export const createProject = form(schema, async (project, issue) => {
-	const { locals } = getRequestEvent();
+export const createProject = mutate(createSchema, async (api, project, issue) => {
 	const workspace = await getWorkspace();
-
-	const request = await unkestrel(
-		locals.api.POST('/workspace/{workspace}/project', {
+	await call(
+		api.POST('/workspace/{workspace}/project', {
 			params: { path: { workspace: workspace.id } },
 			body: {
 				name: project.name,
@@ -36,25 +32,15 @@ export const createProject = form(schema, async (project, issue) => {
 		}),
 		issue
 	);
-
 	return {};
 });
 
 // Get Project
 // ============================================================================
 
-export const getProject = query(v.string(), async (id) => {
-	const { locals } = getRequestEvent();
-	const { data, response } = await locals.api.GET('/projects/{id}', {
-		params: { path: { id } }
-	});
-
-	if (!response.ok || !data) {
-		error(response.status, 'Failed to fetch projects');
-	}
-
-	return data;
-});
+export const getProject = get(v.string(), (api, id) =>
+	api.GET('/projects/{id}', { params: { path: { id } } })
+);
 
 // Get Projects
 // ============================================================================
@@ -63,13 +49,10 @@ const getProjectsSchema = v.object({
 	...Filters.base,
 	...Filters.pagination,
 	name: v.optional(v.string())
-	/** Fetch projects for a specific user */
-	// userId: v.optional(v.pipe(v.string(), v.uuid())),
 });
 
-export const getProjects = query(getProjectsSchema, async (params) => {
-	const { locals } = getRequestEvent();
-	const { data, response } = await locals.api.GET('/projects', {
+export const getProjects = paginated(getProjectsSchema, (api, params) =>
+	api.GET('/projects', {
 		params: {
 			query: {
 				'filter[name]': params.name,
@@ -78,17 +61,8 @@ export const getProjects = query(getProjectsSchema, async (params) => {
 				'page[index]': params.page
 			}
 		}
-	});
-
-	if (!response.ok || !data) {
-		error(response.status, 'Failed to fetch projects');
-	}
-
-	return {
-		data,
-		total: getPagination(response)
-	};
-});
+	})
+);
 
 // Get User Projects
 // ============================================================================
@@ -97,69 +71,13 @@ const getUserProjectSchema = v.object({
 	...Filters.base,
 	...Filters.pagination,
 	name: v.optional(v.string()),
-	/** Fetch projects for a specific user */
 	userId: v.pipe(v.string(), v.uuid())
 });
 
-/**
-[
-  {
-    "id": "123e4567-e89b-12d3-a456-426614174000",
-    "createdAt": "2026-02-18T09:28:34.652Z",
-    "updatedAt": "2026-02-18T09:28:34.652Z",
-    "state": "Inactive",
-    "rubricId": null,
-    "project": {
-      "id": "123e4567-e89b-12d3-a456-426614174000",
-      "createdAt": "2026-02-18T09:28:34.652Z",
-      "updatedAt": "2026-02-18T09:28:34.652Z",
-      "name": "string",
-      "description": "string",
-      "slug": "string",
-      "active": true,
-      "public": true,
-      "deprecated": true,
-      "gitInfo": {
-        "id": "123e4567-e89b-12d3-a456-426614174000",
-        "createdAt": "2026-02-18T09:28:34.652Z",
-        "updatedAt": "2026-02-18T09:28:34.652Z",
-        "name": "string",
-        "owner": "string",
-        "ownership": "User"
-      },
-      "workspace": {
-        "createdAt": "2026-02-18T09:28:34.652Z",
-        "updatedAt": "2026-02-18T09:28:34.652Z",
-        "id": "123e4567-e89b-12d3-a456-426614174000",
-        "owner": {
-          "id": "123e4567-e89b-12d3-a456-426614174000",
-          "createdAt": "2026-02-18T09:28:34.652Z",
-          "updatedAt": "2026-02-18T09:28:34.652Z",
-          "login": "string",
-          "displayName": null,
-          "avatarUrl": null
-        },
-        "ownership": "User"
-      }
-    },
-    "gitInfo": {
-      "id": "123e4567-e89b-12d3-a456-426614174000",
-      "createdAt": "2026-02-18T09:28:34.652Z",
-      "updatedAt": "2026-02-18T09:28:34.652Z",
-      "name": "string",
-      "owner": "string",
-      "ownership": "User"
-    }
-  }
-]
- */
-export const getUserProjects = query(getUserProjectSchema, async (body) => {
-	const { locals } = getRequestEvent();
-	const { data, response } = await locals.api.GET('/users/{userId}/projects', {
+export const getUserProjects = paginated(getUserProjectSchema, (api, body) =>
+	api.GET('/users/{userId}/projects', {
 		params: {
-			path: {
-				userId: body.userId
-			},
+			path: { userId: body.userId },
 			query: {
 				'filter[name]': body.name,
 				'filter[slug]': body.slug,
@@ -167,14 +85,39 @@ export const getUserProjects = query(getUserProjectSchema, async (body) => {
 				'page[index]': body.page
 			}
 		}
-	});
+	})
+);
+// Delete Project
+// ============================================================================
 
-	if (!response.ok || !data) {
-		error(response.status, 'Failed to fetch projects');
-	}
+const deleteProjectSchema = v.object({ id: v.pipe(v.string(), v.uuid()) });
 
-	return {
-		data,
-		total: getPagination(response)
-	};
+export const deleteProject = mutate(deleteProjectSchema, async (api, params, issue) => {
+	await call(api.DELETE('/projects', { params: { query: { id: params.id } } }), issue);
+	return {};
+});
+
+// Update Project
+// ============================================================================
+
+const updateProjectSchema = v.object({
+	id: v.pipe(v.string(), v.uuid()),
+	name: v.optional(v.string()),
+	description: v.optional(v.string()),
+	active: v.optional(v.boolean()),
+	public: v.optional(v.boolean()),
+	deprecated: v.optional(v.boolean())
+});
+
+export const updateProject = mutate(updateProjectSchema, async (api, params, issue) => {
+	const { id, ...body } = params;
+
+	const result = await call(
+		api.PATCH('/projects/{id}', {
+			params: { path: { id } },
+			body
+		}),
+		issue
+	);
+	return { data: result.data };
 });

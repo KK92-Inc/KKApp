@@ -4,56 +4,34 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import { unkestrel } from './utils';
-import { error } from '@sveltejs/kit';
-import { form, getRequestEvent, query } from '$app/server';
+import Remote from './index2.svelte.js';
+import { form, getRequestEvent } from '$app/server';
+
+// ============================================================================
+
+export const getKeys = Remote.exec((api) => api.GET('/account/ssh-keys'));
 
 // ============================================================================
 
 const addSchema = v.object({ title: v.string(), publicKey: v.string() });
-/** Add a SSH Key for the current account */
-export const addKey = form(addSchema, async (data, issue) => {
+export const addKey = form(addSchema, async (body, issue) => {
 	const { locals } = getRequestEvent();
-
-	const request = await unkestrel(
-		locals.api.POST('/account/ssh-keys', {
-			body: {
-				title: data.title,
-				publicKey: data.publicKey
-			}
-		}),
-		issue
-	);
-
+	const { error, response } = await locals.api.POST('/account/ssh-keys', { body });
+	Remote.verify(error, response, issue);
 	getKeys().refresh();
-
-	return {
-		success: request.response.ok,
-		message: request.error?.detail ?? 'Something went wrong...'
-	};
-});
-
-const removeSchema = v.object({ fingerprint: v.string() });
-/** Remove a SSH Key for the current account */
-export const removeKey = form(removeSchema, async (data) => {
-	const { locals } = getRequestEvent();
-
-	await locals.api.DELETE('/account/ssh-keys/{fingerprint}', {
-		params: { path: { fingerprint: data.fingerprint } }
-	});
-
-	getKeys().refresh();
-	return {};
+	return { };
 });
 
 // ============================================================================
 
-export const getKeys = query(async () => {
+const removeSchema = v.object({ fingerprint: v.string() });
+export const removeKey = form(removeSchema, async ({ fingerprint }, issue) => {
 	const { locals } = getRequestEvent();
-	const { data, response } = await locals.api.GET('/account/ssh-keys');
-	if (!response.ok || !data) {
-		error(response.status, 'Failed to fetch projects');
-	}
+	const { error, response } = await locals.api.DELETE('/account/ssh-keys/{fingerprint}', {
+		params: { path: { fingerprint }}
+	});
 
-	return data;
+	Remote.verify(error, response, issue);
+	getKeys().refresh();
+	return { };
 });

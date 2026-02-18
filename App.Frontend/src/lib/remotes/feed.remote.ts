@@ -12,5 +12,6 @@ import { error } from '@sveltejs/kit';
 
 const schema = v.object({ ...Filters.sort, ...Filters.pagination });
 export const getFeed = query(schema, async (filter) => {
-	error(501, "Not Implemented");
+	error(501, "Feed Not Implemented");
+	// return [];
 });

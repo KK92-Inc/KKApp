@@ -4,7 +4,7 @@
 // ============================================================================
 
 export async function GET({ request, locals }) {
-	const { data, error, response } = await locals.api.GET('/users/current/stream', {
+	const { data, error, response } = await locals.api.GET('/account/stream', {
 		parseAs: "stream",
 		signal: request.signal,
 		headers: {

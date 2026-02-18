@@ -10,5 +10,5 @@ import type { components } from '$lib/api/api';
 // ============================================================================
 
 export const getPendingReviews = query(async () => {
-	error(501, "Not Implemented");
+	error(501, "Reviews Not Implemented");
 });

@@ -4,7 +4,7 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import { unkestrel } from './utils';
+import { call } from './index.svelte.js';
 import { form, getRequestEvent } from '$app/server';
 
 // ============================================================================
@@ -25,11 +25,12 @@ const updateSchema = v.object({
 		})
 	)
 });
+
 /** Add a SSH Key for the current account */
 export const updateUser = form(updateSchema, async (body, issue) => {
 	const { locals } = getRequestEvent();
 
-	const request = await unkestrel(
+	const result = await call(
 		locals.api.PATCH("/users/{userId}", {
 			params: { path: { userId: locals.session.userId } },
 			body
@@ -38,7 +39,7 @@ export const updateUser = form(updateSchema, async (body, issue) => {
 	);
 
 	return {
-		success: request.response.ok,
-		message: request.error?.detail ?? 'Something went wrong...'
+		success: result.response.ok,
+		message: result.error?.detail ?? 'Something went wrong...'
 	};
 });

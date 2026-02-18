@@ -37,7 +37,7 @@
 	<Card.Root class="group relative h-80 overflow-hidden border bg-black text-white">
 		<div class="absolute inset-0 z-0">
 			<img
-				src="https://images.unsplash.com/photo-1556761175-5973dc0f32e7?q=80&w=2832&auto=format&fit=crop"
+				src="https://github.com/w2wizard.png"
 				alt="PeerU 2025"
 				class="h-full w-full object-cover opacity-80 transition-transform duration-700 motion-safe:group-hover:scale-110"
 			/>
