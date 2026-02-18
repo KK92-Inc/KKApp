@@ -4,96 +4,77 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import { mutate, call } from './index.svelte.js';
+import { form, getRequestEvent } from '$app/server';
+import { Filters, resolve } from '$lib/api.js';
 
 // ============================================================================
-
 // Cursus Subscriptions
 // ============================================================================
 
-const cursusSubSchema = v.object({
-	userId: v.pipe(v.string(), v.uuid()),
-	cursusId: v.pipe(v.string(), v.uuid()),
-});
+const cursusSubSchema = v.object({ userId: Filters.id, cursusId: Filters.id });
 
 /** Enroll a user in a cursus. Staff can enroll other users. */
-export const subscribeCursus = mutate(cursusSubSchema, async (api, body, issue) => {
-	const result = await call(
-		api.POST('/subscribe/{userId}/cursus/{cursusId}', {
-			params: { path: { userId: body.userId, cursusId: body.cursusId } },
-		}),
-		issue
-	);
-	return { data: result.data, success: result.response.ok };
+export const subscribeCursus = form(cursusSubSchema, async ({ userId, cursusId }, issue) => {
+	const { locals } = getRequestEvent();
+	const result = await locals.api.POST('/subscribe/{userId}/cursus/{cursusId}', {
+		params: { path: { userId, cursusId } }
+	});
+	return resolve(result, issue);
 });
 
-/** Remove a user's enrollment from a cursus. Staff can unenroll other users. */
-export const unsubscribeCursus = mutate(cursusSubSchema, async (api, body, issue) => {
-	await call(
-		api.DELETE('/subscribe/{userId}/cursus/{cursusId}', {
-			params: { path: { userId: body.userId, cursusId: body.cursusId } },
-		}),
-		issue
-	);
-	return {};
+/** Remove a user's enrollment from a cursus. */
+export const unsubscribeCursus = form(cursusSubSchema, async ({ userId, cursusId }, issue) => {
+	const { locals } = getRequestEvent();
+	const result = await locals.api.DELETE('/subscribe/{userId}/cursus/{cursusId}', {
+		params: { path: { userId, cursusId } }
+	});
+	return resolve(result, issue);
 });
 
+// ============================================================================
 // Goal Subscriptions
 // ============================================================================
 
-const goalSubSchema = v.object({
-	userId: v.pipe(v.string(), v.uuid()),
-	goalId: v.pipe(v.string(), v.uuid()),
+const goalSubSchema = v.object({ userId: Filters.id, goalId: Filters.id });
+
+/** Subscribe a user to a goal. Staff can enroll other users. */
+export const subscribeGoal = form(goalSubSchema, async ({ userId, goalId }, issue) => {
+	const { locals } = getRequestEvent();
+	const result = await locals.api.POST('/subscribe/{userId}/goals/{goalId}', {
+		params: { path: { userId, goalId } }
+	});
+	return resolve(result, issue);
 });
 
-/** Create a goal subscription for a user. Staff can enroll other users. */
-export const subscribeGoal = mutate(goalSubSchema, async (api, body, issue) => {
-	const result = await call(
-		api.POST('/subscribe/{userId}/goals/{goalId}', {
-			params: { path: { userId: body.userId, goalId: body.goalId } },
-		}),
-		issue
-	);
-	return { data: result.data, success: result.response.ok };
+/** Remove a user's goal subscription. */
+export const unsubscribeGoal = form(goalSubSchema, async ({ userId, goalId }, issue) => {
+	const { locals } = getRequestEvent();
+	const result = await locals.api.DELETE('/subscribe/{userId}/goals/{goalId}', {
+		params: { path: { userId, goalId } }
+	});
+	return resolve(result, issue);
 });
 
-/** Remove a user's goal subscription. Staff can unenroll other users. */
-export const unsubscribeGoal = mutate(goalSubSchema, async (api, body, issue) => {
-	await call(
-		api.DELETE('/subscribe/{userId}/goals/{goalId}', {
-			params: { path: { userId: body.userId, goalId: body.goalId } },
-		}),
-		issue
-	);
-	return {};
-});
-
+// ============================================================================
 // Project Subscriptions
 // ============================================================================
 
-const projectSubSchema = v.object({
-	userId: v.pipe(v.string(), v.uuid()),
-	projectId: v.pipe(v.string(), v.uuid()),
-});
+const projectSubSchema = v.object({ userId: Filters.id, projectId: Filters.id });
 
 /** Create a project session for a user. Staff can enroll other users. */
-export const subscribeProject = mutate(projectSubSchema, async (api, body, issue) => {
-	const result = await call(
-		api.POST('/subscribe/{userId}/projects/{projectId}', {
-			params: { path: { userId: body.userId, projectId: body.projectId } },
-		}),
-		issue
-	);
-	return { data: result.data, success: result.response.ok };
+export const subscribeProject = form(projectSubSchema, async ({ userId, projectId }, issue) => {
+	const { locals } = getRequestEvent();
+	const result = await locals.api.POST('/subscribe/{userId}/projects/{projectId}', {
+		params: { path: { userId, projectId } }
+	});
+	return resolve(result, issue);
 });
 
-/** Remove a user from a project session. Staff can unenroll other users. */
-export const unsubscribeProject = mutate(projectSubSchema, async (api, body, issue) => {
-	await call(
-		api.DELETE('/subscribe/{userId}/projects/{projectId}', {
-			params: { path: { userId: body.userId, projectId: body.projectId } },
-		}),
-		issue
-	);
-	return {};
+/** Remove a user from a project session. */
+export const unsubscribeProject = form(projectSubSchema, async ({ userId, projectId }, issue) => {
+	const { locals } = getRequestEvent();
+	const result = await locals.api.DELETE('/subscribe/{userId}/projects/{projectId}', {
+		params: { path: { userId, projectId } }
+	});
+	return resolve(result, issue);
 });

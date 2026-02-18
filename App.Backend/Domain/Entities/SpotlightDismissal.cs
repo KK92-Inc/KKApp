@@ -13,6 +13,7 @@ namespace App.Backend.Domain.Entities;
 
 /// <summary>
 /// Tracks which users have dismissed which spotlights.
+/// TODO: Migrate to rel as it is basically a join table
 /// </summary>
 [Table("tbl_spotlight_dismissals")]
 [PrimaryKey(nameof(UserId), nameof(SpotlightId))]

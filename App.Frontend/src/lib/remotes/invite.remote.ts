@@ -4,120 +4,83 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import { mutate, call } from './index.svelte.js';
+import { form, getRequestEvent } from '$app/server';
+import { Filters, resolve } from '$lib/api.js';
 
 // ============================================================================
 
-const userProjectIdSchema = v.object({ userProjectId: v.pipe(v.string(), v.uuid()) });
+const userProjectIdSchema = v.object({ userProjectId: Filters.id });
 
 const inviteSchema = v.object({
-	inviteeId: v.pipe(v.string(), v.uuid()),
-	userProjectId: v.pipe(v.string(), v.uuid()),
+	inviteeId: Filters.id,
+	userProjectId: Filters.id
 });
 
-/**
- * Invite a user to a project session.
- * The calling user (leader) invites another user to their active project session.
- */
-export const sendInvite = mutate(inviteSchema, async (api, body, issue) => {
-	const result = await call(
-		api.POST('/invite/{inviteeId}/project/{userProjectId}', {
-			params: { path: { inviteeId: body.inviteeId, userProjectId: body.userProjectId } },
-		}),
-		issue
-	);
-	return { data: result.data, success: result.response.ok };
+/** Invite a user to a project session (leader only). */
+export const sendInvite = form(inviteSchema, async ({ inviteeId, userProjectId }, issue) => {
+	const { locals } = getRequestEvent();
+	const result = await locals.api.POST('/invite/{inviteeId}/project/{userProjectId}', {
+		params: { path: { inviteeId, userProjectId } }
+	});
+	return resolve(result, issue);
 });
 
-/**
- * Revoke (cancel) a pending invite from a project session.
- */
-export const revokeInvite = mutate(inviteSchema, async (api, body, issue) => {
-	const result = await call(
-		api.DELETE('/invite/{inviteeId}/project/{userProjectId}', {
-			params: { path: { inviteeId: body.inviteeId, userProjectId: body.userProjectId } },
-		}),
-		issue
-	);
-	return { data: result.data, success: result.response.ok };
+/** Revoke a pending invite from a project session. */
+export const revokeInvite = form(inviteSchema, async ({ inviteeId, userProjectId }, issue) => {
+	const { locals } = getRequestEvent();
+	const result = await locals.api.DELETE('/invite/{inviteeId}/project/{userProjectId}', {
+		params: { path: { inviteeId, userProjectId } }
+	});
+	return resolve(result, issue);
 });
 
-/**
- * Accept a pending invitation to join a project session.
- */
-export const acceptInvite = mutate(userProjectIdSchema, async (api, body, issue) => {
-	const result = await call(
-		api.POST('/invite/{userProjectId}/accept', {
-			params: { path: { userProjectId: body.userProjectId } },
-		}),
-		issue
-	);
-	return { data: result.data, success: result.response.ok };
+/** Accept a pending invitation to join a project session. */
+export const acceptInvite = form(userProjectIdSchema, async ({ userProjectId }, issue) => {
+	const { locals } = getRequestEvent();
+	const result = await locals.api.POST('/invite/{userProjectId}/accept', {
+		params: { path: { userProjectId } }
+	});
+	return resolve(result, issue);
 });
 
-/**
- * Decline a pending invitation to a project session.
- */
-export const declineInvite = mutate(userProjectIdSchema, async (api, body, issue) => {
-	await call(
-		api.POST('/invite/{userProjectId}/decline', {
-			params: { path: { userProjectId: body.userProjectId } },
-		}),
-		issue
-	);
-	return {};
+/** Decline a pending invitation to a project session. */
+export const declineInvite = form(userProjectIdSchema, async ({ userProjectId }, issue) => {
+	const { locals } = getRequestEvent();
+	const result = await locals.api.POST('/invite/{userProjectId}/decline', {
+		params: { path: { userProjectId } }
+	});
+	return resolve(result, issue);
 });
 
-/**
- * Transfer session leadership to another active member.
- * The caller must be the current leader.
- */
-export const transferLeadership = mutate(
-	v.object({
-		userProjectId: v.pipe(v.string(), v.uuid()),
-		newLeaderId: v.pipe(v.string(), v.uuid()),
-	}),
-	async (api, body, issue) => {
-		await call(
-			api.POST('/invite/{userProjectId}/transfer/{newLeaderId}', {
-				params: { path: { userProjectId: body.userProjectId, newLeaderId: body.newLeaderId } },
-			}),
-			issue
-		);
-		return {};
+/** Transfer session leadership to another active member (caller must be leader). */
+export const transferLeadership = form(
+	v.object({ userProjectId: Filters.id, newLeaderId: Filters.id }),
+	async ({ userProjectId, newLeaderId }, issue) => {
+		const { locals } = getRequestEvent();
+		const result = await locals.api.POST('/invite/{userProjectId}/transfer/{newLeaderId}', {
+			params: { path: { userProjectId, newLeaderId } }
+		});
+		return resolve(result, issue);
 	}
 );
 
-/**
- * Voluntarily leave a project session as an accepted member.
- * Leaders must transfer leadership first.
- */
-export const leaveProject = mutate(userProjectIdSchema, async (api, body, issue) => {
-	await call(
-		api.POST('/invite/{userProjectId}/leave', {
-			params: { path: { userProjectId: body.userProjectId } },
-		}),
-		issue
-	);
-	return {};
+/** Voluntarily leave a project session (leaders must transfer first). */
+export const leaveProject = form(userProjectIdSchema, async ({ userProjectId }, issue) => {
+	const { locals } = getRequestEvent();
+	const result = await locals.api.POST('/invite/{userProjectId}/leave', {
+		params: { path: { userProjectId } }
+	});
+	return resolve(result, issue);
 });
 
-/**
- * Kick a member from a project session (leader only).
- * Also cancels pending invites.
- */
-export const kickMember = mutate(
-	v.object({
-		memberId: v.pipe(v.string(), v.uuid()),
-		userProjectId: v.pipe(v.string(), v.uuid()),
-	}),
-	async (api, body, issue) => {
-		await call(
-			api.DELETE('/invite/{memberId}/project/{userProjectId}/kick', {
-				params: { path: { memberId: body.memberId, userProjectId: body.userProjectId } },
-			}),
-			issue
-		);
-		return {};
+/** Kick a member or cancel a pending invite (leader only). */
+export const kickMember = form(
+	v.object({ memberId: Filters.id, userProjectId: Filters.id }),
+	async ({ memberId, userProjectId }, issue) => {
+		const { locals } = getRequestEvent();
+		const result = await locals.api.DELETE('/invite/{memberId}/project/{userProjectId}/kick', {
+			params: { path: { memberId, userProjectId } }
+		});
+		return resolve(result, issue);
 	}
 );

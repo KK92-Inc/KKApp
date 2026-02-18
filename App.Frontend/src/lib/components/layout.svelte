@@ -8,6 +8,12 @@
 	interface Props {
 		left: Snippet;
 		right: Snippet;
+
+		/** Classes to apply to the left container */
+		classL?: string;
+		/** Classes to apply to the right container */
+		classR?: string;
+
 		/**
 		 * Specifies the layout variant for the component.
 		 * - `navbar`: (Default) Creates a simple layout with a main content area and a sidebar.
@@ -23,17 +29,17 @@
 		cover?: boolean;
 	}
 
-	const { left, right, reverse = false, cover = false, variant = 'navbar' }: Props = $props();
+	const { left, right, reverse = false, cover = false, variant = 'navbar', classL, classR }: Props = $props();
 </script>
 
 {#if variant === 'splitpane'}
 	<div class="w-full">
 		<Resizable.PaneGroup direction="horizontal">
-			<Resizable.Pane minSize={15} maxSize={25} defaultSize={20}>
+			<Resizable.Pane minSize={15} maxSize={25} defaultSize={20} class={classL}>
 				{@render left()}
 			</Resizable.Pane>
 			<Resizable.Handle withHandle />
-			<Resizable.Pane defaultSize={80} class="overflow-y-auto!">
+			<Resizable.Pane defaultSize={80} class={cn('overflow-y-auto!', classR)}>
 				{@render right()}
 			</Resizable.Pane>
 		</Resizable.PaneGroup>
@@ -52,12 +58,13 @@
 					variant === 'center' && 'top-[calc(var(--header-height)+4rem)]',
 					variant === 'navbar' &&
 						'top-[calc(var(--header-height)+1px)] h-[calc(100svh-var(--header-height))]',
-					'sticky z-30 hidden w-(--sidebar-width) flex-col overscroll-none text-sidebar-foreground lg:flex'
+					'sticky z-30 hidden w-(--sidebar-width) flex-col overscroll-none text-sidebar-foreground lg:flex',
+					classL
 				)}
 			>
 				{@render left()}
 			</div>
-			<div class="h-full w-full max-md:px-2">
+			<div class={cn("h-full w-full max-md:px-2", classR)}>
 				{@render right()}
 			</div>
 		</div>

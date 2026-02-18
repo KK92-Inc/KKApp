@@ -244,7 +244,17 @@ export interface paths {
          */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    "filter[id]"?: string;
+                    /** @description The name of the property to use for sorting. */
+                    "sort[by]"?: string;
+                    /** @description The sort direction. */
+                    "sort[order]"?: components["schemas"]["Order"];
+                    /** @description The page number/index */
+                    "page[index]"?: number | string;
+                    /** @description The amount of results per page */
+                    "page[size]"?: number | string;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -4449,15 +4459,15 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
-            title?: string;
-            description?: string;
-            actionText?: string;
-            href?: string;
-            backgroundUrl?: string;
+            title: string;
+            description: string;
+            actionText: string;
+            href: string;
+            backgroundUrl: string;
             /** Format: date-time */
-            startsAt?: string;
+            startsAt: string;
             /** Format: date-time */
-            endsAt?: null | string;
+            endsAt: null | string;
         };
         SshKeyResponseDO: {
             title: string;

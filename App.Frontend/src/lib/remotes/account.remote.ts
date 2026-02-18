@@ -4,8 +4,8 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import { call } from './index.svelte.js';
 import { form, getRequestEvent } from '$app/server';
+import { resolve } from '$lib/api.js';
 
 // ============================================================================
 
@@ -26,20 +26,11 @@ const updateSchema = v.object({
 	)
 });
 
-/** Add a SSH Key for the current account */
 export const updateUser = form(updateSchema, async (body, issue) => {
 	const { locals } = getRequestEvent();
-
-	const result = await call(
-		locals.api.PATCH("/users/{userId}", {
-			params: { path: { userId: locals.session.userId } },
-			body
-		}),
-		issue
-	);
-
-	return {
-		success: result.response.ok,
-		message: result.error?.detail ?? 'Something went wrong...'
-	};
+	const result = await locals.api.PATCH('/users/{userId}', {
+		params: { path: { userId: locals.session.userId } },
+		body
+	});
+	return resolve(result, issue);
 });

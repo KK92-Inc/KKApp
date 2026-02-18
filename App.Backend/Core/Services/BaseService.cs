@@ -73,7 +73,7 @@ public abstract class BaseService<T>(DatabaseContext context) : IDomainService<T
     /// </summary>
     /// <param name="ids"></param>
     /// <returns></returns>
-    public async Task<bool> ExistsAsync(IEnumerable<Guid> ids, CancellationToken token = default)
+    public virtual async Task<bool> ExistsAsync(IEnumerable<Guid> ids, CancellationToken token = default)
     {
         var valid = await _dbSet.Select(x => x.Id).ToListAsync();
         return ids.All(valid.Contains);
@@ -86,7 +86,7 @@ public abstract class BaseService<T>(DatabaseContext context) : IDomainService<T
     /// <param name="id"></param>
     /// <param name="token"></param>
     /// <returns></returns>
-    public async Task<T?> FindByIdAsync(Guid id, CancellationToken token = default)
+    public virtual async Task<T?> FindByIdAsync(Guid id, CancellationToken token = default)
     {
         return await _dbSet.FirstOrDefaultAsync(x => x.Id == id, token);
     }
@@ -99,7 +99,7 @@ public abstract class BaseService<T>(DatabaseContext context) : IDomainService<T
     /// <param name="token"></param>
     /// <param name="filters"></param>
     /// <returns></returns>
-    public async Task<PaginatedList<T>> GetAllAsync(
+    public virtual async Task<PaginatedList<T>> GetAllAsync(
         ISorting sorting,
         IPagination pagination,
         CancellationToken token = default,

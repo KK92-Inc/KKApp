@@ -5,8 +5,10 @@
 	import { Loader } from '@lucide/svelte';
 	import type { RemoteQueryFunction } from '@sveltejs/kit';
 	import { onMount, type Snippet } from 'svelte';
+	import type { ClassValue } from 'svelte/elements';
 
 	interface Props {
+		class?: ClassValue;
 		item: Snippet<[value: T[number]]>;
 		query: RemoteQueryFunction<
 			{
@@ -19,7 +21,7 @@
 		>;
 	}
 
-	const { query, item }: Props = $props();
+	const { query, item, class: klass }: Props = $props();
 
 	let page = $state(Filters.pagination.page.default);
 	let items = $state<T[number][]>([]);
@@ -53,6 +55,7 @@
 			}
 		} catch (e) {
 			console.error(e);
+			endOfList = true;
 		} finally {
 			loading = false;
 		}
@@ -63,7 +66,7 @@
 	{@render item(entry)}
 {/each}
 
-<div bind:this={sentinel}>
+<div id="sentinel-scroll" bind:this={sentinel} class={klass}>
 	{#if loading}
 		<div class="flex w-full flex-col items-center justify-center gap-2 py-8 text-muted-foreground">
 			<Loader class="animate-spin" />
@@ -75,17 +78,12 @@
 				<Empty.Media
 					style="image-rendering: pixelated"
 					variant="icon"
-					class="render- bg-transparent"
+					class="bg-transparent"
 				>
-					<img
-						alt="mona"
-						src="https://github.githubassets.com/assets/mona-loading-dark-7701a7b97370.gif"
-					/>
+					<img alt="mona" src="/nyan.gif" />
 				</Empty.Media>
 				<Empty.Title>Nothing more</Empty.Title>
-				<Empty.Description>
-					You're all caught up. Nothing else down here!
-				</Empty.Description>
+				<Empty.Description>You're all caught up. Nothing else down here!</Empty.Description>
 			</Empty.Header>
 		</Empty.Root>
 	{/if}

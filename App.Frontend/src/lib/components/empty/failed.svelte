@@ -17,7 +17,7 @@
 	const { error, reset, icon, class: klass }: Props = $props();
 </script>
 
-<Empty.Root class={cn(klass, "h-80 bg-card")}>
+<Empty.Root class={cn(klass, "h-80 bg-muted")}>
 	<Empty.Header>
 		<Empty.Media variant="icon">
 			{#if icon}

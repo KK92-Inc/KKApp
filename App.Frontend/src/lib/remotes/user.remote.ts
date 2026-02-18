@@ -4,24 +4,26 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import { Filters } from '$lib/api';
-import { query, getRequestEvent } from '$app/server';
-import { error } from '@sveltejs/kit';
-import { get, paginated } from './index.svelte.js';
+import { getRequestEvent, query } from '$app/server';
+import { Filters, paginate, resolve } from '$lib/api.js';
 
 // ============================================================================
 
-/** Returns the full profile of the currently authenticated user (GET /account). */
+/** Returns the full profile of the currently authenticated user. */
 export const currentUser = query(async () => {
 	const { locals } = getRequestEvent();
-	const { data, response } = await locals.api.GET('/account');
-	if (!response.ok || !data) error(response.status, 'Request failed');
-	return data;
+	const result = await locals.api.GET('/account');
+	return resolve(result);
 });
 
-export const getUser = get(v.pipe(v.string(), v.uuid()), (api, userId) =>
-	api.GET('/users/{userId}', { params: { path: { userId } } })
-);
+/** Get a single user by ID. */
+export const getUser = query(Filters.id, async (userId) => {
+	const { locals } = getRequestEvent();
+	const result = await locals.api.GET('/users/{userId}', {
+		params: { path: { userId } }
+	});
+	return resolve(result);
+});
 
 // ============================================================================
 
@@ -32,8 +34,9 @@ const getUsersSchema = v.object({
 	display: v.optional(v.string())
 });
 
-export const getUsers = paginated(getUsersSchema, (api, params) =>
-	api.GET('/users', {
+export const getUsers = query(getUsersSchema, async (params) => {
+	const { locals } = getRequestEvent();
+	const result = await locals.api.GET('/users', {
 		params: {
 			query: {
 				'filter[login]': params.login,
@@ -44,5 +47,6 @@ export const getUsers = paginated(getUsersSchema, (api, params) =>
 				'sort[order]': params.sort
 			}
 		}
-	})
-);
+	});
+	return paginate(resolve(result), result.response);
+});

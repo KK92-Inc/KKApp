@@ -32,7 +32,8 @@ namespace App.Backend.API.Controllers;
 public class AccountController(
     ILogger<AccountController> log,
     IUserService users,
-    INotificationService notifications
+    INotificationService notifications,
+    ISpotlightService spotlights
 ) : Controller
 {
     [HttpGet]
@@ -103,10 +104,19 @@ public class AccountController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Get active spotlights")]
     [EndpointDescription("Retrieve the list of active spotlight notifications for the authenticated user.")]
-    public async Task<ActionResult<IEnumerable<SpotlightNotificationDO>>> GetSpotlights()
+    public async Task<ActionResult<IEnumerable<SpotlightNotificationDO>>> GetSpotlights(
+        [FromQuery(Name = "filter[id]")] Guid? id,
+        [FromQuery] Sorting sorting,
+        [FromQuery] Pagination pagination,
+        CancellationToken cancellationToken
+    )
     {
-        // TODO: Implement spotlights service
-        return Ok(Array.Empty<SpotlightNotificationDO>());
+        var page = await spotlights.GetAllAsync(sorting, pagination, cancellationToken,
+            id is null ? null : s => s.Id == id.Value
+        );
+
+        page.AppendHeaders(Request.Headers);
+        return Ok(page.Items.Select(s => new SpotlightNotificationDO(s)));
     }
 
     [HttpDelete("spotlights/{id:guid}")]
@@ -115,9 +125,12 @@ public class AccountController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Dismiss a spotlight")]
     [EndpointDescription("Mark a spotlight notification as dismissed so it won't be shown again.")]
-    public async Task<IActionResult> DismissSpotlight(Guid id)
+    public async Task<IActionResult> DismissSpotlight(Guid id, CancellationToken cancellationToken)
     {
         // TODO: Implement spotlights service
+        var spotlight = await spotlights.FindByIdAsync(id, cancellationToken);
+        if (spotlight is null) return NotFound();
+        await spotlights.Dismiss(spotlight, User.GetSID(), cancellationToken);
         return NoContent();
     }
 
@@ -169,7 +182,7 @@ public class AccountController(
         if (parts.Length < 2)
             return Problem("Invalid SSH public key format.", statusCode: 422);
 
-        user.SshKeys.Add(new ()
+        user.SshKeys.Add(new()
         {
             Title = data.Title,
             KeyType = parts[0],

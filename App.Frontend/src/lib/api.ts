@@ -2,37 +2,112 @@
 // W2Inc, 2025, All Rights Reserved.
 // See README in the root project for more information.
 // ============================================================================
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// ============================================================================
 
-// import { env } from '$env/dynamic/private';
-// import { RedisClient } from 'bun';
 import * as v from 'valibot';
+import { error, invalid } from '@sveltejs/kit';
+import type { FetchResponse } from 'openapi-fetch';
+import type { StandardSchemaV1 } from '@standard-schema/spec';
 
 // ============================================================================
 
-// 100 Max requests @ 4 steps (25, 50, 75, 100)
-export const P_MAX = 100;
-export const P_STEP = 4;
+// At most we can request 100 items, and these options exist at 4 steps.
+export const PAGINATION_MAX = 100;
+export const PAGINATION_STEPS = 4;
+
+/** RFC9457 Problem Details */
+export interface ProblemDetails {
+	type?: string;
+	title?: string;
+	status?: number;
+	detail?: string;
+	instance?: string;
+	[key: string]: unknown;
+}
+
+/** Pagination Response Body */
+export interface Paginated<T> {
+	data: T[];
+	page: number;
+	pages: number;
+	count: number;
+}
 
 // ============================================================================
 
 /**
- * Read response header for pagination headers (Index, Size).
- * @param response The response to parse
- * @returns If present the value else 0 for either or both.
+ * Return a paginated response.
+ * @param d
+ * @param r
+ * @returns
  */
-export function getPagination(response: Response) {
-	const pages = Number(response.headers.get('X-Pages') ?? 0);
+export function paginate<T>(data: Array<T>, r: Response): Paginated<T> {
+	const pages = Number(r.headers.get('X-Pages') ?? 0);
+
 	return {
-		page: Number(response.headers.get('X-Page') ?? 0),
+		data,
 		pages,
-		count: pages / P_MAX
+		page: Number(r.headers.get('X-Page') ?? 0),
+		count: pages / PAGINATION_MAX
 	};
 }
 
-/** Exposes commonly used and available filters */
+// ============================================================================
+
+type Has204<T> = T extends { responses: infer R }
+	? 204 extends keyof R
+		? true
+		: false
+	: false;
+
+type ResolvedData<T extends Record<string, unknown>, O, M extends `${string}/${string}`> =
+	Has204<T> extends true
+		? FetchResponse<T, O, M>['data']
+		: NonNullable<FetchResponse<T, O, M>['data']>;
+
+/**
+ * Resolve / verify the API Method response.
+ * Parses problem details into sveltekit form issues for specific fields
+ * @param result
+ * @param issue
+ * @returns
+ */
+export function resolve<T extends Record<string, unknown>, O, M extends `${string}/${string}`>(
+	result: FetchResponse<T, O, M>,
+	issue?: Record<string | number, any>
+): ResolvedData<T, O, M> {
+	const err = result.error;
+	if (!err || typeof err !== 'object') return result.data as ResolvedData<T, O, M>;
+
+	const problem = err as ProblemDetails;
+	if (issue && problem.errors) {
+		// ASP.NET usually returns PascalCase fields, convert to camelCase for JS forms
+		const toCamel = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
+		const issues: StandardSchemaV1.Issue[] = Object.entries(problem.errors).flatMap(
+			([field, messages]) =>
+				messages.map((message) => ({
+					message,
+					path: [toCamel(field)]
+				}))
+		);
+
+		if (issues.length > 0) {
+			invalid(...issues);
+		}
+	}
+
+	error(result.response.status, problem.detail ?? 'Something went wrong...');
+}
+
+// ============================================================================
+
+/** Exposes commonly used and available filters / validation */
+const id = v.pipe(v.string(), v.uuid());
 export const Filters = {
+	id,
 	base: {
-		id: v.optional(v.pipe(v.string(), v.uuid())),
+		id: v.optional(id),
 		slug: v.optional(v.string())
 	},
 	sort: {
@@ -41,13 +116,14 @@ export const Filters = {
 	},
 	pagination: {
 		page: v.optional(v.fallback(v.number(), 1), 1),
-		size: v.optional(v.fallback(v.number(), 25), P_MAX)
+		size: v.optional(v.fallback(v.number(), 25), PAGINATION_MAX)
 	}
 };
 
 // ============================================================================
 
 export default {
-	getPagination,
+	paginate,
+	resolve,
 	Filters
 };

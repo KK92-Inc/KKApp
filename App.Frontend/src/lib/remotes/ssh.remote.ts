@@ -4,34 +4,39 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import Remote from './index2.svelte.js';
-import { form, getRequestEvent } from '$app/server';
+import { form, getRequestEvent, query } from '$app/server';
+import { resolve } from '$lib/api.js';
 
 // ============================================================================
 
-export const getKeys = Remote.exec((api) => api.GET('/account/ssh-keys'));
+export const getKeys = query(async () => {
+	const { locals } = getRequestEvent();
+	const result = await locals.api.GET('/account/ssh-keys');
+	return resolve(result);
+});
 
 // ============================================================================
 
 const addSchema = v.object({ title: v.string(), publicKey: v.string() });
+
 export const addKey = form(addSchema, async (body, issue) => {
 	const { locals } = getRequestEvent();
-	const { error, response } = await locals.api.POST('/account/ssh-keys', { body });
-	Remote.verify(error, response, issue);
+	const result = await locals.api.POST('/account/ssh-keys', { body });
+	resolve(result, issue);
 	getKeys().refresh();
-	return { };
+	return {};
 });
 
 // ============================================================================
 
 const removeSchema = v.object({ fingerprint: v.string() });
+
 export const removeKey = form(removeSchema, async ({ fingerprint }, issue) => {
 	const { locals } = getRequestEvent();
-	const { error, response } = await locals.api.DELETE('/account/ssh-keys/{fingerprint}', {
-		params: { path: { fingerprint }}
+	const result = await locals.api.DELETE('/account/ssh-keys/{fingerprint}', {
+		params: { path: { fingerprint } }
 	});
-
-	Remote.verify(error, response, issue);
+	resolve(result, issue);
 	getKeys().refresh();
-	return { };
+	return {};
 });

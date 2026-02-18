@@ -4,26 +4,26 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import { Filters } from '$lib/api';
-import { get, paginated } from './index.svelte.js';
+import { getRequestEvent, query } from '$app/server';
+import { Filters, paginate, resolve } from '$lib/api.js';
 
 // ============================================================================
 
 const EntityObjectState = v.picklist(['Inactive', 'Active', 'Awaiting', 'Completed']);
 
-// User Cursus List
 // ============================================================================
 
 const getUserCursusListSchema = v.object({
-	userId: v.pipe(v.string(), v.uuid()),
+	userId: Filters.id,
 	...Filters.sort,
 	...Filters.pagination,
-	state: v.optional(EntityObjectState),
+	state: v.optional(EntityObjectState)
 });
 
-/** List all cursus enrollments for a specific user, with optional state filtering. */
-export const getUserCursusList = paginated(getUserCursusListSchema, (api, params) =>
-	api.GET('/users/{userId}/cursus', {
+/** List all cursus enrollments for a user, with optional state filtering. */
+export const getUserCursusList = query(getUserCursusListSchema, async (params) => {
+	const { locals } = getRequestEvent();
+	const result = await locals.api.GET('/users/{userId}/cursus', {
 		params: {
 			path: { userId: params.userId },
 			query: {
@@ -31,39 +31,35 @@ export const getUserCursusList = paginated(getUserCursusListSchema, (api, params
 				'sort[by]': params.sortBy,
 				'sort[order]': params.sort,
 				'page[size]': params.size,
-				'page[index]': params.page,
-			},
-		},
-	})
-);
-
-// User Cursus by Cursus ID
-// ============================================================================
-
-const byUserCursusSchema = v.object({
-	userId: v.pipe(v.string(), v.uuid()),
-	cursusId: v.pipe(v.string(), v.uuid()),
+				'page[index]': params.page
+			}
+		}
+	});
+	return paginate(resolve(result), result.response);
 });
 
 /** Find a user's specific cursus enrollment by user and cursus ID. */
-export const getUserCursusByCursusId = get(byUserCursusSchema, (api, params) =>
-	api.GET('/users/{userId}/cursus/{cursusId}', {
-		params: { path: { userId: params.userId, cursusId: params.cursusId } },
-	})
+export const getUserCursusByCursusId = query(
+	v.object({ userId: Filters.id, cursusId: Filters.id }),
+	async ({ userId, cursusId }) => {
+		const { locals } = getRequestEvent();
+		const result = await locals.api.GET('/users/{userId}/cursus/{cursusId}', {
+			params: { path: { userId, cursusId } }
+		});
+		return resolve(result);
+	}
 );
-
-// User Cursus by Entity ID
-// ============================================================================
 
 /** Find a user cursus enrollment directly by its entity ID. */
-export const getUserCursusById = get(v.pipe(v.string(), v.uuid()), (api, id) =>
-	api.GET('/user-cursus/{id}', { params: { path: { id } } })
-);
+export const getUserCursusById = query(Filters.id, async (id) => {
+	const { locals } = getRequestEvent();
+	const result = await locals.api.GET('/user-cursus/{id}', { params: { path: { id } } });
+	return resolve(result);
+});
 
-/**
- * Retrieve the user's personalized track and progress for a cursus enrollment.
- * Returns the cursus track with per-goal state computed for this user.
- */
-export const getUserCursusTrack = get(v.pipe(v.string(), v.uuid()), (api, id) =>
-	api.GET('/user-cursus/{id}/track', { params: { path: { id } } })
-);
+/** Retrieve the user's personalized track and progress for a cursus enrollment. */
+export const getUserCursusTrack = query(Filters.id, async (id) => {
+	const { locals } = getRequestEvent();
+	const result = await locals.api.GET('/user-cursus/{id}/track', { params: { path: { id } } });
+	return resolve(result);
+});

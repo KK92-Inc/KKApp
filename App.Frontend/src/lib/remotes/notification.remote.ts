@@ -4,8 +4,8 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import { Filters } from '$lib/api';
-import { paginated } from './index.svelte.js';
+import { getRequestEvent, query } from '$app/server';
+import { Filters, paginate, resolve } from '$lib/api.js';
 
 // ============================================================================
 
@@ -19,8 +19,9 @@ const schema = v.object({
 	notVariant: v.optional(v.number())
 });
 
-export const getNotifications = paginated(schema, (api, filters) =>
-	api.GET('/account/notifications', {
+export const getNotifications = query(schema, async (filters) => {
+	const { locals } = getRequestEvent();
+	const result = await locals.api.GET('/account/notifications', {
 		params: {
 			query: {
 				'filter[read]': filters.read,
@@ -32,5 +33,6 @@ export const getNotifications = paginated(schema, (api, filters) =>
 				'page[index]': filters.page
 			}
 		}
-	})
-);
+	});
+	return paginate(resolve(result), result.response);
+});

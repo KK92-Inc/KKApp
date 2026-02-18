@@ -4,12 +4,11 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import { Filters } from '$lib/api';
-import { get, paginated, mutate, call } from './index.svelte.js';
 import { getWorkspace } from './workspace.remote.js';
+import { form, getRequestEvent, query } from '$app/server';
+import { Filters, paginate, resolve } from '$lib/api.js';
 
 // ============================================================================
-
 // Query Cursus
 // ============================================================================
 
@@ -20,8 +19,10 @@ const querySchema = v.object({
 	name: v.optional(v.string())
 });
 
-export const getCursi = paginated(querySchema, (api, params) =>
-	api.GET('/cursus', {
+/** Query for a paginated result of cursi */
+export const getCursi = query(querySchema, async (params) => {
+	const { locals } = getRequestEvent();
+	const result = await locals.api.GET('/cursus', {
 		params: {
 			query: {
 				'sort[by]': params.sortBy,
@@ -33,62 +34,81 @@ export const getCursi = paginated(querySchema, (api, params) =>
 				'page[index]': params.page
 			}
 		}
-	})
-);
+	});
 
-export const getCursus = get(v.pipe(v.string(), v.uuid()), (api, id) =>
-	api.GET('/cursus/{id}', { params: { path: { id } } })
-);
+	return paginate(resolve(result), result.response);
+});
 
+/** Query for a cursus */
+export const getCursus = query(Filters.id, async (id) => {
+	const { locals } = getRequestEvent();
+	const result = await locals.api.GET('/cursus/{id}', {
+		params: { path: { id } }
+	});
+
+	return resolve(result);
+});
+
+// ============================================================================
 // Delete Cursus
 // ============================================================================
 
-const deleteCursusSchema = v.object({ id: v.pipe(v.string(), v.uuid()) });
+const deleteCursusSchema = v.object({ id: Filters.id });
 
-export const deleteCursus = mutate(deleteCursusSchema, async (api, params, issue) => {
-	await call(api.DELETE('/cursus', { params: { query: { id: params.id } } }), issue);
-	return {};
+/** Delete a cursus */
+export const deleteCursus = form(deleteCursusSchema, async (params, issue) => {
+	const { locals } = getRequestEvent();
+	const result = await locals.api.GET('/cursus/{id}', {
+		params: { path: { id: params.id } }
+	});
+
+	return resolve(result, issue);
 });
 
+// ============================================================================
 // Cursus Track
 // ============================================================================
 
-export const getCursusTrack = get(v.pipe(v.string(), v.uuid()), (api, id) =>
-	api.GET('/cursus/{id}/track', { params: { path: { id } } })
-);
+/** Get the track for a cursus */
+export const getCursusTrack = query(Filters.id, async (id) => {
+	const { locals } = getRequestEvent();
+	const result = await locals.api.GET('/cursus/{id}/track', {
+		params: { path: { id } }
+	});
 
-const nodeSchema = v.object({
-	goalId: v.pipe(v.string(), v.uuid()),
-	parentId: v.optional(v.nullable(v.pipe(v.string(), v.uuid()))),
-	group: v.optional(v.nullable(v.pipe(v.string(), v.uuid())))
+	return resolve(result);
 });
 
 const setCursusTrackSchema = v.object({
 	id: v.pipe(v.string(), v.uuid()),
-	nodes: v.array(nodeSchema)
+	nodes: v.array(
+		v.object({
+			goalId: v.pipe(v.string(), v.uuid()),
+			parentId: v.optional(v.pipe(v.string(), v.uuid())),
+			group: v.optional(v.pipe(v.string(), v.uuid()))
+		})
+	)
 });
 
-export const setCursusTrack = mutate(setCursusTrackSchema, async (api, body, issue) => {
-	const result = await call(
-		api.POST('/cursus/{id}/track', {
-			params: { path: { id: body.id } },
-			body: { nodes: body.nodes }
-		}),
-		issue
-	);
-	return { data: result.data };
+export const setCursusTrack = form(setCursusTrackSchema, async (body, issue) => {
+	const { locals } = getRequestEvent();
+	const result = await locals.api.POST('/cursus/{id}/track', {
+		params: { path: { id: body.id } },
+		body: { nodes: body.nodes }
+	});
+	return resolve(result, issue);
 });
 
-const cursusTrackUserSchema = v.object({
-	id: v.pipe(v.string(), v.uuid()),
-	userId: v.pipe(v.string(), v.uuid())
-});
+// const cursusTrackUserSchema = v.object({
+// 	id: v.pipe(v.string(), v.uuid()),
+// 	userId: v.pipe(v.string(), v.uuid())
+// });
 
-export const getCursusTrackForUser = get(cursusTrackUserSchema, (api, params) =>
-	api.GET('/cursus/{id}/track/user/{userId}', {
-		params: { path: { id: params.id, userId: params.userId } }
-	})
-);
+// export const getCursusTrackForUser = get(cursusTrackUserSchema, (api, params) =>
+// 	api.GET('/cursus/{id}/track/user/{userId}', {
+// 		params: { path: { id: params.id, userId: params.userId } }
+// 	})
+// );
 
 // Create Cursus
 // ============================================================================
@@ -102,14 +122,13 @@ const createCursusSchema = v.object({
 	completionMode: v.optional(v.picklist(['Ring', 'FreeStyle']))
 });
 
-export const createCursus = mutate(createCursusSchema, async (api, body, issue) => {
+export const createCursus = form(createCursusSchema, async (body, issue) => {
+	const { locals } = getRequestEvent();
 	const workspace = await getWorkspace();
-	await call(
-		api.POST('/workspace/{workspace}/cursus', {
-			params: { path: { workspace: workspace.id } },
-			body
-		}),
-		issue
-	);
-	return {};
+	const result = await locals.api.POST('/workspace/{workspace}/cursus', {
+		params: { path: { workspace: workspace.id } },
+		body
+	});
+
+	return resolve(result, issue);
 });

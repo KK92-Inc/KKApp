@@ -15,45 +15,35 @@
 
 {#snippet Galaxy()}{/snippet}
 
-<Layout variant="navbar" reverse>
-	{#snippet left()}
-		<ScrollArea class="h-full overflow-auto py-4" scrollbarYClasses="ml-2">
-			<!-- <Spotlight /> -->
-			<Separator orientation="horizontal" class="my-2" />
-		</ScrollArea>
-	{/snippet}
-	{#snippet right()}
-		<div class="pt-4">
-			<div class="grid grid-cols-3 gap-4">
-				<Button
-					href="#"
-					variant="ghost"
-					class="group relative mb-4 h-80 w-full min-w-0 shrink overflow-hidden rounded-lg border p-0 col-span-2"
-				>
-					<div
-						class="absolute inset-0 bg-[url('/graph.png')] bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
-					></div>
+<div class="mx-auto flex max-w-7xl gap-2 pt-6">
+	<div class="grid flex-1 min-w-0 grid-cols-3 gap-6">
+		<!-- Row 1: Button spans 2 columns, Reviews takes 1 column -->
+		<Button
+			href="#"
+			variant="outline"
+			class="group col-span-2 h-full min-h-80 bg-[url('/graph.png')] bg-cover p-0"
+		>
+			<section
+				class=" relative flex h-full w-full flex-col justify-end rounded-[inherit] bg-linear-to-t from-black via-black/80 to-transparent p-6 text-left opacity-0 backdrop-blur-xs transition duration-300 group-hover:opacity-100"
+			>
+				<h3 class="flex items-center gap-2 text-3xl font-bold text-white drop-shadow-md">
+					<Sparkles class="size-6" />
+					Your Galaxy
+				</h3>
+				<p class="text-sm text-muted-foreground">Explore your personal data universe &rarr;</p>
+			</section>
+		</Button>
+		<Reviews />
 
-					<div class="absolute inset-0 backdrop-blur-[2px]"></div>
-					<div
-						class="absolute inset-0 bg-linear-to-t from-black/80 via-black/40 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-					></div>
+		<!-- Row 2: Scroller takes all 3 columns -->
+		<Scroller query={getFeed} class="col-span-3">
+			{#snippet item(item)}
+				<Feed data={item} />
+			{/snippet}
+		</Scroller>
+	</div>
 
-					<section class="relative flex h-full w-full flex-col justify-end p-6 text-left">
-						<h3 class="flex items-center gap-2 text-3xl font-bold text-white drop-shadow-md">
-							<Sparkles class="size-6" />
-							Your Galaxy
-						</h3>
-						<p class="text-sm text-muted-foreground">Explore your personal data universe &rarr;</p>
-					</section>
-				</Button>
-				<Reviews />
-			</div>
-			<!-- <Scroller query={getFeed}>
-				{#snippet item(item)}
-					<Feed data={item} />
-				{/snippet}
-			</Scroller> -->
-		</div>
-	{/snippet}
-</Layout>
+	<aside class="max-w-xs shrink-0">
+		<Spotlight />
+	</aside>
+</div>

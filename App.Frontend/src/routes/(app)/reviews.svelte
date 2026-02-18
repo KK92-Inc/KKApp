@@ -47,6 +47,8 @@
 				<Skeleton class="h-8 w-full" />
 				<Skeleton class="h-8 w-full" />
 				<Skeleton class="h-8 w-full" />
+				<Skeleton class="h-8 w-full" />
+				<Skeleton class="h-8 w-full" />
 			</div>
 		{/snippet}
 

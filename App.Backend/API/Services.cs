@@ -191,6 +191,7 @@ public static class Services
         builder.Services.AddScoped<IUserCursusService, UserCursusService>();
         builder.Services.AddScoped<IUserGoalService, UserGoalService>();
         builder.Services.AddScoped<IUserProjectService, UserProjectService>();
+        builder.Services.AddScoped<ISpotlightService, SpotlightService>();
         builder.Services.AddTransient<IResend, ResendClient>();
 
         // // builder.Services.AddSingleton<INotificationQueue, InMemoryNotificationQueue>();

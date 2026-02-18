@@ -4,10 +4,11 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import { Filters } from '$lib/api';
-import { getWorkspace } from './workspace.remote';
-import { call, get, paginated, mutate } from './index.svelte.js';
+import { form, getRequestEvent, query } from '$app/server';
+import { Filters, paginate, resolve } from '$lib/api.js';
+import { getWorkspace } from './workspace.remote.js';
 
+// ============================================================================
 // Create Project
 // ============================================================================
 
@@ -18,30 +19,29 @@ const createSchema = v.object({
 	public: v.optional(v.boolean(), false)
 });
 
-export const createProject = mutate(createSchema, async (api, project, issue) => {
+export const createProject = form(createSchema, async (project, issue) => {
+	const { locals } = getRequestEvent();
 	const workspace = await getWorkspace();
-	await call(
-		api.POST('/workspace/{workspace}/project', {
-			params: { path: { workspace: workspace.id } },
-			body: {
-				name: project.name,
-				description: project.description,
-				public: project.public,
-				active: project.active
-			}
-		}),
-		issue
-	);
-	return {};
+	const result = await locals.api.POST('/workspace/{workspace}/project', {
+		params: { path: { workspace: workspace.id } },
+		body: project
+	});
+	return resolve(result, issue);
 });
 
+// ============================================================================
 // Get Project
 // ============================================================================
 
-export const getProject = get(v.string(), (api, id) =>
-	api.GET('/projects/{id}', { params: { path: { id } } })
-);
+export const getProject = query(Filters.id, async (id) => {
+	const { locals } = getRequestEvent();
+	const result = await locals.api.GET('/projects/{id}', {
+		params: { path: { id } }
+	});
+	return resolve(result);
+});
 
+// ============================================================================
 // Get Projects
 // ============================================================================
 
@@ -51,8 +51,9 @@ const getProjectsSchema = v.object({
 	name: v.optional(v.string())
 });
 
-export const getProjects = paginated(getProjectsSchema, (api, params) =>
-	api.GET('/projects', {
+export const getProjects = query(getProjectsSchema, async (params) => {
+	const { locals } = getRequestEvent();
+	const result = await locals.api.GET('/projects', {
 		params: {
 			query: {
 				'filter[name]': params.name,
@@ -61,21 +62,24 @@ export const getProjects = paginated(getProjectsSchema, (api, params) =>
 				'page[index]': params.page
 			}
 		}
-	})
-);
+	});
+	return paginate(resolve(result), result.response);
+});
 
+// ============================================================================
 // Get User Projects
 // ============================================================================
 
 const getUserProjectSchema = v.object({
 	...Filters.base,
 	...Filters.pagination,
-	name: v.optional(v.string()),
-	userId: v.pipe(v.string(), v.uuid())
+	userId: Filters.id,
+	name: v.optional(v.string())
 });
 
-export const getUserProjects = paginated(getUserProjectSchema, (api, body) =>
-	api.GET('/users/{userId}/projects', {
+export const getUserProjects = query(getUserProjectSchema, async (body) => {
+	const { locals } = getRequestEvent();
+	const result = await locals.api.GET('/users/{userId}/projects', {
 		params: {
 			path: { userId: body.userId },
 			query: {
@@ -85,23 +89,26 @@ export const getUserProjects = paginated(getUserProjectSchema, (api, body) =>
 				'page[index]': body.page
 			}
 		}
-	})
-);
+	});
+	return paginate(resolve(result), result.response);
+});
+
+// ============================================================================
 // Delete Project
 // ============================================================================
 
-const deleteProjectSchema = v.object({ id: v.pipe(v.string(), v.uuid()) });
-
-export const deleteProject = mutate(deleteProjectSchema, async (api, params, issue) => {
-	await call(api.DELETE('/projects', { params: { query: { id: params.id } } }), issue);
-	return {};
+export const deleteProject = form(v.object({ id: Filters.id }), async ({ id }, issue) => {
+	const { locals } = getRequestEvent();
+	const result = await locals.api.DELETE('/projects', { params: { query: { id } } });
+	return resolve(result, issue);
 });
 
+// ============================================================================
 // Update Project
 // ============================================================================
 
 const updateProjectSchema = v.object({
-	id: v.pipe(v.string(), v.uuid()),
+	id: Filters.id,
 	name: v.optional(v.string()),
 	description: v.optional(v.string()),
 	active: v.optional(v.boolean()),
@@ -109,15 +116,11 @@ const updateProjectSchema = v.object({
 	deprecated: v.optional(v.boolean())
 });
 
-export const updateProject = mutate(updateProjectSchema, async (api, params, issue) => {
-	const { id, ...body } = params;
-
-	const result = await call(
-		api.PATCH('/projects/{id}', {
-			params: { path: { id } },
-			body
-		}),
-		issue
-	);
-	return { data: result.data };
+export const updateProject = form(updateProjectSchema, async ({ id, ...body }, issue) => {
+	const { locals } = getRequestEvent();
+	const result = await locals.api.PATCH('/projects/{id}', {
+		params: { path: { id } },
+		body
+	});
+	return resolve(result, issue);
 });
