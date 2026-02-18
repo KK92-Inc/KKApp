@@ -42,6 +42,8 @@ public class UserProjectController(
     [EndpointDescription("Get all project sessions for a specific user, with optional state filtering.")]
     public async Task<ActionResult<IEnumerable<UserProjectDO>>> GetByUser(
         Guid userId,
+        [FromQuery(Name = "filter[name]")] string? name,
+        [FromQuery(Name = "filter[slug]")] string? slug,
         [FromQuery(Name = "filter[state]")] EntityObjectState? state,
         [FromQuery] Pagination pagination,
         [FromQuery] Sorting sorting,

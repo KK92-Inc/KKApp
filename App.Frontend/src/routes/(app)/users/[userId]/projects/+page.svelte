@@ -3,43 +3,41 @@
 	import * as Select from '$lib/components/select';
 	import useSearchParams from '$lib/hooks/url.svelte';
 	import * as Tabs from '$lib/components/tabs';
-	import { computed } from '$lib/hooks/computed.svelte';
-	import Input from '$lib/components/input/input.svelte';
 	import Layout from '$lib/components/layout.svelte';
 	import Button from '$lib/components/button/button.svelte';
+	import { getProjects } from '$lib/remotes/project.remote';
+	import { page } from '$app/state';
+	import type { components } from '$lib/api/api';
 
-	const fruits = [
-		{ value: 'apple', label: 'Apple' },
-		{ value: 'banana', label: 'Banana' },
-		{ value: 'blueberry', label: 'Blueberry' },
-		{ value: 'grapes', label: 'Grapes' },
-		{ value: 'pineapple', label: 'Pineapple' }
-	];
+	// const url = useSearchParams({
+	// 	state: v.fallback(v.picklist(['subscribed', 'available']), 'available'),
+	// 	fruits: v.fallback(v.picklist(fruits.map((f) => f.value)), 'apple'),
+	// 	count: v.fallback(
+	// 		v.pipe(
+	// 			v.string(),
+	// 			v.transform(Number),
+	// 			v.check((n) => !isNaN(n))
+	// 		),
+	// 		0
+	// 	)
+	// });
 
-	const url = useSearchParams({
-		state: v.fallback(v.picklist(['subscribed', 'available']), 'available'),
-		fruits: v.fallback(v.picklist(fruits.map((f) => f.value)), 'apple'),
-		count: v.fallback(
-			v.pipe(
-				v.string(),
-				v.transform(Number),
-				v.check((n) => !isNaN(n))
-			),
-			0
-		)
-	});
+	// const state = url.query('state');
+	// const counter = url.query('count');
+	// const selected = url.query('fruits');
 
-	const state = url.query('state');
-	const counter = url.query('count');
-	const selected = url.query('fruits');
-
-	const label = $derived(fruits.find((f) => f.value === selected.value)?.label ?? 'Select a fruit');
+	// const label = $derived(fruits.find((f) => f.value === selected.value)?.label ?? 'Select a fruit');
 </script>
 
-<Layout cover variant='navbar'>
+{#snippet projectCard(data: components['schemas']['ProjectDO'])}
+
+{/snippet}
+
+
+<Layout cover variant="navbar">
 	{#snippet left()}
-		<div class="h-full p-4 dark:bg-card border-r">
-			<div class="flex items-center gap-2">
+		<div class="h-full border-r p-4 dark:bg-card">
+			<!-- <div class="flex items-center gap-2">
 				<Button class="flex-1" onclick={() => counter.value++}>+</Button>
 				{counter.value}
 				<Button class="flex-1" onclick={() => counter.value--}>-</Button>
@@ -70,14 +68,17 @@
 						{/each}
 					</Select.Group>
 				</Select.Content>
-			</Select.Root>
+			</Select.Root> -->
 		</div>
 	{/snippet}
 	{#snippet right()}
-		<div class="px-2">
-			{#each Array.from({ length: 800 }) as k}
-				<h1>Hello World!</h1>
-			{/each}
-		</div>
+		<svelte:boundary>
+			{@const projects = await getProjects({})}
+			<div class="grid grid-cols-4 p-6 gap-6">
+				{#each projects.data as k (k.id)}
+					{@render projectCard(k)}
+				{/each}
+			</div>
+		</svelte:boundary>
 	{/snippet}
 </Layout>

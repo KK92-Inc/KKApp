@@ -33,6 +33,7 @@
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-svelte": "^3.15.0",
 		"globals": "^17.3.0",
+		"layerchart": "2.0.0-next.43",
 		"openapi-typescript": "^7.13.0",
 		"paneforge": "^1.0.2",
 		"prettier": "^3.8.1",

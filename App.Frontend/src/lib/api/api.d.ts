@@ -3408,6 +3408,8 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
+                    "filter[name]"?: string;
+                    "filter[slug]"?: string;
                     "filter[state]"?: components["schemas"]["EntityObjectState"];
                     /** @description The page number/index */
                     "page[index]"?: number | string;
@@ -4424,40 +4426,21 @@ export interface components {
             instance?: null | string;
         };
         ProjectDO: {
-            /** Format: uuid */
-            id: string;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
+            /** @description The display name of the project. */
             name: string;
+            /** @description A detailed description of the project's purpose or contents. */
             description: string;
+            /** @description The URL-friendly slug identifier for the project. */
             slug: string;
+            /** @description Indicates whether the project is currently active. */
             active: boolean;
+            /** @description Indicates whether the project is publicly visible. */
             public: boolean;
+            /** @description Indicates whether the project has been deprecated. */
             deprecated: boolean;
+            gitInfo: null | components["schemas"]["GitDO"];
+            /** @description The workspace to which this project belongs. */
             workspace: components["schemas"]["WorkspaceDO"];
-        };
-        ReviewKinds: string;
-        RubricDO: {
-            /** Format: uuid */
-            id: string;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
-            name: string;
-            slug: string;
-            markdown: string;
-            public: boolean;
-            enabled: boolean;
-            supportedReviewKinds: components["schemas"]["ReviewKinds"];
-            /** Format: uuid */
-            creatorId: string;
-            /** Format: uuid */
-            gitInfoId?: null | string;
-            creator?: null | components["schemas"]["UserLightDO"];
-            gitInfo?: null | components["schemas"]["GitDO"];
         };
         SpotlightNotificationDO: {
             /** Format: uuid */
@@ -4575,14 +4558,16 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
+            /** @description The current state of the object. */
             state: components["schemas"]["EntityObjectState"];
-            /** Format: uuid */
-            projectId: string;
-            /** Format: uuid */
-            rubricId?: null | string;
-            project?: null | components["schemas"]["ProjectDO"];
-            gitInfo?: null | components["schemas"]["GitDO"];
-            rubric?: null | components["schemas"]["RubricDO"];
+            /**
+             * Format: uuid
+             * @description The rubric selected for evaluating this project.
+             */
+            rubricId: null | string;
+            /** @description The project template this instance is based on. */
+            project: components["schemas"]["ProjectDO"];
+            gitInfo: null | components["schemas"]["GitDO"];
         };
         UserProjectMemberDO: {
             /** Format: uuid */
