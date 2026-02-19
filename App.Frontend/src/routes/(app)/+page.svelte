@@ -15,13 +15,12 @@
 
 {#snippet Galaxy()}{/snippet}
 
-<div class="mx-auto flex max-w-7xl gap-2 pt-6">
-	<div class="grid flex-1 min-w-0 grid-cols-3 gap-6">
-		<!-- Row 1: Button spans 2 columns, Reviews takes 1 column -->
+<div class="container mx-auto flex gap-6 px-6 py-4">
+	<div class="flex flex-auto flex-col gap-6">
 		<Button
 			href="#"
 			variant="outline"
-			class="group col-span-2 h-full min-h-80 bg-[url('/graph.png')] bg-cover p-0"
+			class="group h-80 w-full shrink-0 bg-[url('/graph.png')] bg-cover p-0"
 		>
 			<section
 				class=" relative flex h-full w-full flex-col justify-end rounded-[inherit] bg-linear-to-t from-black via-black/80 to-transparent p-6 text-left opacity-0 backdrop-blur-xs transition duration-300 group-hover:opacity-100"
@@ -33,17 +32,27 @@
 				<p class="text-sm text-muted-foreground">Explore your personal data universe &rarr;</p>
 			</section>
 		</Button>
-		<Reviews />
-
-		<!-- Row 2: Scroller takes all 3 columns -->
-		<Scroller query={getFeed} class="col-span-3">
+		<Scroller query={getFeed} class="">
 			{#snippet item(item)}
 				<Feed data={item} />
 			{/snippet}
 		</Scroller>
 	</div>
 
+	<aside class="w-80 shrink-0 flex flex-col gap-4 max-md:hidden">
+		<Spotlight />
+		<Reviews />
+	</aside>
+</div>
+
+<!-- <div class="mx-auto flex max-w-7xl gap-2 pt-6">
+	<div class="grid flex-1 min-w-0 grid-cols-3 gap-6">
+
+
+
+	</div>
+
 	<aside class="max-w-xs shrink-0">
 		<Spotlight />
 	</aside>
-</div>
+</div> -->

@@ -8,9 +8,8 @@
 
 <svelte:boundary>
 	{@const spotlights = await getSpotlights()}
-
 	{#snippet pending()}
-		<Card.Root class="w-full overflow-hidden bg-background pt-0">
+		<Card.Root class="overflow-hidden w-full bg-background pt-0">
 			<Skeleton class="h-48 w-full rounded-none" />
 			<Card.Header>
 				<Skeleton class="h-5 w-32" />
@@ -24,7 +23,7 @@
 	{#each spotlights as spotlight (spotlight.id)}
 		<Card.Root
 			id={spotlight.id}
-			class="relative w-full max-w-sm overflow-hidden bg-background pt-0"
+			class="relative w-full overflow-hidden bg-background pt-0"
 		>
 			<img
 				src={spotlight.backgroundUrl ?? '/placeholder.svg'}
