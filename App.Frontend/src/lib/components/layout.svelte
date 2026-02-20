@@ -57,7 +57,7 @@
 				class={cn(
 					variant === 'center' && 'top-[calc(var(--header-height)+4rem)]',
 					variant === 'navbar' &&
-						'top-[calc(var(--header-height)+1px)] h-[calc(100svh-var(--header-height))]',
+						'top-[calc(var(--header-height)+1px)] h-[calc(100svh-var(--header-height)-1px)]',
 					'sticky z-30 hidden w-(--sidebar-width) flex-col overscroll-none text-sidebar-foreground lg:flex',
 					classL
 				)}

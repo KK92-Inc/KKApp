@@ -35,6 +35,8 @@ using App.Backend.Core.Services.Options;
 using App.Backend.Database;
 using App.Backend.Domain.Enums;
 using App.Backend.Database.Interceptors;
+using App.Backend.API.Jobs;
+using App.Backend.API.Jobs.Extensions;
 
 // ============================================================================
 
@@ -204,7 +206,7 @@ public static class Services
             quartz.SchedulerName = "NXT";
             quartz.SchedulerId = "Queue";
             quartz.UseDefaultThreadPool(x => x.MaxConcurrency = 5);
-            // quartz.Register<SampleJob>();
+            quartz.Register<SampleJob>();
         });
 
         builder.Services.AddQuartzHostedService(o => o.WaitForJobsToComplete = true);

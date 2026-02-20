@@ -52,6 +52,6 @@ public class Notification : BaseEntity
     /// <summary>
     /// The notification data.
     /// </summary>
-    [Column("data", TypeName = "jsonb"), Required]
+    [Column("data", TypeName = "json"), Required]
     public required string Data { get; set; }
 }

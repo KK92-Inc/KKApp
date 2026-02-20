@@ -1,84 +1,84 @@
 <script lang="ts">
-	import * as v from 'valibot';
-	import * as Select from '$lib/components/select';
-	import useSearchParams from '$lib/hooks/url.svelte';
-	import * as Tabs from '$lib/components/tabs';
+	import * as InputGroup from '$lib/components/input-group';
 	import Layout from '$lib/components/layout.svelte';
-	import Button from '$lib/components/button/button.svelte';
-	import { getProjects } from '$lib/remotes/project.remote';
+	import { Separator } from '$lib/components/separator';
+	import * as Tabs from '$lib/components/tabs';
+	import { Archive, Search } from '@lucide/svelte';
+	import useSearchParams from '$lib/hooks/url.svelte';
+	import * as v from 'valibot';
+	import useDebounce from '$lib/hooks/debounce.svelte';
+	import { getProjects, getUserProjects } from '$lib/remotes/project.remote';
 	import { page } from '$app/state';
-	import type { components } from '$lib/api/api';
+	import type { PageProps } from './$types';
 
-	// const url = useSearchParams({
-	// 	state: v.fallback(v.picklist(['subscribed', 'available']), 'available'),
-	// 	fruits: v.fallback(v.picklist(fruits.map((f) => f.value)), 'apple'),
-	// 	count: v.fallback(
-	// 		v.pipe(
-	// 			v.string(),
-	// 			v.transform(Number),
-	// 			v.check((n) => !isNaN(n))
-	// 		),
-	// 		0
-	// 	)
-	// });
+	const { params }: PageProps = $props();
+	const url = useSearchParams({
+		tab: v.fallback(v.picklist(['subscribed', 'available']), 'available'),
+		search: v.fallback(v.string(), ''),
+		page: v.fallback(
+			v.pipe(
+				v.string(),
+				v.transform(Number),
+				v.check((n) => !isNaN(n) && n > 0)
+			),
+			1
+		)
+	});
 
-	// const state = url.query('state');
-	// const counter = url.query('count');
-	// const selected = url.query('fruits');
-
-	// const label = $derived(fruits.find((f) => f.value === selected.value)?.label ?? 'Select a fruit');
+	const tab = url.query('tab');
+	const search = url.query('search');
+	const activePage = url.query('page');
+	const debounce = useDebounce((val: string) => {
+		activePage.value = 1;
+		if (val.length === 0) {
+			search.clear();
+		} else {
+			search.value = val;
+		}
+	}, 400);
 </script>
-
-{#snippet projectCard(data: components['schemas']['ProjectDO'])}
-
-{/snippet}
-
 
 <Layout cover variant="navbar">
 	{#snippet left()}
-		<div class="h-full border-r p-4 dark:bg-card">
-			<!-- <div class="flex items-center gap-2">
-				<Button class="flex-1" onclick={() => counter.value++}>+</Button>
-				{counter.value}
-				<Button class="flex-1" onclick={() => counter.value--}>-</Button>
+		<aside class="flex h-full flex-col border-r bg-card">
+			<!-- Sidebar header -->
+			<div class="p-4 pb-3">
+				<div class="mb-3 flex items-center gap-2">
+					<Archive class="size-4 text-muted-foreground" />
+					<h2 class="text-sm font-semibold">Projects</h2>
+				</div>
+				<InputGroup.Root>
+					<InputGroup.Input
+						placeholder="Search projects..."
+						value={search.value}
+						oninput={(e) => debounce.fn(e.currentTarget.value)}
+					/>
+					<InputGroup.Addon>
+						<Search class="size-4" />
+					</InputGroup.Addon>
+				</InputGroup.Root>
 			</div>
-
-			{state.value}
-			<Tabs.Root bind:value={state.value}>
+			<Separator />
+			<Tabs.Root class="flex-1 overflow-y-auto p-4" bind:value={tab.value}>
 				<Tabs.List class="w-full">
-					<Tabs.Trigger value="subscribed">Subscribed</Tabs.Trigger>
-					<Tabs.Trigger value="available">Available</Tabs.Trigger>
+					<Tabs.Trigger value="available" class="flex-1">Available</Tabs.Trigger>
+					<Tabs.Trigger value="subscribed" class="flex-1">Subscribed</Tabs.Trigger>
 				</Tabs.List>
 			</Tabs.Root>
-
-			{selected.value}
-			<Select.Root type="single" name="favoriteFruit" bind:value={selected.value}>
-				<Select.Trigger class="w-full">{label}</Select.Trigger>
-				<Select.Content>
-					<Select.Group>
-						<Select.Label>Fruits</Select.Label>
-						{#each fruits as fruit (fruit.value)}
-							<Select.Item
-								value={fruit.value}
-								label={fruit.label}
-								disabled={fruit.value === 'grapes'}
-							>
-								{fruit.label}
-							</Select.Item>
-						{/each}
-					</Select.Group>
-				</Select.Content>
-			</Select.Root> -->
-		</div>
+		</aside>
 	{/snippet}
+
 	{#snippet right()}
 		<svelte:boundary>
-			{@const projects = await getProjects({})}
-			<div class="grid grid-cols-4 p-6 gap-6">
-				{#each projects.data as k (k.id)}
-					{@render projectCard(k)}
-				{/each}
-			</div>
+			{#if tab.value === 'available'}
+				{@const projects = await getProjects({
+					page: activePage.value,
+					name: search.value
+				})}
+
+			{:else}
+				{@const projects = await getUserProjects({ userId: params.userId })}
+			{/if}
 		</svelte:boundary>
 	{/snippet}
 </Layout>

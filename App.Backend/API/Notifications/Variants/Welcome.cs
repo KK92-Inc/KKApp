@@ -11,6 +11,7 @@ using System.Net.Mail;
 using App.Backend.Domain.Entities.Users;
 using Microsoft.AspNetCore.SignalR;
 using App.Backend.Models.Responses.Entities;
+using App.Backend.Models.Responses.Entities.Notifications;
 using App.Backend.API.Bus.Messages;
 
 namespace App.Backend.API.Notifications.Variants;
@@ -19,7 +20,7 @@ namespace App.Backend.API.Notifications.Variants;
 
 // Change 'class' to 'record'
 // Capitalize 'User' to follow property naming conventions
-public sealed record WelcomeUserNotification(UserDO User) : INotificationMessage, IBroadcastChannel
+public sealed record WelcomeUserNotification(UserDO User) : INotificationMessage, IBroadcastChannel, IDatabaseChannel
 {
     public Guid? ResourceId => null;
 
@@ -27,6 +28,11 @@ public sealed record WelcomeUserNotification(UserDO User) : INotificationMessage
     public NotificationMeta Meta => NotificationMeta.User | NotificationMeta.Feed;
 
     public BroadcastMessage ToBroadcast() => new("DemoEvent", User);
+
+    public NotificationData ToDatabase() => new MessageDO(
+        Text: $"Welcome, {User.Login}! Your account is ready.",
+        Html: $"<p>Welcome, <strong>{User.Login}</strong>! Your account is ready.</p>"
+    );
 }
 
 // public sealed record WelcomeUserNotification(Guid UserId) : INotificationMessage

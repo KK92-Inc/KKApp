@@ -6,6 +6,7 @@
 using App.Backend.Domain.Enums;
 using App.Backend.API.Notifications.Channels;
 using App.Backend.API.Bus.Messages;
+using App.Backend.Models.Responses.Entities.Notifications;
 
 // ============================================================================
 
@@ -31,9 +32,5 @@ public sealed record ProjectInviteNotification(
         InviterUserId,
     });
 
-    public object ToDatabase() => new
-    {
-        UserProjectId,
-        InviterUserId,
-    };
+    public NotificationData ToDatabase() => new ProjectInviteData(UserProjectId, InviterUserId);
 }

@@ -14,6 +14,7 @@ using System.Threading.Channels;
 using App.Backend.API.Bus.Messages;
 using App.Backend.API.Notifications.Registers.Interface;
 using App.Backend.API.Notifications.Variants;
+using App.Backend.Models.Responses.Entities.Notifications;
 
 // ============================================================================
 
@@ -66,7 +67,7 @@ public class NotificationHandler(
                 Descriptor = notification.Meta,
                 ResourceId = notification.ResourceId,
                 NotifiableId = notification.NotifiableId,
-                Data = JsonSerializer.Serialize(message.ToDatabase())
+                Data = JsonSerializer.Serialize<NotificationData>(message.ToDatabase())
             }, token);
             logger.LogDebug("Writing notification to database.... [OK]");
         }

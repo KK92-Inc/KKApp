@@ -1,19 +1,14 @@
 <script lang="ts">
 	import { Sparkles } from '@lucide/svelte';
 	import Spotlight from './spotlight.svelte';
-	import Layout from '$lib/components/layout.svelte';
 	import Button from '$lib/components/button/button.svelte';
 	import Scroller from '$lib/components/scroller.svelte';
-	import { Separator } from '$lib/components/separator';
 	import { Feed } from '$lib/components/feed';
-	import ScrollArea from '$lib/components/scroll-area/scroll-area.svelte';
 
 	// Remotes
 	import { getFeed } from '$lib/remotes/feed.remote';
 	import Reviews from './reviews.svelte';
 </script>
-
-{#snippet Galaxy()}{/snippet}
 
 <div class="container mx-auto flex gap-6 px-6 py-4">
 	<div class="flex flex-auto flex-col gap-6">
@@ -32,7 +27,7 @@
 				<p class="text-sm text-muted-foreground">Explore your personal data universe &rarr;</p>
 			</section>
 		</Button>
-		<Scroller query={getFeed} class="">
+		<Scroller load={async (page) => getFeed({ page, size: 5 })}>
 			{#snippet item(item)}
 				<Feed data={item} />
 			{/snippet}
@@ -44,15 +39,3 @@
 		<Reviews />
 	</aside>
 </div>
-
-<!-- <div class="mx-auto flex max-w-7xl gap-2 pt-6">
-	<div class="grid flex-1 min-w-0 grid-cols-3 gap-6">
-
-
-
-	</div>
-
-	<aside class="max-w-xs shrink-0">
-		<Spotlight />
-	</aside>
-</div> -->
