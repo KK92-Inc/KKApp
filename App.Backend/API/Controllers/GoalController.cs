@@ -45,7 +45,7 @@ public class GoalController(
     )
     {
         var page = await goalService.GetAllAsync(sorting, pagination);
-        page.AppendHeaders(Request.Headers);
+        page.AppendHeaders(Response.Headers);
         return Ok(page.Items.Select(g => new GoalDO(g)));
     }
 

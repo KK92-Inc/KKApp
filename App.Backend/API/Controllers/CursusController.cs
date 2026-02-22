@@ -54,7 +54,7 @@ public class CursusController(
             string.IsNullOrWhiteSpace(slug) ? null : n => n.Slug == slug
         );
 
-        page.AppendHeaders(Request.Headers);
+        page.AppendHeaders(Response.Headers);
         return Ok(page.Items.Select(c => new CursusDO(c)));
     }
 

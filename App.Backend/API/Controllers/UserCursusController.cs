@@ -52,7 +52,7 @@ public class UserCursusController(
             uc => uc.UserId == userId,
             state is null ? null : uc => uc.State == state
         );
-        page.AppendHeaders(Request.Headers);
+        page.AppendHeaders(Response.Headers);
         return Ok(page.Items.Select(uc => new UserCursusDO(uc)));
     }
 

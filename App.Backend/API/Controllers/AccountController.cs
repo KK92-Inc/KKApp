@@ -70,7 +70,7 @@ public class AccountController(
             exclusive is null ? null : n => (n.Descriptor & exclusive) == 0
         );
 
-        page.AppendHeaders(Request.Headers);
+        page.AppendHeaders(Response.Headers);
         return Ok(page.Items.Select(e => new NotificationDO(e)));
     }
 
@@ -115,7 +115,7 @@ public class AccountController(
             id is null ? null : s => s.Id == id.Value
         );
 
-        page.AppendHeaders(Request.Headers);
+        page.AppendHeaders(Response.Headers);
         return Ok(page.Items.Select(s => new SpotlightNotificationDO(s)));
     }
 

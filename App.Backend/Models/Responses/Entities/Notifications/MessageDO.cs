@@ -3,6 +3,8 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using System.ComponentModel.DataAnnotations;
+
 namespace App.Backend.Models.Responses.Entities.Notifications;
 
 /// <summary>
@@ -10,4 +12,4 @@ namespace App.Backend.Models.Responses.Entities.Notifications;
 /// </summary>
 /// <param name="Text">The plain text message content.</param>
 /// <param name="Html">The HTML formatted message content.</param>
-public record MessageDO(string Text, string Html) : NotificationData;
+public record MessageDO([Required] string Markdown) : NotificationData;

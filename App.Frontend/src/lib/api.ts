@@ -9,6 +9,7 @@ import * as v from 'valibot';
 import { error, invalid } from '@sveltejs/kit';
 import type { FetchResponse } from 'openapi-fetch';
 import type { StandardSchemaV1 } from '@standard-schema/spec';
+import { Log } from './log';
 
 // ============================================================================
 
@@ -32,6 +33,7 @@ export interface Paginated<T> {
 	page: number;
 	pages: number;
 	count: number;
+	perPage: number;
 }
 
 // ============================================================================
@@ -43,13 +45,12 @@ export interface Paginated<T> {
  * @returns
  */
 export function paginate<T>(data: Array<T>, r: Response): Paginated<T> {
-	const pages = Number(r.headers.get('X-Pages') ?? 0);
-
 	return {
 		data,
-		pages,
 		page: Number(r.headers.get('X-Page') ?? 0),
-		count: pages / PAGINATION_MAX
+		pages: Number(r.headers.get('X-Pages') ?? 0),
+		count: Number(r.headers.get('X-Total') ?? 0),
+		perPage: Number(r.headers.get('X-Per-Page') ?? 0),
 	};
 }
 
@@ -97,6 +98,7 @@ export function resolve<T extends Record<string, unknown>, O, M extends `${strin
 		}
 	}
 
+	Log.err(result.error, result.response.statusText);
 	error(result.response.status, problem.detail ?? 'Something went wrong...');
 }
 

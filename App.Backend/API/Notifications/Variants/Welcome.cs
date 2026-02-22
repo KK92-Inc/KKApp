@@ -25,34 +25,11 @@ public sealed record WelcomeUserNotification(UserDO User) : INotificationMessage
     public Guid? ResourceId => null;
 
     public Guid NotifiableId => User.Id;
-    public NotificationMeta Meta => NotificationMeta.User | NotificationMeta.Feed;
+    public NotificationMeta Meta => NotificationMeta.User | NotificationMeta.Feed | NotificationMeta.Welcome;
 
     public BroadcastMessage ToBroadcast() => new("DemoEvent", User);
 
     public NotificationData ToDatabase() => new MessageDO(
-        Text: $"Welcome, {User.Login}! Your account is ready.",
-        Html: $"<p>Welcome, <strong>{User.Login}</strong>! Your account is ready.</p>"
+        $"# Welcome, {User.Login}!\nYour account is ready."
     );
 }
-
-// public sealed record WelcomeUserNotification(Guid UserId) : INotificationMessage
-// {
-//     public Guid? ResourceId => null;
-//     public Guid NotifiableId => UserId;
-//     public NotificationMeta Meta => NotificationMeta.User | NotificationMeta.Feed;
-
-
-//     // public EmailMessage ToMail()
-//     // {
-//     //     return new EmailMessage(
-//     //         "Welcome to the App",
-//     //         "~/Views/Welcome.cshtml",
-//     //         new WelcomeViewModel(User.Details?.FirstName ?? User.Login)
-//     //     );
-//     // }
-
-//     public NotificationRequest Transform() => new(this)
-//     {
-//         Content = this
-//     };
-// }

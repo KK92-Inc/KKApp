@@ -23,9 +23,7 @@
 
 <svelte:boundary>
 	{#snippet pending()}
-		<div class={cn('markdown min-h-[1.5em]', className)}>
-			<span class="sr-only">Rendering...</span>
-		</div>
+		<span>Rendering...</span>
 	{/snippet}
 
 	<div class={cn('markdown', className)}>

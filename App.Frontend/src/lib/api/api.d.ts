@@ -4342,12 +4342,19 @@ export interface components {
             active: boolean;
             deprecated: boolean;
         };
-        NotificationData: components["schemas"]["NotificationDataMessageDO"];
+        NotificationData: components["schemas"]["NotificationDataMessageDO"] | components["schemas"]["NotificationDataProjectInviteData"];
         NotificationDataMessageDO: {
             /** @enum {string} */
-            type?: "User";
-            text: string;
-            html: string;
+            type?: "Message";
+            markdown: string;
+        };
+        NotificationDataProjectInviteData: {
+            /** @enum {string} */
+            type?: "ProjectInvite";
+            /** Format: uuid */
+            userProjectId: string;
+            /** Format: uuid */
+            inviterUserId: string;
         };
         NotificationDO: {
             /** Format: uuid */
@@ -4356,12 +4363,12 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
-            data?: components["schemas"]["NotificationData"];
-            descriptor?: components["schemas"]["NotificationMeta"];
+            data: components["schemas"]["NotificationData"];
+            descriptor: components["schemas"]["NotificationMeta"];
             /** Format: date-time */
-            readAt?: null | string;
+            readAt: null | string;
             /** Format: uuid */
-            resourceId?: null | string;
+            resourceId: null | string;
         };
         NotificationMeta: number;
         /** @enum {unknown} */

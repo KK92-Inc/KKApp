@@ -24,6 +24,12 @@ public enum NotificationMeta
 	/// <summary>
 	/// Notification that references a project (should include the associated project identifier).
 	/// </summary>
+	[JsonPropertyName(nameof(Welcome))]
+	Welcome = 1 << 4,
+
+	/// <summary>
+	/// Notification that references a project (should include the associated project identifier).
+	/// </summary>
 	[JsonPropertyName(nameof(Project))]
 	Project = 1 << 5,
 
@@ -55,7 +61,7 @@ public enum NotificationMeta
     /// The notification is intented for a organizaton.
     /// </summary>
     [JsonPropertyName(nameof(Organization))]
-	Organization = 1 << 10,
+	Organization = 1 << 11,
 
     /// <summary>
 	/// Show the notification as a feed notification

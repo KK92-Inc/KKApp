@@ -54,7 +54,7 @@ public class UserProjectController(
             up => up.Members.Any(m => m.UserId == userId),
             state is null ? null : up => up.State == state
         );
-        page.AppendHeaders(Request.Headers);
+        page.AppendHeaders(Response.Headers);
         return Ok(page.Items.Select(up => new UserProjectDO(up)));
     }
 

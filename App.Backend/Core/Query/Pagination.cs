@@ -41,6 +41,8 @@ public class PaginatedList<T>(IReadOnlyCollection<T> items, int count, int index
     {
         headers.Add("X-Page", Page.ToString());
         headers.Add("X-Pages", TotalPages.ToString());
+        headers.Add("X-Total", TotalCount.ToString());
+        headers.Add("X-Per-Page", PerPage.ToString());
         return this;
     }
 
@@ -53,6 +55,16 @@ public class PaginatedList<T>(IReadOnlyCollection<T> items, int count, int index
     /// The current page index.
     /// </summary>
     public int Page { get; } = index;
+
+    /// <summary>
+    /// The total number of items across all pages.
+    /// </summary>
+    public int TotalCount { get; } = count;
+
+    /// <summary>
+    /// The number of items per page.
+    /// </summary>
+    public int PerPage { get; } = size;
 
     /// <summary>
     /// The total number of pages available.

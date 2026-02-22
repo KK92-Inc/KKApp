@@ -51,7 +51,7 @@ public class UserGoalController(
             ug => ug.UserId == userId,
             state is null ? null : ug => ug.State == state
         );
-        page.AppendHeaders(Request.Headers);
+        page.AppendHeaders(Response.Headers);
         return Ok(page.Items.Select(ug => new UserGoalDO(ug)));
     }
 

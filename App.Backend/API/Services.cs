@@ -206,7 +206,7 @@ public static class Services
             quartz.SchedulerName = "NXT";
             quartz.SchedulerId = "Queue";
             quartz.UseDefaultThreadPool(x => x.MaxConcurrency = 5);
-            quartz.Register<SampleJob>();
+            // quartz.Register<SampleJob>();
         });
 
         builder.Services.AddQuartzHostedService(o => o.WaitForJobsToComplete = true);

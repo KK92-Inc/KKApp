@@ -6,7 +6,6 @@
 import * as v from 'valibot';
 import { Filters, paginate, resolve } from '$lib/api';
 import { getRequestEvent, query } from '$app/server';
-import { error } from '@sveltejs/kit';
 
 // ============================================================================
 
@@ -20,7 +19,7 @@ export const getFeed = query(schema, async (filter) => {
 				"page[index]": filter.page,
 				"sort[by]": filter.sortBy,
 				"sort[order]": filter.sort,
-				"filter[variant]": 1536
+				"filter[variant]": 1024
 			}
 		}
 	});

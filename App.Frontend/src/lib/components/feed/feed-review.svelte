@@ -1,31 +1,55 @@
 <script lang="ts">
-	import MessageSquare from '@lucide/svelte/icons/message-square';
-	import ExternalLink from '@lucide/svelte/icons/external-link';
-	import { Badge } from '$lib/components/badge';
-	import { Button } from '$lib/components/button';
-	import * as Tooltip from '$lib/components/tooltip';
-	import type { FeedNotification, MessageData } from './feed-types';
-	import { relativeTime } from './feed-types';
+import Star from '@lucide/svelte/icons/star';
+import * as Tooltip from '$lib/components/tooltip';
+import { Badge } from '$lib/components/badge';
+import type { components } from '$lib/api/api';
+// import { getLocalTimeZone, parseAbsolute, formatDateTime } from '@internationalized/date';
 
-	interface Props {
-		data: FeedNotification & { data: MessageData };
+interface Props {
+	notification: components["schemas"]["NotificationDO"] & {
+		data: components["schemas"]["NotificationDataMessageDO"]
 	}
+}
 
-	const { data }: Props = $props();
-
-	const href = $derived(
-		data.resourceId ? `/reviews/${data.resourceId}` : null
-	);
+const { notification }: Props = $props();
+// const createdDate = parseAbsolute(notification.createdAt);
+// const formattedDate = formatDateTime(createdDate, { timeZone: getLocalTimeZone(), dateStyle: 'medium', timeStyle: 'short' });
 </script>
+
+<div class="mb-3 rounded-lg border bg-card p-4 transition-colors hover:bg-accent/50">
+	<div class="flex items-start gap-3">
+		<div class="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-yellow-100 text-yellow-600 dark:bg-yellow-950 dark:text-yellow-400">
+			<Star class="size-4" />
+		</div>
+		<div class="min-w-0 flex-1">
+			<div class="flex items-center justify-between gap-2">
+				<Badge class="border-0 bg-yellow-500 text-xs text-white dark:bg-yellow-700">
+					<Star class="size-3" />
+					Review
+				</Badge>
+				<Tooltip.Root>
+					<Tooltip.Trigger class="text-muted-foreground text-xs">
+						<!-- {formattedDate} -->
+					</Tooltip.Trigger>
+					<Tooltip.Content>
+						<!-- <p>{formattedDate}</p> -->
+					</Tooltip.Content>
+				</Tooltip.Root>
+			</div>
+			<div class="mt-2 text-sm">
+				You have received a new review.
+			</div>
+		</div>
+	</div>
+</div>
+<!-- </script>
 
 <div class="bg-card hover:bg-accent/50 mb-3 rounded-lg border p-4 transition-colors">
 	<div class="flex items-start gap-3">
-		<!-- Icon -->
 		<div class="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-orange-100 text-orange-600 dark:bg-orange-950 dark:text-orange-400">
 			<MessageSquare class="size-4" />
 		</div>
 
-		<!-- Content -->
 		<div class="min-w-0 flex-1">
 			<div class="flex items-center justify-between gap-2">
 				<Badge class="border-0 bg-orange-500 text-xs text-white dark:bg-orange-700">
@@ -57,4 +81,4 @@
 			{/if}
 		</div>
 	</div>
-</div>
+</div> -->

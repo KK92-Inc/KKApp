@@ -27,14 +27,14 @@
 				<p class="text-sm text-muted-foreground">Explore your personal data universe &rarr;</p>
 			</section>
 		</Button>
-		<Scroller load={async (page) => getFeed({ page, size: 5 })}>
+		<Scroller load={async (page) => getFeed({ page, sort: "Ascending" })}>
 			{#snippet item(item)}
-				<Feed data={item} />
+				<Feed notification={item} />
 			{/snippet}
 		</Scroller>
 	</div>
 
-	<aside class="w-80 shrink-0 flex flex-col gap-4 max-md:hidden">
+	<aside class="w-80 shrink-0 flex flex-col gap-4 max-md:hidden sticky top-0">
 		<Spotlight />
 		<Reviews />
 	</aside>

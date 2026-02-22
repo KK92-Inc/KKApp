@@ -50,7 +50,7 @@ public class ProjectController(ILogger<ProjectController> log, IProjectService p
             string.IsNullOrWhiteSpace(slug) ? null : n => n.Slug == slug
         );
 
-        page.AppendHeaders(Request.Headers);
+        page.AppendHeaders(Response.Headers);
         return Ok(page.Items.Select(c => new ProjectDO(c)));
     }
 
