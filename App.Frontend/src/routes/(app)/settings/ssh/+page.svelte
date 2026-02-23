@@ -33,7 +33,7 @@
 
 	<svelte:boundary>
 		{@const keys = await getKeys()}
-		{#if keys.length === 0}
+		{#if keys === 0}
 			<Empty.Root class="m-auto h-80 bg-card/30">
 				<Empty.Header>
 					<Empty.Media variant="icon">

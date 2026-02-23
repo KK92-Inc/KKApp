@@ -5,24 +5,34 @@
 
 import * as v from 'valibot';
 import { form, getRequestEvent, query } from '$app/server';
-import { Filters, resolve } from '$lib/api.js';
+import { Filters, ProblemError, resolve } from '$lib/api';
 
 // ============================================================================
 
 /** Retrieve active spotlight notifications for the authenticated user. */
 export const getSpotlights = query(async () => {
 	const { locals } = getRequestEvent();
-	const result = await locals.api.GET('/account/spotlights');
-	return resolve(result);
+	const message = resolve(locals.api.GET("/account/spotlights"));
+	const result = await message.receive();
+	if (result instanceof ProblemError) {
+		ProblemError.throw(result.problem)
+	}
+
+	return result.data;
 });
 
 /** Dismiss a spotlight so it won't be shown again. */
-export const dismissSpotlight = form(v.object({ id: Filters.id }), async ({ id }, issue) => {
+export const dismissSpotlight = form(v.object({ id: Filters.id }), async ({ id }) => {
 	const { locals } = getRequestEvent();
-	const result = await locals.api.DELETE('/account/spotlights/{id}', {
+	const message = resolve(locals.api.DELETE('/account/spotlights/{id}', {
 		params: { path: { id } }
-	});
+	}));
+
+	const result = await message.receive();
+	if (result instanceof ProblemError) {
+		ProblemError.throw(result.problem)
+	}
 
 	getSpotlights().refresh();
-	return resolve(result, issue);
+	return result.data;
 });

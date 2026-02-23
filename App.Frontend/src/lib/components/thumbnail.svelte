@@ -10,6 +10,7 @@
 		allowed?: string[];
 		name?: string;
 		class?: ClassValue;
+		readonly?: boolean;
 	}
 
 	const {
@@ -17,6 +18,7 @@
 		maxSize = 5,
 		name = 'image',
 		class: klass,
+		readonly = false,
 		allowed = ['image/png', 'image/jpeg', 'image/gif']
 	}: Props = $props();
 
@@ -64,17 +66,20 @@
 		bind:this={input}
 		type="file"
 		{name}
-		value=""
+		{readonly}
+		disabled={readonly}
 		accept={allowed.join()}
 		class="absolute inset-0 z-10 cursor-pointer opacity-0"
 	/>
 	<div class="relative">
 		<!-- NOTE(W2): avatarUrl, will always be a string here. -->
 		<img {@attach preview} alt="logo" class="max-h-52 w-full rounded border object-cover" {src} />
-		<div
-			class="absolute inset-0 rounded bg-black/50 opacity-0 transition-opacity group-hover:opacity-100"
-		>
-			<Upload class="absolute inset-0 z-1 m-auto size-8 text-white" />
-		</div>
+		{#if !readonly}
+			<div
+				class="absolute inset-0 rounded bg-black/50 opacity-0 transition-opacity group-hover:opacity-100"
+			>
+				<Upload class="absolute inset-0 z-1 m-auto size-8 text-white" />
+			</div>
+		{/if}
 	</div>
 </div>

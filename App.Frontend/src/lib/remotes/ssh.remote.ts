@@ -5,38 +5,62 @@
 
 import * as v from 'valibot';
 import { form, getRequestEvent, query } from '$app/server';
-import { resolve } from '$lib/api.js';
+import { KestrelValidationError, ProblemError, resolve } from '$lib/api';
+import { invalid } from '@sveltejs/kit';
 
 // ============================================================================
 
 export const getKeys = query(async () => {
 	const { locals } = getRequestEvent();
-	const result = await locals.api.GET('/account/ssh-keys');
-	return resolve(result);
+	const message = resolve(locals.api.GET('/account/ssh-keys'));
+
+	const result = await message.receive();
+	if (result instanceof ProblemError) {
+		ProblemError.throw(result.problem);
+	}
+
+	return result.data;
 });
 
 // ============================================================================
 
 const addSchema = v.object({ title: v.string(), publicKey: v.string() });
-
-export const addKey = form(addSchema, async (body, issue) => {
+export const addKey = form(addSchema, async (body) => {
 	const { locals } = getRequestEvent();
-	const result = await locals.api.POST('/account/ssh-keys', { body });
-	resolve(result, issue);
+	const message = resolve(
+		locals.api.POST('/account/ssh-keys', {
+			body
+		})
+	);
+
+	const result = await message.send();
+	if (result instanceof KestrelValidationError) {
+		invalid(...result.issues);
+	}
+
+	if (result instanceof ProblemError) {
+		ProblemError.throw(result.problem);
+	}
+
 	getKeys().refresh();
-	return {};
 });
 
 // ============================================================================
 
 const removeSchema = v.object({ fingerprint: v.string() });
 
-export const removeKey = form(removeSchema, async ({ fingerprint }, issue) => {
+export const removeKey = form(removeSchema, async ({ fingerprint }) => {
 	const { locals } = getRequestEvent();
-	const result = await locals.api.DELETE('/account/ssh-keys/{fingerprint}', {
-		params: { path: { fingerprint } }
-	});
-	resolve(result, issue);
+	const message = resolve(
+		locals.api.DELETE('/account/ssh-keys/{fingerprint}', {
+			params: { path: { fingerprint } }
+		})
+	);
+
+	const result = await message.receive()
+	if (result instanceof ProblemError) {
+		ProblemError.throw(result.problem);
+	}
+
 	getKeys().refresh();
-	return {};
 });

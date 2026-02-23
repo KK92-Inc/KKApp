@@ -6,20 +6,49 @@
 import * as v from 'valibot';
 import { getRequestEvent, query } from '$app/server';
 import { Filters, resolve } from '$lib/api.js';
+import { error, invalid } from '@sveltejs/kit';
+import { Log } from '$lib/log';
 
 // ============================================================================
 
 /** Get a user's specific project session by user ID and project ID. */
-export const getUserProjectByProjectId = query(
-	v.object({ userId: Filters.id, projectId: Filters.id }),
-	async ({ userId, projectId }) => {
-		const { locals } = getRequestEvent();
-		const result = await locals.api.GET('/users/{userId}/projects/{projectId}', {
-			params: { path: { userId, projectId } }
-		});
-		return resolve(result);
-	}
-);
+const schema = v.object({ userId: Filters.id, projectId: Filters.id });
+export const getUserProjectByProjectId = query(schema, async ({ userId, projectId }) => {
+	const { locals } = getRequestEvent();
+	const result = await locals.api.GET('/users/{userId}/projects/{projectId}', {
+		params: { path: { userId, projectId } }
+	});
+
+	return resolve(result);
+});
+
+/** Get both the project and user project */
+export const getUserProjectAndProject = query(schema, async ({ userId, projectId }) => {
+	error(501, "Huh")
+	// const { locals } = getRequestEvent();
+	// const [project, session] = await Promise.all([
+	// 	await locals.api.GET('/projects/{id}', {
+	// 		params: { path: { id: projectId } }
+	// 	}),
+	// 	await locals.api.GET('/users/{userId}/projects/{projectId}', {
+	// 		params: { path: { userId, projectId } }
+	// 	})
+	// ]);
+
+	// // Project must exist and session should not return a 404
+	// if (project.error || (session.error && session.response.status !== 404)) {
+	// 	Log.err({
+	// 		project: project.error,
+	// 		session: session.error
+	// 	})
+	// 	error(500, "Something went wrong...");
+	// }
+
+	// return {
+	// 	project: project.data!,
+	// 	userProject: session.data
+	// }
+});
 
 /** Get a user project session directly by its entity ID. */
 export const getUserProjectById = query(Filters.id, async (id) => {

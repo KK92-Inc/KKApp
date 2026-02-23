@@ -6,7 +6,7 @@
 import * as v from 'valibot';
 import { getWorkspace } from './workspace.remote.js';
 import { form, getRequestEvent, query } from '$app/server';
-import { Filters, paginate, resolve } from '$lib/api.js';
+import { Filters, paginate, ProblemError, resolve } from '$lib/api';
 
 // ============================================================================
 // Query Cursus
@@ -22,7 +22,7 @@ const querySchema = v.object({
 /** Query for a paginated result of cursi */
 export const getCursi = query(querySchema, async (params) => {
 	const { locals } = getRequestEvent();
-	const result = await locals.api.GET('/cursus', {
+	const message = resolve(locals.api.GET('/cursus', {
 		params: {
 			query: {
 				'sort[by]': params.sortBy,
@@ -34,9 +34,14 @@ export const getCursi = query(querySchema, async (params) => {
 				'page[index]': params.page
 			}
 		}
-	});
+	}));
 
-	return paginate(resolve(result), result.response);
+	const result = await message.receive();
+	if (result instanceof ProblemError) {
+		ProblemError.throw(result.problem);
+	}
+
+	return paginate(result.data, result.response);
 });
 
 /** Query for a cursus */

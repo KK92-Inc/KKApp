@@ -4,15 +4,16 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import { Filters, paginate, resolve } from '$lib/api';
+import { Filters, paginate, ProblemError, resolve } from '$lib/api';
 import { getRequestEvent, query } from '$app/server';
+import { Log } from '$lib/log';
 
 // ============================================================================
 
 const schema = v.object({ ...Filters.sort, ...Filters.pagination });
 export const getFeed = query(schema, async (filter) => {
 	const { locals } = getRequestEvent();
-	const result = await locals.api.GET("/account/notifications", {
+	const message = resolve(locals.api.GET("/account/notifications", {
 		params: {
 			query: {
 				"page[size]": filter.size,
@@ -22,7 +23,13 @@ export const getFeed = query(schema, async (filter) => {
 				"filter[variant]": 1024
 			}
 		}
-	});
+	}));
 
-	return paginate(resolve(result), result.response);
+	const result = await message.receive();
+	if (result instanceof ProblemError) {
+		ProblemError.throw(result.problem);
+	}
+
+	Log.dbg("Hey")
+	return paginate(result.data, result.response);
 });
