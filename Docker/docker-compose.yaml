@@ -141,6 +141,7 @@ services:
       KEYCLOAK_HTTP: "http://keycloak:8080"
       services__keycloak__http__0: "http://keycloak:8080"
       RESEND_APITOKEN: "${BE_RESEND_TOKEN}"
+      Git__BaseUrl: "http://git-api:3000"
     expose:
       - "${BACKEND_PORT}"
     depends_on:
