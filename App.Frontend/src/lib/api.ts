@@ -21,11 +21,7 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import { form, getRequestEvent, query } from '$app/server';
-import type { StandardSchemaV1 } from '@standard-schema/spec';
 import { error, invalid } from '@sveltejs/kit';
-import type { FetchResponse } from 'openapi-fetch';
-import { ensure } from './utils';
 
 // ============================================================================
 
@@ -55,12 +51,12 @@ export const PAGINATION_PER_STEP = PAGINATION_MAX / PAGINATION_STEPS;
  * be used programmatically inside form handlers.
  */
 export interface ProblemDetails {
-	type?: string;
-	title?: string;
-	status?: number;
-	detail?: string;
-	instance?: string;
-	[key: string]: unknown;
+	type?: string | null;
+	title?: string | null;
+	status?: string | number | null;
+	detail?: string | null;
+	instance?: string | null;
+	[key: string]: unknown; // May include additional unknown fields
 }
 
 /**
@@ -125,44 +121,6 @@ export const Filters = {
 
 // ============================================================================
 
-export interface APIError {}
-
-/**
- * Wrapper for server-side validation responses.
- *
- * When the backend returns problem details with an `errors` property (common
- * for model validation failures) this class maps that shape into
- * `StandardSchemaV1.Issue[]` so the issues can be passed into SvelteKit's
- * `invalid(...)` helper inside a form handler.
- *
- * Mapping rules:
- * - Keys from the backend (e.g. `Title`) are converted to camelCase and used
- *   as the issue `path` (e.g. `title`)
- * - Each error message becomes an `Issue` with `{ path: [field], message }`
- *
- * Example server payload:
- * {
- *   title: "One or more validation errors occurred.",
- *   errors: { "Title": [ "The Title field is required." ] }
- * }
- *
- * Will produce an `issues` array like:
- * [{ path: ['title'], message: 'The Title field is required.' }]
- */
-export class KestrelValidationError implements APIError {
-	public readonly issues: StandardSchemaV1.Issue[];
-	constructor(public problem: ProblemDetails) {
-		const toCamel = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
-		this.issues = Object.entries(problem.errors ?? {}).flatMap(([field, messages]) => {
-			const msgs = Array.isArray(messages) ? messages : [messages];
-			return msgs.map((message) => ({
-				message: String(message),
-				path: [toCamel(field)]
-			}));
-		}) as StandardSchemaV1.Issue[];
-	}
-}
-
 /**
  * Wrapper for non-validation problem details returned by the server.
  *
@@ -170,73 +128,35 @@ export class KestrelValidationError implements APIError {
  * representation and either call `invalid(...issues)` (validation) or
  * rethrow/convert the problem into a SvelteKit HTTP error.
  */
-export class ProblemError implements APIError {
-	constructor(public problem: ProblemDetails) {}
+export class Problem {
+	/**
+	 * Check for bad requests / validation issues.
+	 * @param problem The problem
+	 */
+	public static validate(problem?: ProblemDetails) {
+		if (problem && problem.status === 400) {
+			const toCamel = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
+			const issues = Object.entries(problem.errors ?? {}).flatMap(([field, messages]) => {
+				const msgs = Array.isArray(messages) ? messages : [messages];
+				return msgs.map((message) => ({
+					message: String(message),
+					path: [toCamel(field)]
+				}));
+			});
+
+			invalid(...issues);
+		}
+	}
 
 	/**
-	 * Convenience helper to throw a SvelteKit HTTP error using the problem
-	 * status and detail. Callers may prefer to handle the problem manually.
+	 * Throw an error
+	 * @param problem The problem
+	 * @param except Filter out issues
+	 * @returns
 	 */
-	public static throw(problem: ProblemDetails): never {
-		error(problem.status ?? 500, problem.detail ?? 'Something went wrong...');
+	public static throw(problem?: ProblemDetails): never {
+			error(Number(problem?.status ?? 500), problem?.detail ?? 'Something went wrong...');
 	}
-}
-
-/**
- * Normalize an `openapi-fetch` response for route handlers.
- *
- * Behavior:
- * - If the response is successful (`!output.error`) the parsed `data` is
- *   returned.
- * - If the response contains validation-style `errors` and the caller passed
- *   an `issue` helper, a `KestrelValidationError` is returned. The caller
- *   should then call `invalid(...issues)` inside a form handler.
- * - Otherwise a `ProblemError` wrapper is returned and the handler may decide
- *   to convert it into an HTTP error (see `ProblemError.throw`).
- *
- * NOTE: This helper intentionally returns one of three shapes so handlers can
- * differentiate validation failures from other problem responses. Example
- * usage:
- *
- * const output = await resolve(apiCall());
- * if (output instanceof KestrelValidationError) invalid(...output.issues);
- * if (output instanceof ProblemError) ProblemError.throw(output.problem);
- * // otherwise `output` is the successful data
- */
-export function resolve<T extends Record<string, unknown>, O, M extends `${string}/${string}`>(
-	promise: Promise<FetchResponse<T, O, M>>
-) {
-	return {
-		/** Mark the response as sendable meaning you may get kestrel errors */
-		send: async () => {
-			const output = await promise;
-
-			if (!output.error) {
-				return {
-					data: output.data,
-					response: output.response
-				};
-			}
-
-			const problem = output.error as ProblemDetails & { errors?: StandardSchemaV1.Issue[] };
-			if (problem.errors) return new KestrelValidationError(problem);
-			return new ProblemError(problem);
-		},
-		/** Mark the response ans receivable meaning it won't check for kestrel errors */
-		receive: async () => {
-			const output = await promise;
-
-			if (!output.error) {
-				return {
-					data: output.data,
-					response: output.response
-				};
-			}
-
-			const problem = output.error as ProblemDetails & { errors?: StandardSchemaV1.Issue[] };
-			return new ProblemError(problem);
-		}
-	};
 }
 
 // Demo
@@ -253,17 +173,16 @@ export function resolve<T extends Record<string, unknown>, O, M extends `${strin
  */
 // export const demo = query(async () => {
 // 	const { locals } = getRequestEvent();
-// 	const output = await resolve(locals.api.GET('/account'));
-// 	if (output instanceof KestrelValidationError) {
-// 		// `invalid` will throw and return a structured form response to the
-// 		// client. Each issue was created from the backend `errors` mapping.
-// 		invalid(...output.issues);
+// 	const output = await locals.api.GET('/account');
+// 	if (output.error) {
+// 		Problem.validate(output.error);
+// 		Problem.throw(output.error, 404);
+// 	}
+// 	if (!output.data) {
+// 		Problem.throw({ status: 500 });
 // 	}
 
-// 	// Bubble up non-validation problems as HTTP errors (unless the caller
-// 	// deliberately handles 404 locally).
-// 	if (output instanceof ProblemError && output.problem.status !== 404)
-// 		ProblemError.throw(output.problem);
+// 	return output.data;
 // });
 
 /**
@@ -279,25 +198,11 @@ export function resolve<T extends Record<string, unknown>, O, M extends `${strin
  * This is the recommended pattern when backend validation is required to
  * enforce business rules that cannot be determined client-side.
  */
-// const schema = v.object({ userId: Filters.id, projectId: Filters.id });
-// export const demo2 = form(schema, async (data, issue) => {
+// const schema = v.object({ publicKey: Filters.id, title: Filters.id });
+// export const demo2 = form(schema, async (body) => {
 // 	const { locals } = getRequestEvent();
-// 	const o = await ensure(
-// 		locals.api.POST('/account/ssh-keys', {
-// 			body: {
-// 				publicKey: '123',
-// 				title: '123'
-// 			}
-// 		})
-// 	);
+// 	const output = await locals.api.POST('/account/ssh-keys', { body });
+// 	if (output.error) Problem.throw(output.error, 404);
+// 	if (!output.data) Problem.throw({ status: 500 });
 
-// 	if (o instanceof KestrelValidationError) {
-// 		// Map server issues into the form `issue` helper when possible. In
-// 		// this simplified example `KestrelValidationError.issues` already
-// 		// contains `{ path: [field], message }` shapes so calling
-// 		// `invalid(...o.issues)` will populate field-level errors. If you
-// 		// need to call the typed `issue.field(...)` helper, convert each
-// 		// issue accordingly before calling `invalid(...)`.
-// 		invalid(...o.issues);
-// 	}
 // });

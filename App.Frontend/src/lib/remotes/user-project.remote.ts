@@ -5,9 +5,8 @@
 
 import * as v from 'valibot';
 import { getRequestEvent, query } from '$app/server';
-import { Filters, resolve } from '$lib/api.js';
-import { error, invalid } from '@sveltejs/kit';
-import { Log } from '$lib/log';
+import { Filters, Problem } from '$lib/api.js';
+import { error } from '@sveltejs/kit';
 
 // ============================================================================
 
@@ -15,11 +14,15 @@ import { Log } from '$lib/log';
 const schema = v.object({ userId: Filters.id, projectId: Filters.id });
 export const getUserProjectByProjectId = query(schema, async ({ userId, projectId }) => {
 	const { locals } = getRequestEvent();
-	const result = await locals.api.GET('/users/{userId}/projects/{projectId}', {
+	const output = await locals.api.GET('/users/{userId}/projects/{projectId}', {
 		params: { path: { userId, projectId } }
 	});
 
-	return resolve(result);
+	if (output.error || !output.data) {
+		Problem.throw(output.error);
+	}
+
+	return output.data;
 });
 
 /** Get both the project and user project */

@@ -5,7 +5,7 @@
 
 import * as v from 'valibot';
 import { form, getRequestEvent } from '$app/server';
-import { Filters, resolve } from '$lib/api.js';
+import { Filters, Problem } from '$lib/api.js';
 
 // ============================================================================
 
@@ -17,70 +17,93 @@ const inviteSchema = v.object({
 });
 
 /** Invite a user to a project session (leader only). */
-export const sendInvite = form(inviteSchema, async ({ inviteeId, userProjectId }, issue) => {
+export const sendInvite = form(inviteSchema, async ({ inviteeId, userProjectId }) => {
 	const { locals } = getRequestEvent();
-	const result = await locals.api.POST('/invite/{inviteeId}/project/{userProjectId}', {
+	const output = await locals.api.POST('/invite/{inviteeId}/project/{userProjectId}', {
 		params: { path: { inviteeId, userProjectId } }
 	});
-	return resolve(result, issue);
+
+	if (output.error || !output.data) {
+		Problem.throw(output.error);
+	}
+
+	return output.data;
 });
 
 /** Revoke a pending invite from a project session. */
-export const revokeInvite = form(inviteSchema, async ({ inviteeId, userProjectId }, issue) => {
+export const revokeInvite = form(inviteSchema, async ({ inviteeId, userProjectId }) => {
 	const { locals } = getRequestEvent();
-	const result = await locals.api.DELETE('/invite/{inviteeId}/project/{userProjectId}', {
+	const output = await locals.api.DELETE('/invite/{inviteeId}/project/{userProjectId}', {
 		params: { path: { inviteeId, userProjectId } }
 	});
-	return resolve(result, issue);
+
+	if (output.error || !output.data) {
+		Problem.throw(output.error);
+	}
+
+	return output.data;
 });
 
 /** Accept a pending invitation to join a project session. */
-export const acceptInvite = form(userProjectIdSchema, async ({ userProjectId }, issue) => {
+export const acceptInvite = form(userProjectIdSchema, async ({ userProjectId }) => {
 	const { locals } = getRequestEvent();
-	const result = await locals.api.POST('/invite/{userProjectId}/accept', {
+	const output = await locals.api.POST('/invite/{userProjectId}/accept', {
 		params: { path: { userProjectId } }
 	});
-	return resolve(result, issue);
+
+	if (output.error || !output.data) {
+		Problem.throw(output.error);
+	}
+
+	return output.data;
 });
 
 /** Decline a pending invitation to a project session. */
-export const declineInvite = form(userProjectIdSchema, async ({ userProjectId }, issue) => {
+export const declineInvite = form(userProjectIdSchema, async ({ userProjectId }) => {
 	const { locals } = getRequestEvent();
-	const result = await locals.api.POST('/invite/{userProjectId}/decline', {
+	const output = await locals.api.POST('/invite/{userProjectId}/decline', {
 		params: { path: { userProjectId } }
 	});
-	return resolve(result, issue);
+
+	if (output.error) {
+		Problem.throw(output.error);
+	}
 });
 
+const transferSchema = v.object({ userProjectId: Filters.id, newLeaderId: Filters.id });
 /** Transfer session leadership to another active member (caller must be leader). */
-export const transferLeadership = form(
-	v.object({ userProjectId: Filters.id, newLeaderId: Filters.id }),
-	async ({ userProjectId, newLeaderId }, issue) => {
-		const { locals } = getRequestEvent();
-		const result = await locals.api.POST('/invite/{userProjectId}/transfer/{newLeaderId}', {
-			params: { path: { userProjectId, newLeaderId } }
-		});
-		return resolve(result, issue);
+export const transferLeadership = form(transferSchema, async ({ userProjectId, newLeaderId }) => {
+	const { locals } = getRequestEvent();
+	const output = await locals.api.POST('/invite/{userProjectId}/transfer/{newLeaderId}', {
+		params: { path: { userProjectId, newLeaderId } }
+	});
+
+	if (output.error) {
+		Problem.throw(output.error);
 	}
-);
+});
 
 /** Voluntarily leave a project session (leaders must transfer first). */
-export const leaveProject = form(userProjectIdSchema, async ({ userProjectId }, issue) => {
+export const leaveProject = form(userProjectIdSchema, async ({ userProjectId }) => {
 	const { locals } = getRequestEvent();
-	const result = await locals.api.POST('/invite/{userProjectId}/leave', {
+	const output = await locals.api.POST('/invite/{userProjectId}/leave', {
 		params: { path: { userProjectId } }
 	});
-	return resolve(result, issue);
+
+	if (output.error) {
+		Problem.throw(output.error);
+	}
 });
 
+const kickSchema = v.object({ memberId: Filters.id, userProjectId: Filters.id });
 /** Kick a member or cancel a pending invite (leader only). */
-export const kickMember = form(
-	v.object({ memberId: Filters.id, userProjectId: Filters.id }),
-	async ({ memberId, userProjectId }, issue) => {
-		const { locals } = getRequestEvent();
-		const result = await locals.api.DELETE('/invite/{memberId}/project/{userProjectId}/kick', {
-			params: { path: { memberId, userProjectId } }
-		});
-		return resolve(result, issue);
+export const kickMember = form(kickSchema, async ({ memberId, userProjectId }, issue) => {
+	const { locals } = getRequestEvent();
+	const output = await locals.api.DELETE('/invite/{memberId}/project/{userProjectId}/kick', {
+		params: { path: { memberId, userProjectId } }
+	});
+
+	if (output.error) {
+		Problem.throw(output.error);
 	}
-);
+});

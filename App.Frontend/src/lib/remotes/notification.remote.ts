@@ -5,7 +5,7 @@
 
 import * as v from 'valibot';
 import { getRequestEvent, query } from '$app/server';
-import { Filters, paginate, resolve } from '$lib/api.js';
+import { Filters, Problem } from '$lib/api.js';
 
 // ============================================================================
 
@@ -21,7 +21,7 @@ const schema = v.object({
 
 export const getNotifications = query(schema, async (filters) => {
 	const { locals } = getRequestEvent();
-	const result = await locals.api.GET('/account/notifications', {
+	const output = await locals.api.GET('/account/notifications', {
 		params: {
 			query: {
 				'filter[read]': filters.read,
@@ -34,5 +34,11 @@ export const getNotifications = query(schema, async (filters) => {
 			}
 		}
 	});
-	return paginate(resolve(result), result.response);
+
+	if (output.error || !output.data) {
+		Problem.validate(output.error);
+		Problem.throw(output.error);
+	}
+
+	return output.data;
 });

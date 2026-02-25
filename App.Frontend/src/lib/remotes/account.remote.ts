@@ -5,8 +5,7 @@
 
 import * as v from 'valibot';
 import { form, getRequestEvent } from '$app/server';
-import { KestrelValidationError, resolve } from '$lib/api';
-import { invalid } from '@sveltejs/kit';
+import { Problem } from '$lib/api';
 
 // ============================================================================
 
@@ -29,12 +28,15 @@ const updateSchema = v.object({
 
 export const updateUser = form(updateSchema, async (body) => {
 	const { locals } = getRequestEvent();
-	const result = await resolve(locals.api.PATCH('/users/{userId}', {
+	const output = await locals.api.PATCH('/users/{userId}', {
 		params: { path: { userId: locals.session.userId } },
 		body
-	}));
+	});
 
-	if (result instanceof KestrelValidationError) {
-		invalid(...result.issues);
+	if (output.error || !output.data) {
+		Problem.validate(output.error);
+		Problem.throw(output.error);
 	}
+
+	return output.data;
 });

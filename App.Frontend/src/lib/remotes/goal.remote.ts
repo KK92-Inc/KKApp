@@ -5,8 +5,8 @@
 
 import * as v from 'valibot';
 import { form, getRequestEvent, query } from '$app/server';
-import { error } from '@sveltejs/kit';
-import { Filters, paginate, resolve } from '$lib/api.js';
+import { error, redirect } from '@sveltejs/kit';
+import { Filters, paginate, Problem } from '$lib/api.js';
 import { getWorkspace } from './workspace.remote.js';
 import type { components } from '$lib/api/api';
 
@@ -28,14 +28,21 @@ const createGoalSchema = v.object({
 	public: v.optional(v.boolean(), false)
 });
 
-export const createGoal = form(createGoalSchema, async (body, issue) => {
+export const createGoal = form(createGoalSchema, async (body) => {
 	const { locals } = getRequestEvent();
 	const workspace = await getWorkspace();
-	const result = await locals.api.POST('/workspace/{workspace}/goal', {
+	const output = await locals.api.POST('/workspace/{workspace}/goal', {
 		params: { path: { workspace: workspace.id } },
 		body
 	});
-	return resolve(result, issue);
+
+	if (output.error || !output.data) {
+		Problem.validate(output.error);
+		Problem.throw(output.error);
+	}
+
+	// TODO: don't return 204. I need at least the ID.
+	redirect(303, `/goals/configure/{}`);
 });
 
 // ============================================================================
@@ -43,14 +50,10 @@ export const createGoal = form(createGoalSchema, async (body, issue) => {
 // NOTE: OpenAPI spec marks the 200 response as content?: never — parse manually
 // ============================================================================
 
-const queryGoalsSchema = v.object({
-	...Filters.sort,
-	...Filters.pagination
-});
-
+const queryGoalsSchema = v.object({ ...Filters.sort, ...Filters.pagination });
 export const getGoals = query(queryGoalsSchema, async (params) => {
 	const { locals } = getRequestEvent();
-	const { response } = await locals.api.GET('/goals', {
+	const output = await locals.api.GET('/goals', {
 		params: {
 			query: {
 				'sort[by]': params.sortBy,
@@ -60,24 +63,33 @@ export const getGoals = query(queryGoalsSchema, async (params) => {
 			}
 		}
 	});
-	if (!response.ok) error(response.status, 'Request failed');
-	return paginate((await response.json()) as GoalDO[], response);
+
+	if (output.error || !output.data) {
+		Problem.throw(output.error);
+	}
+	return paginate(output.data, output.response);
 });
 
 export const getGoal = query(Filters.id, async (id) => {
 	const { locals } = getRequestEvent();
-	const result = await locals.api.GET('/goals/{id}', { params: { path: { id } } });
-	return resolve(result);
+	const output = await locals.api.GET('/goals/{id}', { params: { path: { id } } });
+	if (output.error || !output.data) {
+		Problem.throw(output.error);
+	}
+
+	return output.data;
 });
 
 // ============================================================================
 // Delete Goal
 // ============================================================================
 
-export const deleteGoal = form(v.object({ id: Filters.id }), async ({ id }, issue) => {
+export const deleteGoal = form(v.object({ id: Filters.id }), async ({ id }) => {
 	const { locals } = getRequestEvent();
-	const result = await locals.api.DELETE('/goals', { params: { query: { id } } });
-	return resolve(result, issue);
+	const output = await locals.api.DELETE('/goals', { params: { query: { id } } });
+	if (output.error) {
+		Problem.throw(output.error);
+	}
 });
 
 // ============================================================================
@@ -93,27 +105,37 @@ const updateGoalSchema = v.object({
 	deprecated: v.optional(v.boolean())
 });
 
-export const updateGoal = form(updateGoalSchema, async ({ id, ...body }, issue) => {
+export const updateGoal = form(updateGoalSchema, async ({ id, ...body }) => {
 	const { locals } = getRequestEvent();
-	const result = await locals.api.PATCH('/goals/{id}', {
+	const output = await locals.api.PATCH('/goals/{id}', {
 		params: { path: { id } },
 		body
 	});
-	return resolve(result, issue);
+
+	if (output.error || !output.data) {
+		Problem.validate(output.error);
+		Problem.throw(output.error);
+	}
+
+	return output.data;
 });
 
 // ============================================================================
 // Goal Projects
-// NOTE: OpenAPI spec marks the 200 response as content?: never — parse manually
 // ============================================================================
 
 export const getGoalProjects = query(Filters.id, async (id) => {
 	const { locals } = getRequestEvent();
-	const { response } = await locals.api.GET('/goals/{id}/projects', {
+	const output = await locals.api.GET('/goals/{id}/projects', {
 		params: { path: { id } }
 	});
-	if (!response.ok) error(response.status, 'Request failed');
-	return (await response.json()) as ProjectDO[];
+
+	if (output.error || !output.data) {
+		Problem.validate(output.error);
+		Problem.throw(output.error);
+	}
+
+	return output.data;
 });
 
 const addGoalProjectsSchema = v.object({
@@ -121,13 +143,19 @@ const addGoalProjectsSchema = v.object({
 	projectIds: v.array(Filters.id)
 });
 
-export const addGoalProjects = form(addGoalProjectsSchema, async ({ id, projectIds }, issue) => {
+export const addGoalProjects = form(addGoalProjectsSchema, async ({ id, projectIds }) => {
 	const { locals } = getRequestEvent();
-	const result = await locals.api.POST('/goals/{id}/projects', {
+	const output = await locals.api.POST('/goals/{id}/projects', {
 		params: { path: { id } },
 		body: projectIds
 	});
-	return resolve(result, issue);
+
+	if (output.error || !output.data) {
+		Problem.validate(output.error);
+		Problem.throw(output.error);
+	}
+
+	return output.data;
 });
 
 // ============================================================================
@@ -143,7 +171,7 @@ const getUserGoalsSchema = v.object({
 
 export const getUserGoals = query(getUserGoalsSchema, async (params) => {
 	const { locals } = getRequestEvent();
-	const result = await locals.api.GET('/users/{userId}/goals', {
+	const output = await locals.api.GET('/users/{userId}/goals', {
 		params: {
 			path: { userId: params.userId },
 			query: {
@@ -155,22 +183,34 @@ export const getUserGoals = query(getUserGoalsSchema, async (params) => {
 			}
 		}
 	});
-	return paginate(resolve(result), result.response);
+
+	if (output.error || !output.data) {
+		Problem.throw(output.error);
+	}
+
+	return paginate(output.data, output.response);
 });
 
-export const getUserGoalByGoalId = query(
-	v.object({ userId: Filters.id, goalId: Filters.id }),
-	async ({ userId, goalId }) => {
-		const { locals } = getRequestEvent();
-		const result = await locals.api.GET('/users/{userId}/goals/{goalId}', {
-			params: { path: { userId, goalId } }
-		});
-		return resolve(result);
+const userGoalByIdSchema = v.object({ userId: Filters.id, goalId: Filters.id });
+export const getUserGoalByGoalId = query(userGoalByIdSchema, async ({ userId, goalId }) => {
+	const { locals } = getRequestEvent();
+	const output = await locals.api.GET('/users/{userId}/goals/{goalId}', {
+		params: { path: { userId, goalId } }
+	});
+
+	if (output.error || !output.data) {
+		Problem.throw(output.error);
 	}
-);
+
+	return output.data;
+});
 
 export const getUserGoalById = query(Filters.id, async (id) => {
 	const { locals } = getRequestEvent();
-	const result = await locals.api.GET('/user-goals/{id}', { params: { path: { id } } });
-	return resolve(result);
+	const output = await locals.api.GET('/user-goals/{id}', { params: { path: { id } } });
+	if (output.error || !output.data) {
+		Problem.throw(output.error);
+	}
+
+	return output.data;
 });

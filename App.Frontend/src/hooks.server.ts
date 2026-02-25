@@ -3,18 +3,14 @@
 // See README in the root project for more information.
 // ============================================================================
 
-import type { Handle, ServerInit } from '@sveltejs/kit';
+import { error, type Handle, type ServerInit } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
 import { Keycloak } from '$lib/oauth';
-import createClient from 'openapi-fetch';
+import createClient, { type Middleware } from 'openapi-fetch';
 import type { paths } from '$lib/api/api';
 import { Log } from '$lib/log';
 import { MetaData } from './routes/index.svelte';
 import { BACKEND_URI } from '$lib/config';
-
-// ============================================================================
-
-export const main: ServerInit = async () => {};
 
 // ============================================================================
 
@@ -54,6 +50,7 @@ const init: Handle = async ({ event, resolve }) => {
 		mode: 'cors',
 		fetch: event.fetch
 	});
+
 	return resolve(event);
 };
 

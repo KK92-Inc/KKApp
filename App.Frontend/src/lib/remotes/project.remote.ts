@@ -5,7 +5,7 @@
 
 import * as v from 'valibot';
 import { form, getRequestEvent, query } from '$app/server';
-import { Filters, paginate, resolve } from '$lib/api.js';
+import { Filters, paginate, Problem } from '$lib/api.js';
 import { getWorkspace } from './workspace.remote.js';
 
 // ============================================================================
@@ -19,14 +19,18 @@ const createSchema = v.object({
 	public: v.optional(v.boolean(), false)
 });
 
-export const createProject = form(createSchema, async (project, issue) => {
+export const createProject = form(createSchema, async (project) => {
 	const { locals } = getRequestEvent();
 	const workspace = await getWorkspace();
-	const result = await locals.api.POST('/workspace/{workspace}/project', {
+	const output = await locals.api.POST('/workspace/{workspace}/project', {
 		params: { path: { workspace: workspace.id } },
 		body: project
 	});
-	return resolve(result, issue);
+
+	if (output.error) {
+		Problem.validate(output.error);
+		Problem.throw(output.error);
+	}
 });
 
 // ============================================================================
@@ -35,10 +39,15 @@ export const createProject = form(createSchema, async (project, issue) => {
 
 export const getProject = query(Filters.id, async (id) => {
 	const { locals } = getRequestEvent();
-	const result = await locals.api.GET('/projects/{id}', {
+	const output = await locals.api.GET('/projects/{id}', {
 		params: { path: { id } }
 	});
-	return resolve(result);
+
+	if (output.error || !output.data) {
+		Problem.throw(output.error);
+	}
+
+	return output.data;
 });
 
 // ============================================================================
@@ -53,7 +62,7 @@ const getProjectsSchema = v.object({
 
 export const getProjects = query(getProjectsSchema, async (params) => {
 	const { locals } = getRequestEvent();
-	const result = await locals.api.GET('/projects', {
+	const output = await locals.api.GET('/projects', {
 		params: {
 			query: {
 				'filter[name]': params.name,
@@ -63,7 +72,11 @@ export const getProjects = query(getProjectsSchema, async (params) => {
 			}
 		}
 	});
-	return paginate(resolve(result), result.response);
+
+	if (output.error || !output.data) {
+		Problem.throw(output.error);
+	}
+	return paginate(output.data, output.response);
 });
 
 // ============================================================================
@@ -79,7 +92,7 @@ const getUserProjectSchema = v.object({
 
 export const getUserProjects = query(getUserProjectSchema, async (body) => {
 	const { locals } = getRequestEvent();
-	const result = await locals.api.GET('/users/{userId}/projects', {
+	const output = await locals.api.GET('/users/{userId}/projects', {
 		params: {
 			path: { userId: body.userId },
 			query: {
@@ -90,17 +103,23 @@ export const getUserProjects = query(getUserProjectSchema, async (body) => {
 			}
 		}
 	});
-	return paginate(resolve(result), result.response);
+
+	if (output.error || !output.data) {
+		Problem.throw(output.error);
+	}
+	return paginate(output.data, output.response);
 });
 
 // ============================================================================
 // Delete Project
 // ============================================================================
 
-export const deleteProject = form(v.object({ id: Filters.id }), async ({ id }, issue) => {
+export const deleteProject = form(v.object({ id: Filters.id }), async ({ id }) => {
 	const { locals } = getRequestEvent();
-	const result = await locals.api.DELETE('/projects', { params: { query: { id } } });
-	return resolve(result, issue);
+	const output = await locals.api.DELETE('/projects', { params: { query: { id } } });
+	if (output.error || !output.data) {
+		Problem.throw(output.error);
+	}
 });
 
 // ============================================================================
@@ -116,11 +135,17 @@ const updateProjectSchema = v.object({
 	deprecated: v.optional(v.boolean())
 });
 
-export const updateProject = form(updateProjectSchema, async ({ id, ...body }, issue) => {
+export const updateProject = form(updateProjectSchema, async ({ id, ...body }) => {
 	const { locals } = getRequestEvent();
-	const result = await locals.api.PATCH('/projects/{id}', {
+	const output = await locals.api.PATCH('/projects/{id}', {
 		params: { path: { id } },
 		body
 	});
-	return resolve(result, issue);
+
+	if (output.error || !output.data) {
+		Problem.validate(output.error);
+		Problem.throw(output.error);
+	}
+
+	return output.data;
 });

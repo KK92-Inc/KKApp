@@ -6,7 +6,7 @@
 import * as v from 'valibot';
 import { getWorkspace } from './workspace.remote.js';
 import { form, getRequestEvent, query } from '$app/server';
-import { Filters, paginate, ProblemError, resolve } from '$lib/api';
+import { Filters, paginate, Problem } from '$lib/api.js';
 
 // ============================================================================
 // Query Cursus
@@ -22,7 +22,7 @@ const querySchema = v.object({
 /** Query for a paginated result of cursi */
 export const getCursi = query(querySchema, async (params) => {
 	const { locals } = getRequestEvent();
-	const message = resolve(locals.api.GET('/cursus', {
+	const output = await locals.api.GET('/cursus', {
 		params: {
 			query: {
 				'sort[by]': params.sortBy,
@@ -34,24 +34,23 @@ export const getCursi = query(querySchema, async (params) => {
 				'page[index]': params.page
 			}
 		}
-	}));
+	});
 
-	const result = await message.receive();
-	if (result instanceof ProblemError) {
-		ProblemError.throw(result.problem);
-	}
-
-	return paginate(result.data, result.response);
+	if (output.error || !output.data)
+		Problem.throw(output.error);
+	return paginate(output.data, output.response);
 });
 
 /** Query for a cursus */
 export const getCursus = query(Filters.id, async (id) => {
 	const { locals } = getRequestEvent();
-	const result = await locals.api.GET('/cursus/{id}', {
+	const output = await locals.api.GET('/cursus/{id}', {
 		params: { path: { id } }
 	});
 
-	return resolve(result);
+	if (output.error || !output.data)
+		Problem.throw(output.error);
+	return output.data;
 });
 
 // ============================================================================
@@ -63,11 +62,13 @@ const deleteCursusSchema = v.object({ id: Filters.id });
 /** Delete a cursus */
 export const deleteCursus = form(deleteCursusSchema, async (params, issue) => {
 	const { locals } = getRequestEvent();
-	const result = await locals.api.GET('/cursus/{id}', {
+	const output = await locals.api.GET('/cursus/{id}', {
 		params: { path: { id: params.id } }
 	});
 
-	return resolve(result, issue);
+	if (output.error || !output.data)
+		Problem.throw(output.error);
+	return output.data;
 });
 
 // ============================================================================
@@ -77,11 +78,13 @@ export const deleteCursus = form(deleteCursusSchema, async (params, issue) => {
 /** Get the track for a cursus */
 export const getCursusTrack = query(Filters.id, async (id) => {
 	const { locals } = getRequestEvent();
-	const result = await locals.api.GET('/cursus/{id}/track', {
+	const output = await locals.api.GET('/cursus/{id}/track', {
 		params: { path: { id } }
 	});
 
-	return resolve(result);
+	if (output.error || !output.data)
+		Problem.throw(output.error);
+	return output.data;
 });
 
 const setCursusTrackSchema = v.object({
@@ -95,25 +98,21 @@ const setCursusTrackSchema = v.object({
 	)
 });
 
-export const setCursusTrack = form(setCursusTrackSchema, async (body, issue) => {
+export const setCursusTrack = form(setCursusTrackSchema, async (body) => {
 	const { locals } = getRequestEvent();
-	const result = await locals.api.POST('/cursus/{id}/track', {
+	const output = await locals.api.POST('/cursus/{id}/track', {
 		params: { path: { id: body.id } },
 		body: { nodes: body.nodes }
 	});
-	return resolve(result, issue);
+
+	Problem.validate()
+
+	if (output.error || !output.data) {
+		Problem.validate(output.error);
+		Problem.throw(output.error);
+	}
+	return output.data;
 });
-
-// const cursusTrackUserSchema = v.object({
-// 	id: v.pipe(v.string(), v.uuid()),
-// 	userId: v.pipe(v.string(), v.uuid())
-// });
-
-// export const getCursusTrackForUser = get(cursusTrackUserSchema, (api, params) =>
-// 	api.GET('/cursus/{id}/track/user/{userId}', {
-// 		params: { path: { id: params.id, userId: params.userId } }
-// 	})
-// );
 
 // Create Cursus
 // ============================================================================
@@ -127,13 +126,17 @@ const createCursusSchema = v.object({
 	completionMode: v.optional(v.picklist(['Ring', 'FreeStyle']))
 });
 
-export const createCursus = form(createCursusSchema, async (body, issue) => {
+export const createCursus = form(createCursusSchema, async (body) => {
 	const { locals } = getRequestEvent();
 	const workspace = await getWorkspace();
-	const result = await locals.api.POST('/workspace/{workspace}/cursus', {
+	const output = await locals.api.POST('/workspace/{workspace}/cursus', {
 		params: { path: { workspace: workspace.id } },
 		body
 	});
 
-	return resolve(result, issue);
+	if (output.error || !output.data) {
+		Problem.validate(output.error);
+		Problem.throw(output.error);
+	}
+	return output.data;
 });
