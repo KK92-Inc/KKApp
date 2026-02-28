@@ -56,13 +56,21 @@ export const getUserProjectAndProject = query(schema, async ({ userId, projectId
 /** Get a user project session directly by its entity ID. */
 export const getUserProjectById = query(Filters.id, async (id) => {
 	const { locals } = getRequestEvent();
-	const result = await locals.api.GET('/user-projects/{id}', { params: { path: { id } } });
-	return resolve(result);
+	const output = await locals.api.GET('/user-projects/{id}', { params: { path: { id } } });
+	if (output.error || !output.data) {
+		Problem.throw(output.error);
+	}
+
+	return output.data;
 });
 
 /** Retrieve all members participating in a user project session. */
 export const getUserProjectMembers = query(Filters.id, async (id) => {
 	const { locals } = getRequestEvent();
-	const result = await locals.api.GET('/user-projects/{id}/members', { params: { path: { id } } });
-	return resolve(result);
+	const output = await locals.api.GET('/user-projects/{id}/members', { params: { path: { id } } });
+	if (output.error || !output.data) {
+		Problem.throw(output.error);
+	}
+
+	return output.data;
 });

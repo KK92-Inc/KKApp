@@ -1,46 +1,146 @@
 <script lang="ts">
-	import Button from '$lib/components/button/button.svelte';
+	import * as Accordion from '$lib/components/accordion';
+	import * as Avatar from '$lib/components/avatar';
+	import Markdown from '$lib/components/markdown/markdown.svelte';
 	import Input from '$lib/components/input/input.svelte';
-	import Layout from '$lib/components/layout.svelte';
-	import Textarea from '$lib/components/textarea/textarea.svelte';
-	import Thumbnail from '$lib/components/thumbnail.svelte';
-	import { subscribeProject, unsubscribeProject } from '$lib/remotes/subscribe.remote';
-	import { getUserProjectAndProject } from '$lib/remotes/user-project.remote';
+	import { page } from '$app/state';
+	import Card from '$lib/components/card/card.svelte';
+	import { Separator } from '$lib/components/separator/index.js';
 	import type { PageProps } from './$types';
+	import Thumbnail from '$lib/components/thumbnail.svelte';
+	import { Button } from '$lib/components/button';
+	import {
+		ExternalLink,
+		GitBranch,
+		MessageCircleHeart,
+		Pen,
+		ShieldCheck,
+		Users
+	} from '@lucide/svelte';
+	import { Pagination } from '$lib/components/pagination';
+	import Layout from '$lib/components/layout.svelte';
+	import FileBrowser from '$lib/components/file-browser/file-browser.svelte';
 
 	const { params, data }: PageProps = $props();
-	const { project, userProject } = await getUserProjectAndProject({
-		userId: data.session.userId,
-		projectId: params.project
-	});
-
-	const isSubscribed = $derived(userProject !== undefined);
+	const canSubscribe = $derived(
+		data.userProject === undefined || data.userProject.state === 'Inactive'
+	);
 </script>
 
-<!-- <Layout>
+{#snippet img(src: string, fallback: string, className: string, alt?: string)}
+	<Avatar.Root class="rounded">
+		<Avatar.Image class={className} {src} {alt} />
+		<Avatar.Fallback class={className}>{fallback}</Avatar.Fallback>
+	</Avatar.Root>
+{/snippet}
+
+<Layout>
 	{#snippet left()}
-		<div class="mt-4 flex flex-col items-center gap-4 p-4">
-			<Thumbnail readonly src="https://github.com/w2wizard.png" class="max-w-fit" />
-			<Input readonly value={project.name} />
-			<Textarea readonly value={project.description} class="resize-none" />
-			{#if isSubscribed}
-				<form {...unsubscribeProject}>
-					<input hidden {...subscribeProject.fields.userId.as("text")} value={data.session.userId}/>
-					<input hidden {...subscribeProject.fields.projectId.as("text")} value={params.project}/>
-					<Button type="submit">Unsubscribe</Button>
-				</form>
-			{:else}
-				<form {...subscribeProject}>
-					<input hidden {...subscribeProject.fields.userId.as("text")} value={data.session.userId}/>
-					<input hidden {...subscribeProject.fields.projectId.as("text")} value={params.project}/>
-					<Button type="submit">Subscribe</Button>
-				</form>
+		<Card class="flex h-fit flex-col gap-2 p-4 mt-4">
+			<Thumbnail readonly src="https://github.com/w2wizard.png" class="self-center" />
+
+			{#if data.userProject}
+				<Separator class="my-1" />
 			{/if}
+
+			{#if data.project.workspace.owner?.id === data.session?.userId}
+				<Separator class="my-1" />
+				<Button variant="outline" class="w-full" href="/new/project?edit={data.project.id}">
+					<Pen size={16} />
+					Edit Project
+				</Button>
+			{/if}
+
+			{#if data.project.gitInfo}
+				<Separator class="my-1" />
+				<Button variant="outline" class="w-full" href="/new/project?edit={data.project.id}">
+					Project Source
+					<ExternalLink size={16} />
+				</Button>
+			{/if}
+
+			<Separator class="my-1" />
+
+			<form method="post" class="w-full">
+				<input name="id" type="hidden" value={data.project.id} />
+				<Button type="submit" class="w-full">
+					{data.userProject ? 'Unsubscribe' : 'Subscribe'}
+				</Button>
+			</form>
+		</Card>
+	{/snippet}
+	{#snippet right()}
+		<div class="flex flex-col gap-2 mt-4">
+			<Card class="flex flex-col gap-3 overflow-auto px-3">
+				<h1 class="flex items-center gap-2 text-2xl font-bold">
+					<Users size={36} />
+					{data.project.name}
+				</h1>
+				<ul class="flex items-center gap-2">
+					<li>
+						<Avatar.Root class="rounded">
+							<Avatar.Image src="https://github.com/shadcn.png" alt="@shadcn" />
+							<Avatar.Fallback>CN</Avatar.Fallback>
+						</Avatar.Root>
+					</li>
+					<li>
+						<Avatar.Root class="rounded">
+							<Avatar.Image src="https://github.com/shadcn.png" alt="@shadcn" />
+							<Avatar.Fallback>CN</Avatar.Fallback>
+						</Avatar.Root>
+					</li>
+				</ul>
+				<Separator class="my-1" />
+				<div class="flex items-center justify-between gap-2">
+					<h3 class="flex items-center gap-2 text-xl font-bold">
+						<ShieldCheck size={24} />
+						Reviews: 2
+					</h3>
+					<div class="flex items-center gap-2">
+						<Pagination count={10} />
+						<Button variant="outline" class="shadow-l">
+							All Reviews
+							<MessageCircleHeart />
+						</Button>
+					</div>
+				</div>
+				<ul>
+					<!-- {#each reviews as review}
+								<ReviewCard />
+							{/each} -->
+				</ul>
+				<Separator class="my-1" />
+				<div class="flex items-center gap-2">
+					<Button href="{data.project.slug}/review" class="shadow-l">
+						Create a review
+						<ShieldCheck />
+					</Button>
+					<Button variant="outline" class="shadow-l">
+						View Git
+						<GitBranch />
+					</Button>
+				</div>
+			</Card>
+			<Separator />
+			<Card class="px-4">
+				<Markdown value={data.project.description} />
+			</Card>
+
+						<FileBrowser
+				parent
+				nodes={[
+					{
+						type: 'd',
+						name: 'Test',
+						path: 'test'
+					},
+					{
+						type: '-',
+						name: 'Test.ts',
+						path: 'test.ts'
+					}
+				]}
+			/>
 		</div>
 	{/snippet}
-
-	{#snippet right()}
-		{isSubscribed}
-		<svelte:boundary>{JSON.stringify(userProject, null, 2)}</svelte:boundary>
-	{/snippet}
-</Layout> -->
+</Layout>

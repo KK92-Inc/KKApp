@@ -4443,6 +4443,12 @@ export interface components {
             instance?: null | string;
         };
         ProjectDO: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
             /** @description The display name of the project. */
             name: string;
             /** @description A detailed description of the project's purpose or contents. */

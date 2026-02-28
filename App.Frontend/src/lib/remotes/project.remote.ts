@@ -5,8 +5,8 @@
 
 import * as v from 'valibot';
 import { form, getRequestEvent, query } from '$app/server';
-import { Filters, paginate, Problem } from '$lib/api.js';
-import { getWorkspace } from './workspace.remote.js';
+import { Filters, paginate, Problem } from '$lib/api';
+import { getWorkspace } from './workspace.remote';
 
 // ============================================================================
 // Create Project

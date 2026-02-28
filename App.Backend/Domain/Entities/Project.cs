@@ -34,6 +34,9 @@ public class Project : BaseEntity
     [Column("slug"), StringLength(255)]
     public required string Slug { get; set; }
 
+    [Column("avatar_url")]
+    public string? AvatarUrl { get; set; }
+
     [Column("active")]
     public bool Active { get; set; }
 

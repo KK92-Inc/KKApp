@@ -17,11 +17,10 @@
 // `errors` maps into `StandardSchemaV1.Issue[]` so those issues can be passed
 // directly into the `issue` helper inside a form handler.
 // ============================================================================
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// ============================================================================
 
 import * as v from 'valibot';
 import { error, invalid } from '@sveltejs/kit';
+import { Log } from './log';
 
 // ============================================================================
 
@@ -155,7 +154,8 @@ export class Problem {
 	 * @returns
 	 */
 	public static throw(problem?: ProblemDetails): never {
-			error(Number(problem?.status ?? 500), problem?.detail ?? 'Something went wrong...');
+		Log.dbg(new Error('Request failed').stack, '\n', JSON.stringify(problem, null, 2));
+		error(Number(problem?.status ?? 500), problem?.detail ?? 'Something went wrong...');
 	}
 }
 

@@ -8,8 +8,10 @@
 	import * as v from 'valibot';
 	import useDebounce from '$lib/hooks/debounce.svelte';
 	import { getProjects, getUserProjects } from '$lib/remotes/project.remote';
-	import { page } from '$app/state';
 	import type { PageProps } from './$types';
+	import * as Item from '$lib/components/item';
+	import { Badge } from '$lib/components/badge';
+	import { Button } from '$lib/components/button';
 
 	const { params }: PageProps = $props();
 	const url = useSearchParams({
@@ -59,7 +61,14 @@
 				</InputGroup.Root>
 			</div>
 			<Separator />
-			<Tabs.Root class="flex-1 overflow-y-auto p-4" bind:value={tab.value}>
+			<Tabs.Root
+				class="flex-1 overflow-y-auto p-4"
+				bind:value={tab.value}
+				onValueChange={() => {
+					search.clear();
+					activePage.clear();
+				}}
+			>
 				<Tabs.List class="w-full">
 					<Tabs.Trigger value="available" class="flex-1">Available</Tabs.Trigger>
 					<Tabs.Trigger value="subscribed" class="flex-1">Subscribed</Tabs.Trigger>
@@ -69,16 +78,107 @@
 	{/snippet}
 
 	{#snippet right()}
-		<svelte:boundary>
-			{#if tab.value === 'available'}
-				{@const projects = await getProjects({
-					page: activePage.value,
-					name: search.value
-				})}
+		<div class="flex h-full flex-col">
+			<div class="border-b px-6 py-4">
+				<h1 class="text-xl font-semibold">
+					{tab.value === 'available' ? 'Available Projects' : 'My Projects'}
+				</h1>
+				<p class="text-sm text-muted-foreground">
+					{tab.value === 'available'
+						? 'Browse and subscribe to public projects.'
+						: 'Projects you are currently part of.'}
+				</p>
+			</div>
 
-			{:else}
-				{@const projects = await getUserProjects({ userId: params.userId })}
-			{/if}
-		</svelte:boundary>
+			<div class="flex-1 overflow-y-auto p-6">
+				<svelte:boundary>
+					{#if tab.value === 'available'}
+						{@const projects = await getProjects({
+							page: activePage.value,
+							name: search.value
+						})}
+
+						<Item.Group class="grid grid-cols-3 gap-4">
+							{#each projects.data as project}
+								<Item.Root variant="outline">
+									<Item.Content>
+										<div class="flex items-center gap-2">
+											<Item.Title>{project.name}</Item.Title>
+
+											{#if project.public}
+												<Badge variant="secondary">Public</Badge>
+											{/if}
+											{#if project.deprecated}
+												<Badge variant="destructive">Deprecated</Badge>
+											{/if}
+											{#if !project.active}
+												<Badge variant="outline">Inactive</Badge>
+											{/if}
+										</div>
+
+										<Item.Description class="mt-1 line-clamp-2">
+											{project.description}
+										</Item.Description>
+
+										<div class="mt-2 text-xs text-muted-foreground">
+											Workspace · {project.workspace.owner?.displayName}
+										</div>
+									</Item.Content>
+
+									<Item.Actions>
+										<Button size="sm" href={`./projects/${project.id}`}>View</Button>
+									</Item.Actions>
+								</Item.Root>
+							{:else}
+								<div class="flex h-40 items-center justify-center text-muted-foreground">
+									No projects found.
+								</div>
+							{/each}
+						</Item.Group>
+					{:else}
+						{@const projects = await getUserProjects({
+							userId: params.userId,
+							name: search.value
+						})}
+						<Item.Group class="grid grid-cols-3 gap-4">
+							{#each projects.data as userProject}
+								<Item.Root variant="outline">
+									<Item.Content>
+										<div class="flex items-center gap-2">
+											<Item.Title>
+												{userProject.project.name}
+											</Item.Title>
+
+											<Badge variant="secondary">
+												{userProject.state}
+											</Badge>
+										</div>
+
+										<Item.Description class="mt-1 line-clamp-2">
+											{userProject.project.description}
+										</Item.Description>
+
+										{#if userProject.gitInfo}
+											<div class="mt-2 text-xs text-muted-foreground">
+												Git · {userProject.gitInfo.owner}/
+												{userProject.gitInfo.name}
+											</div>
+										{/if}
+									</Item.Content>
+
+									<Item.Actions>
+										<Button size="sm" href={`./projects/${userProject.project.id}`}>Open</Button>
+									</Item.Actions>
+								</Item.Root>
+							{:else}
+								<div class="flex h-40 items-center justify-center text-muted-foreground">
+									You are not subscribed to any projects.
+								</div>
+							{/each}
+						</Item.Group>
+					{/if}
+				</svelte:boundary>
+			</div>
+		</div>
 	{/snippet}
 </Layout>

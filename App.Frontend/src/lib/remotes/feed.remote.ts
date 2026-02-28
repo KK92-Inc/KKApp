@@ -14,7 +14,6 @@ const schema = v.object({ ...Filters.sort, ...Filters.pagination });
 export const getFeed = query(schema, async (filter) => {
 	const { locals } = getRequestEvent();
 	const output = await locals.api.GET('/account/notifications', {
-		fetch,
 		params: {
 			query: {
 				'page[size]': filter.size,

@@ -14,7 +14,7 @@ namespace App.Backend.Models.Responses.Entities.Projects;
 /// <summary>
 /// Represents a data object for a project entity, containing details such as its identification, visibility status, and associated git information.
 /// </summary>
-public class ProjectDO(Project project)
+public class ProjectDO(Project project) : BaseEntityDO<Project>(project)
 {
     /// <summary>
     /// Gets or sets the display name of the project.
