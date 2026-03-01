@@ -36,6 +36,7 @@ COPY --from=builder /app/output/api-git /usr/local/bin/api-git
 COPY ./config/sevice.toml /etc/service/config.toml
 
 RUN chmod +x /usr/local/bin/api-git
+RUN git config --system --add safe.directory '*'
 
 EXPOSE 3000
 VOLUME ["/home/git/repos"]

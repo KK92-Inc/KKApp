@@ -9,5 +9,6 @@
 # TODO: Check if we really need *all* of them ?
 printenv > /etc/aspire-env
 chmod 644 /etc/aspire-env
+chown -R git:git /home/git/repos
 
 exec /usr/sbin/sshd -D -e

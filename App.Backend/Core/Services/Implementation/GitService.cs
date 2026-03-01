@@ -6,6 +6,9 @@
 using System.Net;
 using App.Backend.Core.Services.Interface;
 using App.Backend.Core.Services.Options;
+using App.Backend.Database;
+using App.Backend.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -19,16 +22,23 @@ namespace App.Backend.Core.Services.Implementation;
 public class GitService : IGitService
 {
     private readonly HttpClient _http;
+    private readonly DatabaseContext _ctx;
     private readonly ILogger<GitService> _logger;
 
-    public GitService(HttpClient http, IOptions<GitServiceOptions> options, ILogger<GitService> logger)
+    public GitService(HttpClient http, IOptions<GitServiceOptions> options, ILogger<GitService> logger, DatabaseContext ctx)
     {
+        _ctx = ctx;
         _http = http;
         _logger = logger;
         _http.BaseAddress = new Uri(options.Value.BaseUrl.TrimEnd('/') + "/");
     }
 
     // ========================================================================
+
+    public async Task<Git?> FindByIdAsync(Guid id, CancellationToken token = default)
+    {
+        return await _ctx.GitInfo.FirstOrDefaultAsync(g => g.Id == id, token);
+    }
 
     /// <inheritdoc />
     public async Task<bool> ExistsAsync(string owner, string name, CancellationToken token = default)

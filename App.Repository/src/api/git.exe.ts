@@ -30,41 +30,71 @@ if (!config.api.enabled) {
 	process.exit(0);
 }
 
+console.debug("[git.api] Loaded config:", JSON.stringify(config));
+
 const REPO = process.env["REPOS"] ?? `${process.cwd()}/tmp/repos`;
+console.debug("[git.api] Using REPO path:", REPO);
 const server = Bun.serve({
 	port: config.api.port,
 	development: false,
 	routes: {
 		"/repo/:owner/:name": {
 			GET: async (req) => {
-				if (existsSync(`${REPO}/${req.params.owner}/${req.params.name}`))
-					return new Response(null, { status: 204 });
+				console.debug('[git.api] GET /repo/:owner/:name', { params: req.params, url: req.url });
+				const path = `${REPO}/${req.params.owner}/${req.params.name}`;
+				const exists = existsSync(path);
+				console.debug('[git.api] exists?', { path, exists });
+				if (exists) return new Response(null, { status: 204 });
 				return new Response(null, { status: 404 });
 			},
 			POST: async (req) => {
 				const git = `${REPO}/${req.params.owner}/${req.params.name}`;
-				if (existsSync(git)) return new Response(null, { status: 409 });
-				await $`git init --bare ${git}`.quiet();
-				return new Response(null, { status: 201 });
+				console.debug('[git.api] POST create repo', { git });
+				if (existsSync(git)) {
+					console.debug('[git.api] repo already exists', { git });
+					return new Response(null, { status: 409 });
+				}
+				try {
+					await $`git init --bare ${git}`.quiet();
+					console.debug('[git.api] created bare repo', { git });
+					return new Response(null, { status: 201 });
+				} catch (e) {
+					console.debug('[git.api] error creating repo', e);
+					return new Response(JSON.stringify({ error: String(e) }), { status: 500 });
+				}
 			},
 			DELETE: async (req) => {
 				const git = `${REPO}/${req.params.owner}/${req.params.name}`;
-				if (!existsSync(git)) return new Response(null, { status: 404 });
-
-				await $`rm -rf ${git}`.quiet();
-				return new Response(null, { status: 204 });
+				console.debug('[git.api] DELETE repo', { git });
+				if (!existsSync(git)) {
+					console.debug('[git.api] repo not found for delete', { git });
+					return new Response(null, { status: 404 });
+				}
+				try {
+					await $`rm -rf ${git}`.quiet();
+					console.debug('[git.api] removed repo', { git });
+					return new Response(null, { status: 204 });
+				} catch (e) {
+					console.debug('[git.api] error removing repo', e);
+					return new Response(JSON.stringify({ error: String(e) }), { status: 500 });
+				}
 			},
 		},
 		"/repo/:owner/:name/rename/:new": {
 			POST: async (req) => {
 				const newPath = `${REPO}/${req.params.owner}/${req.params.new}`;
 				const oldPath = `${REPO}/${req.params.owner}/${req.params.name}`;
-
+				console.debug('[git.api] RENAME repo', { oldPath, newPath });
 				if (!existsSync(oldPath)) return new Response(null, { status: 404 });
 				if (existsSync(newPath)) return new Response(null, { status: 409 });
-
-				await $`mv ${oldPath} ${newPath}`.quiet();
-				return new Response(null, { status: 200 });
+				try {
+					await $`mv ${oldPath} ${newPath}`.quiet();
+					console.debug('[git.api] renamed repo', { oldPath, newPath });
+					return new Response(null, { status: 200 });
+				} catch (e) {
+					console.debug('[git.api] error renaming repo', e);
+					return new Response(JSON.stringify({ error: String(e) }), { status: 500 });
+				}
 			},
 		},
 		// Get Tree representation of the repo
@@ -78,15 +108,20 @@ const server = Bun.serve({
 				const path = url.pathname.startsWith(prefix)
 					? url.pathname.slice(prefix.length)
 					: "";
-
-				if (!existsSync(git)) return new Response(null, { status: 404 });
-
+				console.debug('[git.api] GET tree', { git, branch, path });
+				if (!existsSync(git)) {
+					console.debug('[git.api] tree - repo not found', { git });
+					return new Response(null, { status: 404 });
+				}
 				try {
 					const treeish = path && path !== "" ? `${branch}:${path}` : branch;
+					console.debug('[git.api] running ls-tree', { git, treeish });
 					const result = await $`git -C ${git} ls-tree -l ${treeish}`.quiet();
+					console.debug('[git.api] ls-tree result length', result.arrayBuffer().byteLength);
 					return new Response(result.text(), { status: 200 });
 				} catch (err) {
-					return new Response(JSON.stringify(err), { status: 404 });
+					console.debug('[git.api] ls-tree error', err);
+					return new Response(JSON.stringify({ error: String(err) }), { status: 404 });
 				}
 			},
 		},
@@ -121,5 +156,4 @@ const server = Bun.serve({
 	},
 });
 
-// $.nothrow();
 console.log(`Running on: http://${server.hostname}:${server.port}`);

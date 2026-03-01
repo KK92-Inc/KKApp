@@ -3,6 +3,8 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using App.Backend.Domain.Entities;
+
 namespace App.Backend.Core.Services.Interface;
 
 // ============================================================================
@@ -13,6 +15,13 @@ namespace App.Backend.Core.Services.Interface;
 /// </summary>
 public interface IGitService
 {
+    /// <summary>
+    /// Find the entity by its ID.
+    /// </summary>
+    /// <param name="id">The ID.</param>
+    /// <returns>The entity found by that ID or null if not found.</returns>
+    public Task<Git?> FindByIdAsync(Guid id, CancellationToken token = default);
+
     /// <summary>
     /// Checks whether a repository exists.
     /// </summary>
