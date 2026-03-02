@@ -1,7 +1,9 @@
 # ============================================================================
+# Copyright (c) 2026 - W2Inc, All Rights Reserved.
+# See README.md in the project root for license information.
+# ============================================================================
 # Git SSH Server - Public facing SSH for git operations
 # ============================================================================
-
 # Stage 1: Build the executables
 # ============================================================================
 
@@ -37,7 +39,6 @@ ENV REPOS=/home/git/repos
 COPY --from=builder /app/output/ssh-shell /home/git/shell
 COPY --from=builder /app/output/ssh-auth /usr/local/bin/auth
 COPY ./config/sshd_config /etc/ssh/sshd_config
-COPY ./config/sevice.toml /etc/service/config.toml
 COPY ./config/entrypoint.sh /usr/local/bin/entrypoint.sh
 
 # Create git user and set permissions

@@ -4,6 +4,7 @@
 	import Markdown from '$lib/components/markdown/markdown.svelte';
 	import Input from '$lib/components/input/input.svelte';
 	import { page } from '$app/state';
+	import * as Select from "$lib/components/select/index";
 	import Card from '$lib/components/card/card.svelte';
 	import { Separator } from '$lib/components/separator/index.js';
 	import type { PageProps } from './$types';
@@ -20,11 +21,19 @@
 	import { Pagination } from '$lib/components/pagination';
 	import Layout from '$lib/components/layout.svelte';
 	import FileBrowser from '$lib/components/file-browser/file-browser.svelte';
+	import { parseGitTree } from '$lib/components/file-browser';
+	import { getGitBranches, getGitTree } from '$lib/remotes/git.remote';
 
 	const { params, data }: PageProps = $props();
 	const canSubscribe = $derived(
 		data.userProject === undefined || data.userProject.state === 'Inactive'
 	);
+
+	let value = $state(data.branches[0]);
+	const files = $derived(parseGitTree(await getGitTree(data.project.gitInfo?.id!)));
+  const triggerContent = $derived(
+    data.branches.find((f) => f === value) ?? "Select a branch"
+  );
 </script>
 
 {#snippet img(src: string, fallback: string, className: string, alt?: string)}
@@ -36,7 +45,7 @@
 
 <Layout>
 	{#snippet left()}
-		<Card class="flex h-fit flex-col gap-2 p-4 mt-4">
+		<Card class="mt-4 flex h-fit flex-col gap-2 p-4">
 			<Thumbnail readonly src="https://github.com/w2wizard.png" class="self-center" />
 
 			{#if data.userProject}
@@ -70,7 +79,7 @@
 		</Card>
 	{/snippet}
 	{#snippet right()}
-		<div class="flex flex-col gap-2 mt-4">
+		<div class="mt-4 flex flex-col gap-2">
 			<Card class="flex flex-col gap-3 overflow-auto px-3">
 				<h1 class="flex items-center gap-2 text-2xl font-bold">
 					<Users size={36} />
@@ -126,21 +135,23 @@
 				<Markdown value={data.project.description} />
 			</Card>
 
-						<FileBrowser
-				parent
-				nodes={[
-					{
-						type: 'd',
-						name: 'Test',
-						path: 'test'
-					},
-					{
-						type: '-',
-						name: 'Test.ts',
-						path: 'test.ts'
-					}
-				]}
-			/>
+			<Select.Root type="single" name="favoriteFruit">
+				<Select.Trigger class="w-45">
+					{triggerContent}
+				</Select.Trigger>
+				<Select.Content>
+					<Select.Group>
+						<Select.Label>Branches</Select.Label>
+						{#each data.branches as branch (branch)}
+							<Select.Item value={branch} label={branch}>
+								{branch}
+							</Select.Item>
+						{/each}
+					</Select.Group>
+				</Select.Content>
+			</Select.Root>
+
+			<FileBrowser baseUrl={data.project.id} nodes={files} />
 		</div>
 	{/snippet}
 </Layout>

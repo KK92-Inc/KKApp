@@ -1,5 +1,8 @@
-/* Sample Env variables, you can expect these to be there.
-Environment Variables: {
+# Shell access (Git Push, Pull, Fetch, ...)
+
+The shell.exe gets pumped with these variables as for example:
+```ts
+{
   NODE_ENV: "development",
   USER: "user_123",
   SHELL: "/bin/bash",
@@ -15,4 +18,4 @@ Environment Variables: {
   _: "/usr/local/bin/bun",
   TZ: undefined,
 }
-*/
+```

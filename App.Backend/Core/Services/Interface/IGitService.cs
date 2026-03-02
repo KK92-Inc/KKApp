@@ -57,4 +57,13 @@ public interface IGitService
     /// </summary>
     /// <returns>The base64-encoded file content, or null if not found.</returns>
     public Task<string?> GetBlobAsync(string owner, string name, string branch, string path, CancellationToken token = default);
+
+    /// <summary>
+    /// Gets the list of branches in the repository.
+    /// </summary>
+    /// <param name="owner"> The owner of the repository.</param>
+    /// <param name="name">The name of the repository.</param>
+    /// <param name="token">The cancellation token. </param>
+    /// <returns>The list of branch names.</returns>
+    public Task<string> GetBranchesAsync(string owner, string name, CancellationToken token = default);
 }

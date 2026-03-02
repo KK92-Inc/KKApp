@@ -5,11 +5,12 @@
 	import { File, Folder } from '@lucide/svelte';
 
 	interface Props {
-		parent?: boolean;
+		dotdot?: boolean;
+		baseUrl?: string;
 		nodes: FileNode[];
 	}
 
-	const { nodes, parent }: Props = $props();
+	const { nodes, dotdot = false, baseUrl: url }: Props = $props();
 </script>
 
 <div class="rounded border">
@@ -22,7 +23,7 @@
 			</Table.Row>
 		</Table.Header>
 		<Table.Body>
-			{#if parent}
+			{#if dotdot}
 				<Table.Row class="border-t pl-4 text-left">
 					<Table.Cell class="font-medium">
 						<Button variant="link" href="..">
@@ -36,9 +37,10 @@
 			{/if}
 
 			{#each nodes as node (node.path)}
+				{@const par = node.type === '-' ? "blob" : "tree"}
 				<Table.Row class="border-t pl-4 text-left">
 					<Table.Cell class="font-medium">
-						<Button variant="link" href="#">
+						<Button variant="link" href={`${url}/${par}/${node.path}`}>
 							{#if node.type === '-'}
 								<File fill="" />
 							{:else}

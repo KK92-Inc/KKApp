@@ -3,126 +3,96 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-import { existsSync } from "fs";
-import { $, file, TOML } from "bun";
-import { argv } from "process";
+import { $ } from "bun";
+import { existsSync, type PathLike } from "fs";
+import { stderr, stdout } from "process";
 
 // ============================================================================
-
-interface Config {
-	ssh: {
-		enabled: boolean;
-		port: number;
-		max_timeout: number;
-		idle_timeout: number;
-	};
-	api: {
-		port: number;
-		enabled: boolean;
-	};
-}
-
-// ============================================================================
-
-const data = await file(argv[2] ?? "/etc/service/config.toml").text()
-const config = TOML.parse(data) as Config;
-if (!config.api.enabled) {
-	process.exit(0);
-}
-
-console.debug("[git.api] Loaded config:", JSON.stringify(config));
 
 const REPO = process.env["REPOS"] ?? `${process.cwd()}/tmp/repos`;
-console.debug("[git.api] Using REPO path:", REPO);
+const path = (owner: string, name: string) => `${REPO}/${owner}/${name}`;
+const log = (msg: string) => stdout.write(`[GIT]: ${msg}\n`);
+
+// ============================================================================
+
 const server = Bun.serve({
-	port: config.api.port,
-	development: false,
+	error(error) {
+		const body = JSON.stringify({ error: `${error}\n${error.stack}\n` });
+		return new Response(body, {
+			status: 500,
+		});
+	},
 	routes: {
+		"/health": new Response("OK"),
 		"/repo/:owner/:name": {
+			/** Get a Repository */
 			GET: async (req) => {
-				console.debug('[git.api] GET /repo/:owner/:name', { params: req.params, url: req.url });
-				const path = `${REPO}/${req.params.owner}/${req.params.name}`;
-				const exists = existsSync(path);
-				console.debug('[git.api] exists?', { path, exists });
-				if (exists) return new Response(null, { status: 204 });
-				return new Response(null, { status: 404 });
+				const entity = path(req.params.owner, req.params.name);
+				return new Response(null, {
+					status: existsSync(entity) ? 204 : 404,
+				});
 			},
+			/** Create a new Repository */
 			POST: async (req) => {
-				const git = `${REPO}/${req.params.owner}/${req.params.name}`;
-				console.debug('[git.api] POST create repo', { git });
-				if (existsSync(git)) {
-					console.debug('[git.api] repo already exists', { git });
+				const entity = path(req.params.owner, req.params.name);
+				if (existsSync(entity)) {
 					return new Response(null, { status: 409 });
 				}
-				try {
-					await $`git init --bare ${git}`.quiet();
-					console.debug('[git.api] created bare repo', { git });
-					return new Response(null, { status: 201 });
-				} catch (e) {
-					console.debug('[git.api] error creating repo', e);
-					return new Response(JSON.stringify({ error: String(e) }), { status: 500 });
-				}
+
+				await $`git init --bare ${entity}`.quiet();
+				return new Response(null, { status: 201 });
 			},
 			DELETE: async (req) => {
-				const git = `${REPO}/${req.params.owner}/${req.params.name}`;
-				console.debug('[git.api] DELETE repo', { git });
-				if (!existsSync(git)) {
-					console.debug('[git.api] repo not found for delete', { git });
-					return new Response(null, { status: 404 });
+				const entity = path(req.params.owner, req.params.name);
+				if (existsSync(entity)) {
+					return new Response(null, { status: 409 });
 				}
-				try {
-					await $`rm -rf ${git}`.quiet();
-					console.debug('[git.api] removed repo', { git });
-					return new Response(null, { status: 204 });
-				} catch (e) {
-					console.debug('[git.api] error removing repo', e);
-					return new Response(JSON.stringify({ error: String(e) }), { status: 500 });
-				}
+
+				await $`rm -rf ${entity}`.quiet();
+				return new Response(null, { status: 204 });
 			},
 		},
 		"/repo/:owner/:name/rename/:new": {
 			POST: async (req) => {
-				const newPath = `${REPO}/${req.params.owner}/${req.params.new}`;
-				const oldPath = `${REPO}/${req.params.owner}/${req.params.name}`;
-				console.debug('[git.api] RENAME repo', { oldPath, newPath });
+				const newPath = path(req.params.owner, req.params.new);
+				const oldPath = path(req.params.owner, req.params.name);
 				if (!existsSync(oldPath)) return new Response(null, { status: 404 });
 				if (existsSync(newPath)) return new Response(null, { status: 409 });
-				try {
-					await $`mv ${oldPath} ${newPath}`.quiet();
-					console.debug('[git.api] renamed repo', { oldPath, newPath });
-					return new Response(null, { status: 200 });
-				} catch (e) {
-					console.debug('[git.api] error renaming repo', e);
-					return new Response(JSON.stringify({ error: String(e) }), { status: 500 });
+				await $`mv ${oldPath} ${newPath}`.quiet();
+				return new Response(null, { status: 200 });
+			},
+		},
+		"/repo/:owner/:name/branches": {
+			GET: async (req) => {
+				const entity = path(req.params.owner, req.params.name);
+				if (!existsSync(entity)) {
+					return new Response(null, { status: 404 });
 				}
+				const output =
+					await $`git -C ${entity} branch --format="%(if)%(HEAD)%(then)*%(end)%(refname:short)"`.quiet();
+				return new Response(output.text(), {
+					status: 200,
+					headers: { "Content-Type": "text/plain" },
+				});
 			},
 		},
 		// Get Tree representation of the repo
 		"/repo/:owner/:name/tree/:branch/*": {
 			GET: async (req) => {
-				const git = `${REPO}/${req.params.owner}/${req.params.name}`;
 				const branch = req.params.branch;
-
+				const entity = path(req.params.owner, req.params.name);
 				const url = new URL(req.url);
 				const prefix = `/repo/${req.params.owner}/${req.params.name}/tree/${branch}/`;
-				const path = url.pathname.startsWith(prefix)
+				const dir = url.pathname.startsWith(prefix)
 					? url.pathname.slice(prefix.length)
 					: "";
-				console.debug('[git.api] GET tree', { git, branch, path });
-				if (!existsSync(git)) {
-					console.debug('[git.api] tree - repo not found', { git });
+
+				if (!existsSync(entity)) {
 					return new Response(null, { status: 404 });
 				}
-				try {
-					const treeish = path && path !== "" ? `${branch}:${path}` : branch;
-					console.debug('[git.api] running ls-tree', { git, treeish });
-					const result = await $`git -C ${git} ls-tree -l ${treeish}`.quiet();
-					console.debug('[git.api] ls-tree result length', result.arrayBuffer().byteLength);
-					return new Response(result.text(), { status: 200 });
-				} catch (err) {
-					console.debug('[git.api] ls-tree error', err);
-					return new Response(JSON.stringify({ error: String(err) }), { status: 404 });
-				}
+				const treeish = dir && dir !== "" ? `${branch}:${dir}` : branch;
+				const result = await $`git -C ${entity} ls-tree -l ${treeish}`.quiet();
+				return new Response(result.text(), { status: 200 });
 			},
 		},
 		// Get Blob information of file in path
@@ -138,22 +108,18 @@ const server = Bun.serve({
 				if (!existsSync(git)) return new Response(null, { status: 404 });
 				if (!path) return new Response(null, { status: 400 });
 
-				try {
-					const content =
-						await $`git -C ${git} show ${req.params.branch}:${path}`.quiet();
-					return new Response(
-						Buffer.from(content.arrayBuffer()).toString("base64"),
-						{
-							status: 200,
-							headers: { "Content-Type": "text/plain" },
-						}
-					);
-				} catch {
-					return new Response(null, { status: 404 });
-				}
+				const content =
+					await $`git -C ${git} show ${req.params.branch}:${path}`.quiet();
+				return new Response(
+					Buffer.from(content.arrayBuffer()).toString("base64"),
+					{
+						status: 200,
+						headers: { "Content-Type": "text/plain" },
+					},
+				);
 			},
 		},
 	},
 });
 
-console.log(`Running on: http://${server.hostname}:${server.port}`);
+log(`Running on: http://${server.hostname}:${server.port}`);

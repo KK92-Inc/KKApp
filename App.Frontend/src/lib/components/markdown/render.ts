@@ -1,6 +1,6 @@
 // ============================================================================
-// W2Inc, Amsterdam 2023-2024, All Rights Reserved.
-// See README in the root project for more information.
+// Copyright (c) 2026 - W2Inc, All Rights Reserved.
+// See README.md in the project root for license information.
 // ============================================================================
 
 import { unified } from 'unified';
@@ -137,7 +137,6 @@ const processor = unified()
 	.use(remarkMath)
 	.use(remarkRehype, { allowDangerousHtml: false })
 	.use(rehypeKatex)
-	//@ts-expect-error TODO: Check why this complains
 	.use(rehypeShikiFromHighlighter, highlighter, {
 		theme: 'github-dark',
 		fallbackLanguage: 'text'

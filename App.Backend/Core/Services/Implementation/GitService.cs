@@ -105,10 +105,20 @@ public class GitService : IGitService
     public async Task<string?> GetBlobAsync(string owner, string name, string branch, string path, CancellationToken token = default)
     {
         var response = await _http.GetAsync($"repo/{owner}/{name}/blob/{branch}/{path}", token);
-
         if (response.StatusCode is HttpStatusCode.NotFound)
             return null;
 
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadAsStringAsync(token);
+    }
+
+    public async Task<string> GetBranchesAsync(string owner, string name, CancellationToken token = default)
+    {
+        var response = await _http.GetAsync($"repo/{owner}/{name}/branches", token);
+        if (response.StatusCode is HttpStatusCode.NotFound)
+            return string.Empty;
+
+        response.EnsureSuccessStatusCode();
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadAsStringAsync(token);
     }
