@@ -3,16 +3,18 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+import * as v from "valibot";
 import { Problem, Filters } from "$lib/api";
 import { getRequestEvent, query } from "$app/server";
 
 // ============================================================================
 
-export const getGitTree = query(Filters.id, async (id) => {
+const treeSchema = v.object({ id: Filters.id, branch: v.string() });
+export const getGitTree = query(treeSchema, async ({ id, branch }) => {
 	const { locals } = getRequestEvent();
 	const output = await locals.api.GET("/git/{id}/tree/{branch}", {
 		parseAs: "text",
-		params: { path: { id, branch: "master" } }
+		params: { path: { id, branch } }
 	});
 
 	if (output.error || !output.data) {

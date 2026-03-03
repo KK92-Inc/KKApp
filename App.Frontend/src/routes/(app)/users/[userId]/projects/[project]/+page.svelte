@@ -29,10 +29,10 @@
 		data.userProject === undefined || data.userProject.state === 'Inactive'
 	);
 
-	let value = $state(data.branches[0]);
-	const files = $derived(parseGitTree(await getGitTree(data.project.gitInfo?.id!)));
+	let branch = $state(data.branches[0]);
+	const files = $derived(parseGitTree(await getGitTree({ id: data.project.gitInfo?.id!, branch })));
   const triggerContent = $derived(
-    data.branches.find((f) => f === value) ?? "Select a branch"
+    data.branches.find((f) => f === branch) ?? "Select a branch"
   );
 </script>
 
@@ -135,7 +135,7 @@
 				<Markdown value={data.project.description} />
 			</Card>
 
-			<Select.Root type="single" name="favoriteFruit">
+			<Select.Root type="single" name="favoriteFruit" bind:value={branch}>
 				<Select.Trigger class="w-45">
 					{triggerContent}
 				</Select.Trigger>
@@ -151,7 +151,7 @@
 				</Select.Content>
 			</Select.Root>
 
-			<FileBrowser baseUrl={data.project.id} nodes={files} />
+			<FileBrowser baseUrl={`${data.project.id}/${branch}`} nodes={files} />
 		</div>
 	{/snippet}
 </Layout>
