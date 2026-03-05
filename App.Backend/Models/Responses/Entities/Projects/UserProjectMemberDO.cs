@@ -28,12 +28,14 @@ public class UserProjectMemberDO(UserProjectMember member) : BaseEntityDO<UserPr
     /// <summary>
     /// When the member left the project, if applicable.
     /// </summary>
+    [Required]
     public DateTimeOffset? LeftAt { get; set; } = member.LeftAt;
 
     /// <summary>
     /// The user who is a member of the project.
     /// </summary>
-    public UserLightDO? User { get; set; } = member.User;
+    [Required]
+    public UserLightDO User { get; set; } = member.User;
 
     public static implicit operator UserProjectMemberDO?(UserProjectMember? member) =>
         member is null ? null : new(member);

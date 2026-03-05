@@ -4890,8 +4890,8 @@ export interface components {
             userId: string;
             role: components["schemas"]["UserProjectRole"];
             /** Format: date-time */
-            leftAt?: null | string;
-            user?: null | components["schemas"]["UserLightDO"];
+            leftAt: null | string;
+            user: components["schemas"]["UserLightDO"];
         };
         /** @enum {unknown} */
         UserProjectRole: "Pending" | "Member" | "Leader";

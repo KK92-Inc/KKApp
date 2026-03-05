@@ -37,3 +37,17 @@ export const getGitBranches = query(Filters.id, async (id) => {
 
 	return output.data;
 })
+
+export const getGitBlob = query(v.object({ id: Filters.id, branch: v.string(), path: v.string() }), async ({ id, branch, path }) => {
+	const { locals } = getRequestEvent();
+	const output = await locals.api.GET("/git/{id}/blob/{branch}/{path}", {
+		parseAs: "text",
+		params: { path: { id, branch, path } }
+	});
+
+	if (output.error || !output.data) {
+		Problem.throw(output.error);
+	}
+
+	return output.data;
+});
