@@ -3,7 +3,7 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-import Root from './file-browser.svelte';
+import Root from "./explorer.svelte";
 
 // ============================================================================
 

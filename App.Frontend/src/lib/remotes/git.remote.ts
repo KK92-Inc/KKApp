@@ -5,7 +5,7 @@
 
 import * as v from "valibot";
 import { Problem, Filters } from "$lib/api";
-import { getRequestEvent, query } from "$app/server";
+import { form, getRequestEvent, query } from "$app/server";
 
 // ============================================================================
 
@@ -24,6 +24,8 @@ export const getGitTree = query(treeSchema, async ({ id, branch }) => {
 	return output.data;
 });
 
+// ============================================================================
+
 export const getGitBranches = query(Filters.id, async (id) => {
 	const { locals } = getRequestEvent();
 	const output = await locals.api.GET("/git/{id}/branches", {
@@ -35,8 +37,44 @@ export const getGitBranches = query(Filters.id, async (id) => {
 		Problem.throw(output.error);
 	}
 
-	return output.data;
-})
+	const branches = output.data.split('\n').filter(b => b.trim());
+	const defaultIndex = branches.findIndex(b => b.startsWith('*'));
+	if (defaultIndex > 0) {
+		const defaultBranch = branches[defaultIndex].replace(/^\*\s*/, '');
+		branches.splice(defaultIndex, 1);
+		branches.unshift(defaultBranch);
+	}
+
+	return branches;
+});
+
+const createBranchSchema = v.object({ gitId: Filters.id, branch: v.string() });
+export const createGitBranch = form(createBranchSchema, async (data) => {
+	getGitBranches(data.gitId).refresh();
+	return { success: true };
+	// const { locals } = getRequestEvent();
+	// const output = await locals.api.POST("/git/{id}/branches", {
+	// 	parseAs: "text",
+	// 	params: { path: { id } },
+	// 	body: { name }
+	// });
+
+	// if (output.error || !output.data) {
+	// 	Problem.throw(output.error);
+	// }
+
+	// const branches = output.data.split('\n').filter(b => b.trim());
+	// const defaultIndex = branches.findIndex(b => b.startsWith('*'));
+	// if (defaultIndex > 0) {
+	// 	const defaultBranch = branches[defaultIndex].replace(/^\*\s*/, '');
+	// 	branches.splice(defaultIndex, 1);
+	// 	branches.unshift(defaultBranch);
+	// }
+
+	// return branches;
+});
+
+// ============================================================================
 
 export const getGitBlob = query(v.object({ id: Filters.id, branch: v.string(), path: v.string() }), async ({ id, branch, path }) => {
 	const { locals } = getRequestEvent();

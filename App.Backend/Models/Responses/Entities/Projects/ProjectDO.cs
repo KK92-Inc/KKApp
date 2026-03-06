@@ -56,7 +56,7 @@ public class ProjectDO(Project project) : BaseEntityDO<Project>(project)
     /// Gets or sets the associated Git repository information for this project, if applicable.
     /// </summary>
     [Required, Description("The associated Git repository information for this project.")]
-    public GitDO? GitInfo { get; set; } = project.Git;
+    public GitDO GitInfo { get; set; } = project.Git;
 
     /// <summary>
     /// Gets or sets the workspace to which this project belongs.

@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { parseGitTree } from '$lib/components/file-browser';
-	import FileBrowser from '$lib/components/file-browser/file-browser.svelte';
+	import { parseGitTree } from '$lib/components/explorer';
+	import FileBrowser from '$lib/components/explorer/explorer.svelte';
 	import type { PageProps } from './$types';
 
 
