@@ -52,7 +52,7 @@
 	<!-- Project info card -->
 	<Card.Root class="shadow-none">
 		<Card.Content class="flex items-center gap-3 p-3">
-			<Thumbnail readonly src="/placeholder.svg" class="size-12 shrink-0" />
+			<Thumbnail readonly src="/placeholder.svg" class="size-32 shrink-0" />
 			<div class="min-w-0 flex-1">
 				<h1 class="truncate text-sm font-semibold leading-tight">{project.name}</h1>
 				{#if userProject}
@@ -187,6 +187,11 @@
 								Unsubscribe
 							</Button>
 						</form>
+					{:else}
+						<p class="text-xs text-muted-foreground">
+							You are not a member of this project. To view your project page, click
+							<a href="/users/{userId}/projects/{project.id}" class="text-primary underline">here</a>.
+						</p>
 					{/if}
 				</Card.Content>
 			</Card.Root>
