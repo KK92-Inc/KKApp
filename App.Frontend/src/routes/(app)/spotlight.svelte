@@ -23,7 +23,7 @@
 	{#each spotlights as spotlight (spotlight.id)}
 		<Card.Root
 			id={spotlight.id}
-			class="relative w-full overflow-hidden bg-background pt-0"
+			class="relative w-full overflow-hidden bg-background pt-0 pb-6"
 		>
 			<img
 				src={spotlight.backgroundUrl ?? '/placeholder.svg'}

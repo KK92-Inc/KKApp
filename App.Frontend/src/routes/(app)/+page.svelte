@@ -18,7 +18,7 @@
 			class="group h-80 w-full shrink-0 bg-[url('/graph.png')] bg-cover p-0"
 		>
 			<section
-				class=" relative flex h-full w-full flex-col justify-end rounded-[inherit] bg-linear-to-t from-black via-black/80 to-transparent p-6 text-left opacity-0 backdrop-blur-xs transition duration-300 group-hover:opacity-100"
+				class=" relative flex h-full w-full flex-col justify-end rounded-[inherit] bg-linear-to-t from-black via-black/80 to-transparent p-6 text-left backdrop-blur-xs transition duration-300"
 			>
 				<h3 class="flex items-center gap-2 text-3xl font-bold text-white drop-shadow-md">
 					<Sparkles class="size-6" />
