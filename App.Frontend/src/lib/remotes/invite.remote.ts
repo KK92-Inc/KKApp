@@ -6,6 +6,7 @@
 import * as v from 'valibot';
 import { form, getRequestEvent } from '$app/server';
 import { Filters, Problem } from '$lib/api.js';
+import { getUserProjectMembers } from './user-project.remote';
 
 // ============================================================================
 
@@ -27,6 +28,7 @@ export const sendInvite = form(inviteSchema, async ({ inviteeId, userProjectId }
 		Problem.throw(output.error);
 	}
 
+	await getUserProjectMembers(userProjectId).refresh();
 	return output.data;
 });
 
@@ -41,6 +43,7 @@ export const revokeInvite = form(inviteSchema, async ({ inviteeId, userProjectId
 		Problem.throw(output.error);
 	}
 
+	await getUserProjectMembers(userProjectId).refresh();
 	return output.data;
 });
 
@@ -55,6 +58,7 @@ export const acceptInvite = form(userProjectIdSchema, async ({ userProjectId }) 
 		Problem.throw(output.error);
 	}
 
+	await getUserProjectMembers(userProjectId).refresh();
 	return output.data;
 });
 
@@ -68,6 +72,8 @@ export const declineInvite = form(userProjectIdSchema, async ({ userProjectId })
 	if (output.error) {
 		Problem.throw(output.error);
 	}
+
+	await getUserProjectMembers(userProjectId).refresh();
 });
 
 const transferSchema = v.object({ userProjectId: Filters.id, newLeaderId: Filters.id });
@@ -81,6 +87,8 @@ export const transferLeadership = form(transferSchema, async ({ userProjectId, n
 	if (output.error) {
 		Problem.throw(output.error);
 	}
+
+	await getUserProjectMembers(userProjectId).refresh();
 });
 
 /** Voluntarily leave a project session (leaders must transfer first). */
@@ -93,6 +101,8 @@ export const leaveProject = form(userProjectIdSchema, async ({ userProjectId }) 
 	if (output.error) {
 		Problem.throw(output.error);
 	}
+
+	await getUserProjectMembers(userProjectId).refresh();
 });
 
 const kickSchema = v.object({ memberId: Filters.id, userProjectId: Filters.id });
@@ -106,4 +116,6 @@ export const kickMember = form(kickSchema, async ({ memberId, userProjectId }, i
 	if (output.error) {
 		Problem.throw(output.error);
 	}
+
+	await getUserProjectMembers(userProjectId).refresh();
 });

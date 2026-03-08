@@ -24,7 +24,7 @@ public sealed record ProjectInviteNotification(
 {
     public Guid NotifiableId => InviteeId;
     public Guid? ResourceId => UserProjectId;
-    public NotificationMeta Meta => NotificationMeta.AcceptOrDecline | NotificationMeta.Project | NotificationMeta.User;
+    public NotificationMeta Meta => NotificationMeta.AcceptOrDecline | NotificationMeta.Project | NotificationMeta.User | NotificationMeta.Feed;
 
     public BroadcastMessage ToBroadcast() => new("ProjectInvite", new
     {

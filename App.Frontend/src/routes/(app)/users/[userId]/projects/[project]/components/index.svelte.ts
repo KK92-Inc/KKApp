@@ -13,6 +13,8 @@ export { default as Explorer } from "./page-explorer.svelte";
 export { default as Sidebar } from "./page-sidebar.svelte";
 export { default as Reviews } from "./page-reviews.svelte";
 export { default as Members } from "./page-members.svelte";
+export { default as Timeline } from "./page-timeline.svelte";
+export { default as InviteDialog } from "./page-invite-dialog.svelte";
 
 // ============================================================================
 

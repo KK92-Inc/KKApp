@@ -25,14 +25,14 @@ namespace App.Backend.API.Controllers;
 /// </summary>
 [ApiController]
 [Route("users"), Tags("Users")]
-[ProtectedResource("users"), Authorize]
+[Authorize]
 public class UserController(
     ILogger<UserController> log,
     IUserService users
 ) : Controller
 {
     [HttpGet]
-    [ProtectedResource("users", "users:read")]
+    // [ProtectedResource("users", "users:read")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
@@ -55,7 +55,7 @@ public class UserController(
     }
 
     [HttpGet("{userId:guid}")]
-    [ProtectedResource("users", "users:read")]
+    // [ProtectedResource("users", "users:read")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

@@ -5,7 +5,7 @@
 
 import * as v from 'valibot';
 import { getRequestEvent, query } from '$app/server';
-import { Filters, Problem } from '$lib/api.js';
+import { Filters, paginate, Problem } from '$lib/api.js';
 import { error } from '@sveltejs/kit';
 
 // ============================================================================
@@ -73,4 +73,26 @@ export const getUserProjectMembers = query(Filters.id, async (id) => {
 	}
 
 	return output.data;
+});
+
+/** Retrieve the paginated activity timeline of a user project session. */
+const transactionsSchema = v.object({
+	id: Filters.id,
+	page: v.optional(v.number(), 1),
+	size: v.optional(v.number(), 10),
+});
+export const getUserProjectTransactions = query(transactionsSchema, async ({ id, page, size }) => {
+	const { locals } = getRequestEvent();
+	const output = await locals.api.GET('/user-projects/{id}/transactions', {
+		params: {
+			path: { id },
+			query: { 'page[index]': page, 'page[size]': size, 'sort[order]': 'Descending' }
+		}
+	});
+
+	if (output.error || !output.data) {
+		Problem.throw(output.error);
+	}
+
+	return paginate(output.data, output.response);
 });

@@ -210,9 +210,10 @@ public class SubscriptionService(
         {
             await using var transaction = await ctx.Database.BeginTransactionAsync(ct);
 
+            // Only match sessions where the user is an actual participant (not a pending invite).
             var up = await ctx.UserProjects
                 .Include(up => up.Members)
-                .FirstOrDefaultAsync(up => up.ProjectId == projectId && up.Members.Any(m => m.UserId == userId), ct);
+                .FirstOrDefaultAsync(up => up.ProjectId == projectId && up.Members.Any(m => m.UserId == userId && m.Role != UserProjectRole.Pending), ct);
 
             if (up is not null)
             {
@@ -244,6 +245,17 @@ public class SubscriptionService(
                 await transaction.CommitAsync(ct);
                 return up;
             }
+
+            // Cancel any pending invites this user may have for this project before creating
+            // their own session, so they can freely start fresh without accepting/declining.
+            var pendingInvites = await ctx.UserProjectMembers
+                .Where(m => m.UserId == userId
+                    && m.Role == UserProjectRole.Pending
+                    && ctx.UserProjects.Any(p => p.Id == m.UserProjectId && p.ProjectId == projectId))
+                .ToListAsync(ct);
+
+            if (pendingInvites.Count > 0)
+                ctx.UserProjectMembers.RemoveRange(pendingInvites);
 
             up = new UserProject
             {

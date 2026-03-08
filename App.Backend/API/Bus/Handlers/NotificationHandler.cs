@@ -29,6 +29,7 @@ public class NotificationHandler(
 )
 {
     public async Task Handle(WelcomeUserNotification payload, CancellationToken token) => await Internal(payload, token);
+    public async Task Handle(ProjectInviteNotification payload, CancellationToken token) => await Internal(payload, token);
 
     private async Task Internal(INotificationMessage notification, CancellationToken token)
     {

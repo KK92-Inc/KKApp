@@ -11,6 +11,7 @@ using App.Backend.Core.Services.Interface;
 using App.Backend.Models;
 using App.Backend.Models.Responses.Entities.Projects;
 using App.Backend.Domain.Enums;
+using App.Backend.Database;
 using Microsoft.EntityFrameworkCore;
 
 // ============================================================================
@@ -31,7 +32,8 @@ namespace App.Backend.API.Controllers;
 [Authorize]
 public class UserProjectController(
     ILogger<UserProjectController> log,
-    IUserProjectService userProjectService
+    IUserProjectService userProjectService,
+    DatabaseContext ctx
 ) : Controller
 {
     [HttpGet]
@@ -51,7 +53,7 @@ public class UserProjectController(
     )
     {
         var page = await userProjectService.GetAllAsync(sorting, pagination, token,
-            up => up.Members.Any(m => m.UserId == userId),
+            up => up.Members.Any(m => m.UserId == userId && m.Role != UserProjectRole.Pending && m.LeftAt == null),
             state is null ? null : up => up.State == state
         );
         page.AppendHeaders(Response.Headers);
@@ -98,5 +100,32 @@ public class UserProjectController(
             .FirstOrDefaultAsync(token);
 
         return up is null ? NotFound() : Ok(up.Select(m => new UserProjectMemberDO(m)));
+    }
+
+    [HttpGet("/user-projects/{id:guid}/transactions")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Get project session transactions")]
+    [EndpointDescription("Retrieve the paginated activity timeline of a user project session.")]
+    public async Task<ActionResult<IEnumerable<UserProjectTransactionDO>>> GetTransactions(
+        Guid id,
+        [FromQuery] Pagination pagination,
+        [FromQuery] Sorting sorting,
+        CancellationToken token
+    )
+    {
+        var exists = await userProjectService.Query(false).AnyAsync(p => p.Id == id, token);
+        if (!exists) return NotFound();
+
+        var page = await ctx.UserProjectTransactions
+            .Include(t => t.User)
+            .Where(t => t.UserProjectId == id)
+            .AsNoTracking()
+            .Sort(sorting)
+            .PaginateAsync(pagination, token);
+
+        page.AppendHeaders(Response.Headers);
+        return Ok(page.Items.Select(t => new UserProjectTransactionDO(t)));
     }
 }

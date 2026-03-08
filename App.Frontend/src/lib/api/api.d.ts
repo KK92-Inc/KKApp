@@ -4377,6 +4377,90 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/user-projects/{id}/transactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get project session transactions
+         * @description Retrieve the paginated activity timeline of a user project session.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description The page number/index */
+                    "page[index]"?: number | string;
+                    /** @description The amount of results per page */
+                    "page[size]"?: number | string;
+                    /** @description The name of the property to use for sorting. */
+                    "sort[by]"?: string;
+                    /** @description The sort direction. */
+                    "sort[order]"?: components["schemas"]["Order"];
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["UserProjectTransactionDO"][];
+                        "application/json": components["schemas"]["UserProjectTransactionDO"][];
+                        "text/json": components["schemas"]["UserProjectTransactionDO"][];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/user-projects/{id}/members": {
         parameters: {
             query?: never;
@@ -5389,6 +5473,22 @@ export interface components {
         };
         /** @enum {unknown} */
         UserProjectRole: "Pending" | "Member" | "Leader";
+        /** @enum {unknown} */
+        UserProjectTransactionVariant: "Started" | "MemberJoined" | "MemberLeft" | "GitCommit" | "StateChangedToInActive" | "StateChangedToActive" | "StateChangedToCompleted" | "StateChangedToAwaiting" | "MemberInvited" | "MemberAccepted" | "MemberDeclined" | "MemberKicked" | "LeadershipTransferred";
+        UserProjectTransactionDO: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: uuid */
+            userProjectId: string;
+            /** Format: uuid */
+            userId?: null | string;
+            type: components["schemas"]["UserProjectTransactionVariant"];
+            user?: null | components["schemas"]["UserLightDO"];
+        };
         WorkspaceDO: {
             /** Format: date-time */
             createdAt: string;

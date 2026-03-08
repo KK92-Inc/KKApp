@@ -5,7 +5,7 @@
 	import Markdown from '$lib/components/markdown/markdown.svelte';
 	import { Separator } from '$lib/components/separator/index.js';
 	import type { PageProps } from './$types';
-	import { BookA } from '@lucide/svelte';
+	import { BookA, History } from '@lucide/svelte';
 	import Layout from '$lib/components/layout.svelte';
 	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
 	import { getGitBlob } from '$lib/remotes/git.remote';
@@ -63,6 +63,22 @@
 						</svelte:boundary>
 					</Accordion.Content>
 				</Accordion.Item>
+
+				{#if data.userProject}
+					<Accordion.Item value="item-2">
+						<Accordion.Trigger
+							class="px-6 py-4 text-left text-2xl font-bold tracking-tight hover:text-foreground/70"
+						>
+							<span class="flex items-center gap-2">
+								<History />
+								Session Timeline
+							</span>
+						</Accordion.Trigger>
+						<Accordion.Content class="px-6 py-4">
+							<Page.Timeline userProjectId={data.userProject.id} />
+						</Accordion.Content>
+					</Accordion.Item>
+				{/if}
 			</Accordion.Root>
 		</Card.Root>
 	{/snippet}

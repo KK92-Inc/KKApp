@@ -18,6 +18,8 @@
 <!-- See: App.Backend/Domain/Enums/NotificationMeta.cs -->
 {#if flags(1 << 4, notification.descriptor) && notification.data.type === 'Message'}
 	<FeedWelcome notification={{ ...notification, data: notification.data }} />
+{:else if flags(1 << 5, notification.descriptor) && notification.data.type === 'ProjectInvite'}
+	<FeedProjectInvite notification={{ ...notification, data: notification.data }} />
 {:else}
 	<div class="mb-3 rounded-lg border bg-card p-4 transition-colors hover:bg-accent/50">
 		<div class="flex items-start gap-3">

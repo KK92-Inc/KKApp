@@ -6,6 +6,7 @@
 import * as v from 'valibot';
 import { form, getRequestEvent } from '$app/server';
 import { Filters, Problem } from '$lib/api.js';
+import { getUserProjectByProjectId, getUserProjectMembers, getUserProjectTransactions } from './user-project.remote';
 
 // ============================================================================
 // Cursus Subscriptions
@@ -91,6 +92,10 @@ export const subscribeProject = form(projectSubSchema, async ({ userId, projectI
 	if (output.error || !output.data) {
 		Problem.throw(output.error);
 	}
+
+	// getUserProjectByProjectId({userId, projectId}).refresh();
+	// getUserProjectMembers(output.data.id).refresh();
+	// getUserProjectTransactions({ id: output.data.id }).refresh();
 
 	return output.data;
 });
