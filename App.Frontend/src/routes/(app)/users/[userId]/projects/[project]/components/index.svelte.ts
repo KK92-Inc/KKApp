@@ -3,12 +3,20 @@
 // See README in the root project for more information.
 // ============================================================================
 
-import type { components } from "$lib/api/api";
 import { createContext } from "svelte";
+import type { components } from "$lib/api/api";
 
 // ============================================================================
 
-export default class ProjectPageContext {
+export { default as Menu } from "./page-menu.svelte";
+export { default as Explorer } from "./page-explorer.svelte";
+export { default as Sidebar } from "./page-sidebar.svelte";
+export { default as Reviews } from "./page-reviews.svelte";
+export { default as Members } from "./page-members.svelte";
+
+// ============================================================================
+
+export class Context {
 	constructor(
 		public project: components["schemas"]["ProjectDO"],
 		public userProject?: components["schemas"]["UserProjectDO"],
@@ -18,4 +26,4 @@ export default class ProjectPageContext {
 	public view = $state<"submission" | "assignment">("submission");
 }
 
-export const [ getProjectCtx, setProjectCtx ] = createContext<ProjectPageContext>();
+export const [ getContext, setContext ] = createContext<Context>();

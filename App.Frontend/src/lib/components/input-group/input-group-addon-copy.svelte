@@ -22,7 +22,7 @@
 <Tooltip.Root>
 	<Tooltip.Trigger>
 		{#snippet child({ props })}
-			<InputGroup.Button {...props} onclick={copyToClipboard} class="rounded-full" size="icon-xs">
+			<InputGroup.Button {...props} onclick={copyToClipboard} size="icon-xs">
 				<div class="grid place-items-center">
 					{#if executed}
 						<span transition:fade={{ duration: 100 }} class="col-start-1 row-start-1">

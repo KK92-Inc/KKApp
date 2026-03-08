@@ -206,12 +206,12 @@ public class SubscriptionService(
             }
         }
 
-        var strategy = ctx.Database.CreateExecutionStrategy();
-        return await strategy.ExecuteAsync(async (ct) =>
+        return await ctx.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
         {
             await using var transaction = await ctx.Database.BeginTransactionAsync(ct);
 
             var up = await ctx.UserProjects
+                .Include(up => up.Members)
                 .FirstOrDefaultAsync(up => up.ProjectId == projectId && up.Members.Any(m => m.UserId == userId), ct);
 
             if (up is not null)
@@ -224,6 +224,15 @@ public class SubscriptionService(
 
                 up.State = EntityObjectState.Active;
                 ctx.UserProjects.Update(up);
+
+                // Reset LeftAt for the rejoining member so future unsubscribes aren't blocked.
+                var rejoiningMember = up.Members.FirstOrDefault(m => m.UserId == userId);
+                if (rejoiningMember is not null)
+                {
+                    rejoiningMember.LeftAt = null;
+                    ctx.UserProjectMembers.Update(rejoiningMember);
+                }
+
                 await ctx.UserProjectTransactions.AddAsync(new()
                 {
                     UserId = userId,
@@ -259,8 +268,7 @@ public class SubscriptionService(
 
     public async Task UnsubscribeFromProjectAsync(Guid userId, Guid projectId, CancellationToken token)
     {
-        var strategy = ctx.Database.CreateExecutionStrategy();
-        await strategy.ExecuteAsync(async (ct) =>
+        await ctx.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
         {
             await using var transaction = await ctx.Database.BeginTransactionAsync(ct);
 
@@ -292,7 +300,7 @@ public class SubscriptionService(
                 ctx.UserProjects.Update(up);
 
                 // Cancel any orphaned pending invites
-                var pendingMembers = up.Members.Where(m => m.Role == UserProjectRole.Pending).ToList();
+                var pendingMembers = up.Members.Where(m => m.Role is UserProjectRole.Pending).ToList();
                 foreach (var pending in pendingMembers)
                     ctx.UserProjectMembers.Remove(pending);
 

@@ -35,7 +35,7 @@ export const unsubscribeCursus = form(cursusSubSchema, async ({ userId, cursusId
 		params: { path: { userId, cursusId } }
 	});
 
-	if (output.error || !output.data) {
+	if (output.error) {
 		Problem.throw(output.error);
 	}
 
@@ -102,9 +102,7 @@ export const unsubscribeProject = form(projectSubSchema, async ({ userId, projec
 		params: { path: { userId, projectId } }
 	});
 
-	if (output.error || !output.data) {
+	if (output.error) {
 		Problem.throw(output.error);
 	}
-
-	return output.data;
 });

@@ -1,9 +1,17 @@
 <script lang="ts">
 	import * as Tabs from '$lib/components/tabs';
 	import * as Select from '$lib/components/select';
-	import { getProjectCtx } from './index.svelte';
 	import { Separator } from '$lib/components/separator';
-	import { GitBranch, PlusIcon } from '@lucide/svelte';
+	import {
+		ChevronDown,
+		Code,
+		Code2Icon,
+		GitBranch,
+		GitCommit,
+		GitCommitIcon,
+		MoreHorizontal,
+		PlusIcon
+	} from '@lucide/svelte';
 	import { createGitBranch, getGitBranches } from '$lib/remotes/git.remote';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
@@ -15,14 +23,19 @@
 	import * as Dialog from '$lib/components/dialog';
 	import { Input } from '$lib/components/input';
 	import { Label } from '$lib/components/label';
+	import * as InputGroup from '$lib/components/input-group';
+	import * as DropdownMenu from '$lib/components/dropdown-menu';
+	import { getContext } from './index.svelte';
 
-	const context = getProjectCtx();
+	const context = getContext();
 	const branches = await getGitBranches(context.project.gitInfo.id);
 	context.branch = branches[0] ?? '';
 
 	let search = $state('');
 	let showDialog = $state(false);
 	let showDropdown = $state(false);
+	const sshUrl = `ssh://git@localhost:2222/${context.project.gitInfo.owner}/${context.project.gitInfo.name}`;
+	const cmd = `git clone ${sshUrl}`;
 	const selected = $derived(branches.find((f) => f === context.branch) ?? 'Select a branch');
 </script>
 
@@ -90,6 +103,8 @@
 			<Popover.Trigger>
 				{#snippet child({ props })}
 					<Button {...props} variant="outline" role="combobox" aria-expanded={showDropdown}>
+						<GitBranch />
+						<Separator orientation="vertical" />
 						{selected ?? 'Select a framework...'}
 						<ChevronsUpDownIcon class="opacity-50" />
 					</Button>
@@ -118,6 +133,45 @@
 				</Command.Root>
 			</Popover.Content>
 		</Popover.Root>
+
+		<InputGroup.Root class="max-w-max">
+			<InputGroup.Addon>
+				<InputGroup.Copy value={cmd} />
+			</InputGroup.Addon>
+			<InputGroup.Input
+				id="title"
+				autocomplete="off"
+				autocorrect="off"
+				autosave="off"
+				readonly
+				value={cmd}
+			/>
+			<InputGroup.Addon align="inline-end">
+				<DropdownMenu.Root>
+					<DropdownMenu.Trigger>
+						{#snippet child({ props })}
+							<InputGroup.Button {...props} variant="ghost" aria-label="More" size="icon-xs">
+								<MoreHorizontal />
+							</InputGroup.Button>
+						{/snippet}
+					</DropdownMenu.Trigger>
+					<DropdownMenu.Content align="end" class="[--radius:0.95rem]">
+						<DropdownMenu.Item href={`vscode://vscode.git/clone?url=${encodeURIComponent(sshUrl)}`}>
+							Open in VS Code
+						</DropdownMenu.Item>
+						<DropdownMenu.Item href={`cursor://vscode.git/clone?url=${encodeURIComponent(sshUrl)}`}>
+							Open in Cursor
+						</DropdownMenu.Item>
+						<DropdownMenu.Item
+							href={`jetbrains://idea/checkout/git?checkout_url=${encodeURIComponent(sshUrl)}`}
+						>
+							Open in IntelliJ
+						</DropdownMenu.Item>
+					</DropdownMenu.Content>
+				</DropdownMenu.Root>
+			</InputGroup.Addon>
+		</InputGroup.Root>
 	{/if}
+
 	<Separator class="my-1 flex-1" />
 </div>

@@ -62,18 +62,18 @@
 </script>
 
 <div class={cn('group relative max-w-52', klass)}>
-	<input
-		bind:this={input}
-		type="file"
-		{name}
-		{readonly}
-		disabled={readonly}
-		accept={allowed.join()}
-		class="absolute inset-0 z-10 cursor-pointer opacity-0"
-	/>
+		<input
+			bind:this={input}
+			type="file"
+			{name}
+			{readonly}
+			disabled={readonly}
+			accept={allowed.join()}
+			class="absolute inset-0 z-10 cursor-pointer opacity-0"
+		/>
 	<div class="relative">
 		<!-- NOTE(W2): avatarUrl, will always be a string here. -->
-		<img {@attach preview} alt="logo" class="max-h-52 w-full rounded border object-cover" {src} />
+		<img {@attach preview} alt="logo" class="max-h-52 w-full rounded object-cover" {src} />
 		{#if !readonly}
 			<div
 				class="absolute inset-0 rounded bg-black/50 opacity-0 transition-opacity group-hover:opacity-100"
