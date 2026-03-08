@@ -40,8 +40,8 @@ public class InviteService(DatabaseContext ctx) : IInviteService
             if (inviter is null || inviter.Role is not UserProjectRole.Leader)
                 throw new ServiceException(403, "Only the session leader can invite members");
 
-            // Check if the invitee is already a member or has a pending invite
-            var existing = up.Members.FirstOrDefault(m => m.UserId == inviteeId);
+            // Check if the invitee is already an active member or has a pending invite
+            var existing = up.Members.FirstOrDefault(m => m.UserId == inviteeId && m.LeftAt == null);
             if (existing is not null)
             {
                 if (existing.Role is UserProjectRole.Pending)
@@ -49,20 +49,31 @@ public class InviteService(DatabaseContext ctx) : IInviteService
                 throw new ServiceException(409, "User is already a member of this session");
             }
 
-            // Count active members (non-pending, non-left) + pending invites against max
+            // Count active members (non-left) against max
             var count = up.Members.Count(m => m.LeftAt == null);
             if (count >= 5) // TODO: Define on project or define on env ?
                 throw new ServiceException(422, $"Project session is full (max {5} members)");
 
-            // Add the pending member
-            var member = new UserProjectMember
+            // Reuse the existing left row if one exists, otherwise create a new one
+            UserProjectMember member;
+            var left = up.Members.FirstOrDefault(m => m.UserId == inviteeId && m.LeftAt is not null);
+            if (left is not null)
             {
-                UserProjectId = userProjectId,
-                UserId = inviteeId,
-                Role = UserProjectRole.Pending,
-            };
-
-            await ctx.UserProjectMembers.AddAsync(member, ct);
+                left.Role = UserProjectRole.Pending;
+                left.LeftAt = null;
+                ctx.UserProjectMembers.Update(left);
+                member = left;
+            }
+            else
+            {
+                member = new UserProjectMember
+                {
+                    UserProjectId = userProjectId,
+                    UserId = inviteeId,
+                    Role = UserProjectRole.Pending,
+                };
+                await ctx.UserProjectMembers.AddAsync(member, ct);
+            }
             await ctx.UserProjectTransactions.AddAsync(new()
             {
                 UserId = inviterId,

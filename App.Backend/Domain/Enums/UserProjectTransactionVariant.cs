@@ -36,6 +36,8 @@ public enum UserProjectTransactionVariant
     /// <summary>
     /// Indicates a Git commit was pushed or associated with the project.
     /// TODO: Future use - can be expanded to include more Git-related activities.
+    /// The idea is to to track git-upload-pack|git-receive-pack|git-upload-archive ssh actions
+    /// in App.Repository and create transactions for them in there, so we have a complete picture of project activity.
     /// </summary>
     [JsonPropertyName(nameof(GitCommit))]
     GitCommit,
