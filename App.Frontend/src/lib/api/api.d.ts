@@ -1356,6 +1356,8 @@ export interface paths {
                     "page[index]"?: number | string;
                     /** @description The amount of results per page */
                     "page[size]"?: number | string;
+                    /** @description Filter by goal name */
+                    "filter[name]"?: string;
                 };
                 header?: never;
                 path?: never;
@@ -1368,7 +1370,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["GoalDO"][];
+                        "application/json": components["schemas"]["GoalDO"][];
+                        "text/json": components["schemas"]["GoalDO"][];
+                    };
                 };
                 /** @description Unauthorized */
                 401: {
@@ -1657,7 +1663,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ProjectDO"][];
+                        "application/json": components["schemas"]["ProjectDO"][];
+                        "text/json": components["schemas"]["ProjectDO"][];
+                    };
                 };
                 /** @description Unauthorized */
                 401: {
@@ -5148,6 +5158,10 @@ export interface components {
             name: string;
             description: string;
             slug: string;
+            active: boolean;
+            public: boolean;
+            deprecated: boolean;
+            workspace: components["schemas"]["WorkspaceDO"];
         };
         GoalLightDO: {
             /** Format: uuid */
@@ -5423,6 +5437,7 @@ export interface components {
             userId: string;
             /** Format: uuid */
             goalId: string;
+            state: "Inactive" | "Active" | "Awaiting" | "Completed";
             goal?: null | components["schemas"]["GoalDO"];
             user?: null | components["schemas"]["UserLightDO"];
         };

@@ -50,12 +50,19 @@ export const createGoal = form(createGoalSchema, async (body) => {
 // NOTE: OpenAPI spec marks the 200 response as content?: never — parse manually
 // ============================================================================
 
-const queryGoalsSchema = v.object({ ...Filters.sort, ...Filters.pagination });
+const queryGoalsSchema = v.object({
+	...Filters.base,
+	...Filters.sort,
+	...Filters.pagination,
+	name: v.optional(v.string())
+});
+
 export const getGoals = query(queryGoalsSchema, async (params) => {
 	const { locals } = getRequestEvent();
 	const output = await locals.api.GET('/goals', {
 		params: {
 			query: {
+				'filter[name]': params.name,
 				'sort[by]': params.sortBy,
 				'sort[order]': params.sort,
 				'page[size]': params.size,

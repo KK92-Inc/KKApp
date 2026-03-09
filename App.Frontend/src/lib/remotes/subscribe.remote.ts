@@ -70,11 +70,9 @@ export const unsubscribeGoal = form(goalSubSchema, async ({ userId, goalId }) =>
 		params: { path: { userId, goalId } }
 	});
 
-	if (output.error || !output.data) {
+	if (output.error) {
 		Problem.throw(output.error);
 	}
-
-	return output.data;
 });
 
 // ============================================================================

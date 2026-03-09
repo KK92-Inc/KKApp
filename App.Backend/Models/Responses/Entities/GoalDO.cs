@@ -24,5 +24,17 @@ public class GoalDO(Goal goal) : BaseEntityDO<Goal>(goal)
     [Required]
     public string Slug { get; set; } = goal.Slug;
 
+    [Required]
+    public bool Active { get; set; } = goal.Active;
+
+    [Required]
+    public bool Public { get; set; } = goal.Public;
+
+    [Required]
+    public bool Deprecated { get; set; } = goal.Deprecated;
+
+    [Required]
+    public WorkspaceDO Workspace { get; set; } = goal.Workspace;
+
     public static implicit operator GoalDO?(Goal? goal) => goal is null ? null : new(goal);
 }

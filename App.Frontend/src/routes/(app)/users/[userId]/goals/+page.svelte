@@ -5,10 +5,11 @@
 	import Layout from '$lib/components/layout.svelte';
 	import Paginate from '$lib/components/paginate.svelte';
 	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
+	import Thumbnail from '$lib/components/thumbnail.svelte';
 	import { Badge } from '$lib/components/badge';
-	import { Search, GraduationCap, ChevronRight } from '@lucide/svelte';
-	import { getCursi } from '$lib/remotes/cursus.remote';
-	import { getUserCursusList } from '$lib/remotes/user-cursus.remote';
+	import { Button } from '$lib/components/button';
+	import { Search, Trophy, ChevronRight } from '@lucide/svelte';
+	import { getGoals, getUserGoals, getGoalProjects } from '$lib/remotes/goal.remote';
 	import useSearchParams from '$lib/hooks/url.svelte';
 	import useDebounce from '$lib/hooks/debounce.svelte';
 	import * as v from 'valibot';
@@ -49,8 +50,8 @@
 		<aside class="flex h-full flex-col border-r bg-card">
 			<div class="space-y-3 p-4">
 				<div class="flex items-center gap-2">
-					<GraduationCap class="size-4 text-muted-foreground" />
-					<h2 class="text-sm font-semibold">Cursi</h2>
+					<Trophy class="size-4 text-muted-foreground" />
+					<h2 class="text-sm font-semibold">Goals</h2>
 				</div>
 
 				<InputGroup.Root>
@@ -80,6 +81,7 @@
 					</Tabs.Root>
 				{/if}
 
+				<!-- State filter for subscribed tab -->
 				{#if effectiveTab === 'subscribed'}
 					<div class="space-y-1">
 						<label for="state-filter" class="text-xs font-medium text-muted-foreground">
@@ -91,7 +93,7 @@
 							value={stateFilter.value}
 							onchange={(e) => {
 								activePage.value = 1;
-								if (e.currentTarget.value) stateFilter.value = e.currentTarget.value as typeof stateFilter.value;
+							if (e.currentTarget.value) stateFilter.value = e.currentTarget.value as typeof stateFilter.value;
 								else stateFilter.clear();
 							}}
 						>
@@ -111,14 +113,14 @@
 		<div class="flex h-full flex-col">
 			<div class="border-b px-6 py-4">
 				<h1 class="text-lg font-semibold">
-					{effectiveTab === 'available' ? 'Available Cursi' : 'Enrolled Cursi'}
+					{effectiveTab === 'available' ? 'Available Goals' : 'Subscribed Goals'}
 				</h1>
 				<p class="text-sm text-muted-foreground">
 					{effectiveTab === 'available'
-						? 'Browse cursi — structured learning paths with goals and projects.'
+						? 'Browse goals — bundles of projects forming learning objectives.'
 						: isOwner
-							? 'Cursi you are currently enrolled in.'
-							: "Cursi this user is enrolled in."}
+							? 'Goals you are currently enrolled in.'
+							: "Goals this user is enrolled in."}
 				</p>
 			</div>
 
@@ -127,57 +129,82 @@
 					{#snippet pending()}
 						<div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
 							{#each { length: 6 } as _}
-								<Skeleton class="h-40 rounded-lg" />
+								<Skeleton class="h-44 rounded-lg" />
 							{/each}
 						</div>
 					{/snippet}
 
 					{#if effectiveTab === 'available'}
-						{@const result = await getCursi({
+						{@const result = await getGoals({
 							page: activePage.value,
 							name: search.value || undefined
 						})}
 
 						{#if result.data.length === 0}
 							<div class="flex flex-col items-center justify-center py-16 text-center">
-								<GraduationCap class="mb-3 size-10 text-muted-foreground/40" />
-								<p class="text-sm text-muted-foreground">No cursi found.</p>
+								<Trophy class="mb-3 size-10 text-muted-foreground/40" />
+								<p class="text-sm text-muted-foreground">No goals found.</p>
 							</div>
 						{:else}
 							<div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-								{#each result.data as cursus (cursus.id)}
-									{@const owner = cursus.workspace?.owner}
-									<a href={owner ? `/users/${owner.id}/cursus/${cursus.slug}` : undefined} class="group">
+								{#each result.data as goal (goal.id)}
+									<a href={`./goals/${goal.id}`} class="group">
 										<Card.Root class="h-full transition-shadow hover:shadow-md">
 											<Card.Content class="flex h-full flex-col p-4">
 												<div class="mb-2 flex items-start justify-between gap-2">
 													<h3 class="line-clamp-1 text-sm font-semibold group-hover:text-primary">
-														{cursus.name}
+														{goal.name}
 													</h3>
 													<div class="flex shrink-0 gap-1">
-														<Badge variant="outline" class="text-[10px]">
-															{cursus.variant}
-														</Badge>
+														{#if !goal.active}
+															<Badge variant="outline" class="text-[10px]">Inactive</Badge>
+														{/if}
+														{#if goal.deprecated}
+															<Badge variant="destructive" class="text-[10px]">Deprecated</Badge>
+														{/if}
 													</div>
 												</div>
 
-												<p class="mb-3 line-clamp-3 flex-1 text-xs text-muted-foreground">
-													{cursus.description || 'No description.'}
+												<p class="mb-3 line-clamp-2 flex-1 text-xs text-muted-foreground">
+													{goal.description || 'No description.'}
 												</p>
 
-												<div class="flex items-center justify-between border-t pt-3">
-													<div class="flex items-center gap-2">
-														{#if owner?.avatarUrl}
-															<img
-																src={owner.avatarUrl}
-																alt={owner.displayName ?? 'User'}
-																class="size-5 rounded-full object-cover"
-															/>
-														{/if}
-														<span class="text-[11px] text-muted-foreground">
-															{owner?.displayName ?? 'System'}
-														</span>
-													</div>
+												<!-- Project thumbnails 2x2 grid -->
+												<svelte:boundary>
+													{@const projects = await getGoalProjects(goal.id)}
+
+													{#snippet pending()}
+														<div class="grid grid-cols-2 gap-1">
+															{#each { length: 4 } as _}
+																<Skeleton class="aspect-square rounded" />
+															{/each}
+														</div>
+													{/snippet}
+
+													{#if projects.length > 0}
+														<div class="mb-3 grid grid-cols-2 gap-1 overflow-hidden rounded-md border">
+															{#each projects.slice(0, 4) as project, i (project.id)}
+																<div class="relative aspect-square bg-muted/30">
+																	<div class="flex h-full items-center justify-center p-1">
+																		<span class="line-clamp-2 text-center text-[10px] text-muted-foreground">
+																			{project.name}
+																		</span>
+																	</div>
+																	{#if i === 3 && projects.length > 4}
+																		<div class="absolute inset-0 flex items-center justify-center bg-background/70 text-xs font-medium text-muted-foreground">
+																			+{projects.length - 4}
+																		</div>
+																	{/if}
+																</div>
+															{/each}
+														</div>
+													{/if}
+												</svelte:boundary>
+
+												<div class="flex items-center justify-between">
+													<span class="text-[11px] text-muted-foreground">
+														{goal.workspace?.owner?.displayName ?? 'System'}
+													</span>
 													<ChevronRight class="size-3.5 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
 												</div>
 											</Card.Content>
@@ -199,7 +226,7 @@
 						{/if}
 
 					{:else}
-						{@const result = await getUserCursusList({
+						{@const result = await getUserGoals({
 							userId: params.userId,
 							page: activePage.value,
 							state: stateFilter.value || undefined
@@ -207,47 +234,68 @@
 
 						{#if result.data.length === 0}
 							<div class="flex flex-col items-center justify-center py-16 text-center">
-								<GraduationCap class="mb-3 size-10 text-muted-foreground/40" />
+								<Trophy class="mb-3 size-10 text-muted-foreground/40" />
 								<p class="text-sm text-muted-foreground">
-									{isOwner ? 'You have no cursus enrollments.' : 'No enrollments yet.'}
+									{isOwner ? 'You have no goal subscriptions.' : 'No subscriptions yet.'}
 								</p>
 							</div>
 						{:else}
 							<div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-								{#each result.data as userCursus (userCursus.id)}
-									{@const owner = userCursus.cursus?.workspace?.owner}
-									<a
-										href={owner
-											? `/users/${owner.id}/cursus/${userCursus.cursus?.slug}`
-											: undefined}
-										class="group"
-									>
+								{#each result.data as userGoal (userGoal.id)}
+									<a href={`./goals/${userGoal.goalId}`} class="group">
 										<Card.Root class="h-full transition-shadow hover:shadow-md">
 											<Card.Content class="flex h-full flex-col p-4">
 												<div class="mb-2 flex items-start justify-between gap-2">
 													<h3 class="line-clamp-1 text-sm font-semibold group-hover:text-primary">
-														{userCursus.cursus?.name ?? 'Unknown Cursus'}
+														{userGoal.goal?.name ?? 'Unknown Goal'}
 													</h3>
 													<Badge variant="secondary" class="text-[10px]">
-														{userCursus.state}
+														{userGoal.state}
 													</Badge>
 												</div>
 
-												<p class="mb-3 line-clamp-3 flex-1 text-xs text-muted-foreground">
-													{userCursus.cursus?.description || 'No description.'}
+												<p class="mb-3 line-clamp-2 flex-1 text-xs text-muted-foreground">
+													{userGoal.goal?.description || 'No description.'}
 												</p>
 
-												<div class="flex items-center justify-between border-t pt-3">
-													<div class="flex items-center gap-2">
-														{#if userCursus.cursus?.variant}
-															<Badge variant="outline" class="text-[10px]">
-																{userCursus.cursus.variant}
-															</Badge>
+												<!-- Project thumbnails 2x2 grid -->
+												{#if userGoal.goal}
+													<svelte:boundary>
+														{@const projects = await getGoalProjects(userGoal.goalId)}
+
+														{#snippet pending()}
+															<div class="grid grid-cols-2 gap-1">
+																{#each { length: 4 } as _}
+																	<Skeleton class="aspect-square rounded" />
+																{/each}
+															</div>
+														{/snippet}
+
+														{#if projects.length > 0}
+															<div class="mb-3 grid grid-cols-2 gap-1 overflow-hidden rounded-md border">
+																{#each projects.slice(0, 4) as project, i (project.id)}
+																	<div class="relative aspect-square bg-muted/30">
+																		<div class="flex h-full items-center justify-center p-1">
+																			<span class="line-clamp-2 text-center text-[10px] text-muted-foreground">
+																				{project.name}
+																			</span>
+																		</div>
+																		{#if i === 3 && projects.length > 4}
+																			<div class="absolute inset-0 flex items-center justify-center bg-background/70 text-xs font-medium text-muted-foreground">
+																				+{projects.length - 4}
+																			</div>
+																		{/if}
+																	</div>
+																{/each}
+															</div>
 														{/if}
-														<span class="text-[11px] text-muted-foreground">
-															{owner?.displayName ?? 'System'}
-														</span>
-													</div>
+													</svelte:boundary>
+												{/if}
+
+												<div class="flex items-center justify-between">
+													<span class="text-[11px] text-muted-foreground">
+														{userGoal.goal?.workspace?.owner?.displayName ?? 'System'}
+													</span>
 													<ChevronRight class="size-3.5 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
 												</div>
 											</Card.Content>

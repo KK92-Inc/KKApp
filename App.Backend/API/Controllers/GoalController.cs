@@ -7,6 +7,7 @@ using System.ComponentModel;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 using App.Backend.Core.Query;
 using App.Backend.API.Params;
 using App.Backend.Core.Services.Implementation;
@@ -39,12 +40,16 @@ public class GoalController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Query all goals")]
     [EndpointDescription("Retrieve a paginated list of all goals")]
-    public async Task<ActionResult> GetAll(
+    public async Task<ActionResult<IEnumerable<GoalDO>>> GetAll(
+        [FromQuery(Name = "filter[name]")] string? name,
         [FromQuery] Sorting sorting,
-        [FromQuery] Pagination pagination
+        [FromQuery] Pagination pagination,
+        CancellationToken token
     )
     {
-        var page = await goalService.GetAllAsync(sorting, pagination);
+        var page = await goalService.GetAllAsync(sorting, pagination, token,
+            string.IsNullOrWhiteSpace(name) ? null : g => EF.Functions.ILike(g.Name, $"%{name}%")
+        );
         page.AppendHeaders(Response.Headers);
         return Ok(page.Items.Select(g => new GoalDO(g)));
     }
@@ -111,7 +116,7 @@ public class GoalController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Get goal projects")]
     [EndpointDescription("Retrieve projects associated with a goal")]
-    public async Task<ActionResult> GetGoalProjects(Guid id)
+    public async Task<ActionResult<IEnumerable<ProjectDO>>> GetGoalProjects(Guid id)
     {
         var projects = await goalService.GetProjectsAsync(id);
         return Ok(projects.Select(p => new ProjectDO(p)));

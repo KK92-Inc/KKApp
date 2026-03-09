@@ -5,6 +5,7 @@
 
 using System.ComponentModel.DataAnnotations;
 using App.Backend.Domain.Entities.Users;
+using App.Backend.Domain.Enums;
 
 // ============================================================================
 
@@ -20,6 +21,9 @@ public class UserGoalDO(UserGoal userGoal) : BaseEntityDO<UserGoal>(userGoal)
 
     [Required]
     public Guid GoalId { get; set; } = userGoal.GoalId;
+
+    [Required]
+    public EntityObjectState State { get; set; } = userGoal.State;
 
     /// <summary>
     /// The goal the user is enrolled in.
