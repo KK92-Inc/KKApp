@@ -93,16 +93,17 @@ public class ReviewService(
             .FirstOrDefaultAsync(u => u.Id == requestingUserId, token)
             ?? throw new ServiceException(404, "Requesting user not found");
 
-        var eligibility = await _eligibilityService.AbleToReviewAsync(
-            rubric, requestingUser, userProject, token);
-
-        if (!eligibility.IsEligible)
-        {
-            throw new ServiceException(
-                403,
-                "User is not eligible to request this review",
-                string.Join("; ", eligibility.Reasons));
-        }
+        // TODO: Re-enable eligibility checks once RuleService is implemented
+        // var eligibility = await _eligibilityService.AbleToReviewAsync(
+        //     rubric, requestingUser, userProject, token);
+        //
+        // if (!eligibility.IsEligible)
+        // {
+        //     throw new ServiceException(
+        //         403,
+        //         "User is not eligible to request this review",
+        //         string.Join("; ", eligibility.Reasons));
+        // }
 
         // 7. Create the review
         var review = new Review

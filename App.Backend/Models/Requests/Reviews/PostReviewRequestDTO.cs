@@ -11,7 +11,9 @@ namespace App.Backend.Models.Requests.Reviews;
 // ============================================================================
 
 /// <summary>
-/// Request DTO for creating a new review.
+/// Request DTO for creating one or more review requests.
+/// The user selects which kinds of reviews they want and a rubric.
+/// One review entry is created per kind.
 /// </summary>
 public record PostReviewRequestDTO
 {
@@ -22,19 +24,15 @@ public record PostReviewRequestDTO
     public required Guid UserProjectId { get; init; }
 
     /// <summary>
-    /// The ID of the user performing the review.
+    /// The rubric to use for evaluation.
     /// </summary>
     [Required]
-    public required Guid ReviewerId { get; init; }
+    public required Guid RubricId { get; init; }
 
     /// <summary>
-    /// Optional feedback/comments on the review.
+    /// The review kinds to request (e.g. Self, Peer, Async).
+    /// One review is created per kind.
     /// </summary>
-    [StringLength(16384)]
-    public string? Feedback { get; init; }
-
-    /// <summary>
-    /// The status of the review.
-    /// </summary>
-    public ReviewState Status { get; init; } = ReviewState.Pending;
+    [Required, MinLength(1)]
+    public required ReviewVariant[] Kinds { get; init; }
 }

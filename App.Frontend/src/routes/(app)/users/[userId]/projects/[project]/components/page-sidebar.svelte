@@ -11,6 +11,7 @@
 	import Members from './page-members.svelte';
 	import Reviews from './page-reviews.svelte';
 	import InviteDialog from './page-invite-dialog.svelte';
+	import RequestReviewDialog from './page-request-review-dialog.svelte';
 	import type { components } from '$lib/api/api';
 
 	interface Props {
@@ -22,6 +23,7 @@
 	const { project, userProject, userId }: Props = $props();
 
 	let inviteDialogOpen = $state(false);
+	let reviewDialogOpen = $state(false);
 
 	const isSessionActive = $derived(userProject && userProject.state !== 'Inactive');
 	const wasSubscribed = $derived(userProject && userProject.state === 'Inactive');
@@ -50,7 +52,7 @@
 
 <div class="mt-4 flex flex-col gap-3">
 	<!-- Project info card -->
-	<Card.Root class="shadow-none">
+	<Card.Root class="shadow-none py-0">
 		<Card.Content class="flex items-center gap-3 p-3">
 			<Thumbnail readonly src="/placeholder.svg" class="size-32 shrink-0" />
 			<div class="min-w-0 flex-1">
@@ -67,7 +69,7 @@
 	{#if userProject && isSessionActive}
 		<svelte:boundary>
 			{#snippet pending()}
-				<Card.Root class="shadow-none">
+				<Card.Root class="shadow-none py-0">
 					<Card.Content class="space-y-2 p-3">
 						<Skeleton class="h-4 w-16 rounded" />
 						<Skeleton class="h-8 w-full rounded" />
@@ -80,7 +82,7 @@
 			{@const role = member?.role}
 
 			<!-- Members card -->
-			<Card.Root class="shadow-none">
+			<Card.Root class="shadow-none py-0">
 				<Card.Content class="p-3">
 					<div class="mb-2 flex items-center justify-between">
 						<h3 class="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
@@ -111,28 +113,47 @@
 			{/if}
 
 			<!-- Reviews card -->
-			<Card.Root class="shadow-none">
+			<Card.Root class="shadow-none py-0">
 				<Card.Content class="p-3">
 					<div class="mb-2 flex items-center justify-between">
 						<h3 class="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
 							<MessageCircleHeart size={12} />
 							Reviews
 						</h3>
-						<Button
-							size="sm"
-							variant="ghost"
-							class="h-5 px-1.5 text-[10px] text-muted-foreground"
-						>
-							View all
-							<ArrowRight class="ml-0.5 size-3" />
-						</Button>
+						<div class="flex items-center gap-1">
+							{#if role === 'Leader' || role === 'Member'}
+								<Button
+									size="sm"
+									variant="ghost"
+									class="h-5 px-1.5 text-[10px] text-muted-foreground"
+									onclick={() => (reviewDialogOpen = true)}
+								>
+									Request
+								</Button>
+							{/if}
+							<Button
+								size="sm"
+								variant="ghost"
+								class="h-5 px-1.5 text-[10px] text-muted-foreground"
+							>
+								View all
+								<ArrowRight class="ml-0.5 size-3" />
+							</Button>
+						</div>
 					</div>
-					<Reviews userProjectId={userProject.id} />
+					<Reviews userProjectId={userProject.id} currentUserId={userId} />
 				</Card.Content>
 			</Card.Root>
 
+			{#if role === 'Leader' || role === 'Member'}
+				<RequestReviewDialog
+					userProjectId={userProject.id}
+					bind:open={reviewDialogOpen}
+				/>
+			{/if}
+
 			<!-- Actions card -->
-			<Card.Root class="shadow-none">
+			<Card.Root class="shadow-none py-0">
 				<Card.Content class="p-3">
 					{#if role === 'Pending'}
 						<div class="mb-2 flex items-center gap-2 rounded-md border border-dashed bg-muted/40 px-2.5 py-1.5">
@@ -198,7 +219,7 @@
 		</svelte:boundary>
 	{:else}
 		<!-- No active session → Subscribe / Re-subscribe -->
-		<Card.Root class="shadow-none">
+		<Card.Root class="shadow-none py-0">
 			<Card.Content class="p-3">
 				{#if wasSubscribed}
 					<div class="mb-2 flex items-center gap-2 rounded-md border border-dashed bg-muted/40 px-2.5 py-1.5">

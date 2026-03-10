@@ -3,12 +3,14 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using App.Backend.Domain.Entities.Users;
 using App.Backend.Domain.Entities;
 using App.Backend.Domain.Entities.Reviews;
 using App.Backend.Domain.Relations;
 using App.Backend.Domain.Entities.Projects;
+using App.Backend.Domain.Rules;
 
 // ============================================================================
 
@@ -57,4 +59,29 @@ public class DatabaseContext(DbContextOptions<DatabaseContext> options) : DbCont
     // public DbSet<GoalCollaborator> GoalCollaborator { get; set; }
     // public DbSet<CursusCollaborator> CursusCollaborator { get; set; }
 #nullable restore
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        // Rule collections are stored as jsonb. Register value converters so
+        // EF Core serializes them via System.Text.Json (which supports the
+        // [JsonPolymorphic] attributes on Rule) rather than delegating to Npgsql,
+        // which requires an explicit dynamic-JSON opt-in for interface types.
+        var jsonOptions = new JsonSerializerOptions();
+
+        modelBuilder.Entity<Rubric>()
+            .Property(r => r.ReviewerRules)
+            .HasConversion(
+                v => JsonSerializer.Serialize(v, jsonOptions),
+                v => JsonSerializer.Deserialize<ICollection<Rule>>(v, jsonOptions) ?? new List<Rule>()
+            );
+
+        modelBuilder.Entity<Rubric>()
+            .Property(r => r.RevieweeRules)
+            .HasConversion(
+                v => JsonSerializer.Serialize(v, jsonOptions),
+                v => JsonSerializer.Deserialize<ICollection<Rule>>(v, jsonOptions) ?? new List<Rule>()
+            );
+    }
 }

@@ -154,7 +154,7 @@ export class Problem {
 	 * @returns
 	 */
 	public static throw(problem?: ProblemDetails): never {
-		Log.dbg(new Error('Request failed').stack, '\n', JSON.stringify(problem, null, 2));
+		Log.dbg(JSON.stringify(problem, null, 2), '\n', new Error('Request failed').stack);
 		error(Number(problem?.status ?? 500), problem?.detail ?? 'Something went wrong...');
 	}
 }

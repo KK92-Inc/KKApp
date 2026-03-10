@@ -30,7 +30,7 @@
 			<Page.Menu />
 			<Page.Explorer />
 		</div>
-		<Card.Root class="mb-4 shadow-none">
+		<Card.Root class="mb-4 shadow-none py-0">
 			<Accordion.Root type="single">
 				<Accordion.Item value="item-1">
 					<Accordion.Trigger
