@@ -1,21 +1,12 @@
 <script lang="ts">
 	import * as Tabs from '$lib/components/tabs';
-	import * as Select from '$lib/components/select';
 	import { Separator } from '$lib/components/separator';
-	import {
-		ChevronDown,
-		Code,
-		Code2Icon,
-		GitBranch,
-		GitCommit,
-		GitCommitIcon,
-		MoreHorizontal,
-		PlusIcon
-	} from '@lucide/svelte';
+	import { GitBranch, MoreHorizontal, PlusIcon } from '@lucide/svelte';
 	import { createGitBranch, getGitBranches } from '$lib/remotes/git.remote';
+	import { getProject } from '$lib/remotes/project.remote';
+	import { getUserProjectByProjectId } from '$lib/remotes/user-project.remote';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
-	import { tick } from 'svelte';
 	import * as Command from '$lib/components/command';
 	import * as Popover from '$lib/components/popover';
 	import { Button, buttonVariants } from '$lib/components/button';
@@ -25,18 +16,33 @@
 	import { Label } from '$lib/components/label';
 	import * as InputGroup from '$lib/components/input-group';
 	import * as DropdownMenu from '$lib/components/dropdown-menu';
-	import { getContext } from './index.svelte';
+	import { page } from '$app/state';
 
-	const context = getContext();
-	const branches = await getGitBranches(context.project.gitInfo.id);
-	context.branch = branches[0] ?? '';
+	// Independent queries — kick off in parallel
+	const projectQuery = $derived(getProject(page.params.project));
+	const userProjectQuery = $derived(
+		getUserProjectByProjectId({
+			projectId: page.params.project,
+			userId: page.data.session.userId
+		})
+	);
 
+	const project = $derived(await projectQuery);
+	const userProject = $derived(await userProjectQuery);
+
+	// Dependent on userProject
+	const branchesQuery = $derived(userProject?.gitInfo ? getGitBranches(userProject.gitInfo.id) : null);
+	const branches = $derived(branchesQuery ? await branchesQuery : []);
+
+	// Local writable state (was context.view / context.branch)
+	let view = $state<'submission' | 'assignment'>('submission');
+	let branch = $state<string | undefined>(branches[0]);
 	let search = $state('');
 	let showDialog = $state(false);
 	let showDropdown = $state(false);
-	const sshUrl = `ssh://git@localhost:2222/${context.project.gitInfo.owner}/${context.project.gitInfo.name}`;
+
+	const sshUrl = `ssh://git@localhost:2222/${project.gitInfo?.id}/${project.id}`;
 	const cmd = `git clone ${sshUrl}`;
-	const selected = $derived(branches.find((f) => f === context.branch) ?? 'Select a branch');
 </script>
 
 {#snippet createBranch()}
@@ -63,16 +69,11 @@
 			<Dialog.Title>Create branch</Dialog.Title>
 			<Dialog.Description>
 				A new branch will be created from
-				<strong class="rounded bg-muted p-1 font-mono">{context.branch}</strong>.
+				<strong class="rounded bg-muted p-1 font-mono">{branch}</strong>.
 			</Dialog.Description>
 		</Dialog.Header>
 		<form {...createGitBranch}>
-			<input
-				type="hidden"
-				{...createGitBranch.fields.gitId.as('text')}
-				value={context.project.gitInfo.id}
-			/>
-
+			<input type="hidden" {...createGitBranch.fields.gitId.as('text')} value={project.gitInfo?.id} />
 			<div class="grid gap-4">
 				<div class="grid gap-3">
 					<Label for="name-1">Name</Label>
@@ -80,9 +81,7 @@
 				</div>
 			</div>
 			<Dialog.Footer>
-				<Dialog.Close type="button" class={buttonVariants({ variant: 'outline' })}>
-					Cancel
-				</Dialog.Close>
+				<Dialog.Close type="button" class={buttonVariants({ variant: 'outline' })}>Cancel</Dialog.Close>
 				<Button type="submit">Create</Button>
 			</Dialog.Footer>
 		</form>
@@ -91,13 +90,14 @@
 
 <!-- CONTENT -->
 <div class="flex items-center gap-2">
-	<Tabs.Root bind:value={context.view}>
+	<Tabs.Root bind:value={view}>
 		<Tabs.List>
 			<Tabs.Trigger value="submission">Submission</Tabs.Trigger>
 			<Tabs.Trigger value="assignment">Assignment</Tabs.Trigger>
 		</Tabs.List>
 	</Tabs.Root>
-	{#if context.view === 'submission'}
+
+	{#if view === 'submission' && userProject?.gitInfo}
 		<Separator orientation="vertical" />
 		<Popover.Root bind:open={showDropdown}>
 			<Popover.Trigger>
@@ -105,7 +105,7 @@
 					<Button {...props} variant="outline" role="combobox" aria-expanded={showDropdown}>
 						<GitBranch />
 						<Separator orientation="vertical" />
-						{selected ?? 'Select a framework...'}
+						{branch ?? 'Select a branch...'}
 						<ChevronsUpDownIcon class="opacity-50" />
 					</Button>
 				{/snippet}
@@ -118,10 +118,10 @@
 							{@render createBranch()}
 						</Command.Empty>
 						<Command.Group>
-							{#each branches as branch (branch)}
-								<Command.Item value={branch} onSelect={() => (context.branch = branch)}>
-									<CheckIcon class={cn(context.branch !== branch && 'text-transparent')} />
-									{branch}
+							{#each branches as b (b)}
+								<Command.Item value={b} onSelect={() => (branch = b)}>
+									<CheckIcon class={cn(branch !== b && 'text-transparent')} />
+									{b}
 								</Command.Item>
 							{/each}
 						</Command.Group>
@@ -138,14 +138,7 @@
 			<InputGroup.Addon>
 				<InputGroup.Copy value={cmd} />
 			</InputGroup.Addon>
-			<InputGroup.Input
-				id="title"
-				autocomplete="off"
-				autocorrect="off"
-				autosave="off"
-				readonly
-				value={cmd}
-			/>
+			<InputGroup.Input id="title" autocomplete="off" autocorrect="off" autosave="off" readonly value={cmd} />
 			<InputGroup.Addon align="inline-end">
 				<DropdownMenu.Root>
 					<DropdownMenu.Trigger>

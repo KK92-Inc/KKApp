@@ -1,6 +1,6 @@
 <script lang="ts">
 	import * as Dialog from '$lib/components/dialog';
-	import { Button } from '$lib/components/button';
+	import { Button, buttonVariants } from '$lib/components/button';
 	import { Badge } from '$lib/components/badge';
 	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
 	import { Checkbox } from '$lib/components/checkbox';
@@ -8,6 +8,7 @@
 	import { getRubricsForProject, requestReviews } from '$lib/remotes/reviews.remote';
 	import { ClipboardCheck, Users, Globe, Bot } from '@lucide/svelte';
 	import type { components } from '$lib/api/api';
+	import { Input } from '$lib/components/input';
 
 	type Rubric = components['schemas']['RubricDO'];
 	type ReviewVariant = components['schemas']['ReviewVariant'];
@@ -107,7 +108,13 @@
 </script>
 
 <Dialog.Root bind:open>
-	<Dialog.Content class="sm:max-w-md">
+	<Dialog.Trigger
+		type="button"
+		class={buttonVariants({ variant: 'outline', size: 'sm', class: 'h-5 px-1.5 text-[10px]' })}
+	>
+		Request Review
+	</Dialog.Trigger>
+	<Dialog.Content class="sm:max-w-106.25">
 		<Dialog.Header>
 			<Dialog.Title>
 				{step === 'rubric' ? 'Request Review' : 'Select Review Types'}
@@ -122,15 +129,12 @@
 		</Dialog.Header>
 
 		{#if step === 'rubric'}
-			<!-- Rubric selection step -->
 			<div class="max-h-64 space-y-2 overflow-y-auto">
 				{#if loading}
 					<Skeleton class="h-16 w-full rounded-md" />
 					<Skeleton class="h-16 w-full rounded-md" />
 				{:else if rubrics.length === 0}
-					<p class="py-6 text-center text-sm text-muted-foreground">
-						No rubrics available for this project.
-					</p>
+					<p class="py-6 text-center text-sm text-muted-foreground">No rubrics available for this project.</p>
 				{:else}
 					{#each rubrics as rubric (rubric.id)}
 						<button
@@ -152,7 +156,6 @@
 				{/if}
 			</div>
 		{:else if selectedRubric}
-			<!-- Review kind selection step -->
 			<div class="space-y-3">
 				<div class="rounded-md border bg-muted/30 px-3 py-2">
 					<p class="text-xs text-muted-foreground">
@@ -201,10 +204,6 @@
 						class="w-full"
 						disabled={selectedKinds.size === 0}
 						loading={requestReviews.pending > 0}
-						onclick={() => {
-							// Close after a short delay to let the form submit
-							setTimeout(() => { open = false; }, 500);
-						}}
 					>
 						Request {selectedKinds.size} Review{selectedKinds.size !== 1 ? 's' : ''}
 					</Button>

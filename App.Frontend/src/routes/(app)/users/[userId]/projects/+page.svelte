@@ -13,6 +13,7 @@
 	import useDebounce from '$lib/hooks/debounce.svelte';
 	import * as v from 'valibot';
 	import type { PageProps } from './$types';
+	import { page } from '$app/state';
 
 	const { data, params }: PageProps = $props();
 	const isOwner = $derived(data.session.userId === params.userId);
@@ -143,7 +144,8 @@
 													size="sm"
 													variant="ghost"
 													class="h-7 gap-1 text-xs"
-													href={`./projects/${project.id}`}
+													data-sveltekit-preload-data="tap"
+													href={`/users/${params.userId}/projects/${project.id}`}
 												>
 													View <ChevronRight class="size-3" />
 												</Button>
@@ -207,7 +209,8 @@
 													size="sm"
 													variant="ghost"
 													class="h-7 gap-1 text-xs"
-													href={`./projects/${userProject.project.id}`}
+													data-sveltekit-preload-data="tap"
+													href={`/users/${params.userId}/projects/${userProject.project.id}`}
 												>
 													Open <ChevronRight class="size-3" />
 												</Button>

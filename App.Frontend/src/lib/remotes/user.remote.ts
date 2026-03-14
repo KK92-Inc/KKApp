@@ -4,7 +4,7 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import { Filters, Problem } from '$lib/api.js';
+import { Filters, paginate, Problem } from '$lib/api.js';
 import { getRequestEvent, query } from '$app/server';
 
 // ============================================================================
@@ -40,7 +40,8 @@ const getUsersSchema = v.object({
 	...Filters.pagination,
 	...Filters.sort,
 	login: v.optional(v.string()),
-	display: v.optional(v.string())
+	display: v.optional(v.string()),
+	projectId: v.optional(Filters.id)
 });
 
 export const getUsers = query(getUsersSchema, async (params) => {
@@ -58,10 +59,14 @@ export const getUsers = query(getUsersSchema, async (params) => {
 		}
 	});
 
+	await locals.api.GET("/users")
+
 	if (output.error || !output.data) {
 		Problem.validate(output.error);
 		Problem.throw(output.error);
 	}
 
-	return output.data;
+	return paginate(output.data, output.response);
 });
+
+// ============================================================================

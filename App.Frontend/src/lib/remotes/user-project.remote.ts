@@ -18,7 +18,7 @@ export const getUserProjectByProjectId = query(schema, async ({ userId, projectI
 		params: { path: { userId, projectId } }
 	});
 
-	if (output.error || !output.data) {
+	if (output.error && output.error.status !== 404) {
 		Problem.throw(output.error);
 	}
 

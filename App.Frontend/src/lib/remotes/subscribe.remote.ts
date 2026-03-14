@@ -105,6 +105,8 @@ export const unsubscribeProject = form(projectSubSchema, async ({ userId, projec
 		params: { path: { userId, projectId } }
 	});
 
+	// getUserProjectByProjectId({userId, projectId}).refresh();
+
 	if (output.error) {
 		Problem.throw(output.error);
 	}

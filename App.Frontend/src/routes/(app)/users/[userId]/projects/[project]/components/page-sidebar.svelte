@@ -10,26 +10,22 @@
 	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
 	import Members from './page-members.svelte';
 	import Reviews from './page-reviews.svelte';
-	import InviteDialog from './page-invite-dialog.svelte';
+	import InviteDialog from './page-members-dialog.svelte';
 	import RequestReviewDialog from './page-request-review-dialog.svelte';
 	import type { components } from '$lib/api/api';
+	import { getContext } from './index.svelte';
+	import { page } from '$app/state';
 
-	interface Props {
-		project: components['schemas']['ProjectDO'];
-		userProject?: components['schemas']['UserProjectDO'];
-		userId: string;
-	}
 
-	const { project, userProject, userId }: Props = $props();
-
+	const context = getContext();
 	let inviteDialogOpen = $state(false);
 	let reviewDialogOpen = $state(false);
 
-	const isSessionActive = $derived(userProject && userProject.state !== 'Inactive');
-	const wasSubscribed = $derived(userProject && userProject.state === 'Inactive');
+	const isSessionActive = $derived(context.userProject && context.userProject.state !== 'Inactive');
+	const wasSubscribed = $derived(context.userProject && context.userProject.state === 'Inactive');
 	const stateVariant = $derived.by(() => {
-		if (!userProject) return undefined;
-		switch (userProject.state) {
+		if (!context.userProject) return undefined;
+		switch (context.userProject.state) {
 			case 'Active':
 				return 'default' as const;
 			case 'Completed':
@@ -56,17 +52,17 @@
 		<Card.Content class="flex items-center gap-3 p-3">
 			<Thumbnail readonly src="/placeholder.svg" class="size-32 shrink-0" />
 			<div class="min-w-0 flex-1">
-				<h1 class="truncate text-sm font-semibold leading-tight">{project.name}</h1>
-				{#if userProject}
+				<h1 class="truncate text-sm font-semibold leading-tight">{context.project.name}</h1>
+				{#if context.userProject}
 					<Badge variant={stateVariant} class="mt-1 text-[10px]">
-						{userProject.state}
+						{context.userProject.state}
 					</Badge>
 				{/if}
 			</div>
 		</Card.Content>
 	</Card.Root>
 
-	{#if userProject && isSessionActive}
+	{#if context.userProject && isSessionActive}
 		<svelte:boundary>
 			{#snippet pending()}
 				<Card.Root class="shadow-none py-0">
@@ -77,8 +73,8 @@
 				</Card.Root>
 			{/snippet}
 
-			{@const members = await getUserProjectMembers(userProject.id)}
-			{@const member = members.find((m) => m.userId === userId && !m.leftAt)}
+			{@const members = await getUserProjectMembers(context.userProject.id)}
+			{@const member = members.find((m) => m.userId === page.data.session.userId && !m.leftAt)}
 			{@const role = member?.role}
 
 			<!-- Members card -->
@@ -100,14 +96,14 @@
 							</Button>
 						{/if}
 					</div>
-					<Members userProjectId={userProject.id} />
+					<Members userProjectId={context.userProject.id} />
 				</Card.Content>
 			</Card.Root>
 
 			{#if role === 'Leader'}
 				<InviteDialog
-					userProjectId={userProject.id}
-					currentUserId={userId}
+					userProjectId={context.userProject.id}
+					currentUserId={page.data.session.userId}
 					bind:open={inviteDialogOpen}
 				/>
 			{/if}
@@ -141,13 +137,13 @@
 							</Button>
 						</div>
 					</div>
-					<Reviews userProjectId={userProject.id} currentUserId={userId} />
+					<Reviews userProjectId={context.userProject.id} currentUserId={page.data.session.userId} />
 				</Card.Content>
 			</Card.Root>
 
 			{#if role === 'Leader' || role === 'Member'}
 				<RequestReviewDialog
-					userProjectId={userProject.id}
+					userProjectId={context.userProject.id}
 					bind:open={reviewDialogOpen}
 				/>
 			{/if}
@@ -167,7 +163,7 @@
 								<input
 									hidden
 									{...acceptInvite.fields.userProjectId.as('text')}
-									value={userProject.id}
+									value={context.userProject.id}
 								/>
 								<Button loading={acceptInvite.pending > 0} type="submit" size="sm" class="w-full">
 									Accept
@@ -177,7 +173,7 @@
 								<input
 									hidden
 									{...declineInvite.fields.userProjectId.as('text')}
-									value={userProject.id}
+									value={context.userProject.id}
 								/>
 								<Button
 									loading={declineInvite.pending > 0}
@@ -192,11 +188,11 @@
 						</div>
 					{:else if role === 'Leader' || role === 'Member'}
 						<form {...unsubscribeProject}>
-							<input hidden {...unsubscribeProject.fields.userId.as('text')} value={userId} />
+							<input hidden {...unsubscribeProject.fields.userId.as('text')} value={page.data.session.userId} />
 							<input
 								hidden
 								{...unsubscribeProject.fields.projectId.as('text')}
-								value={project.id}
+								value={context.userProject.id}
 							/>
 							<Button
 								loading={unsubscribeProject.pending > 0}
@@ -211,7 +207,7 @@
 					{:else}
 						<p class="text-xs text-muted-foreground">
 							You are not a member of this project. To view your project page, click
-							<a href="/users/{userId}/projects/{project.id}" class="text-primary underline">here</a>.
+							<a href="/users/{page.data.session.userId}/projects/{context.userProject.id}" class="text-primary underline">here</a>.
 						</p>
 					{/if}
 				</Card.Content>
@@ -227,14 +223,14 @@
 						<div class="min-w-0">
 							<p class="text-[11px] font-medium text-muted-foreground">Previously subscribed</p>
 							<p class="text-[10px] text-muted-foreground/70">
-								Left {formatTimestamp(userProject!.updatedAt)}
+								Left {formatTimestamp(context.userProject!.updatedAt)}
 							</p>
 						</div>
 					</div>
 				{/if}
 				<form {...subscribeProject}>
-					<input hidden {...subscribeProject.fields.userId.as('text')} value={userId} />
-					<input hidden {...subscribeProject.fields.projectId.as('text')} value={project.id} />
+					<input hidden {...subscribeProject.fields.userId.as('text')} value={page.data.session.userId} />
+					<input hidden {...subscribeProject.fields.projectId.as('text')} value={context.userProject.id} />
 					<Button loading={subscribeProject.pending > 0} type="submit" size="sm" class="w-full">
 						{wasSubscribed ? 'Re-subscribe' : 'Subscribe'}
 					</Button>

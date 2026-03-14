@@ -27,14 +27,14 @@
 			</div>
 
 			<div class="flex gap-3">
-				<Button variant="default" class="flex-1 group" href="..">
+				<Button variant="default" class="flex-1 group" href={page.url.pathname}>
 					<House class="mr-2 h-4 w-4 group-hover:shake transition-transform" />
 					Back to safety
 				</Button>
 
-				<Button variant="outline" class="group" href={page.url.pathname}>
+				<!-- <Button variant="outline" class="group" href="/">
 					<RefreshCw class="h-4 w-4 group-hover:rotate-180 transition-transform duration-500" />
-				</Button>
+				</Button> -->
 			</div>
 		</div>
 	</div>

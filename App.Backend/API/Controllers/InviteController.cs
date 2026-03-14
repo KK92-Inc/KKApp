@@ -20,6 +20,7 @@ namespace App.Backend.API.Controllers;
 public class InviteController(
     ILogger<InviteController> log,
     IInviteService service,
+    ISubscriptionService subscription,
     IMessageBus bus
 ) : Controller
 {
@@ -31,9 +32,11 @@ public class InviteController(
     public async Task<ActionResult<UserProjectMemberDO>> InviteToProject(
         Guid inviteeId, Guid userProjectId, CancellationToken token)
     {
+        // if (!await subscription.CanSubscribeToProjectAsync(User.GetSID(), userProjectId, token))
+        //     return UnprocessableEntity("You are not eligible to invite users to this project session.");
+
         var inviterId = User.GetSID();
         var member = await service.InviteToProjectAsync(inviterId, inviteeId, userProjectId, token);
-
         await bus.PublishAsync(new ProjectInviteNotification(
             InviteeId: inviteeId,
             InviterUserId: inviterId,

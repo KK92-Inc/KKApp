@@ -10,25 +10,28 @@ import type { components } from "$lib/api/api";
 
 export { default as Menu } from "./page-menu.svelte";
 export { default as Explorer } from "./page-explorer.svelte";
-export { default as Sidebar } from "./page-sidebar.svelte";
+export { default as Actions } from "./page-actions.svelte";
 export { default as Reviews } from "./page-reviews.svelte";
 export { default as Members } from "./page-members.svelte";
 export { default as Timeline } from "./page-timeline.svelte";
-export { default as InviteDialog } from "./page-invite-dialog.svelte";
+export { default as MembersDialog } from "./page-members-dialog.svelte";
 export { default as RequestReviewDialog } from "./page-request-review-dialog.svelte";
 
 // ============================================================================
 
-export class Context {
-	constructor(
-		public project: components["schemas"]["ProjectDO"],
-		public userProject?: components["schemas"]["UserProjectDO"],
-	) {}
+type Project = components["schemas"]["ProjectDO"];
+type UserProject = components["schemas"]["UserProjectDO"];
+type UserProjectMembers = components["schemas"]["UserProjectMemberDO"];
 
-	public branch = $state("");
+export class Context {
+	public branches = $state.raw<string[]>([]);
+	public branch = $derived(this.branches.at(0))!;
 	public view = $state<"submission" | "assignment">("submission");
+	public project = $state<Project>()!;
+	public userProject = $state<UserProject | undefined>();
+	public members = $state.raw<UserProjectMembers[]>([]);
 }
 
 // ============================================================================
 
-export const [ getContext, setContext ] = createContext<Context>();
+export const [getContext, setContext] = createContext<Context>();

@@ -14,6 +14,7 @@ using App.Backend.Models.Responses.Entities;
 using Microsoft.EntityFrameworkCore;
 using App.Backend.Models.Requests.Users;
 using App.Backend.Domain.Entities.Users;
+using System.ComponentModel;
 
 // ============================================================================
 
@@ -28,7 +29,8 @@ namespace App.Backend.API.Controllers;
 [Authorize]
 public class UserController(
     ILogger<UserController> log,
-    IUserService users
+    IUserService users,
+    ISubscriptionService subscription
 ) : Controller
 {
     [HttpGet]
