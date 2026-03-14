@@ -23,6 +23,7 @@ public class UserProjectTransactionDO(UserProjectTransaction transaction)
     /// <summary>
     /// The user associated with this transaction, if applicable.
     /// </summary>
+    [Required]
     public Guid? UserId { get; set; } = transaction.UserId;
 
     [Required]
@@ -31,6 +32,7 @@ public class UserProjectTransactionDO(UserProjectTransaction transaction)
     /// <summary>
     /// The user who performed the action, if applicable.
     /// </summary>
+    [Required]
     public UserLightDO? User { get; set; } = transaction.User;
 
     public static implicit operator UserProjectTransactionDO?(UserProjectTransaction? transaction) =>

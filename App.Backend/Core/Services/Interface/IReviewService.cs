@@ -82,4 +82,12 @@ public interface IReviewService : IDomainService<Review>
     /// <param name="token">Cancellation token.</param>
     /// <returns>List of reviews assigned to the reviewer.</returns>
     Task<IEnumerable<Review>> GetReviewerAssignmentsAsync(Guid reviewerId, CancellationToken token = default);
+
+    /// <summary>
+    /// Cancels a pending review, removing it entirely.
+    /// Only pending reviews can be canceled.
+    /// </summary>
+    /// <param name="reviewId">The review to cancel.</param>
+    /// <param name="token">Cancellation token.</param>
+    Task CancelReviewAsync(Guid reviewId, CancellationToken token = default);
 }

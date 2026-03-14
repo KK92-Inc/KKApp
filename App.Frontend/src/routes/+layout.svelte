@@ -9,6 +9,7 @@
 </script>
 
 <svelte:head>
+	<title>KKApp | Heilbronn</title>
 	<link rel="icon" href={favicon} />
 </svelte:head>
 

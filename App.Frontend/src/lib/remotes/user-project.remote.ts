@@ -78,15 +78,20 @@ export const getUserProjectMembers = query(Filters.id, async (id) => {
 /** Retrieve the paginated activity timeline of a user project session. */
 const transactionsSchema = v.object({
 	id: Filters.id,
-	page: v.optional(v.number(), 1),
-	size: v.optional(v.number(), 10),
+	...Filters.sort,
+	...Filters.pagination
 });
-export const getUserProjectTransactions = query(transactionsSchema, async ({ id, page, size }) => {
+export const getUserProjectTransactions = query(transactionsSchema, async (data) => {
 	const { locals } = getRequestEvent();
 	const output = await locals.api.GET('/user-projects/{id}/transactions', {
 		params: {
-			path: { id },
-			query: { 'page[index]': page, 'page[size]': size, 'sort[order]': 'Descending' }
+			path: { id: data.id },
+			query: {
+				'page[index]': data.page,
+				'page[size]': data.size,
+				'sort[order]': data.sort,
+				'sort[by]': data.sortBy
+			}
 		}
 	});
 

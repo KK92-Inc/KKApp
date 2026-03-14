@@ -65,7 +65,7 @@ export async function handleFetch({ fetch, request, event }) {
 	if (BACKEND_URI && request.url.startsWith(BACKEND_URI)) {
 		const accessToken = event.cookies.get(Keycloak.COOKIE_ACCESS);
 		if (accessToken) {
-			Log.dbg(request.method, '<=', request.url);
+			Log.dbg(request.method, '=>', request.url);
 			request.headers.set('authorization', `Bearer ${accessToken}`);
 		}
 	}

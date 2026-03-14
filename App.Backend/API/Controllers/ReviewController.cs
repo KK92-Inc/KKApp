@@ -189,12 +189,13 @@ public class ReviewController(
     }
 
     [HttpDelete("{reviewId:guid}")]
-    [EndpointSummary("Cancel a review")]
-    public async Task<ActionResult<ReviewDO>> CancelReview(Guid reviewId, CancellationToken token)
+    [EndpointSummary("Cancel a pending review")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> CancelReview(Guid reviewId, CancellationToken token)
     {
-
-        throw new NotImplementedException("Canceling reviews is not implemented yet.");
-        // var review = await reviews.CancelReviewAsync(reviewId, token);
-        // return Ok(new ReviewDO(review));
+        await reviews.CancelReviewAsync(reviewId, token);
+        return NoContent();
     }
 }

@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { Badge } from '$lib/components/badge';
 	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
-	import { getReviewsByUserProjectId, pickupReview } from '$lib/remotes/reviews.remote';
-	import { ClipboardCheck, Clock, Loader, UserCheck, Play } from '@lucide/svelte';
+	import { getReviewsByUserProjectId, pickupReview, startReview, cancelReview } from '$lib/remotes/reviews.remote';
+	import { ClipboardCheck, Clock, Loader, UserCheck, Play, X } from '@lucide/svelte';
 	import { Button } from '$lib/components/button';
 
 	interface Props {
@@ -63,6 +63,31 @@
 									<UserCheck size={12} />
 									{review.reviewer.login}
 								</span>
+								{#if review.state === 'Pending' && review.kind === 'Self' && review.reviewer.id === currentUserId}
+									<form {...startReview} onclick={(e: MouseEvent) => e.stopPropagation()}>
+										<input hidden {...startReview.fields.reviewId.as('text')} value={review.id} />
+										<Button
+											type="submit"
+											size="icon-sm"
+											variant="ghost"
+											loading={startReview.pending > 0}
+										>
+											<Play size={10} />
+										</Button>
+									</form>
+									<form {...cancelReview} onclick={(e: MouseEvent) => e.stopPropagation()}>
+										<input hidden {...cancelReview.fields.reviewId.as('text')} value={review.id} />
+										<input hidden {...cancelReview.fields.userProjectId.as('text')} value={userProjectId} />
+										<Button
+											type="submit"
+											size="icon-sm"
+											variant="destructive"
+											loading={cancelReview.pending > 0}
+										>
+											<X size={10} />
+										</Button>
+									</form>
+								{/if}
 							{:else if review.state === 'Pending' && currentUserId}
 								<form {...pickupReview} onclick={(e: MouseEvent) => e.stopPropagation()}>
 									<input hidden {...pickupReview.fields.reviewId.as('text')} value={review.id} />
@@ -78,10 +103,24 @@
 										Pick up
 									</Button>
 								</form>
+								<form {...cancelReview} onclick={(e: MouseEvent) => e.stopPropagation()}>
+									<input hidden {...cancelReview.fields.reviewId.as('text')} value={review.id} />
+									<input hidden {...cancelReview.fields.userProjectId.as('text')} value={userProjectId} />
+									<Button
+										type="submit"
+										size="sm"
+										variant="ghost"
+										class="h-5 gap-1 px-1.5 text-[10px] text-destructive hover:text-destructive"
+										loading={cancelReview.pending > 0}
+									>
+										<X size={10} />
+										Cancel
+									</Button>
+								</form>
 							{/if}
-							<Badge variant={config.variant} class="text-[10px]">
+							<!-- <Badge variant={config.variant} class="text-[10px]">
 								{review.state}
-							</Badge>
+							</Badge> -->
 						</div>
 					</a>
 				</li>

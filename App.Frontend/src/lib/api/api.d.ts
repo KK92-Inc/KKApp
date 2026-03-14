@@ -1348,6 +1348,7 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
+                    "filter[name]"?: string;
                     /** @description The name of the property to use for sorting. */
                     "sort[by]"?: string;
                     /** @description The sort direction. */
@@ -1356,8 +1357,6 @@ export interface paths {
                     "page[index]"?: number | string;
                     /** @description The amount of results per page */
                     "page[size]"?: number | string;
-                    /** @description Filter by goal name */
-                    "filter[name]"?: string;
                 };
                 header?: never;
                 path?: never;
@@ -2725,20 +2724,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/reviews/by-id/{reviewId}": {
+    "/reviews/rubrics/{userProjectId}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Get a single review by its ID */
+        /**
+         * Get available rubrics for a user project
+         * @description Returns enabled rubrics that can be used for reviewing the specified user project.
+         */
         get: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
-                    reviewId: string;
+                    userProjectId: string;
                 };
                 cookie?: never;
             };
@@ -2750,13 +2752,20 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["ReviewDO"];
-                        "application/json": components["schemas"]["ReviewDO"];
-                        "text/json": components["schemas"]["ReviewDO"];
+                        "text/plain": components["schemas"]["RubricDO"][];
+                        "application/json": components["schemas"]["RubricDO"][];
+                        "text/json": components["schemas"]["RubricDO"][];
                     };
                 };
                 /** @description Unauthorized */
                 401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2852,6 +2861,81 @@ export interface paths {
                 };
             };
         };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reviews/by-id/{reviewId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a single review by its ID
+         * @description Returns the review with full details including reviewer and rubric.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    reviewId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ReviewDO"];
+                        "application/json": components["schemas"]["ReviewDO"];
+                        "text/json": components["schemas"]["ReviewDO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -2995,6 +3079,189 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/reviews/request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request one or more reviews for a user project
+         * @description Creates review entries for the specified kinds. Self reviews are auto-assigned to the requesting user.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PostReviewRequestDTO"];
+                    "text/json": components["schemas"]["PostReviewRequestDTO"];
+                    "application/*+json": components["schemas"]["PostReviewRequestDTO"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ReviewDO"][];
+                        "application/json": components["schemas"]["ReviewDO"][];
+                        "text/json": components["schemas"]["ReviewDO"][];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reviews/{reviewId}/pickup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pick up a pending review as the current user
+         * @description Assigns the current user as reviewer and transitions the review to InProgress.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    reviewId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ReviewDO"];
+                        "application/json": components["schemas"]["ReviewDO"];
+                        "text/json": components["schemas"]["ReviewDO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/reviews/{reviewId}": {
         parameters: {
             query?: never;
@@ -3058,221 +3325,6 @@ export interface paths {
                 };
             };
         };
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/reviews/request": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Request one or more reviews for a user project */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["PostReviewRequestDTO"];
-                };
-            };
-            responses: {
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ReviewDO"][];
-                        "application/json": components["schemas"]["ReviewDO"][];
-                        "text/json": components["schemas"]["ReviewDO"][];
-                    };
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ProblemDetails"];
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "text/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ProblemDetails"];
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "text/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/reviews/{reviewId}/pickup": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Pick up a pending review as the current user */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    reviewId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ReviewDO"];
-                        "application/json": components["schemas"]["ReviewDO"];
-                        "text/json": components["schemas"]["ReviewDO"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Unprocessable Entity */
-                422: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ProblemDetails"];
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "text/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/reviews/rubrics/{userProjectId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get available rubrics for a user project */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    userProjectId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["RubricDO"][];
-                        "application/json": components["schemas"]["RubricDO"][];
-                        "text/json": components["schemas"]["RubricDO"][];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ProblemDetails"];
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "text/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -4667,7 +4719,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/user-projects/{id}/transactions": {
+    "/user-projects/{id}/members": {
         parameters: {
             query?: never;
             header?: never;
@@ -4675,21 +4727,12 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get project session transactions
-         * @description Retrieve the paginated activity timeline of a user project session.
+         * Get project session members
+         * @description Retrieve all members participating in a user project session.
          */
         get: {
             parameters: {
-                query?: {
-                    /** @description The page number/index */
-                    "page[index]"?: number | string;
-                    /** @description The amount of results per page */
-                    "page[size]"?: number | string;
-                    /** @description The name of the property to use for sorting. */
-                    "sort[by]"?: string;
-                    /** @description The sort direction. */
-                    "sort[order]"?: components["schemas"]["Order"];
-                };
+                query?: never;
                 header?: never;
                 path: {
                     id: string;
@@ -4704,9 +4747,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["UserProjectTransactionDO"][];
-                        "application/json": components["schemas"]["UserProjectTransactionDO"][];
-                        "text/json": components["schemas"]["UserProjectTransactionDO"][];
+                        "text/plain": components["schemas"]["UserProjectMemberDO"][];
+                        "application/json": components["schemas"]["UserProjectMemberDO"][];
+                        "text/json": components["schemas"]["UserProjectMemberDO"][];
                     };
                 };
                 /** @description Unauthorized */
@@ -4751,7 +4794,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/user-projects/{id}/members": {
+    "/user-projects/{id}/transactions": {
         parameters: {
             query?: never;
             header?: never;
@@ -4759,12 +4802,21 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get project session members
-         * @description Retrieve all members participating in a user project session.
+         * Get project session transactions
+         * @description Retrieve the paginated activity timeline of a user project session.
          */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description The page number/index */
+                    "page[index]"?: number | string;
+                    /** @description The amount of results per page */
+                    "page[size]"?: number | string;
+                    /** @description The name of the property to use for sorting. */
+                    "sort[by]"?: string;
+                    /** @description The sort direction. */
+                    "sort[order]"?: components["schemas"]["Order"];
+                };
                 header?: never;
                 path: {
                     id: string;
@@ -4779,9 +4831,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["UserProjectMemberDO"][];
-                        "application/json": components["schemas"]["UserProjectMemberDO"][];
-                        "text/json": components["schemas"]["UserProjectMemberDO"][];
+                        "text/plain": components["schemas"]["UserProjectTransactionDO"][];
+                        "application/json": components["schemas"]["UserProjectTransactionDO"][];
+                        "text/json": components["schemas"]["UserProjectTransactionDO"][];
                     };
                 };
                 /** @description Unauthorized */
@@ -5543,6 +5595,13 @@ export interface components {
             active?: boolean;
             public?: boolean;
         };
+        PostReviewRequestDTO: {
+            /** Format: uuid */
+            userProjectId: string;
+            /** Format: uuid */
+            rubricId: string;
+            kinds: components["schemas"]["ReviewVariant"][];
+        };
         PostSshKeyRequestDTO: {
             title: string;
             publicKey: string;
@@ -5596,13 +5655,6 @@ export interface components {
             rubricId: string;
             reviewer?: null | components["schemas"]["UserLightDO"];
             rubric?: null | components["schemas"]["RubricDO"];
-        };
-        PostReviewRequestDTO: {
-            /** Format: uuid */
-            userProjectId: string;
-            /** Format: uuid */
-            rubricId: string;
-            kinds: components["schemas"]["ReviewVariant"][];
         };
         ReviewKinds: string;
         /** @enum {unknown} */
@@ -5724,7 +5776,7 @@ export interface components {
             userId: string;
             /** Format: uuid */
             goalId: string;
-            state: "Inactive" | "Active" | "Awaiting" | "Completed";
+            state: components["schemas"]["EntityObjectState"];
             goal?: null | components["schemas"]["GoalDO"];
             user?: null | components["schemas"]["UserLightDO"];
         };
@@ -5775,8 +5827,6 @@ export interface components {
         };
         /** @enum {unknown} */
         UserProjectRole: "Pending" | "Member" | "Leader";
-        /** @enum {unknown} */
-        UserProjectTransactionVariant: "Started" | "MemberJoined" | "MemberLeft" | "GitCommit" | "StateChangedToInActive" | "StateChangedToActive" | "StateChangedToCompleted" | "StateChangedToAwaiting" | "MemberInvited" | "MemberAccepted" | "MemberDeclined" | "MemberKicked" | "LeadershipTransferred";
         UserProjectTransactionDO: {
             /** Format: uuid */
             id: string;
@@ -5791,6 +5841,8 @@ export interface components {
             type: components["schemas"]["UserProjectTransactionVariant"];
             user?: null | components["schemas"]["UserLightDO"];
         };
+        /** @enum {unknown} */
+        UserProjectTransactionVariant: "Started" | "MemberJoined" | "MemberLeft" | "GitCommit" | "StateChangedToInActive" | "StateChangedToActive" | "StateChangedToCompleted" | "StateChangedToAwaiting" | "MemberInvited" | "MemberAccepted" | "MemberDeclined" | "MemberKicked" | "LeadershipTransferred";
         WorkspaceDO: {
             /** Format: date-time */
             createdAt: string;

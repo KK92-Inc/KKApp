@@ -164,15 +164,15 @@ public class ReviewService(
         //         string.Join("; ", eligibility.Reasons));
         // }
 
-        // 5. For Peer and Self reviews, ensure reviewer is a team member
-        if (review.Kind == ReviewVariant.Peer || review.Kind == ReviewVariant.Self)
+        // 5. For Peer, Async and Self reviews, ensure reviewer is a team member
+        if (review.Kind == ReviewVariant.Peer || review.Kind == ReviewVariant.Async || review.Kind == ReviewVariant.Self)
         {
             var isMember = review.UserProject.Members.Any(m => m.UserId == reviewerId);
-            if (review.Kind == ReviewVariant.Self && !isMember)
+            if (!isMember)
             {
                 throw new ServiceException(
                     403,
-                    "Self reviews must be performed by a team member");
+                    $"{review.Kind} reviews must be performed by a team member");
             }
         }
 
@@ -253,5 +253,23 @@ public class ReviewService(
             .Include(r => r.Rubric)
             .Include(r => r.UserProject)
             .ToListAsync(token);
+    }
+
+    /// <inheritdoc />
+    public async Task CancelReviewAsync(Guid reviewId, CancellationToken token = default)
+    {
+        var review = await _dbSet
+            .FirstOrDefaultAsync(r => r.Id == reviewId, token)
+            ?? throw new ServiceException(404, "Review not found");
+
+        if (review.State != ReviewState.Pending)
+        {
+            throw new ServiceException(
+                422,
+                "Only pending reviews can be canceled",
+                $"Current state: {review.State}");
+        }
+
+        await DeleteAsync(review, token);
     }
 }

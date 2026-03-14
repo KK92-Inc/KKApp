@@ -120,6 +120,28 @@ export const pickupReview = form(pickupReviewSchema, async ({ reviewId, userProj
 
 // ============================================================================
 
+/** Start a pending review (transition to InProgress) */
+const startReviewSchema = v.object({
+	reviewId: Filters.id
+});
+
+export const startReview = form(startReviewSchema, async ({ reviewId }) => {
+	const { locals } = getRequestEvent();
+	const output = await locals.api.POST("/reviews/{reviewId}/start", {
+		params: { path: { reviewId } }
+	});
+
+	if (output.error) {
+		Problem.validate(output.error);
+		Problem.throw(output.error);
+	}
+
+	getReviewDirectById(reviewId).refresh();
+	return output.data;
+});
+
+// ============================================================================
+
 /** Complete a review */
 const completeReviewSchema = v.object({
 	reviewId: Filters.id,
@@ -139,6 +161,29 @@ export const completeReview = form(completeReviewSchema, async ({ reviewId, user
 
 	getReviewsByUserProjectId(userProjectId).refresh();
 	getReviewDirectById(reviewId).refresh();
+	return output.data;
+});
+
+// ============================================================================
+
+/** Cancel a pending review */
+const cancelReviewSchema = v.object({
+	reviewId: Filters.id,
+	userProjectId: Filters.id
+});
+
+export const cancelReview = form(cancelReviewSchema, async ({ reviewId, userProjectId }) => {
+	const { locals } = getRequestEvent();
+	const output = await locals.api.DELETE("/reviews/{reviewId}", {
+		params: { path: { reviewId } }
+	});
+
+	if (output.error) {
+		Problem.validate(output.error);
+		Problem.throw(output.error);
+	}
+
+	getReviewsByUserProjectId(userProjectId).refresh();
 	return output.data;
 });
 
