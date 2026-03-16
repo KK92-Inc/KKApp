@@ -147,7 +147,7 @@
 							<div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
 								{#each result.data as cursus (cursus.id)}
 									{@const owner = cursus.workspace?.owner}
-									<a href={owner ? `/users/${owner.id}/cursus/${cursus.slug}` : undefined} class="group">
+									<a href={owner ? `/users/${owner.id}/cursus/${cursus.id}` : undefined} class="group">
 										<Card.Root class="h-full transition-shadow hover:shadow-md">
 											<Card.Content class="flex h-full flex-col p-4">
 												<div class="mb-2 flex items-start justify-between gap-2">

@@ -17,6 +17,7 @@ using Keycloak.AuthServices.Authorization;
 using App.Backend.Models.Responses.Entities;
 using App.Backend.Models.Requests.Goals;
 using App.Backend.Models.Responses.Entities.Projects;
+using App.Backend.Domain.Relations;
 
 // ============================================================================
 

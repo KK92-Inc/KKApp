@@ -24,7 +24,7 @@ public class UserProjectService(DatabaseContext ctx) : BaseService<UserProject>(
         return await Query(false)
             .Include(up => up.Members)
             .FirstOrDefaultAsync(
-                up => up.ProjectId == projectId && up.Members.Any(m => m.UserId == userId && m.Role != UserProjectRole.Pending && m.LeftAt == null), token
+                up => up.ProjectId == projectId && up.Members.Any(m => m.UserId == userId && m.Role != UserProjectRole.Pending), token
             );
     }
 

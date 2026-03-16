@@ -20,7 +20,6 @@
 		return { project, userProject };
 	});
 
-
 	const data = $derived(await queries);
 	const membersQuery = $derived(data.userProject ? getUserProjectMembers(data.userProject.id) : null);
 	const members = $derived(membersQuery ? await membersQuery : []);
@@ -39,6 +38,17 @@
 {#if data.userProject && isSessionActive}
 	<Card.Root class="py-0 shadow-none">
 		<Card.Content class="p-3">
+			{#if wasSubscribed}
+				<div class="mb-2 flex items-center gap-2 rounded-md border border-dashed bg-muted/40 px-2.5 py-1.5">
+					<History size={12} class="shrink-0 text-muted-foreground" />
+					<div class="min-w-0">
+						<p class="text-[11px] font-medium text-muted-foreground">Previously subscribed</p>
+						<p class="text-[10px] text-muted-foreground/70">
+							Left {formatter.format(new Date(data.userProject?.updatedAt ?? Date.now()))}
+						</p>
+					</div>
+				</div>
+			{/if}
 			{#if role === 'Pending'}
 				<div class="mb-2 flex items-center gap-2 rounded-md border border-dashed bg-muted/40 px-2.5 py-1.5">
 					<UserCheck size={12} class="shrink-0 text-muted-foreground" />
@@ -79,7 +89,10 @@
 			{:else}
 				<p class="text-xs text-muted-foreground">
 					You are not a member of this project. To view your project page, click
-					<a href="/users/{page.data.session.userId}/projects/{data.project.id}" class="text-primary underline">
+					<a
+						href="/users/{page.data.session.userId}/projects/{data.project.id}"
+						class="text-primary underline"
+					>
 						here
 					</a>.
 				</p>

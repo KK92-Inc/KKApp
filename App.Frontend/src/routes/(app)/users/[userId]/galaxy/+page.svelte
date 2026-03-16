@@ -1,7 +1,4 @@
 <script lang="ts">
-	import { onMount } from "svelte";
-	import { generateSampleData } from "./d3utils.svelte";
-	import Graph from "./graph.svelte";
 	import Galaxy from "$lib/components/galaxy/galaxy.svelte";
 
 	// onMount(() => {

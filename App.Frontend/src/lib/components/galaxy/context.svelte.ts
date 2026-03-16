@@ -36,7 +36,7 @@ export default class Galaxy {
 	public tree = $state<NodeDatum>(data);
 
 	/** Construct a new galaxy state */
-	constructor(kek: components['schemas']['CursusTrackDTO']) {
+	constructor(kek: components['schemas']['CursusTrackDO']) {
 		// TODO: Build the tree
 		this.tree = data;
 	}

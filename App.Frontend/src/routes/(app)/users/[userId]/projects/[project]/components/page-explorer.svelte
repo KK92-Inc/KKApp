@@ -3,53 +3,56 @@
 	import { getGitTree } from '$lib/remotes/git.remote';
 	import { getContext } from './index.svelte';
 
-	const context = getContext();
+	// const context = getContext();
 
-	// 1. Reactively determine which ID and BaseURL to use
-	const activeId = $derived(
-		context.view === 'assignment'
-			? context.project.gitInfo?.id
-			: context.userProject?.gitInfo?.id
-	);
+	// // 1. Reactively determine which ID and BaseURL to use
+	// const activeId = $derived(
+	// 	context.view === 'assignment'
+	// 		? context.project.gitInfo?.id
+	// 		: context.userProject?.gitInfo?.id
+	// );
 
-	const baseUrl = $derived(
-		context.view === 'assignment'
-			? `${context.project.id}/master`
-			: `${context.userProject?.id}/master`
-	);
+	// const baseUrl = $derived(
+	// 	context.view === 'assignment'
+	// 		? `${context.project.id}/master`
+	// 		: `${context.userProject?.id}/master`
+	// );
 
-	// 2. State for our file tree and loading status
-	let files = $state<Explorer.FileNode[]>([]);
-	let isLoading = $state(false);
+	// // 2. State for our file tree and loading status
+	// let files = $state<Explorer.FileNode[]>([]);
+	// let isLoading = $state(false);
 
-	// 3. Effect to fetch data whenever the activeId changes
-	$effect(() => {
-		if (!activeId) {
-			files = [];
-			return;
-		}
+	// // 3. Effect to fetch data whenever the activeId changes
+	// $effect(() => {
+	// 	if (!activeId) {
+	// 		files = [];
+	// 		return;
+	// 	}
 
-		async function loadTree() {
-			isLoading = true;
-			try {
-				const tree = await getGitTree({
-					id: activeId,
-					branch: 'master'
-				});
-				files = Explorer.parseGitTree(tree);
-			} catch (e) {
-				console.error('Failed to load git tree:', e);
-				files = [];
-			} finally {
-				isLoading = false;
-			}
-		}
+	// 	async function loadTree() {
+	// 		isLoading = true;
+	// 		try {
+	// 			const tree = await getGitTree({
+	// 				id: activeId,
+	// 				branch: 'master'
+	// 			});
+	// 			files = Explorer.parseGitTree(tree);
+	// 		} catch (e) {
+	// 			console.error('Failed to load git tree:', e);
+	// 			files = [];
+	// 		} finally {
+	// 			isLoading = false;
+	// 		}
+	// 	}
 
-		loadTree();
-	});
+	// 	loadTree();
+	// });
 </script>
 
-{#if activeId}
+
+		<Explorer.Browser baseUrl="#" nodes={[{ name: 'README.md', path: 'README.md', type: 'file' }]} />
+
+<!-- {#if activeId}
 	{#if isLoading}
 		<div class="flex items-center gap-2 p-4 text-sm text-muted-foreground">
 			<span class="animate-spin text-lg">⏳</span> Loading repository...
@@ -74,4 +77,4 @@
 			</p>
 		{/if}
 	</div>
-{/if}
+{/if} -->

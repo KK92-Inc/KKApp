@@ -4,11 +4,11 @@
 	import { Input } from '$lib/components/input/index.js';
 	import { Label } from '$lib/components/label/index.js';
 	import { Plus, Search } from '@lucide/svelte';
-	import * as InputGroup from "$lib/components/input-group";
+	import * as InputGroup from '$lib/components/input-group';
 	import { getProjects } from '$lib/remotes/project.remote';
 	import useDebounce from '$lib/hooks/debounce.svelte';
 
-	let search = $state("");
+	let search = $state('');
 	const lookup = useDebounce((v: string) => (search = v));
 </script>
 
@@ -25,26 +25,31 @@
 			<Dialog.Description>Search and select a project to add to this goal.</Dialog.Description>
 		</Dialog.Header>
 		<InputGroup.Root>
-			<InputGroup.Input placeholder="Search..." oninput={(e) => lookup.fn(e.currentTarget.value)}/>
+			<InputGroup.Input placeholder="Search..." oninput={(e) => lookup.fn(e.currentTarget.value)} />
 			<InputGroup.Addon>
 				<Search />
 			</InputGroup.Addon>
 		</InputGroup.Root>
 		{#key search}
-		<svelte:boundary>
-			{@const projects = await getProjects({ name: search })}
+			<svelte:boundary>
+				{@const projects = await getProjects({ name: search })}
 
-			{#snippet failed()}
-				Something went wrong...
-			{/snippet}
+				{#snippet failed()}
+					Something went wrong...
+				{/snippet}
 
-			{#snippet pending()}
-				Loading...
-			{/snippet}
+				{#snippet pending()}
+					Loading...
+				{/snippet}
 
-			{JSON.stringify(projects)}
-		</svelte:boundary>
-
+				<ul class="divide-y">
+					{#each projects.data as project (project.id)}
+						<li class="rounded p-2 hover:bg-accent">
+							{project.name}
+						</li>
+					{/each}
+				</ul>
+			</svelte:boundary>
 		{/key}
 		<!-- <Dialog.Footer>
 				<Dialog.Close class={buttonVariants({ variant: 'outline' })}>Cancel</Dialog.Close>

@@ -19,7 +19,7 @@
 	const role = $derived(members.find((m) => m.userId === page.data.session.userId && !m.leftAt)?.role);
 </script>
 
-{#if userProject}
+{#if userProject && members.filter((m) => !m.leftAt).length > 0}
 	<Card.Root class="py-0 shadow-none">
 		<Card.Content class="p-3">
 			<div class="mb-2 flex items-center justify-between">

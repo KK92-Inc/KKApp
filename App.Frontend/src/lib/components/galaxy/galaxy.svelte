@@ -3,7 +3,7 @@
 	import Galaxy, { init } from "./context.svelte";
 
 	interface Props {
-		data: components["schemas"]["CursusTrackDTO"];
+		data: components["schemas"]["CursusTrackDO"];
 	}
 
 	const { data }: Props = $props();

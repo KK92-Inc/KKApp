@@ -7,6 +7,7 @@ import * as v from 'valibot';
 import { getRequestEvent, query } from '$app/server';
 import { Filters, paginate, Problem } from '$lib/api.js';
 import { error } from '@sveltejs/kit';
+import { Log } from '$lib/log';
 
 // ============================================================================
 
@@ -17,6 +18,8 @@ export const getUserProjectByProjectId = query(schema, async ({ userId, projectI
 	const output = await locals.api.GET('/users/{userId}/projects/{projectId}', {
 		params: { path: { userId, projectId } }
 	});
+
+	Log.dbg(output.data, output.response.status);
 
 	if (output.error && output.error.status !== 404) {
 		Problem.throw(output.error);

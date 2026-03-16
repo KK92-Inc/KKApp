@@ -19,19 +19,22 @@
 	import { page } from '$app/state';
 
 	// Independent queries — kick off in parallel
-	const projectQuery = $derived(getProject(page.params.project));
-	const userProjectQuery = $derived(
-		getUserProjectByProjectId({
-			projectId: page.params.project,
-			userId: page.data.session.userId
-		})
-	);
+	const queries = $derived.by(async () => {
+		const [project, userProject] = await Promise.all([
+			getProject(page.params.project),
+			getUserProjectByProjectId({
+				projectId: page.params.project,
+				userId: page.data.session.userId
+			})
+		]);
 
-	const project = $derived(await projectQuery);
-	const userProject = $derived(await userProjectQuery);
+		return { project, userProject };
+	});
+
+	const data = $derived(await queries);
 
 	// Dependent on userProject
-	const branchesQuery = $derived(userProject?.gitInfo ? getGitBranches(userProject.gitInfo.id) : null);
+	const branchesQuery = $derived(data.userProject?.gitInfo ? getGitBranches(data.userProject.gitInfo.id) : null);
 	const branches = $derived(branchesQuery ? await branchesQuery : []);
 
 	// Local writable state (was context.view / context.branch)
@@ -41,7 +44,7 @@
 	let showDialog = $state(false);
 	let showDropdown = $state(false);
 
-	const sshUrl = `ssh://git@localhost:2222/${project.gitInfo?.id}/${project.id}`;
+	const sshUrl = `ssh://git@localhost:2222/${data.project.gitInfo?.id}/${data.project.id}`;
 	const cmd = `git clone ${sshUrl}`;
 </script>
 
@@ -73,7 +76,7 @@
 			</Dialog.Description>
 		</Dialog.Header>
 		<form {...createGitBranch}>
-			<input type="hidden" {...createGitBranch.fields.gitId.as('text')} value={project.gitInfo?.id} />
+			<input type="hidden" {...createGitBranch.fields.gitId.as('text')} value={data.project.gitInfo?.id} />
 			<div class="grid gap-4">
 				<div class="grid gap-3">
 					<Label for="name-1">Name</Label>
@@ -97,7 +100,7 @@
 		</Tabs.List>
 	</Tabs.Root>
 
-	{#if view === 'submission' && userProject?.gitInfo}
+	{#if view === 'submission' && data.userProject?.gitInfo}
 		<Separator orientation="vertical" />
 		<Popover.Root bind:open={showDropdown}>
 			<Popover.Trigger>

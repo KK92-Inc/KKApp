@@ -9,7 +9,7 @@
 	import Thumbnail from '$lib/components/thumbnail.svelte';
 	import { Badge } from '$lib/components/badge';
 	import { page } from '$app/state';
-	import { Accordion } from 'bits-ui';
+	import * as Accordion from '$lib/components/accordion';
 	import { Skeleton } from '$lib/components/skeleton';
 	import { BookA, History } from '@lucide/svelte';
 	import Markdown from '$lib/components/markdown/markdown.svelte';
@@ -64,21 +64,21 @@
 		{#snippet right()}
 			<div class="my-4 grid gap-2">
 				<Page.Menu />
-				<!-- <Page.Explorer /> -->
+				<Page.Explorer />
 			</div>
 			<Card.Root class="mb-4 py-0 shadow-none">
-				<Card.Content class="p-3">
+				<Card.Content class="px-4">
 					<Accordion.Root type="single">
 						<Accordion.Item value="item-1">
 							<Accordion.Trigger
-								class="px-6 py-4 text-left text-2xl font-bold tracking-tight hover:text-foreground/70"
+								class="text-left text-2xl font-bold tracking-tight hover:text-foreground/70"
 							>
 								<span class="flex items-center gap-2">
 									<BookA />
 									Project Overview
 								</span>
 							</Accordion.Trigger>
-							<Accordion.Content class="px-6 py-4">
+							<Accordion.Content>
 								<Markdown
 									value={await getGitBlob({
 										id: data.project.gitInfo.id,
@@ -92,14 +92,14 @@
 						{#if data.userProject}
 							<Accordion.Item value="item-2">
 								<Accordion.Trigger
-									class="px-6 py-4 text-left text-2xl font-bold tracking-tight hover:text-foreground/70"
+									class="text-left text-2xl font-bold tracking-tight hover:text-foreground/70"
 								>
 									<span class="flex items-center gap-2">
 										<History />
 										Session Timeline
 									</span>
 								</Accordion.Trigger>
-								<Accordion.Content class="px-6 py-4">
+								<Accordion.Content class="pl-4">
 									<Page.Timeline userProjectId={data.userProject.id} />
 								</Accordion.Content>
 							</Accordion.Item>
