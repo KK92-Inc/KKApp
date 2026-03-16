@@ -25,7 +25,7 @@ export const addKey = form(addSchema, async (body) => {
 		body
 	});
 
-	if (output.error || !output.data) {
+	if (output.error) {
 		Problem.validate(output.error);
 		Problem.throw(output.error);
 	}
@@ -42,7 +42,7 @@ export const removeKey = form(removeSchema, async ({ fingerprint }) => {
 		params: { path: { fingerprint } }
 	});
 
-	if (output.error || !output.data) {
+	if (output.error) {
 		Problem.throw(output.error);
 	}
 

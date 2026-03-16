@@ -33,7 +33,7 @@ for (const file of exeFiles) {
 			"build",
 			"--compile",
 			"--minify",
-			"--target=bun-linux-x64",
+			// "--target=bun-linux-x64",
 			`./src/${file}`,
 			"--outfile",
 			`./output/${name}`,
