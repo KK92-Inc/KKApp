@@ -18,6 +18,7 @@ const log = (msg: string) => stdout.write(`[GIT]: ${msg}\n`);
 const server = Bun.serve({
 	error(error) {
 		const body = JSON.stringify({ error: `${error}\n${error.stack}\n` });
+		log(body);
 		return new Response(body, {
 			status: 500,
 		});

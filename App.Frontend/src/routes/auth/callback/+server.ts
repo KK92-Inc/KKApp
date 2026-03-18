@@ -3,51 +3,9 @@
 // See README in the root project for more information.
 // ============================================================================
 
-import { dev } from '$app/environment';
-import { Keycloak } from '$lib/oauth';
+import { Keycloak } from "$lib/auth";
 import type { RequestHandler } from './$types';
-import { PORT, KC_ORIGIN, ORIGIN } from '$lib/config';
-import { Log } from '$lib/log';
 
 // ============================================================================
 
-export const GET: RequestHandler = async ({ url, cookies }) => {
-	const code = url.searchParams.get('code');
-	const state = url.searchParams.get('state');
-	const original = cookies.get(Keycloak.COOKIE_STATE);
-	const verifier = cookies.get(Keycloak.COOKIE_VERIFIER);
-
-	// Clean up cookies regardless of outcome
-	cookies.delete(Keycloak.COOKIE_STATE, { path: '/' });
-	cookies.delete(Keycloak.COOKIE_VERIFIER, { path: '/' });
-	if (!code || !state || !original || state !== original || !verifier) {
-		// NOTE(W2): Here it usually craps out because for instance you tried a subdomain
-		// to fix this in the future, Keycloak needs to support wildcard subdomains
-		Log.dbg('Code:', code);
-		Log.dbg('State:', state);
-		Log.dbg('Original:', original);
-		Log.dbg('State mismatch:', state !== original);
-		Log.dbg('Missing verifier:', !verifier);
-		Log.dbg('PORT:', PORT);
-		Log.dbg('ORIGIN:', ORIGIN);
-		Log.dbg('KC_ORIGIN:', KC_ORIGIN);
-		return new Response('Invalid request', { status: 400 });
-	}
-
-	const tokens = await Keycloak.exchange(code, verifier);
-	cookies.set(Keycloak.COOKIE_ACCESS, tokens.access(), {
-		secure: !dev,
-		path: '/',
-		httpOnly: true,
-		sameSite: 'lax'
-	});
-
-	cookies.set(Keycloak.COOKIE_REFRESH, tokens.refresh(), {
-		secure: !dev,
-		path: '/',
-		httpOnly: true,
-		sameSite: 'lax'
-	});
-
-	return Response.redirect('/');
-};
+export const GET: RequestHandler = Keycloak.callback;

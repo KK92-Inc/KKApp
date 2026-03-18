@@ -59,8 +59,6 @@ export const getUsers = query(getUsersSchema, async (params) => {
 		}
 	});
 
-	await locals.api.GET("/users")
-
 	if (output.error || !output.data) {
 		Problem.validate(output.error);
 		Problem.throw(output.error);

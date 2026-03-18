@@ -9,6 +9,7 @@
 	import { cn } from '$lib/utils.js';
 	import { Code, ExternalLink, Github, Globe, Linkedin, MessageCircle } from '@lucide/svelte';
 	import type { PageProps } from './$types';
+	import Markdown from '$lib/components/markdown/markdown.svelte';
 	// import Markdown from "svelte-exmarkdown";
 
 	const { params }: PageProps = $props();
@@ -104,9 +105,9 @@
 						<h1 class="text-3xl font-bold tracking-tight">{user.displayName}</h1>
 						<p class="text-muted-foreground">@{user.login}</p>
 					</div>
-					<!-- {#each page.data.session!.roles as role}
+					{#each page.data.session!.roles as role}
 						{@render badge(role)}
-					{/each} -->
+					{/each}
 				</div>
 				<Separator class="my-4" />
 				<div class="flex flex-wrap gap-3">
@@ -143,15 +144,15 @@
 			/>
 		</Card.Root>
 		<Card.Root class="shadow-sm">
-			<!-- {#if data.bio}
+			{#if user.details?.bio}
 				<Card.Content class="markdown max-h-[500px] overflow-auto">
-					<Markdown variant="viewer" value={md} />
+					<Markdown  value={user.details?.bio} />
 				</Card.Content>
-			{:else} -->
+			{:else}
 			<Card.Content class="p-8 text-center text-muted-foreground">
 				This user hasn't added a bio yet.
 			</Card.Content>
-			<!-- {/if} -->
+			{/if}
 		</Card.Root>
 	</div>
 </div>

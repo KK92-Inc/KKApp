@@ -2,7 +2,7 @@
 // for information about these interfaces
 
 import type { Client } from 'openapi-fetch';
-import type { Session } from '$lib/oauth';
+import type { Session } from '$lib/auth';
 import type { paths } from '$lib/api/api';
 
 declare global {
