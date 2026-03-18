@@ -8,12 +8,13 @@
 	// Remotes
 	import { getFeed } from '$lib/remotes/feed.remote';
 	import Reviews from './reviews.svelte';
+	import { page } from '$app/state';
 </script>
 
 <div class="container mx-auto flex gap-6 px-6 py-4">
 	<div class="flex flex-auto flex-col gap-6">
 		<Button
-			href="#"
+			href="/users/{page.data.session.userId}/galaxy"
 			variant="outline"
 			class="group h-80 w-full shrink-0 bg-[url('/graph.png')] bg-cover p-0"
 		>

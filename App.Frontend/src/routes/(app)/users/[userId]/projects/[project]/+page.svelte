@@ -20,7 +20,7 @@
 			getProject(params.project),
 			getUserProjectByProjectId({
 				projectId: params.project,
-				userId: page.data.session.userId
+				userId: params.userId
 			})
 		]);
 

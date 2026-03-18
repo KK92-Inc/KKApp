@@ -27,7 +27,7 @@
 			</div>
 
 			<div class="flex gap-3">
-				<Button variant="default" class="flex-1 group" href={page.url.pathname}>
+				<Button variant="default" class="flex-1 group" href="/">
 					<House class="mr-2 h-4 w-4 group-hover:shake transition-transform" />
 					Back to safety
 				</Button>

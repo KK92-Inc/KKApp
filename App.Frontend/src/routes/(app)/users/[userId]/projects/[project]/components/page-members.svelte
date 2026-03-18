@@ -10,7 +10,7 @@
 	const userProject = $derived(
 		await getUserProjectByProjectId({
 			projectId: page.params.project,
-			userId: page.data.session.userId
+			userId: page.params.userId
 		})
 	);
 

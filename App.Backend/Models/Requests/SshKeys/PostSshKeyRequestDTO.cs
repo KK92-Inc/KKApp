@@ -3,6 +3,7 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using App.Backend.Models.Validators;
 using System.ComponentModel.DataAnnotations;
 
 namespace App.Backend.Models.Requests.SshKeys;
@@ -23,6 +24,6 @@ public class PostSshKeyRequestDTO : RequestDTO
     /// <summary>
     /// The full SSH public key (e.g., "ssh-ed25519 AAAA... user@host").
     /// </summary>
-    [Required, MaxLength(2048)]
+    [Required, MaxLength(2048), PublicKey]
     public required string PublicKey { get; set; }
 }

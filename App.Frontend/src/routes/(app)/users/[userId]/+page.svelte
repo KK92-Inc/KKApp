@@ -5,11 +5,20 @@
 	import * as Card from '$lib/components/card/index.js';
 	import Navgroup from '$lib/components/navgroup.svelte';
 	import { Separator } from '$lib/components/separator/index.js';
+	import { getUser } from '$lib/remotes/user.remote';
 	import { cn } from '$lib/utils.js';
-	import { Code } from '@lucide/svelte';
+	import { Code, ExternalLink, Github, Globe, Linkedin, MessageCircle } from '@lucide/svelte';
+	import type { PageProps } from './$types';
 	// import Markdown from "svelte-exmarkdown";
 
-	const { data } = $props();
+	const { params }: PageProps = $props();
+	const user = $derived(await getUser(params.userId));
+	const socials = $derived([
+		{ label: "Website", url: user.details?.websiteUrl, icon: Globe },
+		{ label: "LinkedIn", url: user.details?.linkedinUrl, icon: Linkedin },
+		{ label: "Reddit", url: user.details?.redditUrl, icon: MessageCircle },
+		{ label: "GitHub", url: user.details?.githubUrl, icon: Github },
+	]);
 	// const id = page.params.id;
 	// const links = $state.raw([
 	// 	{
@@ -76,15 +85,15 @@
 
 <div class="container mx-auto max-w-5xl gap-3 py-8">
 	<Card.Root class="h-min p-0 shadow-sm">
-		<div
-			class="relative h-48 rounded-t-[inherit] bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500"
-		>
+		<div class="relative h-48 rounded-t-[inherit] bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500">
 			<div
 				class="absolute inset-0 rounded-t-[inherit] bg-[url('/graph.png')] bg-cover bg-center opacity-20"
 			></div>
 			<Avatar.Root class="absolute top-4 left-4 size-32 rounded shadow-xl">
 				<Avatar.Image src="" />
-				<Avatar.Fallback class="rounded text-2xl font-bold">W2</Avatar.Fallback>
+				<Avatar.Fallback class="rounded text-2xl font-bold"
+					>{user.login.slice(0, 2).toUpperCase()}</Avatar.Fallback
+				>
 			</Avatar.Root>
 		</div>
 
@@ -92,35 +101,30 @@
 			<div class="py-6">
 				<div class="flex items-start gap-2">
 					<div>
-						<h1 class="text-3xl font-bold tracking-tight">W2Wizard</h1>
-						<p class="text-muted-foreground">@w2wizard</p>
+						<h1 class="text-3xl font-bold tracking-tight">{user.displayName}</h1>
+						<p class="text-muted-foreground">@{user.login}</p>
 					</div>
-					{#each page.data.session!.roles as role}
+					<!-- {#each page.data.session!.roles as role}
 						{@render badge(role)}
-					{/each}
+					{/each} -->
 				</div>
 				<Separator class="my-4" />
-				<!-- {#if socials.length > 0}
-					<div class="flex flex-wrap gap-3">
-						{#each socials as social}
-							<Badge
-								href={social.url}
-								target="_blank"
-								rel="noopener noreferrer"
-								class="gap-1 transition-shadow hover:shadow"
-								variant="outline"
-								onclick={(e) => {
-									e.preventDefault();
-									openLink(e.currentTarget.href, social.label === "Website");
-								}}
-							>
-								<svelte:component this={social.icon} class="size-3.5" />
-								{social.label}
-								<ExternalLink class="size-3" />
-							</Badge>
-						{/each}
-					</div>
-				{/if} -->
+				<div class="flex flex-wrap gap-3">
+					{#each socials.filter((s) => s.url) as social}
+						{@const Icon = social.icon}
+						<Badge
+							href={social.url}
+							target="_blank"
+							rel="noopener noreferrer"
+							class="gap-1 transition-shadow hover:shadow"
+							variant="outline"
+						>
+							<Icon class="size-3.5"/>
+							{social.label}
+							<ExternalLink class="size-3" />
+						</Badge>
+					{/each}
+				</div>
 			</div>
 		</div>
 	</Card.Root>
@@ -129,7 +133,7 @@
 		<Card.Root class="h-min p-4 shadow-sm ">
 			<Navgroup
 				title="Navigation"
-				args={{ userId: page.params.userId }}
+				args={{ userId: params.userId }}
 				routes={[
 					'/(app)/users/[userId]/cursus',
 					'/(app)/users/[userId]/projects',

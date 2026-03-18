@@ -140,11 +140,10 @@ public class AccountController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("List SSH keys")]
     [EndpointDescription("Retrieve the SSH keys associated with the authenticated user.")]
-    public async Task<ActionResult<IEnumerable<SshKeyResponseDO>>> GetSshKeys()
+    public async Task<ActionResult<IEnumerable<SshKeyResponseDO>>> GetSshKeys(CancellationToken cancellationToken)
     {
-        var user = await users.FindByIdAsync(User.GetSID());
-        if (user is null) return Forbid();
-        return Ok(user.SshKeys.Select(k => new SshKeyResponseDO(k)));
+        var keys = await users.GetSshKeysAsync(User.GetSID(), cancellationToken);
+        return Ok(keys.Select(k => new SshKeyResponseDO(k)));
     }
 
     [HttpDelete("ssh-keys/{fingerprint}")]
@@ -154,17 +153,12 @@ public class AccountController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Remove an SSH key")]
     [EndpointDescription("Delete an SSH key by its fingerprint for the authenticated user.")]
-    public async Task<IActionResult> RemoveSshKey(string fingerprint)
+    public async Task<IActionResult> RemoveSshKey(string fingerprint, CancellationToken cancellationToken)
     {
-        var user = await users.FindByIdAsync(User.GetSID());
-        if (user is null) return Forbid();
-
-        var key = user.SshKeys.FirstOrDefault(k => k.Fingerprint == fingerprint);
-        if (key is null) return NotFound();
-
-        user.SshKeys.Remove(key);
-        await users.UpdateAsync(user);
-        return NoContent();
+        // Handle URL-encoded fingerprints
+        var decodedFingerprint = System.Net.WebUtility.UrlDecode(fingerprint);
+        var removed = await users.RemoveSshKeyAsync(decodedFingerprint, cancellationToken);
+        return removed ? NoContent() : NotFound();
     }
 
     [HttpPost("ssh-keys")]
@@ -173,23 +167,20 @@ public class AccountController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Add an SSH key")]
     [EndpointDescription("Add a new SSH public key for the authenticated user.")]
-    public async Task<ActionResult> AddSshKey([FromBody] PostSshKeyRequestDTO data)
+    public async Task<ActionResult> AddSshKey([FromBody] PostSshKeyRequestDTO data, CancellationToken cancellationToken)
     {
-        var user = await users.FindByIdAsync(User.GetSID());
-        if (user is null) return Forbid();
-
         var parts = data.PublicKey.Trim().Split(' ', 3);
         if (parts.Length < 2)
-            return Problem("Invalid SSH public key format.", statusCode: 422);
+            return UnprocessableEntity("Invalid SSH public key format.");
 
-        user.SshKeys.Add(new()
+        var sshKey = new SshKey
         {
             Title = data.Title,
             KeyType = parts[0],
-            KeyBlob = parts[1],
-        });
+            KeyBlob = parts[1]
+        };
 
-        await users.UpdateAsync(user);
-        return NoContent();
+        await users.AddSshKeyAsync(User.GetSID(), sshKey, cancellationToken);
+        return Created();
     }
 }

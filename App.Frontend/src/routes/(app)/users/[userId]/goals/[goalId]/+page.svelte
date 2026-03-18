@@ -44,7 +44,7 @@
 	{#snippet left()}
 		<div class="mt-4 flex flex-col gap-3">
 			<!-- Goal info card -->
-			<Card.Root class="shadow-none">
+			<Card.Root class="shadow-none py-0">
 				<Card.Content class="flex items-center gap-3 p-3">
 					<Thumbnail readonly src="/placeholder.svg" class="size-32 shrink-0" />
 					<div class="min-w-0 flex-1">
@@ -66,7 +66,7 @@
 
 			<!-- Description card -->
 			{#if goal.description}
-				<Card.Root class="shadow-none">
+				<Card.Root class="shadow-none py-0">
 					<Card.Content class="p-3">
 						<h3 class="mb-1.5 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
 							<Trophy size={12} />
@@ -81,7 +81,7 @@
 
 			<!-- Workspace card -->
 			{#if goal.workspace?.owner}
-				<Card.Root class="shadow-none">
+				<Card.Root class="shadow-none py-0">
 					<Card.Content class="p-3">
 						<h3 class="mb-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
 							Workspace
@@ -103,7 +103,7 @@
 			{/if}
 
 			<!-- Actions card -->
-			<Card.Root class="shadow-none">
+			<Card.Root class="shadow-none py-0">
 				<Card.Content class="p-3">
 					{#if userGoal && isActive}
 						<form {...unsubscribeGoal}>
@@ -147,7 +147,7 @@
 	{#snippet right()}
 		<div class="my-4 grid gap-4">
 			<!-- Projects section -->
-			<Card.Root class="shadow-none">
+			<Card.Root class="shadow-none py-0">
 				<Card.Content class="p-6">
 					<div class="mb-4 flex items-center gap-2">
 						<Archive class="size-4 text-muted-foreground" />

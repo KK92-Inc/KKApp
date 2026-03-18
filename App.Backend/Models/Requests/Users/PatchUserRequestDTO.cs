@@ -17,14 +17,15 @@ public record PatchUserRequestDTO
     /// <summary>
     /// Optional display name update.
     /// </summary>
-    [StringLength(100)]
+    [Required, StringLength(100)]
     public string? DisplayName { get; init; }
 
     /// <summary>
     /// Optional avatar URL update.
     /// </summary>
-    [Url]
+    [Required, Url]
     public string? AvatarUrl { get; init; }
 
+    [Required]
     public PatchUserDetailsRequestDTO? Details { get; init; }
 }

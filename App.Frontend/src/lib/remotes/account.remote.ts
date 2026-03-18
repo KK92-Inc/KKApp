@@ -6,6 +6,7 @@
 import * as v from 'valibot';
 import { form, getRequestEvent } from '$app/server';
 import { Problem } from '$lib/api';
+import { getUser } from './user.remote';
 
 // ============================================================================
 
@@ -38,5 +39,6 @@ export const updateUser = form(updateSchema, async (body) => {
 		Problem.throw(output.error);
 	}
 
+	getUser(locals.session.userId).refresh();
 	return output.data;
 });

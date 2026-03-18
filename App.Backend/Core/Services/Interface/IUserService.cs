@@ -26,4 +26,27 @@ public interface IUserService : IDomainService<User>
     /// <param name="displayName">The Display name</param>
     /// <returns>The user.</returns>
     public Task<User?> FindByNameAsync(string displayName, CancellationToken token = default);
+
+    /// <summary>
+    /// Add an SSH key to a user.
+    /// </summary>
+    /// <param name="userId">The user ID.</param>
+    /// <param name="sshKey">The SSH key to add.</param>
+    /// <param name="token">Cancellation token.</param>
+    public Task AddSshKeyAsync(Guid userId, SshKey sshKey, CancellationToken token = default);
+
+    /// <summary>
+    /// Remove an SSH key from a user.
+    /// </summary>
+    /// <param name="fingerprint">The SSH key fingerprint to remove.</param>
+    /// <param name="token">Cancellation token.</param>
+    /// <returns>True if removed, false if not found.</returns>
+    public Task<bool> RemoveSshKeyAsync(string fingerprint, CancellationToken token = default);
+
+    /// <summary>
+    /// Get all SSH keys for a user.
+    /// </summary>
+    /// <param name="userId">The user ID.</param>
+    /// <param name="token">Cancellation token.</param>
+    public Task<IEnumerable<SshKey>> GetSshKeysAsync(Guid userId, CancellationToken token = default);
 }
