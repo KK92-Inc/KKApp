@@ -92,7 +92,7 @@ const cookieOpts = (maxAge?: number) => ({
 	httpOnly: true,
 	secure: !dev,
 	sameSite: 'lax' as const,
-	...(maxAge !== undefined && { maxAge })
+	...(maxAge && { maxAge })
 });
 
 // ============================================================================
@@ -165,7 +165,7 @@ async function revoke(token: string, hint: 'access_token' | 'refresh_token'): Pr
 // Session builder
 // ============================================================================
 
-async function buildSession(accessToken: string, payload: jose.JWTPayload): Promise<Session> {
+async function createSession(accessToken: string, payload: jose.JWTPayload) {
 	const claims = payload as TokenClaims;
 	const resRoles = Object.values(claims.resource_access ?? {}).flatMap((r) => r.roles);
 
@@ -251,14 +251,14 @@ const handle: Handle = async ({ event, resolve }) => {
 			return new Response('Authentication error', { status: 500 });
 		}
 
-		const [session, sessionErr] = await ensure(buildSession(access, jwt!.payload));
+		const [session, sessionErr] = await ensure(createSession(access, jwt!.payload));
 		if (sessionErr) {
-			Log.err('Session build failed:', sessionErr);
+			Log.err('Session create failed:', sessionErr);
 			await redis.del(umaKey(jwt!.payload.sub ?? '')).catch(() => { });
-			return new Response('Failed to build session', { status: 502 });
+			return new Response('Failed to create session', { status: 502 });
 		}
 
-		event.locals.session = session!;
+		event.locals.session = session;
 		return resolve(event);
 	};
 
@@ -269,17 +269,17 @@ const handle: Handle = async ({ event, resolve }) => {
 			return deny();
 		}
 
-		applyTokens(tokens!);
-		await redis.del(umaKey(jose.decodeJwt(tokens!.access_token).sub ?? '')).catch(() => { });
-		return useAccess(tokens!.access_token);
+		applyTokens(tokens);
+		await redis.del(umaKey(jose.decodeJwt(tokens.access_token).sub ?? '')).catch(() => { });
+		return useAccess(tokens.access_token);
 	};
 
 	// ── Entry ─────────────────────────────────────────────────────────────────
 
 	if (!rawAccess && !rawRefresh) deny();
 
-	const [result, err] = await ensure<Response>(
-		rawAccess ? useAccess(rawAccess, rawRefresh ?? undefined) : useRefresh(rawRefresh!)
+	const [result, err] = await ensure(
+		rawAccess ? useAccess(rawAccess, rawRefresh) : useRefresh(rawRefresh!)
 	);
 
 	if (err) {
