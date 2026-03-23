@@ -7,69 +7,43 @@ import * as v from 'valibot';
 import { getWorkspace } from './workspace.remote.js';
 import { form, getRequestEvent, query } from '$app/server';
 import { Filters, paginate, Problem } from '$lib/api.js';
+import { Remote } from './index.svelte.js';
 
 // ============================================================================
-// Query Cursus
+// Get
 // ============================================================================
-
-const querySchema = v.object({
-	...Filters.base,
-	...Filters.sort,
-	...Filters.pagination,
-	name: v.optional(v.string())
-});
-
-/** Query for a paginated result of cursi */
-export const getCursi = query(querySchema, async (params) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.GET('/cursus', {
-		params: {
-			query: {
-				'sort[by]': params.sortBy,
-				'sort[order]': params.sort,
-				'filter[id]': params.id,
-				'filter[name]': params.name,
-				'filter[slug]': params.slug,
-				'page[size]': params.size,
-				'page[index]': params.page
-			}
-		}
-	});
-
-	if (output.error || !output.data)
-		Problem.throw(output.error);
-	return paginate(output.data, output.response);
-});
 
 /** Query for a cursus */
-export const getCursus = query(Filters.id, async (id) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.GET('/cursus/{id}', {
-		params: { path: { id } }
-	});
-
-	if (output.error || !output.data)
-		Problem.throw(output.error);
-	return output.data;
-});
+export const get = Remote.GET('/cursus/{id}').declare();
+/** Query for a paginated result of cursi */
+export const gets = Remote.GET('/cursus')
+	.extend(v.object({
+		...Filters.base,
+		...Filters.sort,
+		...Filters.pagination,
+		name: v.optional(v.string())
+	}), data => ({
+		query: {
+			'sort[by]': data.sortBy,
+			'sort[order]': data.sort,
+			'filter[id]': data.id,
+			'filter[name]': data.name,
+			'filter[slug]': data.slug,
+			'page[size]': data.size,
+			'page[index]': data.page
+		}
+	}))
+	.paginated()
+	.declare();
 
 // ============================================================================
-// Delete Cursus
+// Delete
 // ============================================================================
 
-const deleteCursusSchema = v.object({ id: Filters.id });
-
-/** Delete a cursus */
-export const deleteCursus = form(deleteCursusSchema, async (params, issue) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.GET('/cursus/{id}', {
-		params: { path: { id: params.id } }
-	});
-
-	if (output.error || !output.data)
-		Problem.throw(output.error);
-	return output.data;
-});
+export const remove = Remote.DELETE('/cursus')
+	.extend(v.object({ id: Filters.id }), data => ({ query: { id: data.id } }))
+	.required(false)
+	.declare();
 
 // ============================================================================
 // Cursus Track

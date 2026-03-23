@@ -3,11 +3,8 @@
 // See README in the root project for more information.
 // ============================================================================
 
-import * as v from 'valibot';
-
-import { Remote } from './index4.svelte';
+import { Remote } from './index.svelte';
 import { getUserProjectMembers } from './user-project.remote';
-import { Filters } from '$lib/api';
 
 // ============================================================================
 
@@ -38,20 +35,3 @@ export const leave = Remote.POST('/invite/{userProjectId}/leave')
 export const kick = Remote.DELETE('/invite/{memberId}/project/{userProjectId}/kick')
 	.after((_, data) => getUserProjectMembers(data.userProjectId).refresh())
 	.declare();
-
-// Usage example:
-// await kick({ memberId: string, userProjectId: string, ... })
-
-const getUsersSchema = v.object({
-	...Filters.pagination,
-	...Filters.sort,
-	login: v.optional(v.string()),
-	display: v.optional(v.string()),
-});
-
-export const GetProjectsOfGoal = Remote.GET('/users')
-	.extend(getUsersSchema, (data) => ({
-		query: {
-			'filter[login]': data.login,
-		}
-	})).declare();

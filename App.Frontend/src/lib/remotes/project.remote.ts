@@ -4,113 +4,34 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import { form, getRequestEvent, query } from '$app/server';
-import { Filters, paginate, Problem } from '$lib/api';
-import { getWorkspace } from './workspace.remote';
-import { Remote } from './index3.svelte';
+import { Filters } from '$lib/api';
+import { Remote } from './index.svelte';
 
 // ============================================================================
-// Create Project
+// Create
 // ============================================================================
 
-const createSchema = v.object({
-	name: v.string(),
-	description: v.string(),
-	active: v.optional(v.boolean(), false),
-	public: v.optional(v.boolean(), false)
-});
+export const create = Remote.POST('/workspace/{workspace}/project')
+	.extend(v.object({
+		name: v.string(),
+		description: v.string(),
+		active: v.optional(v.boolean(), false),
+		public: v.optional(v.boolean(), false)
+	}), (data) => ({ body: data }))
+	.required(false)
+	.declare();
 
-export const createProject = form(createSchema, async (project) => {
-	const { locals } = getRequestEvent();
-	const workspace = await getWorkspace();
-	const output = await locals.api.POST('/workspace/{workspace}/project', {
-		params: { path: { workspace: workspace.id } },
-		body: project
-	});
-
-	if (output.error) {
-		Problem.validate(output.error);
-		Problem.throw(output.error);
-	}
-});
 
 // ============================================================================
-// Get Project
+// Get
 // ============================================================================
 
-export const getProject = query(Filters.id, async (id) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.GET('/projects/{id}', {
-		params: { path: { id } }
-	});
-
-	if (output.error || !output.data) {
-		Problem.throw(output.error);
-	}
-
-	return output.data;
-});
-
-// ============================================================================
-// Get Projects
-// ============================================================================
-
-const getProjectsSchema = v.object({
-	...Filters.base,
-	...Filters.pagination,
-	name: v.optional(v.string())
-});
-
-export const getProjects = query(getProjectsSchema, async (params) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.GET('/projects', {
-		params: {
-			query: {
-				'filter[name]': params.name,
-				'filter[slug]': params.slug,
-				'page[size]': params.size,
-				'page[index]': params.page
-			}
-		}
-	});
-
-	if (output.error || !output.data) {
-		Problem.throw(output.error);
-	}
-	return paginate(output.data, output.response);
-});
-
-// ============================================================================
-// Get User Projects
-// ============================================================================
-
-
-
-// export const getUserProjects = query(getUserProjectSchema, async (body) => {
-// 	const { locals } = getRequestEvent();
-// 	const output = await locals.api.GET('/users/{userId}/projects', {
-// 		params: {
-// 			path: { userId: body.userId },
-// 			query: {
-// 				'filter[name]': body.name,
-// 				'filter[slug]': body.slug,
-// 				'page[size]': body.size,
-// 				'page[index]': body.page
-// 			}
-// 		}
-// 	});
-
-// 	if (output.error || !output.data) {
-// 		Problem.throw(output.error);
-// 	}
-// 	return paginate(output.data, output.response);
-// });
-
-export const getUserProjects = Remote.GET('/users/{userId}/projects')
+export const get = Remote.GET('/projects/{id}').declare();
+export const all = Remote.GET('/projects')
 	.extend(v.object({
 		...Filters.base,
 		...Filters.pagination,
-		userId: Filters.id,
+		...Filters.sort,
 		name: v.optional(v.string())
 	}), data => ({
 		query: {
@@ -118,33 +39,28 @@ export const getUserProjects = Remote.GET('/users/{userId}/projects')
 			'filter[slug]': data.slug,
 			'page[index]': data.page,
 			'page[size]': data.size,
-		},
+			'sort[by]': data.sortBy,
+			'sort[order]': data.sort
+		}
 	}))
+	.paginated()
 	.declare();
 
-async function test() {
-	const up = await getUserProjects({ userId: '123', page: 1, size: 10 });
-}
 
 // ============================================================================
-// Delete Project
+// Delete
 // ============================================================================
 
-export const deleteProject = form(v.object({ id: Filters.id }), async ({ id }) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.DELETE('/projects', { params: { query: { id } } });
-	if (output.error || !output.data) {
-		Problem.throw(output.error);
-	}
-});
-
-// export const remove = Remote.DELETE('/projects').declare();
+export const remove = Remote.DELETE('/projects')
+	.extend(v.object({ id: Filters.id }), data => ({ query: { id: data.id } }))
+	.required(false)
+	.declare();
 
 // ============================================================================
-// Update Project
+// Update
 // ============================================================================
 
-const updateProjectSchema = v.object({
+const updateSchema = v.object({
 	id: Filters.id,
 	name: v.optional(v.string()),
 	description: v.optional(v.string()),
@@ -153,17 +69,7 @@ const updateProjectSchema = v.object({
 	deprecated: v.optional(v.boolean())
 });
 
-export const updateProject = form(updateProjectSchema, async ({ id, ...body }) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.PATCH('/projects/{id}', {
-		params: { path: { id } },
-		body
-	});
+export const update = Remote.PATCH('/projects/{id}')
+	.extend(updateSchema, data => ({ body: data }))
+	.declare();
 
-	if (output.error || !output.data) {
-		Problem.validate(output.error);
-		Problem.throw(output.error);
-	}
-
-	return output.data;
-});

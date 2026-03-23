@@ -4,41 +4,30 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import { form, getRequestEvent } from '$app/server';
-import { Problem } from '$lib/api';
 import { getUser } from './user.remote';
+import { Remote } from './index.svelte';
 
 // ============================================================================
 
-const updateSchema = v.object({
-	displayName: v.optional(v.string()),
-	avatarUrl: v.optional(v.string()),
-	details: v.optional(
+export const update = Remote.PATCH('/users/{userId}')
+	.after((_, data) => getUser(data.userId).refresh())
+	.extend(
 		v.object({
-			markdown: v.optional(v.string()),
-			firstName: v.optional(v.string()),
-			lastName: v.optional(v.string()),
-			enabledNotifications: v.optional(v.number()),
-			githubUrl: v.optional(v.string()),
-			linkedinUrl: v.optional(v.string()),
-			redditUrl: v.optional(v.string()),
-			websiteUrl: v.optional(v.string())
-		})
+			displayName: v.optional(v.string()),
+			avatarUrl: v.optional(v.string()),
+			details: v.optional(
+				v.object({
+					markdown: v.optional(v.string()),
+					firstName: v.optional(v.string()),
+					lastName: v.optional(v.string()),
+					enabledNotifications: v.optional(v.number()),
+					githubUrl: v.optional(v.string()),
+					linkedinUrl: v.optional(v.string()),
+					redditUrl: v.optional(v.string()),
+					websiteUrl: v.optional(v.string())
+				})
+			)
+		}),
+		data => ({ body: data })
 	)
-});
-
-export const updateUser = form(updateSchema, async (body) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.PATCH('/users/{userId}', {
-		params: { path: { userId: locals.session.userId } },
-		body
-	});
-
-	if (output.error || !output.data) {
-		Problem.validate(output.error);
-		Problem.throw(output.error);
-	}
-
-	getUser(locals.session.userId).refresh();
-	return output.data;
-});
+	.declare();
