@@ -4,7 +4,7 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import { form, getRequestEvent } from '$app/server';
+import { command, form, getRequestEvent } from '$app/server';
 import { Filters, Problem } from '$lib/api.js';
 import { getUserProjectByProjectId, getUserProjectMembers, getUserProjectTransactions } from './user-project.remote';
 
@@ -81,7 +81,7 @@ export const unsubscribeGoal = form(goalSubSchema, async ({ userId, goalId }) =>
 
 const projectSubSchema = v.object({ userId: Filters.id, projectId: Filters.id });
 /** Create a project session for a user. Staff can enroll other users. */
-export const subscribeProject = form(projectSubSchema, async ({ userId, projectId }) => {
+export const subscribeProject = command(projectSubSchema, async ({ userId, projectId }) => {
 	const { locals } = getRequestEvent();
 	const output = await locals.api.POST('/subscribe/{userId}/projects/{projectId}', {
 		params: { path: { userId, projectId } }
@@ -99,7 +99,7 @@ export const subscribeProject = form(projectSubSchema, async ({ userId, projectI
 });
 
 /** Remove a user from a project session. */
-export const unsubscribeProject = form(projectSubSchema, async ({ userId, projectId }) => {
+export const unsubscribeProject = command(projectSubSchema, async ({ userId, projectId }) => {
 	const { locals } = getRequestEvent();
 	const output = await locals.api.DELETE('/subscribe/{userId}/projects/{projectId}', {
 		params: { path: { userId, projectId } }

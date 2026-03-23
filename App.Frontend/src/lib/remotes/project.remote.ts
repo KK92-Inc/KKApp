@@ -7,6 +7,7 @@ import * as v from 'valibot';
 import { form, getRequestEvent, query } from '$app/server';
 import { Filters, paginate, Problem } from '$lib/api';
 import { getWorkspace } from './workspace.remote';
+import { Remote } from './index3.svelte';
 
 // ============================================================================
 // Create Project
@@ -83,32 +84,47 @@ export const getProjects = query(getProjectsSchema, async (params) => {
 // Get User Projects
 // ============================================================================
 
-const getUserProjectSchema = v.object({
-	...Filters.base,
-	...Filters.pagination,
-	userId: Filters.id,
-	name: v.optional(v.string())
-});
 
-export const getUserProjects = query(getUserProjectSchema, async (body) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.GET('/users/{userId}/projects', {
-		params: {
-			path: { userId: body.userId },
-			query: {
-				'filter[name]': body.name,
-				'filter[slug]': body.slug,
-				'page[size]': body.size,
-				'page[index]': body.page
-			}
-		}
-	});
 
-	if (output.error || !output.data) {
-		Problem.throw(output.error);
-	}
-	return paginate(output.data, output.response);
-});
+// export const getUserProjects = query(getUserProjectSchema, async (body) => {
+// 	const { locals } = getRequestEvent();
+// 	const output = await locals.api.GET('/users/{userId}/projects', {
+// 		params: {
+// 			path: { userId: body.userId },
+// 			query: {
+// 				'filter[name]': body.name,
+// 				'filter[slug]': body.slug,
+// 				'page[size]': body.size,
+// 				'page[index]': body.page
+// 			}
+// 		}
+// 	});
+
+// 	if (output.error || !output.data) {
+// 		Problem.throw(output.error);
+// 	}
+// 	return paginate(output.data, output.response);
+// });
+
+export const getUserProjects = Remote.GET('/users/{userId}/projects')
+	.extend(v.object({
+		...Filters.base,
+		...Filters.pagination,
+		userId: Filters.id,
+		name: v.optional(v.string())
+	}), data => ({
+		query: {
+			'filter[name]': data.name,
+			'filter[slug]': data.slug,
+			'page[index]': data.page,
+			'page[size]': data.size,
+		},
+	}))
+	.declare();
+
+async function test() {
+	const up = await getUserProjects({ userId: '123', page: 1, size: 10 });
+}
 
 // ============================================================================
 // Delete Project
@@ -121,6 +137,8 @@ export const deleteProject = form(v.object({ id: Filters.id }), async ({ id }) =
 		Problem.throw(output.error);
 	}
 });
+
+// export const remove = Remote.DELETE('/projects').declare();
 
 // ============================================================================
 // Update Project

@@ -4,18 +4,17 @@
 	import { Badge } from '$lib/components/badge';
 	import Thumbnail from '$lib/components/thumbnail.svelte';
 	import { subscribeProject, unsubscribeProject } from '$lib/remotes/subscribe.remote';
-	import { acceptInvite, declineInvite } from '$lib/remotes/invite.remote';
-	import { MessageCircleHeart, History, Users, UserCheck, ArrowRight } from '@lucide/svelte';
 	import { getUserProjectMembers } from '$lib/remotes/user-project.remote';
+	import * as Invite from '$lib/remotes/invite.remote';
 	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
 	import Members from './page-members.svelte';
 	import Reviews from './page-reviews.svelte';
 	import InviteDialog from './page-members-dialog.svelte';
 	import RequestReviewDialog from './page-request-review-dialog.svelte';
+	import { MessageCircleHeart, History, Users, UserCheck, ArrowRight } from '@lucide/svelte';
 	import type { components } from '$lib/api/api';
 	import { getContext } from './index.svelte';
 	import { page } from '$app/state';
-
 
 	const context = getContext();
 	let inviteDialogOpen = $state(false);
@@ -26,22 +25,15 @@
 	const stateVariant = $derived.by(() => {
 		if (!context.userProject) return undefined;
 		switch (context.userProject.state) {
-			case 'Active':
-				return 'default' as const;
-			case 'Completed':
-				return 'secondary' as const;
-			case 'Inactive':
-				return 'outline' as const;
-			default:
-				return 'outline' as const;
+			case 'Active': return 'default' as const;
+			case 'Completed': return 'secondary' as const;
+			default: return 'outline' as const;
 		}
 	});
 
 	function formatTimestamp(iso: string): string {
 		return new Date(iso).toLocaleDateString('en-US', {
-			month: 'short',
-			day: 'numeric',
-			year: 'numeric'
+			month: 'short', day: 'numeric', year: 'numeric'
 		});
 	}
 </script>
@@ -127,11 +119,7 @@
 									Request
 								</Button>
 							{/if}
-							<Button
-								size="sm"
-								variant="ghost"
-								class="h-5 px-1.5 text-[10px] text-muted-foreground"
-							>
+							<Button size="sm" variant="ghost" class="h-5 px-1.5 text-[10px] text-muted-foreground">
 								View all
 								<ArrowRight class="ml-0.5 size-3" />
 							</Button>
@@ -159,51 +147,31 @@
 							</p>
 						</div>
 						<div class="flex gap-2">
-							<form {...acceptInvite} class="flex-1">
-								<input
-									hidden
-									{...acceptInvite.fields.userProjectId.as('text')}
-									value={context.userProject.id}
-								/>
-								<Button loading={acceptInvite.pending > 0} type="submit" size="sm" class="w-full">
-									Accept
-								</Button>
-							</form>
-							<form {...declineInvite} class="flex-1">
-								<input
-									hidden
-									{...declineInvite.fields.userProjectId.as('text')}
-									value={context.userProject.id}
-								/>
-								<Button
-									loading={declineInvite.pending > 0}
-									type="submit"
-									size="sm"
-									variant="outline"
-									class="w-full"
-								>
-									Decline
-								</Button>
-							</form>
-						</div>
-					{:else if role === 'Leader' || role === 'Member'}
-						<form {...unsubscribeProject}>
-							<input hidden {...unsubscribeProject.fields.userId.as('text')} value={page.data.session.userId} />
-							<input
-								hidden
-								{...unsubscribeProject.fields.projectId.as('text')}
-								value={context.userProject.id}
-							/>
 							<Button
-								loading={unsubscribeProject.pending > 0}
-								type="submit"
+								size="sm"
+								class="flex-1"
+								onclick={() => Invite.accept({ userProjectId: context.userProject!.id })}
+							>
+								Accept
+							</Button>
+							<Button
 								size="sm"
 								variant="outline"
-								class="w-full"
+								class="flex-1"
+								onclick={() => Invite.decline({ userProjectId: context.userProject!.id })}
 							>
-								Unsubscribe
+								Decline
 							</Button>
-						</form>
+						</div>
+					{:else if role === 'Leader' || role === 'Member'}
+						<Button
+							size="sm"
+							variant="outline"
+							class="w-full"
+							onclick={() => unsubscribeProject({ userId: page.data.session.userId, projectId: context.userProject!.id })}
+						>
+							Unsubscribe
+						</Button>
 					{:else}
 						<p class="text-xs text-muted-foreground">
 							You are not a member of this project. To view your project page, click
@@ -228,13 +196,13 @@
 						</div>
 					</div>
 				{/if}
-				<form {...subscribeProject}>
-					<input hidden {...subscribeProject.fields.userId.as('text')} value={page.data.session.userId} />
-					<input hidden {...subscribeProject.fields.projectId.as('text')} value={context.userProject.id} />
-					<Button loading={subscribeProject.pending > 0} type="submit" size="sm" class="w-full">
-						{wasSubscribed ? 'Re-subscribe' : 'Subscribe'}
-					</Button>
-				</form>
+				<Button
+					size="sm"
+					class="w-full"
+					onclick={() => subscribeProject({ userId: page.data.session.userId, projectId: context.project.id })}
+				>
+					{wasSubscribed ? 'Re-subscribe' : 'Subscribe'}
+				</Button>
 			</Card.Content>
 		</Card.Root>
 	{/if}
