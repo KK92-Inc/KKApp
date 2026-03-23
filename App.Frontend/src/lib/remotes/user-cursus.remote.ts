@@ -4,13 +4,15 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import { getRequestEvent, query } from '$app/server';
-import { Filters, paginate, Problem } from '$lib/api.js';
+import { Filters, paginate } from '$lib/api.js';
+import { Remote } from './index.svelte.js';
 
 // ============================================================================
 
 const EntityObjectState = v.picklist(['Inactive', 'Active', 'Awaiting', 'Completed']);
 
+// ============================================================================
+// Get
 // ============================================================================
 
 const getUserCursusListSchema = v.object({
@@ -21,61 +23,29 @@ const getUserCursusListSchema = v.object({
 });
 
 /** List all cursus enrollments for a user, with optional state filtering. */
-export const getUserCursusList = query(getUserCursusListSchema, async (params) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.GET('/users/{userId}/cursus', {
-		params: {
-			path: { userId: params.userId },
-			query: {
-				'filter[state]': params.state,
-				'sort[by]': params.sortBy,
-				'sort[order]': params.sort,
-				'page[size]': params.size,
-				'page[index]': params.page
-			}
+export const getPage = Remote.GET('/users/{userId}/cursus')
+	.extend(getUserCursusListSchema, (params) => ({
+		path: { userId: params.userId },
+		query: {
+			'filter[state]': params.state,
+			'sort[by]': params.sortBy,
+			'sort[order]': params.sort,
+			'page[size]': params.size,
+			'page[index]': params.page
 		}
-	});
-
-	if (output.error || !output.data) {
-		Problem.throw(output.error);
-	}
-
-	return paginate(output.data, output.response);
-});
+	}))
+	.paginated()
+	.declare();
 
 /** Find a user's specific cursus enrollment by user and cursus ID. */
-const byCursusIdSchema = v.object({ userId: Filters.id, cursusId: Filters.id });
-export const getUserCursusByCursusId = query(byCursusIdSchema, async ({ userId, cursusId }) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.GET('/users/{userId}/cursus/{cursusId}', {
-		params: { path: { userId, cursusId } }
-	});
-
-	if (output.error || !output.data) {
-		Problem.throw(output.error);
-	}
-
-	return output.data;
-});
+export const getByCursus = Remote.GET('/users/{userId}/cursus/{cursusId}').declare();
 
 /** Find a user cursus enrollment directly by its entity ID. */
-export const getUserCursusById = query(Filters.id, async (id) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.GET('/user-cursus/{id}', { params: { path: { id } } });
-	if (output.error || !output.data) {
-		Problem.throw(output.error);
-	}
+export const get = Remote.GET('/user-cursus/{id}').declare();
 
-	return output.data;
-});
+// ============================================================================
+// Track
+// ============================================================================
 
 /** Retrieve the user's personalized track and progress for a cursus enrollment. */
-export const getUserCursusTrack = query(Filters.id, async (id) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.GET('/user-cursus/{id}/track', { params: { path: { id } } });
-	if (output.error || !output.data) {
-		Problem.throw(output.error);
-	}
-
-	return output.data;
-});
+export const getTrack = Remote.GET('/user-cursus/{id}/track').declare();

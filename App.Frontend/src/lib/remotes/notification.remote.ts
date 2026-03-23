@@ -4,8 +4,8 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import { getRequestEvent, query } from '$app/server';
-import { Filters, Problem } from '$lib/api.js';
+import { Filters } from '$lib/api.js';
+import { Remote } from './index.svelte.js';
 
 // ============================================================================
 
@@ -19,26 +19,17 @@ const schema = v.object({
 	notVariant: v.optional(v.number())
 });
 
-export const getNotifications = query(schema, async (filters) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.GET('/account/notifications', {
-		params: {
-			query: {
-				'filter[read]': filters.read,
-				'filter[variant]': filters.variant,
-				'filter[not[variant]]': filters.notVariant,
-				'sort[by]': filters.sortBy,
-				'sort[order]': filters.sort,
-				'page[size]': filters.size,
-				'page[index]': filters.page
-			}
+export const getPage = Remote.GET('/account/notifications')
+	.extend(schema, (filters) => ({
+		query: {
+			'filter[read]': filters.read,
+			'filter[variant]': filters.variant,
+			'filter[not[variant]]': filters.notVariant,
+			'sort[by]': filters.sortBy,
+			'sort[order]': filters.sort,
+			'page[size]': filters.size,
+			'page[index]': filters.page
 		}
-	});
-
-	if (output.error || !output.data) {
-		Problem.validate(output.error);
-		Problem.throw(output.error);
-	}
-
-	return output.data;
-});
+	}))
+	.paginated()
+	.declare();

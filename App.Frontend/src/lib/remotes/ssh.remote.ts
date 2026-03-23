@@ -4,47 +4,28 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import { Problem } from '$lib/api';
-import { form, getRequestEvent, query } from '$app/server';
+import { Remote } from './index.svelte.js';
 
 // ============================================================================
+// Get
+// ============================================================================
 
-export const getKeys = query(async () => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.GET('/account/ssh-keys');
-	if (output.error || !output.data) Problem.throw(output.error);
-	return output.data;
-});
+export const get = Remote.GET('/account/ssh-keys').declare();
 
+// ============================================================================
+// Create
 // ============================================================================
 
 const addSchema = v.object({ title: v.string(), publicKey: v.string() });
-export const addKey = form(addSchema, async (body) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.POST('/account/ssh-keys', {
-		body
-	});
-
-	if (output.error) {
-		Problem.validate(output.error);
-		Problem.throw(output.error);
-	}
-
-	getKeys().refresh();
-});
+export const create = Remote.POST('/account/ssh-keys')
+	.extend(addSchema, data => ({ body: data }))
+	.after(() => get({}).refresh())
+	.declare();
 
 // ============================================================================
+// Delete
+// ============================================================================
 
-const removeSchema = v.object({ fingerprint: v.string() });
-export const removeKey = form(removeSchema, async ({ fingerprint }) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.DELETE('/account/ssh-keys/{fingerprint}', {
-		params: { path: { fingerprint } }
-	});
-
-	if (output.error) {
-		Problem.throw(output.error);
-	}
-
-	getKeys().refresh();
-});
+export const remove = Remote.DELETE('/account/ssh-keys/{fingerprint}')
+	.after(() => get({}).refresh())
+	.declare();

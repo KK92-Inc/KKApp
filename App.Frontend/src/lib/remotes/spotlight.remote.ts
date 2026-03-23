@@ -4,33 +4,17 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import { form, getRequestEvent, query } from '$app/server';
-import { Filters, Problem } from '$lib/api';
+import { Remote } from './index.svelte.js';
+import { Filters } from '$lib/api';
 
+// ============================================================================
+// Get
 // ============================================================================
 
 /** Retrieve active spotlight notifications for the authenticated user. */
-export const getSpotlights = query(async () => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.GET('/account/spotlights');
-	if (output.error || !output.data) {
-		Problem.throw(output.error);
-	}
-
-	return output.data;
-});
+export const get = Remote.GET('/account/spotlights').declare();
 
 /** Dismiss a spotlight so it won't be shown again. */
-export const dismissSpotlight = form(v.object({ id: Filters.id }), async ({ id }) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.DELETE('/account/spotlights/{id}', {
-		params: { path: { id } }
-	});
-
-	if (output.error || !output.data) {
-		Problem.throw(output.error);
-	}
-
-	getSpotlights().refresh();
-	return output.data;
-});
+export const dismiss = Remote.DELETE('/account/spotlights/{id}')
+	.after(() => get({}).refresh())
+	.declare();

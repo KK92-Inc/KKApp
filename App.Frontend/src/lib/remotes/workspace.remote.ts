@@ -4,20 +4,12 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import { Filters, Problem } from '$lib/api.js';
-import { form, getRequestEvent, query } from '$app/server';
+import { Filters } from '$lib/api.js';
+import { Remote } from './index.svelte.js';
 
 // ============================================================================
 
-export const getWorkspace = query(async () => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.GET('/workspace/current');
-	if (output.error || !output.data) {
-		Problem.throw(output.error);
-	}
-
-	return output.data;
-});
+export const get = Remote.GET('/workspace/current').declare();
 
 // ============================================================================
 // Transfer Operations
@@ -30,49 +22,16 @@ const transferSchema = v.object({
 });
 
 /** Transfer one or more cursus from one workspace to another. */
-export const transferCursus = form(transferSchema, async ({ from, to, ids }) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.POST('/workspace/{from}/transfer/cursus/{to}', {
-		params: { path: { from, to } },
-		body: ids
-	});
-
-	if (output.error || !output.data) {
-		Problem.validate(output.error);
-		Problem.throw(output.error);
-	}
-
-	return output.data;
-});
+export const transferCursus = Remote.POST('/workspace/{from}/transfer/cursus/{to}')
+	.extend(transferSchema, data => ({ body: data.ids }))
+	.declare();
 
 /** Transfer one or more goals from one workspace to another. */
-export const transferGoal = form(transferSchema, async ({ from, to, ids }) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.POST('/workspace/{from}/transfer/goal/{to}', {
-		params: { path: { from, to } },
-		body: ids
-	});
-
-	if (output.error || !output.data) {
-		Problem.validate(output.error);
-		Problem.throw(output.error);
-	}
-
-	return output.data;
-});
+export const transferGoal = Remote.POST('/workspace/{from}/transfer/goal/{to}')
+	.extend(transferSchema, data => ({ body: data.ids }))
+	.declare();
 
 /** Transfer one or more projects from one workspace to another. */
-export const transferProject = form(transferSchema, async ({ from, to, ids }) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.POST('/workspace/{from}/transfer/project/{to}', {
-		params: { path: { from, to } },
-		body: ids
-	});
-
-	if (output.error || !output.data) {
-		Problem.validate(output.error);
-		Problem.throw(output.error);
-	}
-
-	return output.data;
-});
+export const transferProject = Remote.POST('/workspace/{from}/transfer/project/{to}')
+	.extend(transferSchema, data => ({ body: data.ids }))
+	.declare();

@@ -4,13 +4,15 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import { getUser } from './user.remote';
+import * as User from './user.remote';
 import { Remote } from './index.svelte';
 
 // ============================================================================
+// Update
+// ============================================================================
 
 export const update = Remote.PATCH('/users/{userId}')
-	.after((_, data) => getUser(data.userId).refresh())
+	.after((_, data) => User.get({ userId: data.userId }).refresh())
 	.extend(
 		v.object({
 			displayName: v.optional(v.string()),

@@ -4,16 +4,10 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import { form, getRequestEvent, query } from '$app/server';
-import { error, redirect } from '@sveltejs/kit';
-import { Filters, paginate, Problem } from '$lib/api.js';
-import { getWorkspace } from './workspace.remote.js';
-import type { components } from '$lib/api/api';
+import { Filters } from '$lib/api.js';
+import { Remote } from './index.svelte';
 
 // ============================================================================
-
-type GoalDO = components['schemas']['GoalDO'];
-type ProjectDO = components['schemas']['ProjectDO'];
 
 const EntityObjectState = v.picklist(['Inactive', 'Active', 'Awaiting', 'Completed']);
 
@@ -28,22 +22,9 @@ const createGoalSchema = v.object({
 	public: v.optional(v.boolean(), false)
 });
 
-export const createGoal = form(createGoalSchema, async (body) => {
-	const { locals } = getRequestEvent();
-	const workspace = await getWorkspace();
-	const output = await locals.api.POST('/workspace/{workspace}/goal', {
-		params: { path: { workspace: workspace.id } },
-		body
-	});
-
-	if (output.error || !output.data) {
-		Problem.validate(output.error);
-		Problem.throw(output.error);
-	}
-
-	// TODO: don't return 204. I need at least the ID.
-	redirect(303, `/goals/configure/{}`);
-});
+export const create = Remote.POST('/workspace/{workspace}/goal')
+	.extend(createGoalSchema, data => ({ body: data }))
+	.declare();
 
 // ============================================================================
 // Query Goals
@@ -57,54 +38,35 @@ const queryGoalsSchema = v.object({
 	name: v.optional(v.string())
 });
 
-export const getGoals = query(queryGoalsSchema, async (params) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.GET('/goals', {
-		params: {
-			query: {
-				'filter[name]': params.name,
-				'sort[by]': params.sortBy,
-				'sort[order]': params.sort,
-				'page[size]': params.size,
-				'page[index]': params.page
-			}
+export const getPage = Remote.GET('/goals')
+	.extend(queryGoalsSchema, (params) => ({
+		query: {
+			'filter[name]': params.name,
+			'sort[by]': params.sortBy,
+			'sort[order]': params.sort,
+			'page[size]': params.size,
+			'page[index]': params.page
 		}
-	});
+	}))
+	.paginated()
+	.declare();
 
-	if (output.error || !output.data) {
-		Problem.throw(output.error);
-	}
-	return paginate(output.data, output.response);
-});
-
-export const getGoal = query(Filters.id, async (id) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.GET('/goals/{id}', { params: { path: { id } } });
-	if (output.error || !output.data) {
-		Problem.throw(output.error);
-	}
-
-	return output.data;
-});
+export const get = Remote.GET('/goals/{id}').declare();
 
 // ============================================================================
 // Delete Goal
 // ============================================================================
 
-export const deleteGoal = form(v.object({ id: Filters.id }), async ({ id }) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.DELETE('/goals', { params: { query: { id } } });
-	if (output.error) {
-		Problem.throw(output.error);
-	}
-});
+export const remove = Remote.DELETE('/goals')
+	.extend(v.object({ id: Filters.id }), data => ({ query: { id: data.id } }))
+	.required(false)
+	.declare();
 
 // ============================================================================
 // Update Goal
 // ============================================================================
 
 const updateGoalSchema = v.object({
-	id: Filters.id,
 	name: v.optional(v.string()),
 	description: v.optional(v.string()),
 	active: v.optional(v.boolean()),
@@ -112,112 +74,48 @@ const updateGoalSchema = v.object({
 	deprecated: v.optional(v.boolean())
 });
 
-export const updateGoal = form(updateGoalSchema, async ({ id, ...body }) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.PATCH('/goals/{id}', {
-		params: { path: { id } },
-		body
-	});
-
-	if (output.error || !output.data) {
-		Problem.validate(output.error);
-		Problem.throw(output.error);
-	}
-
-	return output.data;
-});
+export const update = Remote.PATCH('/goals/{id}')
+	.extend(updateGoalSchema, data => ({ body: data }))
+	.declare();
 
 // ============================================================================
 // Goal Projects
 // ============================================================================
 
-export const getGoalProjects = query(Filters.id, async (id) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.GET('/goals/{id}/projects', {
-		params: { path: { id } }
-	});
-
-	if (output.error || !output.data) {
-		Problem.validate(output.error);
-		Problem.throw(output.error);
-	}
-
-	return output.data;
-});
+export const projects = Remote.GET('/goals/{id}/projects').declare();
 
 const addGoalProjectsSchema = v.object({
-	id: Filters.id,
 	projectIds: v.array(Filters.id)
 });
 
-export const addGoalProjects = form(addGoalProjectsSchema, async ({ id, projectIds }) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.POST('/goals/{id}/projects', {
-		params: { path: { id } },
-		body: projectIds
-	});
-
-	if (output.error || !output.data) {
-		Problem.validate(output.error);
-		Problem.throw(output.error);
-	}
-
-	return output.data;
-});
+export const addProjects = Remote.POST('/goals/{id}/projects')
+	.extend(addGoalProjectsSchema, data => ({ body: data.projectIds }))
+	.declare();
 
 // ============================================================================
 // User Goal Subscriptions
 // ============================================================================
 
 const getUserGoalsSchema = v.object({
-	userId: Filters.id,
 	...Filters.sort,
 	...Filters.pagination,
 	state: v.optional(EntityObjectState)
 });
 
-export const getUserGoals = query(getUserGoalsSchema, async (params) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.GET('/users/{userId}/goals', {
-		params: {
-			path: { userId: params.userId },
-			query: {
-				'filter[state]': params.state,
-				'sort[by]': params.sortBy,
-				'sort[order]': params.sort,
-				'page[size]': params.size,
-				'page[index]': params.page
-			}
+export const userPage = Remote.GET('/users/{userId}/goals')
+	.extend(getUserGoalsSchema, (params) => ({
+		query: {
+			'filter[state]': params.state,
+			'sort[by]': params.sortBy,
+			'sort[order]': params.sort,
+			'page[size]': params.size,
+			'page[index]': params.page
 		}
-	});
+	}))
+	.paginated()
+	.declare();
 
-	if (output.error || !output.data) {
-		Problem.throw(output.error);
-	}
+export const getByUser = Remote.GET('/users/{userId}/goals/{goalId}').declare();
 
-	return paginate(output.data, output.response);
-});
+export const getEffect = Remote.GET('/user-goals/{id}').declare();
 
-const userGoalByIdSchema = v.object({ userId: Filters.id, goalId: Filters.id });
-export const getUserGoalByGoalId = query(userGoalByIdSchema, async ({ userId, goalId }) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.GET('/users/{userId}/goals/{goalId}', {
-		params: { path: { userId, goalId } }
-	});
-
-	if (output.error || !output.data) {
-		Problem.throw(output.error);
-	}
-
-	return output.data;
-});
-
-export const getUserGoalById = query(Filters.id, async (id) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.GET('/user-goals/{id}', { params: { path: { id } } });
-	if (output.error || !output.data) {
-		Problem.throw(output.error);
-	}
-
-	return output.data;
-});

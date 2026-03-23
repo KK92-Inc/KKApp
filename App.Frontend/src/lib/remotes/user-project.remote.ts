@@ -4,79 +4,25 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import { getRequestEvent, query } from '$app/server';
-import { Filters, paginate, Problem } from '$lib/api.js';
-import { error } from '@sveltejs/kit';
-import { Log } from '$lib/log';
+import { Filters } from '$lib/api.js';
+import { Remote } from './index.svelte.js';
 
+// ============================================================================
+// Get
 // ============================================================================
 
 /** Get a user's specific project session by user ID and project ID. */
-const schema = v.object({ userId: Filters.id, projectId: Filters.id });
-export const getUserProjectByProjectId = query(schema, async ({ userId, projectId }) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.GET('/users/{userId}/projects/{projectId}', {
-		params: { path: { userId, projectId } }
-	});
-
-	Log.dbg(output.data, output.response.status);
-
-	if (output.error && output.error.status !== 404) {
-		Problem.throw(output.error);
-	}
-
-	return output.data;
-});
-
-/** Get both the project and user project */
-export const getUserProjectAndProject = query(schema, async ({ userId, projectId }) => {
-	error(501, "Huh")
-	// const { locals } = getRequestEvent();
-	// const [project, session] = await Promise.all([
-	// 	await locals.api.GET('/projects/{id}', {
-	// 		params: { path: { id: projectId } }
-	// 	}),
-	// 	await locals.api.GET('/users/{userId}/projects/{projectId}', {
-	// 		params: { path: { userId, projectId } }
-	// 	})
-	// ]);
-
-	// // Project must exist and session should not return a 404
-	// if (project.error || (session.error && session.response.status !== 404)) {
-	// 	Log.err({
-	// 		project: project.error,
-	// 		session: session.error
-	// 	})
-	// 	error(500, "Something went wrong...");
-	// }
-
-	// return {
-	// 	project: project.data!,
-	// 	userProject: session.data
-	// }
-});
+export const getByProject = Remote.GET('/users/{userId}/projects/{projectId}').declare();
 
 /** Get a user project session directly by its entity ID. */
-export const getUserProjectById = query(Filters.id, async (id) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.GET('/user-projects/{id}', { params: { path: { id } } });
-	if (output.error || !output.data) {
-		Problem.throw(output.error);
-	}
-
-	return output.data;
-});
+export const get = Remote.GET('/user-projects/{id}').declare();
 
 /** Retrieve all members participating in a user project session. */
-export const getUserProjectMembers = query(Filters.id, async (id) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.GET('/user-projects/{id}/members', { params: { path: { id } } });
-	if (output.error || !output.data) {
-		Problem.throw(output.error);
-	}
+export const getMembers = Remote.GET('/user-projects/{id}/members').declare();
 
-	return output.data;
-});
+// ============================================================================
+// Transactions
+// ============================================================================
 
 /** Retrieve the paginated activity timeline of a user project session. */
 const transactionsSchema = v.object({
@@ -84,23 +30,14 @@ const transactionsSchema = v.object({
 	...Filters.sort,
 	...Filters.pagination
 });
-export const getUserProjectTransactions = query(transactionsSchema, async (data) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.GET('/user-projects/{id}/transactions', {
-		params: {
-			path: { id: data.id },
-			query: {
-				'page[index]': data.page,
-				'page[size]': data.size,
-				'sort[order]': data.sort,
-				'sort[by]': data.sortBy
-			}
+export const getTransactionsPage = Remote.GET('/user-projects/{id}/transactions')
+	.extend(transactionsSchema, (data) => ({
+		query: {
+			'page[index]': data.page,
+			'page[size]': data.size,
+			'sort[order]': data.sort,
+			'sort[by]': data.sortBy
 		}
-	});
-
-	if (output.error || !output.data) {
-		Problem.throw(output.error);
-	}
-
-	return paginate(output.data, output.response);
-});
+	}))
+	.paginated()
+	.declare();

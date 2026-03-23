@@ -27,7 +27,7 @@ export const create = Remote.POST('/workspace/{workspace}/project')
 // ============================================================================
 
 export const get = Remote.GET('/projects/{id}').declare();
-export const all = Remote.GET('/projects')
+export const getPage = Remote.GET('/projects')
 	.extend(v.object({
 		...Filters.base,
 		...Filters.pagination,

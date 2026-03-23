@@ -4,9 +4,7 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import { getWorkspace } from './workspace.remote.js';
-import { form, getRequestEvent, query } from '$app/server';
-import { Filters, paginate, Problem } from '$lib/api.js';
+import { Filters } from '$lib/api.js';
 import { Remote } from './index.svelte.js';
 
 // ============================================================================
@@ -16,7 +14,7 @@ import { Remote } from './index.svelte.js';
 /** Query for a cursus */
 export const get = Remote.GET('/cursus/{id}').declare();
 /** Query for a paginated result of cursi */
-export const gets = Remote.GET('/cursus')
+export const getPage = Remote.GET('/cursus')
 	.extend(v.object({
 		...Filters.base,
 		...Filters.sort,
@@ -50,19 +48,9 @@ export const remove = Remote.DELETE('/cursus')
 // ============================================================================
 
 /** Get the track for a cursus */
-export const getCursusTrack = query(Filters.id, async (id) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.GET('/cursus/{id}/track', {
-		params: { path: { id } }
-	});
-
-	if (output.error || !output.data)
-		Problem.throw(output.error);
-	return output.data;
-});
+export const getTrack = Remote.GET('/cursus/{id}/track').declare();
 
 const setCursusTrackSchema = v.object({
-	id: v.pipe(v.string(), v.uuid()),
 	nodes: v.array(
 		v.object({
 			goalId: v.pipe(v.string(), v.uuid()),
@@ -72,21 +60,9 @@ const setCursusTrackSchema = v.object({
 	)
 });
 
-export const setCursusTrack = form(setCursusTrackSchema, async (body) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.POST('/cursus/{id}/track', {
-		params: { path: { id: body.id } },
-		body: { nodes: body.nodes }
-	});
-
-	Problem.validate()
-
-	if (output.error || !output.data) {
-		Problem.validate(output.error);
-		Problem.throw(output.error);
-	}
-	return output.data;
-});
+export const setTrack = Remote.POST('/cursus/{id}/track')
+	.extend(setCursusTrackSchema, data => ({ body: { nodes: data.nodes } }))
+	.declare();
 
 // Create Cursus
 // ============================================================================
@@ -100,17 +76,6 @@ const createCursusSchema = v.object({
 	completionMode: v.optional(v.picklist(['Ring', 'FreeStyle']))
 });
 
-export const createCursus = form(createCursusSchema, async (body) => {
-	const { locals } = getRequestEvent();
-	const workspace = await getWorkspace();
-	const output = await locals.api.POST('/workspace/{workspace}/cursus', {
-		params: { path: { workspace: workspace.id } },
-		body
-	});
-
-	if (output.error || !output.data) {
-		Problem.validate(output.error);
-		Problem.throw(output.error);
-	}
-	return output.data;
-});
+export const create = Remote.POST('/workspace/{workspace}/cursus')
+	.extend(createCursusSchema, data => ({ body: data }))
+	.declare();

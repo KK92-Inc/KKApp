@@ -4,110 +4,35 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import { command, form, getRequestEvent } from '$app/server';
-import { Filters, Problem } from '$lib/api.js';
-import { getUserProjectByProjectId, getUserProjectMembers, getUserProjectTransactions } from './user-project.remote';
+import { Remote } from './index.svelte.js';
 
 // ============================================================================
 // Cursus Subscriptions
 // ============================================================================
 
-const cursusSubSchema = v.object({ userId: Filters.id, cursusId: Filters.id });
-
 /** Enroll a user in a cursus. Staff can enroll other users. */
-export const subscribeCursus = form(cursusSubSchema, async ({ userId, cursusId }) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.POST('/subscribe/{userId}/cursus/{cursusId}', {
-		params: { path: { userId, cursusId } }
-	});
-
-	if (output.error || !output.data) {
-		Problem.validate(output.error);
-		Problem.throw(output.error);
-	}
-
-	return output.data;
-});
+export const cursus = Remote.POST('/subscribe/{userId}/cursus/{cursusId}').declare();
 
 /** Remove a user's enrollment from a cursus. */
-export const unsubscribeCursus = form(cursusSubSchema, async ({ userId, cursusId }) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.DELETE('/subscribe/{userId}/cursus/{cursusId}', {
-		params: { path: { userId, cursusId } }
-	});
-
-	if (output.error) {
-		Problem.throw(output.error);
-	}
-
-	return output.data;
-});
+export const removeCursus = Remote.DELETE('/subscribe/{userId}/cursus/{cursusId}').declare();
 
 // ============================================================================
 // Goal Subscriptions
 // ============================================================================
 
-const goalSubSchema = v.object({ userId: Filters.id, goalId: Filters.id });
-
 /** Subscribe a user to a goal. Staff can enroll other users. */
-export const subscribeGoal = form(goalSubSchema, async ({ userId, goalId }) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.POST('/subscribe/{userId}/goals/{goalId}', {
-		params: { path: { userId, goalId } }
-	});
-
-	if (output.error || !output.data) {
-		Problem.throw(output.error);
-	}
-
-	return output.data;
-});
+export const goal = Remote.POST('/subscribe/{userId}/goals/{goalId}').declare();
 
 /** Remove a user's goal subscription. */
-export const unsubscribeGoal = form(goalSubSchema, async ({ userId, goalId }) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.DELETE('/subscribe/{userId}/goals/{goalId}', {
-		params: { path: { userId, goalId } }
-	});
-
-	if (output.error) {
-		Problem.throw(output.error);
-	}
-});
+export const removeGoal = Remote.DELETE('/subscribe/{userId}/goals/{goalId}').declare();
 
 // ============================================================================
 // Project Subscriptions
 // ============================================================================
 
-const projectSubSchema = v.object({ userId: Filters.id, projectId: Filters.id });
 /** Create a project session for a user. Staff can enroll other users. */
-export const subscribeProject = command(projectSubSchema, async ({ userId, projectId }) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.POST('/subscribe/{userId}/projects/{projectId}', {
-		params: { path: { userId, projectId } }
-	});
-
-	if (output.error || !output.data) {
-		Problem.throw(output.error);
-	}
-
-	// getUserProjectByProjectId({userId, projectId}).refresh();
-	// getUserProjectMembers(output.data.id).refresh();
-	// getUserProjectTransactions({ id: output.data.id }).refresh();
-
-	return output.data;
-});
+export const project = Remote.POST('/subscribe/{userId}/projects/{projectId}').declare();
 
 /** Remove a user from a project session. */
-export const unsubscribeProject = command(projectSubSchema, async ({ userId, projectId }) => {
-	const { locals } = getRequestEvent();
-	const output = await locals.api.DELETE('/subscribe/{userId}/projects/{projectId}', {
-		params: { path: { userId, projectId } }
-	});
+export const removeProject = Remote.DELETE('/subscribe/{userId}/projects/{projectId}').declare();
 
-	// getUserProjectByProjectId({userId, projectId}).refresh();
-
-	if (output.error) {
-		Problem.throw(output.error);
-	}
-});
