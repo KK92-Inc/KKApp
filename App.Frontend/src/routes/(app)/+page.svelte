@@ -6,7 +6,7 @@
 	import { Feed } from '$lib/components/feed';
 
 	// Remotes
-	import { getFeed } from '$lib/remotes/feed.remote';
+	import * as Feeds from '$lib/remotes/feed.remote';
 	import Reviews from './reviews.svelte';
 	import { page } from '$app/state';
 </script>
@@ -28,7 +28,7 @@
 				<p class="text-sm text-muted-foreground">Explore your personal data universe &rarr;</p>
 			</section>
 		</Button>
-		<Scroller load={async (page) => getFeed({ page, sort: "Ascending", size: 20 })}>
+		<Scroller load={async (page) => Feeds.getPage({ page, sort: "Ascending", size: 20 })}>
 			{#snippet item(item)}
 				<Feed notification={item} />
 			{/snippet}

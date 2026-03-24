@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Failed from '$lib/components/empty/failed.svelte';
 	import { Skeleton } from '$lib/components/skeleton';
-	import { getPendingReviews } from '$lib/remotes/reviews.remote';
+	import * as Reviews from '$lib/remotes/reviews.remote';
 	import ScrollArea from '$lib/components/scroll-area/scroll-area.svelte';
 	import Badge from '$lib/components/badge/badge.svelte';
 	import type { components } from '$lib/api/api';
@@ -39,7 +39,7 @@
 
 <div>
 	<svelte:boundary>
-		{@const reviews = await getPendingReviews()}
+		{@const reviews = await Promise.resolve([ ])}
 		{#snippet pending()}
 			<div class="w-full space-y-4">
 				<Skeleton class="h-8 w-full" />

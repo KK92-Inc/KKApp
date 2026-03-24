@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
-	import { getProject } from '$lib/remotes/project.remote';
-	import { getUserProjectByProjectId, getUserProjectMembers } from '$lib/remotes/user-project.remote';
-	import { getGitBlob, getGitBranches } from '$lib/remotes/git.remote';
+	import * as Project from '$lib/remotes/project.remote';
+	import * as UserProjects from '$lib/remotes/user-project.remote';
+	import * as Git from '$lib/remotes/git.remote';
 	import Layout from '$lib/components/layout.svelte';
 	import * as Page from './components/index.svelte';
 	import * as Card from '$lib/components/card';
@@ -17,16 +17,16 @@
 	const { params }: PageProps = $props();
 	const queries = $derived.by(async () => {
 		const [project, userProject] = await Promise.all([
-			getProject(params.project),
-			getUserProjectByProjectId({
-				projectId: params.project,
-				userId: params.userId
+			Project.get(params.project),
+			UserProjects.getByUser({
+				userId: params.userId,
+				projectId: params.project
 			})
 		]);
 
 		const [members, branches] = await Promise.all([
-			userProject ? getUserProjectMembers(userProject.id) : Promise.resolve([]),
-			userProject?.gitInfo ? getGitBranches(userProject.gitInfo.id) : Promise.resolve([])
+			userProject ? UserProjects.getMembers(userProject.id) : Promise.resolve([]),
+			userProject?.gitInfo ? Git.getBranches(userProject.gitInfo.id) : Promise.resolve([])
 		]);
 
 		return { project, userProject, members, branches };
@@ -80,7 +80,7 @@
 							</Accordion.Trigger>
 							<Accordion.Content>
 								<Markdown
-									value={await getGitBlob({
+									value={await Git.getBlob({
 										id: data.project.gitInfo.id,
 										branch: 'master',
 										path: 'README.md'

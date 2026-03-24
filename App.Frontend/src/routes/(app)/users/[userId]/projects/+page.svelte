@@ -8,12 +8,13 @@
 	import { Badge } from '$lib/components/badge';
 	import { Button } from '$lib/components/button';
 	import { Search, Archive, ChevronRight } from '@lucide/svelte';
-	import { getProjects, getUserProjects } from '$lib/remotes/project.remote';
+	import * as Projects from '$lib/remotes/project.remote';
+	import * as UserProjects from '$lib/remotes/user-project.remote';
 	import useSearchParams from '$lib/hooks/url.svelte';
 	import useDebounce from '$lib/hooks/debounce.svelte';
 	import * as v from 'valibot';
 	import type { PageProps } from './$types';
-	import { page } from '$app/state';
+	import { Filters } from '$lib/api';
 
 	const { data, params }: PageProps = $props();
 	const isOwner = $derived(data.session.userId === params.userId);
@@ -105,9 +106,11 @@
 					{/snippet}
 
 					{#if effectiveTab === 'available'}
-						{@const result = await getProjects({
+						{@const result = await Projects.getPage({
+							name: search.value,
 							page: activePage.value,
-							name: search.value || undefined
+							sort: Filters.sort.sort.default,
+							size: Filters.pagination.size.default,
 						})}
 
 						{#if result.data.length === 0}
@@ -168,10 +171,8 @@
 						{/if}
 
 					{:else}
-						{@const result = await getUserProjects({
+						{@const result = await UserProjects.getByUser({
 							userId: params.userId,
-							page: activePage.value,
-							name: search.value || undefined
 						})}
 
 						{#if result.data.length === 0}

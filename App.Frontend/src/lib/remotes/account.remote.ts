@@ -6,6 +6,15 @@
 import * as v from 'valibot';
 import * as User from './user.remote';
 import { Remote } from './index.svelte';
+import { form } from '$app/server';
+import { Keycloak } from '$lib/auth';
+
+// ============================================================================
+
+/** Remote to sign-in */
+export const login = form(() => Keycloak.signIn());
+/** Remote to sign-out */
+export const logout = form(async () => await Keycloak.signOut());
 
 // ============================================================================
 // Update

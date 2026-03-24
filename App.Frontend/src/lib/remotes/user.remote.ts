@@ -18,23 +18,17 @@ export const me = Remote.GET('/account').declare();
 export const get = Remote.GET('/users/{userId}').declare();
 
 /** Get a paginated list of users. */
-const getUsersSchema = v.object({
-	...Filters.pagination,
-	...Filters.sort,
+const getSchema = v.object({
 	login: v.optional(v.string()),
 	display: v.optional(v.string()),
 	projectId: v.optional(Filters.id)
 });
 
 export const getPage = Remote.GET('/users')
-	.extend(getUsersSchema, (params) => ({
+	.extend(getSchema, (params) => ({
 		query: {
 			'filter[login]': params.login,
 			'filter[display]': params.display,
-			'page[size]': params.size,
-			'page[index]': params.page,
-			'sort[by]': params.sortBy,
-			'sort[order]': params.sort
 		}
 	}))
 	.paginated()

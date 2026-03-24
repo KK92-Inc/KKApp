@@ -1,7 +1,8 @@
 <script lang="ts">
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.svg';
-	import { ModeWatcher } from 'mode-watcher';
+	 import { Toaster } from "$lib/components/sonner";
+	import { mode, ModeWatcher } from 'mode-watcher';
 	import type { LayoutProps } from './$types';
 	import { TooltipProvider } from '$lib/components/tooltip';
 	import { DialogProvider } from '$lib/components/dialog';
@@ -14,6 +15,7 @@
 </svelte:head>
 
 <ModeWatcher />
+<Toaster theme={mode.current ?? 'system'} richColors position="top-right" />
 <TooltipProvider>
 	<DialogProvider>
 		{@render children?.()}

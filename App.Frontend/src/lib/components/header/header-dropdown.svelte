@@ -12,7 +12,7 @@
 	import * as ButtonGroup from '$lib/components/button-group/';
 	import * as DropdownMenu from '$lib/components/dropdown-menu/';
 	import { page } from '$app/state';
-	import { logout } from '../../../routes/auth/auth.remote';
+	import { logout } from '$lib/remotes/account.remote';
 
 </script>
 
@@ -58,7 +58,7 @@
 			</DropdownMenu.Group>
 			<DropdownMenu.Separator />
 			<DropdownMenu.Group>
-				<DropdownMenu.Item remote={logout} variant="destructive">
+				<DropdownMenu.Item onclick={() => logout()} variant="destructive">
 					<LogOut />
 					Logout
 				</DropdownMenu.Item>

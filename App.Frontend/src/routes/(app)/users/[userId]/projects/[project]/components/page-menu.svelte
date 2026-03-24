@@ -2,9 +2,9 @@
 	import * as Tabs from '$lib/components/tabs';
 	import { Separator } from '$lib/components/separator';
 	import { GitBranch, MoreHorizontal, PlusIcon } from '@lucide/svelte';
-	import { createGitBranch, getGitBranches } from '$lib/remotes/git.remote';
-	import { getProject } from '$lib/remotes/project.remote';
-	import { getUserProjectByProjectId } from '$lib/remotes/user-project.remote';
+	import * as Git from '$lib/remotes/git.remote';
+	import * as Project from '$lib/remotes/project.remote';
+	import * as UserProject from '$lib/remotes/user-project.remote';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
 	import * as Command from '$lib/components/command';
@@ -21,8 +21,8 @@
 	// Independent queries — kick off in parallel
 	const queries = $derived.by(async () => {
 		const [project, userProject] = await Promise.all([
-			getProject(page.params.project),
-			getUserProjectByProjectId({
+			Project.get(page.params.project),
+			UserProject.getByProject({
 				projectId: page.params.project,
 				userId: page.data.session.userId
 			})
@@ -34,7 +34,7 @@
 	const data = $derived(await queries);
 
 	// Dependent on userProject
-	const branchesQuery = $derived(data.userProject?.gitInfo ? getGitBranches(data.userProject.gitInfo.id) : null);
+	const branchesQuery = $derived(data.userProject?.gitInfo ? Git.getBranches(data.userProject.gitInfo.id) : null);
 	const branches = $derived(branchesQuery ? await branchesQuery : []);
 
 	// Local writable state (was context.view / context.branch)
@@ -75,19 +75,28 @@
 				<strong class="rounded bg-muted p-1 font-mono">{branch}</strong>.
 			</Dialog.Description>
 		</Dialog.Header>
-		<form {...createGitBranch}>
-			<input type="hidden" {...createGitBranch.fields.gitId.as('text')} value={data.project.gitInfo?.id} />
-			<div class="grid gap-4">
-				<div class="grid gap-3">
-					<Label for="name-1">Name</Label>
-					<Input {...createGitBranch.fields.branch.as('text')} value={search} />
-				</div>
+		<div class="grid gap-4">
+			<div class="grid gap-3">
+				<Label for="name-1">Name</Label>
+				<Input id="name-1" value={search} readonly />
 			</div>
-			<Dialog.Footer>
-				<Dialog.Close type="button" class={buttonVariants({ variant: 'outline' })}>Cancel</Dialog.Close>
-				<Button type="submit">Create</Button>
-			</Dialog.Footer>
-		</form>
+		</div>
+		<Dialog.Footer>
+			<Dialog.Close type="button" class={buttonVariants({ variant: 'outline' })}>Cancel</Dialog.Close>
+			<Button
+				onclick={async () => {
+					// Handle branch creation logic here
+					showDialog = false;
+					await Git.createBranch({
+						repoId: data.userProject?.gitInfo.id!,
+						name: search,
+						from: branch
+					});
+				}}
+			>
+				Create
+			</Button>
+		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
 

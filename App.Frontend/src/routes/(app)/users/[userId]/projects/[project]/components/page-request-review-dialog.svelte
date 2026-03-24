@@ -5,7 +5,7 @@
 	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
 	import { Checkbox } from '$lib/components/checkbox';
 	import { Label } from '$lib/components/label';
-	import { getRubricsForProject, requestReviews } from '$lib/remotes/reviews.remote';
+	import * as Reviews from '$lib/remotes/reviews.remote';
 	import { ClipboardCheck, Users, Globe, Bot } from '@lucide/svelte';
 	import type { components } from '$lib/api/api';
 	import { Input } from '$lib/components/input';
@@ -77,7 +77,7 @@
 	async function loadRubrics() {
 		loading = true;
 		try {
-			rubrics = await getRubricsForProject(userProjectId);
+			rubrics = await Reviews.getRubrics({ userProjectId });
 		} catch {
 			rubrics = [];
 		} finally {
@@ -194,20 +194,27 @@
 
 			<Dialog.Footer class="flex gap-2">
 				<Button variant="outline" size="sm" onclick={goBack}>Back</Button>
-				<form {...requestReviews} class="flex-1">
+				<!-- <form {...requestReviews} class="flex-1">
 					<input hidden {...requestReviews.fields.userProjectId.as('text')} value={userProjectId} />
 					<input hidden {...requestReviews.fields.rubricId.as('text')} value={selectedRubric.id} />
-					<input hidden {...requestReviews.fields.kinds.as('text')} value={[...selectedKinds].join(',')} />
+					<input hidden {...requestReviews.fields.kinds.as('text')} value={[...selectedKinds].join(',')} /> -->
 					<Button
 						type="submit"
 						size="sm"
-						class="w-full"
+						class="w-full flex-1"
 						disabled={selectedKinds.size === 0}
-						loading={requestReviews.pending > 0}
+						onclick={() =>
+							Reviews.request({
+								userProjectId,
+								rubricId: selectedRubric?.id,
+								kinds: [...selectedKinds].join(',')
+							})
+						}
+						loading={Reviews.request.pending > 0}
 					>
 						Request {selectedKinds.size} Review{selectedKinds.size !== 1 ? 's' : ''}
 					</Button>
-				</form>
+				<!-- </form> -->
 			</Dialog.Footer>
 		{/if}
 	</Dialog.Content>

@@ -17,18 +17,12 @@ export const get = Remote.GET('/cursus/{id}').declare();
 export const getPage = Remote.GET('/cursus')
 	.extend(v.object({
 		...Filters.base,
-		...Filters.sort,
-		...Filters.pagination,
 		name: v.optional(v.string())
 	}), data => ({
 		query: {
-			'sort[by]': data.sortBy,
-			'sort[order]': data.sort,
 			'filter[id]': data.id,
 			'filter[name]': data.name,
 			'filter[slug]': data.slug,
-			'page[size]': data.size,
-			'page[index]': data.page
 		}
 	}))
 	.paginated()
@@ -53,9 +47,9 @@ export const getTrack = Remote.GET('/cursus/{id}/track').declare();
 const setCursusTrackSchema = v.object({
 	nodes: v.array(
 		v.object({
-			goalId: v.pipe(v.string(), v.uuid()),
-			parentId: v.optional(v.pipe(v.string(), v.uuid())),
-			group: v.optional(v.pipe(v.string(), v.uuid()))
+			goalId: Filters.id,
+			parentId: Filters.id,
+			group: Filters.id,
 		})
 	)
 });

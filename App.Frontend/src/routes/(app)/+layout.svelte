@@ -7,11 +7,20 @@
 	import WhiteLabel from '$lib/components/white-label.svelte';
 	import { page } from '$app/state';
 	import Separator from '$lib/components/separator/separator.svelte';
+	import { toast } from 'svelte-sonner';
 
 	let open = $state(false);
 	let { children }: LayoutProps = $props();
 
-	// const events = init(new EventSourceContext('/proxy/events'));
+	const events = init(new EventSourceContext('/proxy/events'));
+	events.listen('DemoEvent', (data) => {
+		toast.success(`Received event: ${JSON.stringify(data)}`, {
+			action: {
+				label: 'View',
+				onClick: () => alert(`Event details:\n\n${JSON.stringify(data, null, 2)}`)
+			}
+		});
+	});
 	// events.listen('DemoEvent', (data) => {
 	// 	console.log(data);
 	// });

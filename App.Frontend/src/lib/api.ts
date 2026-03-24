@@ -20,7 +20,7 @@
 
 import * as v from 'valibot';
 import { error, invalid } from '@sveltejs/kit';
-import { Log } from './log';
+// import { Log } from './log';
 
 // ============================================================================
 
@@ -154,7 +154,7 @@ export class Problem {
 	 * @returns
 	 */
 	public static throw(problem?: ProblemDetails): never {
-		Log.dbg(JSON.stringify(problem, null, 2), '\n', new Error('Request failed').stack);
+		// Log.dbg(JSON.stringify(problem, null, 2), '\n', new Error('Request failed').stack);
 		error(Number(problem?.status ?? 500), problem?.detail ?? problem?.title ?? 'Something went wrong...');
 	}
 }

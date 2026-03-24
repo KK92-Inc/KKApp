@@ -1,12 +1,7 @@
 <script lang="ts">
 	import { Badge } from '$lib/components/badge';
 	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
-	import {
-		getReviewsByUserProjectId,
-		pickupReview,
-		startReview,
-		cancelReview
-	} from '$lib/remotes/reviews.remote';
+	import * as Review from '$lib/remotes/reviews.remote';
 	import { ClipboardCheck, Clock, Loader, UserCheck, Play, X, HeartHandshake } from '@lucide/svelte';
 	import { Button } from '$lib/components/button';
 	import * as Card from '$lib/components/card';
@@ -18,7 +13,7 @@
 	}
 
 	const { userProjectId }: Props = $props();
-	const reviews = $derived(await getReviewsByUserProjectId(userProjectId));
+	const reviews = $derived(await Review.getByUserProjectId({ userProjectId }));
 
 	const stateConfig = {
 		Pending: { icon: Clock, variant: 'outline' as const, class: 'text-muted-foreground' },
@@ -55,7 +50,7 @@
 			<p class="py-3 text-center text-sm text-muted-foreground">No reviews yet</p>
 		{:else}
 			<ul class="space-y-2">
-				{#each reviews.data as review (review.id)}
+				{#each reviews.data as review (review)}
 					{@const config = stateConfig[review.state]}
 					{@const Icon = config.icon}
 					<li>
@@ -81,54 +76,48 @@
 									</span>
 
 									{#if review.state === 'Pending' && review.kind === 'Self' && review.reviewer.id === page.data.session.userId}
-										<form {...startReview} onclick={(e: MouseEvent) => e.stopPropagation()}>
-											<input hidden {...startReview.fields.reviewId.as('text')} value={review.id} />
-											<Button type="submit" size="icon-sm" variant="ghost" loading={startReview.pending > 0}>
-												<Play size={10} />
-											</Button>
-										</form>
-										<form {...cancelReview} onclick={(e: MouseEvent) => e.stopPropagation()}>
-											<input hidden {...cancelReview.fields.reviewId.as('text')} value={review.id} />
-											<input hidden {...cancelReview.fields.userProjectId.as('text')} value={userProjectId} />
 											<Button
 												type="submit"
 												size="icon-sm"
+												variant="ghost"
+												onclick={() => Review.start({ reviewId: review.id })}
+												loading={Review.start.pending > 0}
+											>
+												<Play size={10} />
+											</Button>
+											<Button
+												onclick={() => Review.cancel({ reviewId: review.id, userProjectId })}
+												type="submit"
+												size="icon-sm"
 												variant="destructive"
-												loading={cancelReview.pending > 0}
+												loading={Review.cancel.pending > 0}
 											>
 												<X size={10} />
 											</Button>
-										</form>
 									{/if}
 								{:else if review.state === 'Pending' && review.reviewerId === page.data.session.userId}
-									<form {...pickupReview} onclick={(e: MouseEvent) => e.stopPropagation()}>
-										<input hidden {...pickupReview.fields.reviewId.as('text')} value={review.id} />
-										<input hidden {...pickupReview.fields.userProjectId.as('text')} value={userProjectId} />
-										<Button
-											type="submit"
-											size="sm"
-											variant="ghost"
-											class="h-5 gap-1 px-1.5 text-[10px]"
-											loading={pickupReview.pending > 0}
-										>
-											<Play size={10} />
-											Pick up
-										</Button>
-									</form>
-									<form {...cancelReview} onclick={(e: MouseEvent) => e.stopPropagation()}>
-										<input hidden {...cancelReview.fields.reviewId.as('text')} value={review.id} />
-										<input hidden {...cancelReview.fields.userProjectId.as('text')} value={userProjectId} />
-										<Button
-											type="submit"
-											size="sm"
-											variant="ghost"
-											class="h-5 gap-1 px-1.5 text-[10px] text-destructive hover:text-destructive"
-											loading={cancelReview.pending > 0}
-										>
-											<X size={10} />
-											Cancel
-										</Button>
-									</form>
+									<Button
+										type="submit"
+										size="sm"
+										variant="ghost"
+										class="h-5 gap-1 px-1.5 text-[10px]"
+										onclick={() => Review.pickup({ reviewId: review.id, userProjectId })}
+										loading={Review.pickup.pending > 0}
+									>
+										<Play size={10} />
+										Pick up
+									</Button>
+									<Button
+										type="submit"
+										size="sm"
+										onclick={() => Review.cancel({ reviewId: review.id, userProjectId })}
+										variant="ghost"
+										class="h-5 gap-1 px-1.5 text-[10px] text-destructive hover:text-destructive"
+										loading={Review.cancel.pending > 0}
+									>
+										<X size={10} />
+										Cancel
+									</Button>
 								{/if}
 
 								<Badge variant={config.variant} class="text-[10px]">

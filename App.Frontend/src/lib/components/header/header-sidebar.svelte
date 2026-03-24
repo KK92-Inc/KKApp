@@ -4,7 +4,7 @@
 	import { today } from '@internationalized/date';
 	import { page } from '$app/state';
 	import {
-		Github,
+		GitFork,
 		Menu,
 		Rss,
 	} from '@lucide/svelte';
@@ -51,7 +51,7 @@
 				<span>© {today(page.data.tz).year} W2 B.V.</span>
 				<span aria-hidden="true">•</span>
 				<nav>
-					<Button href="#" size="icon" variant="ghost"><Github /></Button>
+					<Button href="#" size="icon" variant="ghost"><GitFork /></Button>
 					<Button href="#" size="icon" variant="ghost"><Rss /></Button>
 				</nav>
 			</div>
