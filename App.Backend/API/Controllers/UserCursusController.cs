@@ -17,31 +17,32 @@ using App.Backend.Domain.Enums;
 namespace App.Backend.API.Controllers;
 
 /// <summary>
-/// Operations on user cursus enrollments (sessions).
+/// Operations on user cursus enrollments.
 ///
 /// Supports two access patterns:
 /// <list type="bullet">
-///   <item>Nested: <c>/users/{userId}/cursus</c> — query by user + cursus IDs</item>
-///   <item>Direct: <c>/user-cursus/{id}</c> — query by UserCursus entity ID</item>
+///   <item>Nested: <c>GET /users/{userId}/cursus</c> — scoped listing and lookup by cursus ID</item>
+///   <item>Direct: <c>GET /user-cursus/{id}</c> — lookup by UserCursus entity ID or track</item>
 /// </list>
 /// </summary>
 [ApiController]
 [Route("users/{userId:guid}/cursus"), Tags("UserCursus")]
 [Authorize]
 public class UserCursusController(
-    ILogger<UserCursusController> log,
     IUserCursusService userCursusService,
     ICursusService cursusService
 ) : Controller
 {
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("List user cursus enrollments")]
-    [EndpointDescription("Get all cursus enrollments for a specific user, with optional state filtering.")]
+    [EndpointDescription("Returns all cursus enrollments for the specified user. Supports filtering by state and cursus name.")]
     public async Task<ActionResult<IEnumerable<UserCursusDO>>> GetByUser(
         Guid userId,
+        [FromQuery(Name = "filter[name]")] string? name,
         [FromQuery(Name = "filter[state]")] EntityObjectState? state,
         [FromQuery] Pagination pagination,
         [FromQuery] Sorting sorting,
@@ -50,6 +51,7 @@ public class UserCursusController(
     {
         var page = await userCursusService.GetAllAsync(sorting, pagination, token,
             uc => uc.UserId == userId,
+            name is null ? null : uc => uc.Cursus.Name.Contains(name),
             state is null ? null : uc => uc.State == state
         );
         page.AppendHeaders(Response.Headers);
@@ -58,10 +60,11 @@ public class UserCursusController(
 
     [HttpGet("{cursusId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Get user cursus by cursus ID")]
-    [EndpointDescription("Find a user's specific cursus enrollment by user and cursus ID.")]
+    [EndpointDescription("Finds the user's enrollment in a specific cursus by the cursus's own ID.")]
     public async Task<ActionResult<UserCursusDO>> GetByUserAndCursus(
         Guid userId, Guid cursusId, CancellationToken token
     )
@@ -72,10 +75,11 @@ public class UserCursusController(
 
     [HttpGet("/user-cursus/{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Get user cursus by entity ID")]
-    [EndpointDescription("Find a user cursus enrollment directly by its entity ID.")]
+    [EndpointDescription("Finds a user cursus enrollment directly by its own entity ID, without requiring a user context.")]
     public async Task<ActionResult<UserCursusDO>> GetById(Guid id, CancellationToken token)
     {
         var uc = await userCursusService.FindByIdAsync(id, token);
@@ -84,10 +88,11 @@ public class UserCursusController(
 
     [HttpGet("/user-cursus/{id:guid}/track")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Get user cursus track")]
-    [EndpointDescription("Retrieve the user's personalized track/progress for a cursus enrollment.")]
+    [EndpointDescription("Returns the user's personalized progress track for a cursus enrollment, resolved from the stored graph.")]
     public async Task<ActionResult<UserCursusTrackDO>> GetTrack(Guid id, CancellationToken token)
     {
         var uc = await userCursusService.FindByIdAsync(id, token);

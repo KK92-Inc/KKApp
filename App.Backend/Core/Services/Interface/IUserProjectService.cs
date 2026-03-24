@@ -3,6 +3,7 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using App.Backend.Core.Query;
 using App.Backend.Domain.Entities.Projects;
 using App.Backend.Domain.Entities.Users;
 using App.Backend.Domain.Enums;
@@ -22,6 +23,9 @@ public interface IUserProjectService : IDomainService<UserProject>
     /// <returns>The user project session if found, null otherwise.</returns>
     Task<UserProject?> FindByUserAndProjectAsync(Guid userId, Guid projectId, CancellationToken token = default);
 
+    Task<PaginatedList<UserProjectTransaction>> GetTransactionsAsync(Guid Id, ISorting sorting, IPagination pagination, CancellationToken token = default);
+
+    // Task<IEnumerable<UserProjectMember>> GetMembersAsync(Guid Id, CancellationToken token = default);
     /// <summary>
     /// Record a transaction for a user's project instance/session.
     /// </summary>

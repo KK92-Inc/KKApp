@@ -6,10 +6,10 @@
 using App.Backend.Database;
 using App.Backend.Core.Services.Interface;
 using App.Backend.Domain.Entities.Users;
-using App.Backend.Models;
 using Microsoft.EntityFrameworkCore;
 using App.Backend.Domain.Enums;
 using App.Backend.Domain.Entities.Projects;
+using App.Backend.Core.Query;
 
 // ============================================================================
 
@@ -21,23 +21,23 @@ public class UserProjectService(DatabaseContext ctx) : BaseService<UserProject>(
 
     public async Task<UserProject?> FindByUserAndProjectAsync(Guid userId, Guid projectId, CancellationToken token = default)
     {
-        return await Query(false)
+        return await context.UserProjects
+            .AsNoTracking()
             .Include(up => up.Members)
             .FirstOrDefaultAsync(
-                up => up.ProjectId == projectId && up.Members.Any(m => m.UserId == userId && m.Role != UserProjectRole.Pending), token
-            );
+                up => up.ProjectId == projectId &&
+                up.Members.Any(m => m.UserId == userId &&
+                m.Role != UserProjectRole.Pending
+        ), token);
     }
 
-    // public async Task<UserProjectTransaction?> RecordAsync(Guid upId, Guid? userId, UserProjectTransactionVariant type)
-    // {
-    //     var transaction = await ctx.UserProjectTransactions.AddAsync(new UserProjectTransaction()
-    //     {
-    //         UserId = userId,
-    //         UserProjectId = upId,
-    //         Type = type,
-    //     });
-
-    //     await ctx.SaveChangesAsync();
-    //     return transaction.Entity;
-    // }
+    public async Task<PaginatedList<UserProjectTransaction>> GetTransactionsAsync(Guid Id, ISorting sorting, IPagination pagination, CancellationToken token = default)
+    {
+        return await context.UserProjectTransactions
+            .Where(t => t.UserProjectId == Id)
+            .Include(t => t.User)
+            .AsNoTracking()
+            .Sort(sorting)
+            .PaginateAsync(pagination, token);
+    }
 }

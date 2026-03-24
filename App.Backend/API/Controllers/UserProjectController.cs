@@ -11,8 +11,6 @@ using App.Backend.Core.Services.Interface;
 using App.Backend.Models;
 using App.Backend.Models.Responses.Entities.Projects;
 using App.Backend.Domain.Enums;
-using App.Backend.Database;
-using Microsoft.EntityFrameworkCore;
 
 // ============================================================================
 
@@ -23,25 +21,24 @@ namespace App.Backend.API.Controllers;
 ///
 /// Supports two access patterns:
 /// <list type="bullet">
-///   <item>Nested: <c>/users/{userId}/projects</c> — query by user + project IDs</item>
-///   <item>Direct: <c>/user-projects/{id}</c> — query by UserProject entity ID</item>
+///   <item>Nested: <c>GET /users/{userId}/projects</c> — scoped listing and lookup by project ID</item>
+///   <item>Direct: <c>GET /user-projects/{id}</c> — lookup by UserProject entity ID, members, or transactions</item>
 /// </list>
 /// </summary>
 [ApiController]
 [Route("users/{userId:guid}/projects"), Tags("UserProjects")]
 [Authorize]
 public class UserProjectController(
-    ILogger<UserProjectController> log,
-    IUserProjectService userProjectService,
-    DatabaseContext ctx
+    IUserProjectService userProjectService
 ) : Controller
 {
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("List user project sessions")]
-    [EndpointDescription("Get all project sessions for a specific user, with optional state filtering.")]
+    [EndpointDescription("Returns all active project sessions the user is a member of. Supports filtering by name, slug, and state.")]
     public async Task<ActionResult<IEnumerable<UserProjectDO>>> GetByUser(
         Guid userId,
         [FromQuery(Name = "filter[name]")] string? name,
@@ -54,6 +51,8 @@ public class UserProjectController(
     {
         var page = await userProjectService.GetAllAsync(sorting, pagination, token,
             up => up.Members.Any(m => m.UserId == userId && m.Role != UserProjectRole.Pending && m.LeftAt == null),
+            name is null ? null : up => up.Project.Name.Contains(name),
+            slug is null ? null : up => up.Project.Slug == slug,
             state is null ? null : up => up.State == state
         );
         page.AppendHeaders(Response.Headers);
@@ -62,10 +61,11 @@ public class UserProjectController(
 
     [HttpGet("{projectId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Get user project by project ID")]
-    [EndpointDescription("Find a user's specific project session by user and project ID.")]
+    [EndpointDescription("Finds the user's session for a specific project by the project's own ID.")]
     public async Task<ActionResult<UserProjectDO>> GetByUserAndProject(
         Guid userId, Guid projectId, CancellationToken token
     )
@@ -76,10 +76,11 @@ public class UserProjectController(
 
     [HttpGet("/user-projects/{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Get user project by entity ID")]
-    [EndpointDescription("Find a user project session directly by its entity ID.")]
+    [EndpointDescription("Finds a user project session directly by its own entity ID, without requiring a user context.")]
     public async Task<ActionResult<UserProjectDO>> GetById(Guid id, CancellationToken token)
     {
         var up = await userProjectService.FindByIdAsync(id, token);
@@ -88,26 +89,26 @@ public class UserProjectController(
 
     [HttpGet("/user-projects/{id:guid}/members")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Get project session members")]
-    [EndpointDescription("Retrieve all members participating in a user project session.")]
+    [EndpointDescription("Returns all current and past members of the specified user project session.")]
     public async Task<ActionResult<IEnumerable<UserProjectMemberDO>>> GetMembers(Guid id, CancellationToken token)
     {
-        var up = await userProjectService.Query(false)
-            .Where(p => p.Id == id)
-            .Select(p => p.Members)
-            .FirstOrDefaultAsync(token);
+        var up = await userProjectService.FindByIdAsync(id, token);
+        if (up is null) return NotFound();
 
-        return up is null ? NotFound() : Ok(up.Select(m => new UserProjectMemberDO(m)));
+        return Ok(up.Members.Select(m => new UserProjectMemberDO(m)));
     }
 
     [HttpGet("/user-projects/{id:guid}/transactions")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Get project session transactions")]
-    [EndpointDescription("Retrieve the paginated activity timeline of a user project session.")]
+    [EndpointDescription("Returns the paginated activity timeline of the specified user project session, ordered by the requested sort.")]
     public async Task<ActionResult<IEnumerable<UserProjectTransactionDO>>> GetTransactions(
         Guid id,
         [FromQuery] Pagination pagination,
@@ -115,15 +116,8 @@ public class UserProjectController(
         CancellationToken token
     )
     {
-        var exists = await userProjectService.Query(false).AnyAsync(p => p.Id == id, token);
-        if (!exists) return NotFound();
-
-        var page = await ctx.UserProjectTransactions
-            .Include(t => t.User)
-            .Where(t => t.UserProjectId == id)
-            .AsNoTracking()
-            .Sort(sorting)
-            .PaginateAsync(pagination, token);
+        var page = await userProjectService.GetTransactionsAsync(id, sorting, pagination, token);
+        if (page is null) return NotFound();
 
         page.AppendHeaders(Response.Headers);
         return Ok(page.Items.Select(t => new UserProjectTransactionDO(t)));
