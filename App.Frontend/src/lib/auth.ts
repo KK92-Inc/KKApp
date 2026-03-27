@@ -18,7 +18,7 @@ import { dev } from '$app/environment';
 import { KC_ORIGIN, KC_REALM, KC_COOKIE, KC_ID, KC_CALLBACK, KC_SECRET } from '$lib/config';
 import { JWSInvalid, JWTClaimValidationFailed, JWTExpired, JWTInvalid } from 'jose/errors';
 import { ensure } from './utils';
-import { redirect, type Handle, type RequestHandler } from '@sveltejs/kit';
+import { isRedirect, redirect, type Handle, type RequestHandler } from '@sveltejs/kit';
 import { Log } from './log';
 import { redis } from './redis';
 import { getRequestEvent } from '$app/server';
@@ -283,6 +283,9 @@ const handle: Handle = async ({ event, resolve }) => {
 	);
 
 	if (err) {
+		if (isRedirect(err)) {
+			throw err; // expected flow, user just needs to log in
+		}
 		Log.err('Unhandled error in auth handle:', err);
 		return new Response(null, { status: 500 });
 	}

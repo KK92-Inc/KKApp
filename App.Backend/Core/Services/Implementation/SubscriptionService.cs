@@ -10,49 +10,157 @@ using App.Backend.Domain.Entities.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using App.Backend.Domain.Enums;
+using App.Backend.Domain.Relations;
 
 // ============================================================================
 
 namespace App.Backend.Core.Services.Implementation;
 
-public class SubscriptionService(
-    DatabaseContext ctx,
-    IOptions<SubscriptionOptions> options
-) : ISubscriptionService
+public class SubscriptionService(DatabaseContext ctx, IOptions<SubscriptionOptions> options) : ISubscriptionService
 {
-    private bool IsRestricted => options.Value.Mode is ProgressionMode.Restricted;
+    private readonly SubscriptionOptions config = options.Value;
 
-    public Task<bool> CanSubscribeToCursusAsync(Guid userId, Guid cursusId, CancellationToken token)
-        => Task.FromResult(!IsRestricted);
-
-    public Task<bool> CanSubscribeToGoalAsync(Guid userId, Guid goalId, CancellationToken token)
-        => Task.FromResult(!IsRestricted);
-
-    public Task<bool> CanSubscribeToProjectAsync(Guid userId, Guid projectId, CancellationToken token)
-        => Task.FromResult(!IsRestricted);
-
-    public async Task<UserCursus> SubscribeToCursusAsync(Guid userId, Guid cursusId, CancellationToken token)
+    public async Task<bool> CanSubscribeToCursusAsync(Guid userId, Guid cursusId, CancellationToken token = default)
     {
-        // 1. A user can subscribe and unsubscribe to cursi
-        // 2. A user cannot subscribe to the same cursus twice
-        // 3. Unsubscribing from a cursus does not remove progress on its goals/projects
-        // NOTE(W2): Cursi are aggregates of goals, similar to how goals are aggregates of projects
-        // furthermore they are all separately subscribable entities and don't rely on each other directly (only for progress tracking)
-        // so we can treat them similarly to goals in this regard
-        // 4. Cursi have a stored jsonb track representing the user's own path through the cursus
+        if (config.Mode is ProgressionMode.Free)
+            return true;
 
-        var userCursus = await ctx.UserCursi
-            .Where(uc => uc.CursusId == cursusId && uc.UserId == userId)
-            .FirstOrDefaultAsync(token);
+        return true;
+    }
 
-        // Instance already exists
+    public async Task<bool> CanSubscribeToGoalAsync(Guid userId, Guid goalId, CancellationToken token = default)
+    {
+        // In Free mode, anyone can subscribe to any goal regardless of its relationships.
+        if (config.Mode is ProgressionMode.Free)
+            return true;
+
+        // Check if already subscribed (applies regardless of cursus relationship)
+        var userGoal = await ctx.UserGoals.FirstOrDefaultAsync(ug => ug.UserId == userId && ug.GoalId == goalId, token);
+        if (userGoal?.State is EntityObjectState.Awaiting or EntityObjectState.Active or EntityObjectState.Completed)
+            return false; // Already subscribed or awaiting approval
+
+        // Orphan goals (not linked to any cursus) can be subscribed to freely.
+        var cursusGoals = await ctx.CursusGoal
+            .Where(cg => cg.GoalId == goalId)
+            .ToListAsync(token);
+
+        if (cursusGoals.Count == 0)
+            return true;
+
+        // Get cursi that the user is enrolled in (Active or Awaiting)
+        var enrolledCursusIds = await ctx.UserCursi
+            .Where(uc => uc.UserId == userId && (uc.State == EntityObjectState.Active || uc.State == EntityObjectState.Awaiting))
+            .Select(uc => uc.CursusId)
+            .ToListAsync(token);
+
+        // Filter to cursi that both contain this goal AND the user is enrolled in
+        var relevantCursusGoals = cursusGoals
+            .Where(cg => enrolledCursusIds.Contains(cg.CursusId))
+            .ToList();
+
+        // User must be enrolled in at least one cursus that uses this goal
+        if (relevantCursusGoals.Count == 0)
+            return false;
+
+        // Check hierarchical and choice group rules for each relevant cursus
+        // User can subscribe if they meet criteria in ANY of their enrolled cursi
+        foreach (var cursusGoal in relevantCursusGoals)
+        {
+            if (await CanAdvanceToGoalInCursusAsync(userId, cursusGoal, token))
+                return true;
+        }
+
+        return false;
+    }
+
+    private async Task<bool> CanAdvanceToGoalInCursusAsync(Guid userId, CursusGoal cursusGoal, CancellationToken token = default)
+    {
+        // Check 1: If there's a parent goal, it must be completed
+        if (cursusGoal.ParentGoalId.HasValue)
+        {
+            var parentUserGoal = await ctx.UserGoals
+                .FirstOrDefaultAsync(ug => ug.UserId == userId && ug.GoalId == cursusGoal.ParentGoalId.Value, token);
+
+            if (parentUserGoal?.State is not EntityObjectState.Completed)
+                return false; // Parent not completed
+        }
+
+        // Check 2: If this goal is part of a choice group, no sibling in the group should be chosen
+        if (cursusGoal.ChoiceGroup.HasValue)
+        {
+            // Get all sibling goals in the same choice group (same cursus, same choice_group, but different goal)
+            var siblingGoalIds = await ctx.CursusGoal
+                .Where(cg =>
+                    cg.CursusId == cursusGoal.CursusId &&
+                    cg.ChoiceGroup == cursusGoal.ChoiceGroup &&
+                    cg.GoalId != cursusGoal.GoalId)
+                .Select(cg => cg.GoalId)
+                .ToListAsync(token);
+
+            // Check if user has already chosen any sibling goal
+            var hasChosenSibling = await ctx.UserGoals
+                .AnyAsync(ug =>
+                    ug.UserId == userId &&
+                    siblingGoalIds.Contains(ug.GoalId) &&
+                    (ug.State == EntityObjectState.Active ||
+                     ug.State == EntityObjectState.Awaiting ||
+                     ug.State == EntityObjectState.Completed),
+                    token);
+
+            if (hasChosenSibling)
+                return false; // Already chose a different goal in this choice group
+        }
+
+        return true;
+    }
+
+    public async Task<bool> CanSubscribeToProjectAsync(Guid userId, Guid projectId, CancellationToken token = default)
+    {
+        if (config.Mode is ProgressionMode.Free)
+            return true;
+
+        // Find all goals that contain this project
+        var goalProjects = await ctx.GoalProject
+            .Where(gp => gp.ProjectId == projectId)
+            .Include(gp => gp.Goal)
+            .ToListAsync(token);
+
+        // Orphan projects (not linked to any goal) can be subscribed to freely
+        if (goalProjects.Count == 0)
+            return true;
+
+        // Filter to goals that are active and not deprecated
+        var eligibleGoalIds = goalProjects
+            .Where(gp => gp.Goal.Active && !gp.Goal.Deprecated)
+            .Select(gp => gp.GoalId)
+            .ToList();
+
+        // If no eligible goals exist, cannot subscribe
+        if (eligibleGoalIds.Count == 0)
+            return false;
+
+        // Check if user is subscribed (Active) to at least one eligible goal
+        return await ctx.UserGoals
+            .AnyAsync(ug =>
+                ug.UserId == userId &&
+                eligibleGoalIds.Contains(ug.GoalId) &&
+                ug.State == EntityObjectState.Active,
+                token);
+    }
+
+    public async Task<UserCursus> SubscribeToCursusAsync(Guid userId, Guid cursusId, CancellationToken token = default)
+    {
+        var userCursus = await ctx.UserCursi.FirstOrDefaultAsync(uc => uc.UserId == userId && uc.CursusId == cursusId, token);
         if (userCursus is not null)
         {
+            if (userCursus.State is EntityObjectState.Active)
+                throw new ServiceException("Already subscribed to this cursus.");
             if (userCursus.State is EntityObjectState.Completed)
-                throw new ServiceException(422, "Cursus is already completed");
-            if (userCursus.State is not EntityObjectState.Inactive)
-                throw new ServiceException(409, "Already subscribed to this cursus");
+                throw new ServiceException("Cannot resubscribe to a completed cursus.");
+            if (userCursus.State is EntityObjectState.Awaiting)
+                throw new ServiceException("Subscription is awaiting approval.");
 
+            // Reactivate an unsubscribed cursus
             userCursus.State = EntityObjectState.Active;
             ctx.UserCursi.Update(userCursus);
             await ctx.SaveChangesAsync(token);
@@ -69,60 +177,8 @@ public class SubscriptionService(
         return result.Entity;
     }
 
-    public async Task UnsubscribeFromCursusAsync(Guid userId, Guid cursusId, CancellationToken token)
+    public async Task<UserGoal> SubscribeToGoalAsync(Guid userId, Guid goalId, CancellationToken token = default)
     {
-        var cursus = await ctx.UserCursi
-            .Where(uc => uc.CursusId == cursusId && uc.UserId == userId)
-            .FirstOrDefaultAsync(token) ?? throw new ServiceException(404, "Not subscribed to this cursus");
-
-        if (cursus.State is EntityObjectState.Inactive)
-            throw new ServiceException(409, "Already unsubscribed from this cursus");
-
-        cursus.State = EntityObjectState.Inactive;
-        ctx.UserCursi.Update(cursus);
-        await ctx.SaveChangesAsync(token);
-    }
-
-    public async Task<UserGoal> SubscribeToGoalAsync(Guid userId, Guid goalId, CancellationToken token)
-    {
-        // 1. Goals are project aggregate roots
-        // 2. A user can subscribe and unsubscribe to goals
-        // 3. A user cannot subscribe to the same goal twice
-        // 4. When all projects in the goal are completed, the goal is marked as completed for the user
-        // 5. If they are completed before subscribing, the goal is marked as completed immediately
-        // 6. Unsubscribing from a goal does not remove progress on its projects
-
-        // Chain enforcement: if this goal is in a system workspace and belongs to a cursus,
-        // the user must be enrolled in at least one. User-owned workspace goals are always free.
-        if (IsRestricted)
-        {
-            var isSystemGoal = await ctx.Goals
-            .Where(g => g.Id == goalId)
-            .Select(g => g.Workspace.OwnerId == null)
-            .FirstOrDefaultAsync(token);
-
-            if (isSystemGoal)
-            {
-                var parentCursusIds = await ctx.CursusGoal
-                    .Where(cg => cg.GoalId == goalId)
-                    .Select(cg => cg.CursusId)
-                    .ToListAsync(token);
-
-                if (parentCursusIds.Count > 0)
-                {
-                    var isEnrolled = await ctx.UserCursi.AnyAsync(uc =>
-                        uc.UserId == userId &&
-                        parentCursusIds.Contains(uc.CursusId) &&
-                        uc.State == EntityObjectState.Active,
-                        token
-                    );
-
-                    if (!isEnrolled)
-                        throw new ServiceException(422, "This goal belongs to a cursus — you must be enrolled in the cursus first");
-                }
-            }
-        }
-
         var userGoal = await ctx.UserGoals
             .Where(ug => ug.GoalId == goalId && ug.UserId == userId)
             .FirstOrDefaultAsync(token);
@@ -168,53 +224,8 @@ public class SubscriptionService(
         return result.Entity;
     }
 
-    public async Task UnsubscribeFromGoalAsync(Guid userId, Guid goalId, CancellationToken token)
+    public async Task<UserProject> SubscribeToProjectAsync(Guid userId, Guid projectId, CancellationToken token = default)
     {
-        var goal = await ctx.UserGoals
-            .Where(ug => ug.GoalId == goalId && ug.UserId == userId)
-            .FirstOrDefaultAsync(token) ?? throw new ServiceException(404, "Not subscribed to this goal");
-        if (goal.State is EntityObjectState.Inactive)
-            throw new ServiceException(409, "Already unsubscribed from this goal");
-
-        goal.State = EntityObjectState.Inactive;
-        ctx.UserGoals.Update(goal);
-        await ctx.SaveChangesAsync(token);
-    }
-
-    public async Task<UserProject> SubscribeToProjectAsync(Guid userId, Guid projectId, CancellationToken token)
-    {
-        // Chain enforcement: if this project is in a system workspace and belongs to a goal,
-        // the user must be subscribed to at least one. User-owned workspace projects are always free.
-        if (IsRestricted)
-        {
-            var isSystemProject = await ctx.Projects
-                .Where(p => p.Id == projectId)
-                .Select(p => p.Workspace.OwnerId == null)
-                .FirstOrDefaultAsync(token);
-
-            if (isSystemProject)
-            {
-                var parentGoalIds = await ctx.GoalProject
-                    .Where(gp => gp.ProjectId == projectId)
-                    .Select(gp => gp.GoalId)
-                    .ToListAsync(token);
-
-                if (parentGoalIds.Count > 0)
-                {
-                    var subscribedToAny = await ctx.UserGoals.AnyAsync(
-                        ug => ug.UserId == userId
-                            && parentGoalIds.Contains(ug.GoalId)
-                            && ug.State == EntityObjectState.Active,
-                        token
-                    );
-
-                    if (!subscribedToAny)
-                        throw new ServiceException(422,
-                            "This project belongs to a goal — you must be subscribed to the goal first");
-                }
-            }
-        }
-
         return await ctx.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
         {
             await using var transaction = await ctx.Database.BeginTransactionAsync(ct);
@@ -287,7 +298,31 @@ public class SubscriptionService(
         }, token);
     }
 
-    public async Task UnsubscribeFromProjectAsync(Guid userId, Guid projectId, CancellationToken token)
+    public async Task UnsubscribeFromCursusAsync(Guid userId, Guid cursusId, CancellationToken token = default)
+    {
+        var userCursus = ctx.UserCursi.FirstOrDefault(uc => uc.UserId == userId && uc.CursusId == cursusId);
+        if (userCursus is null || userCursus.State is EntityObjectState.Inactive)
+            throw new ServiceException(409, "Not subscribed to this cursus.");
+
+        userCursus.State = EntityObjectState.Inactive;
+        ctx.UserCursi.Update(userCursus);
+        await ctx.SaveChangesAsync(token);
+    }
+
+    public async Task UnsubscribeFromGoalAsync(Guid userId, Guid goalId, CancellationToken token = default)
+    {
+        var goal = await ctx.UserGoals
+            .Where(ug => ug.GoalId == goalId && ug.UserId == userId)
+            .FirstOrDefaultAsync(token) ?? throw new ServiceException(404, "Not subscribed to this goal");
+        if (goal.State is EntityObjectState.Inactive)
+            throw new ServiceException(409, "Already unsubscribed from this goal");
+
+        goal.State = EntityObjectState.Inactive;
+        ctx.UserGoals.Update(goal);
+        await ctx.SaveChangesAsync(token);
+    }
+
+    public async Task UnsubscribeFromProjectAsync(Guid userId, Guid projectId, CancellationToken token = default)
     {
         await ctx.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
         {
@@ -348,26 +383,5 @@ public class SubscriptionService(
             await ctx.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
         }, token);
-    }
-
-    public Task<bool> ElligibleForProject(Guid userId, Guid projectId, CancellationToken token)
-    {
-        if (!IsRestricted)
-            return Task.FromResult(true);
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> ElligibleForGoal(Guid userId, Guid GoalId, CancellationToken token)
-    {
-        if (!IsRestricted)
-            return Task.FromResult(true);
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> ElligibleForCursus(Guid userId, Guid cursusId, CancellationToken token)
-    {
-        if (!IsRestricted)
-            return Task.FromResult(true);
-        throw new NotImplementedException();
     }
 }

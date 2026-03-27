@@ -83,7 +83,6 @@ public class AccountController(
     public async Task<IResult> StreamEvents(IBroadcastRegistry registry, CancellationToken token)
     {
         return TypedResults.ServerSentEvents(GetChannel(User.GetSID(), token));
-
         async IAsyncEnumerable<SseItem<object>> GetChannel(Guid id, [EnumeratorCancellation] CancellationToken token)
         {
             // Initial heartbeat/sync

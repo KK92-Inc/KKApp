@@ -18,27 +18,6 @@ public class UserProjectServiceTests : ServiceTestBase
 
     public UserProjectServiceTests() => _sut = new UserProjectService(Context);
 
-    // [Fact]
-    // public async Task RecordAsync_ShouldCreateTransaction()
-    // {
-    //     // Arrange
-    //     var project = await ProjectFactory.Create().WithContext(Context).GenerateAsync();
-    //     var userProject = await UserFactory.CreateUserProject(project.Id).WithContext(Context).GenerateAsync();
-    //     var user = await UserFactory.Create().WithContext(Context).GenerateAsync();
-
-    //     // Act
-    //     var result = await _sut.RecordAsync(userProject.Id, user.Id, UserProjectTransactionVariant.Started);
-
-    //     // Assert
-    //     Assert.NotNull(result);
-    //     Assert.Equal(userProject.Id, result.UserProjectId);
-    //     Assert.Equal(user.Id, result.UserId);
-    //     Assert.Equal(UserProjectTransactionVariant.Started, result.Type);
-
-    //     var dbTransaction = await Context.UserProjectTransactions.FindAsync(result.Id);
-    //     Assert.NotNull(dbTransaction);
-    // }
-
     [Fact]
     public async Task CreateAsync_ShouldCreateUserProject()
     {

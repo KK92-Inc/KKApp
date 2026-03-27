@@ -185,6 +185,11 @@ public class ReviewServiceTests : ServiceTestBase
             .WithContext(Context)
             .GenerateAsync();
 
+        // Add reviewer as team member (required for Async reviews)
+        var member = UserProjectFactory.CreateMember(userProject.Id, reviewer.Id).Generate();
+        Context.UserProjectMembers.Add(member);
+        await Context.SaveChangesAsync();
+
         var rubric = await ReviewFactory.CreateRubric(creatorId: creator.Id)
             .WithContext(Context)
             .GenerateAsync();

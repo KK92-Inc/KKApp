@@ -1775,7 +1775,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/invite/{inviteeId}/project/{userProjectId}": {
+    "/member/{inviteeId}/project/{userProjectId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1903,7 +1903,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/invite/{userProjectId}/accept": {
+    "/member/{userProjectId}/accept": {
         parameters: {
             query?: never;
             header?: never;
@@ -1974,7 +1974,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/invite/{userProjectId}/decline": {
+    "/member/{userProjectId}/decline": {
         parameters: {
             query?: never;
             header?: never;
@@ -2041,7 +2041,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/invite/{userProjectId}/transfer/{newLeaderId}": {
+    "/member/{userProjectId}/transfer/{newLeaderId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -2109,7 +2109,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/invite/{userProjectId}/leave": {
+    "/member/{userProjectId}/leave": {
         parameters: {
             query?: never;
             header?: never;
@@ -2176,7 +2176,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/invite/{memberId}/project/{userProjectId}/kick": {
+    "/member/{memberId}/project/{userProjectId}/kick": {
         parameters: {
             query?: never;
             header?: never;
@@ -3272,7 +3272,7 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Cancel a review */
+        /** Cancel a pending review */
         delete: {
             parameters: {
                 query?: never;
@@ -3284,16 +3284,12 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description OK */
-                200: {
+                /** @description No Content */
+                204: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content: {
-                        "text/plain": components["schemas"]["ReviewDO"];
-                        "application/json": components["schemas"]["ReviewDO"];
-                        "text/json": components["schemas"]["ReviewDO"];
-                    };
+                    content?: never;
                 };
                 /** @description Unauthorized */
                 401: {
@@ -3314,7 +3310,22 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
                 };
                 /** @description Too Many Requests */
                 429: {
@@ -3943,11 +3954,12 @@ export interface paths {
         };
         /**
          * List user cursus enrollments
-         * @description Get all cursus enrollments for a specific user, with optional state filtering.
+         * @description Returns all cursus enrollments for the specified user. Supports filtering by state and cursus name.
          */
         get: {
             parameters: {
                 query?: {
+                    "filter[name]"?: string;
                     "filter[state]"?: components["schemas"]["EntityObjectState"];
                     /** @description The page number/index */
                     "page[index]"?: number | string;
@@ -3982,7 +3994,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
                 };
                 /** @description Forbidden */
                 403: {
@@ -4028,7 +4044,7 @@ export interface paths {
         };
         /**
          * Get user cursus by cursus ID
-         * @description Find a user's specific cursus enrollment by user and cursus ID.
+         * @description Finds the user's enrollment in a specific cursus by the cursus's own ID.
          */
         get: {
             parameters: {
@@ -4058,7 +4074,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
                 };
                 /** @description Forbidden */
                 403: {
@@ -4104,7 +4124,7 @@ export interface paths {
         };
         /**
          * Get user cursus by entity ID
-         * @description Find a user cursus enrollment directly by its entity ID.
+         * @description Finds a user cursus enrollment directly by its own entity ID, without requiring a user context.
          */
         get: {
             parameters: {
@@ -4133,7 +4153,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
                 };
                 /** @description Forbidden */
                 403: {
@@ -4179,7 +4203,7 @@ export interface paths {
         };
         /**
          * Get user cursus track
-         * @description Retrieve the user's personalized track/progress for a cursus enrollment.
+         * @description Returns the user's personalized progress track for a cursus enrollment, resolved from the stored graph.
          */
         get: {
             parameters: {
@@ -4208,7 +4232,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
                 };
                 /** @description Forbidden */
                 403: {
@@ -4254,11 +4282,12 @@ export interface paths {
         };
         /**
          * List user goal subscriptions
-         * @description Get all goal subscriptions for a specific user, with optional state filtering.
+         * @description Returns all goal subscriptions for the specified user. Supports filtering by state and goal name.
          */
         get: {
             parameters: {
                 query?: {
+                    "filter[name]"?: string;
                     "filter[state]"?: components["schemas"]["EntityObjectState"];
                     /** @description The page number/index */
                     "page[index]"?: number | string;
@@ -4293,7 +4322,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
                 };
                 /** @description Forbidden */
                 403: {
@@ -4339,7 +4372,7 @@ export interface paths {
         };
         /**
          * Get user goal by goal ID
-         * @description Find a user's specific goal subscription by user and goal ID.
+         * @description Finds the user's subscription to a specific goal by the goal's own ID.
          */
         get: {
             parameters: {
@@ -4369,7 +4402,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
                 };
                 /** @description Forbidden */
                 403: {
@@ -4415,7 +4452,7 @@ export interface paths {
         };
         /**
          * Get user goal by entity ID
-         * @description Find a user goal subscription directly by its entity ID.
+         * @description Finds a user goal subscription directly by its own entity ID, without requiring a user context.
          */
         get: {
             parameters: {
@@ -4444,7 +4481,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
                 };
                 /** @description Forbidden */
                 403: {
@@ -4490,7 +4531,7 @@ export interface paths {
         };
         /**
          * List user project sessions
-         * @description Get all project sessions for a specific user, with optional state filtering.
+         * @description Returns all active project sessions the user is a member of. Supports filtering by name, slug, and state.
          */
         get: {
             parameters: {
@@ -4531,7 +4572,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
                 };
                 /** @description Forbidden */
                 403: {
@@ -4577,7 +4622,7 @@ export interface paths {
         };
         /**
          * Get user project by project ID
-         * @description Find a user's specific project session by user and project ID.
+         * @description Finds the user's session for a specific project by the project's own ID.
          */
         get: {
             parameters: {
@@ -4607,7 +4652,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
                 };
                 /** @description Forbidden */
                 403: {
@@ -4653,7 +4702,7 @@ export interface paths {
         };
         /**
          * Get user project by entity ID
-         * @description Find a user project session directly by its entity ID.
+         * @description Finds a user project session directly by its own entity ID, without requiring a user context.
          */
         get: {
             parameters: {
@@ -4682,7 +4731,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
                 };
                 /** @description Forbidden */
                 403: {
@@ -4728,7 +4781,7 @@ export interface paths {
         };
         /**
          * Get project session members
-         * @description Retrieve all members participating in a user project session.
+         * @description Returns all current and past members of the specified user project session.
          */
         get: {
             parameters: {
@@ -4757,7 +4810,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
                 };
                 /** @description Forbidden */
                 403: {
@@ -4803,7 +4860,7 @@ export interface paths {
         };
         /**
          * Get project session transactions
-         * @description Retrieve the paginated activity timeline of a user project session.
+         * @description Returns the paginated activity timeline of the specified user project session, ordered by the requested sort.
          */
         get: {
             parameters: {
@@ -4841,7 +4898,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
                 };
                 /** @description Forbidden */
                 403: {
@@ -5567,10 +5628,10 @@ export interface components {
             websiteUrl?: null | string;
         };
         PatchUserRequestDTO: {
-            displayName?: null | string;
+            displayName: null | string;
             /** Format: uri */
-            avatarUrl?: null | string;
-            details?: null | components["schemas"]["PatchUserDetailsRequestDTO"];
+            avatarUrl: null | string;
+            details: null | components["schemas"]["PatchUserDetailsRequestDTO"];
         };
         PostCursusRequestDTO: {
             name: string;
@@ -5837,9 +5898,9 @@ export interface components {
             /** Format: uuid */
             userProjectId: string;
             /** Format: uuid */
-            userId?: null | string;
+            userId: null | string;
             type: components["schemas"]["UserProjectTransactionVariant"];
-            user?: null | components["schemas"]["UserLightDO"];
+            user: null | components["schemas"]["UserLightDO"];
         };
         /** @enum {unknown} */
         UserProjectTransactionVariant: "Started" | "MemberJoined" | "MemberLeft" | "GitCommit" | "StateChangedToInActive" | "StateChangedToActive" | "StateChangedToCompleted" | "StateChangedToAwaiting" | "MemberInvited" | "MemberAccepted" | "MemberDeclined" | "MemberKicked" | "LeadershipTransferred";

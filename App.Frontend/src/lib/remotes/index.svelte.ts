@@ -4,7 +4,7 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import { query, command, getRequestEvent } from '$app/server';
+import { query, command, getRequestEvent, form } from '$app/server';
 import type {
 	PathsWithMethod,
 	SuccessResponse,
@@ -14,7 +14,7 @@ import type {
 	HttpMethod
 } from 'openapi-typescript-helpers';
 import type { components, paths } from '$lib/api/api';
-import { error, invalid, type RemoteCommand, type RemoteQueryFunction } from '@sveltejs/kit';
+import { error, invalid, type RemoteCommand, type RemoteForm, type RemoteFormInput, type RemoteQueryFunction } from '@sveltejs/kit';
 
 // ============================================================================
 // Pagination
@@ -127,6 +127,7 @@ export class Problem {
 	 * @returns
 	 */
 	public static throw(problem?: ProblemDetails): never {
+		// invalid("Nope!")
 		// Log.dbg(JSON.stringify(problem, null, 2), '\n', new Error('Request failed').stack);
 		error(Number(problem?.status ?? 500), problem?.detail ?? problem?.title ?? 'Something went wrong...');
 	}
@@ -171,9 +172,9 @@ type ExtractPathParams<T extends string> = T extends `${string}{${infer Param}}$
 type UnwrapArray<T> = T extends Array<infer U> ? U : T;
 
 /** Return type of `declare()` — a query for GET, a command for everything else. */
-type DeclareReturn<M extends HttpMethod, TData, TOutput> = M extends 'get'
+type DeclareReturn<M extends HttpMethod, TData extends RemoteFormInput, TOutput> = M extends 'get'
 	? RemoteQueryFunction<TData, TOutput>
-	: RemoteCommand<TData, TOutput>;
+	: RemoteForm<TData, TOutput>;
 
 // ============================================================================
 // API call buckets
@@ -353,7 +354,7 @@ class RemoteBuilder<
 	 * - `query` for GET routes
 	 * - `command` for everything else
 	 */
-	public declare(): DeclareReturn<M, TData, TOutput> {
+	public declare(parseAs: 'json' | 'text' = 'json'): DeclareReturn<M, TData, TOutput> {
 		const pathEntries = Object.fromEntries(
 			[...this.pathKeys].map((k) => [k, v.string()])
 		);
@@ -390,6 +391,7 @@ class RemoteBuilder<
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			const output = await (locals.api as any)[this.method.toUpperCase()](this.path, {
 				params: { path: buckets.path, query: buckets.query },
+				parseAs,
 				body: buckets.body
 			});
 
@@ -409,8 +411,12 @@ class RemoteBuilder<
 
 		// `schema as any` is required because `query`/`command` accept their own
 		// internal schema representation that we cannot express statically here.
-		if (this.method === 'get') return query(schema as any, handler) as DeclareReturn<M, TData, TOutput>;
-		return command(schema as any, handler) as DeclareReturn<M, TData, TOutput>;
+		if (this.method === 'get') {
+			return query(schema as any, handler) as DeclareReturn<M, TData, TOutput>;
+		}
+		return form(schema as any, (data) => {
+			return handler(data);
+		}) as DeclareReturn<M, TData, TOutput>;
 	}
 }
 
@@ -430,4 +436,3 @@ export const Remote = {
 	PATCH: <TPath extends Routes<'patch'>>(path: TPath) =>
 		new RemoteBuilder<'patch', TPath>(path, 'patch'),
 } as const;
-

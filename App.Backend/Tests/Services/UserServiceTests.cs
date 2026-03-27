@@ -39,12 +39,12 @@ public class UserServiceTests : ServiceTestBase
         var user = await UserFactory.Create().WithContext(Context).GenerateAsync();
 
         // Act
-        var result = await _sut.FindByLoginAsync(user.Login);
+        var result = await _sut.FindByNameAsync(user.Display);
 
         // Assert
         Assert.NotNull(result);
         Assert.Equal(user.Id, result.Id);
-        Assert.Equal(user.Login, result.Login);
+        Assert.Equal(user.Display, result.Display);
     }
 
     [Fact]

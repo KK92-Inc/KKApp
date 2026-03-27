@@ -3,10 +3,10 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-import { Remote } from "./index.svelte";
+import type { PageServerLoad } from "./$types";
 
 // ============================================================================
 
-export const branches = Remote.GET('/git/{id}/branches').declare('text');
-export const tree = Remote.GET('/git/{id}/tree/{branch}/{path}').declare('text');
-export const blob = Remote.GET('/git/{id}/blob/{branch}/{path}').declare('text');
+export const load: PageServerLoad = async ({ locals }) => {
+
+};
