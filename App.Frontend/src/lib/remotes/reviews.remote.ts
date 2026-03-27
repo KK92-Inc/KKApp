@@ -21,9 +21,6 @@ const getReviewsSchema = v.object({
 });
 // /reviews/{userId}/{projectId}
 export const getByUserProject = Remote.GET('/reviews/{userId}/{projectId}')
-	.extend(getReviewsSchema, (data) => ({
-		path: { userId: data.userId, projectId: data.project }
-	}))
 	.paginated()
 	.declare();
 

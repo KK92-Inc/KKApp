@@ -3,6 +3,8 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace App.Backend.Core;
 
 /// <summary>
@@ -68,7 +70,7 @@ public class ServiceException : Exception
     /// <param name="argument">The condition to evaluate; if <c>true</c>, the exception is thrown.</param>
     /// <param name="message">The message for the thrown exception.</param>
     /// <exception cref="ServiceException">Thrown when <paramref name="argument"/> is <c>true</c>.</exception>
-    public static void ThrowIf(bool argument, string message)
+    public static void ThrowIf([NotNull] bool argument, string message)
     {
         if (argument) throw new ServiceException(message);
     }
@@ -80,7 +82,7 @@ public class ServiceException : Exception
     /// <param name="statusCode">The status code to associate with the thrown exception.</param>
     /// <param name="message">The message for the thrown exception.</param>
     /// <exception cref="ServiceException">Thrown when <paramref name="argument"/> is <c>true</c>.</exception>
-    public static void ThrowIf(bool argument, int statusCode, string message)
+    public static void ThrowIf([NotNull] bool argument, int statusCode, string message)
     {
         if (argument) throw new ServiceException(statusCode, message);
     }

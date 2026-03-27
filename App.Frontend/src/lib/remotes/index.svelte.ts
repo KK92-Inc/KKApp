@@ -15,7 +15,6 @@ import type {
 } from 'openapi-typescript-helpers';
 import type { components, paths } from '$lib/api/api';
 import { error, invalid, type RemoteCommand, type RemoteQueryFunction } from '@sveltejs/kit';
-import { parse } from 'node:path';
 
 // ============================================================================
 // Pagination
@@ -128,7 +127,7 @@ export class Problem {
 	 * @returns
 	 */
 	public static throw(problem?: ProblemDetails): never {
-		// Log.dbg(JSON.stringify(problem, null, 2), '\n', new Error('Request failed').stack);
+		console.debug(JSON.stringify(problem, null, 2), '\n', new Error('Request failed').stack);
 		error(Number(problem?.status ?? 500), problem?.detail ?? problem?.title ?? 'Something went wrong...');
 	}
 }
@@ -233,13 +232,14 @@ class RemoteBuilder<
 	M extends HttpMethod,
 	TPath extends Routes<M>,
 	TData = Flatten<ExtractPathParams<TPath>>,
-	TOutput = InferOutput<TPath, M>
+	TOutput = InferOutput<TPath, M>,
+	TIsRequired extends boolean = true
 > {
 	private readonly pathKeys: Set<string>;
 	// Valibot entries accumulated by extend() / paginated()
 	private extraEntries: v.ObjectEntries = {};
 	// Whether missing response data on a 2xx should be treated as an error
-	private isRequired = false;
+	private isRequired = true;
 	// Whether the result should be wrapped in Paginated<T>
 	private isPaginated = false;
 
@@ -279,9 +279,9 @@ class RemoteBuilder<
 	 * Treat a missing response body (even on 2xx) as an error.
 	 * Useful for routes that should always return a body.
 	 */
-	public required(value = true): this {
-		this.isRequired = value;
-		return this;
+	public required<T extends boolean = false>(value: T = false as T): RemoteBuilder<M, TPath, TData, TOutput, T> {
+		this.isRequired = value as unknown as boolean;
+		return this as unknown as RemoteBuilder<M, TPath, TData, TOutput, T>;
 	}
 
 	// --------------------------------------------------------------------------
@@ -305,10 +305,10 @@ class RemoteBuilder<
 	public extend<TExtra extends AnyObjectSchema>(
 		schema: TExtra,
 		mapper: (data: v.InferOutput<TExtra>) => BucketMap<TPath, M>
-	): RemoteBuilder<M, TPath, Flatten<TData & v.InferOutput<TExtra>>, TOutput> {
+	): RemoteBuilder<M, TPath, Flatten<TData & v.InferOutput<TExtra>>, TOutput, TIsRequired> {
 		this.extraEntries = { ...this.extraEntries, ...schema.entries };
 		this.mappers.push(mapper as (data: unknown) => BucketMap<any, any>);
-		return this as unknown as RemoteBuilder<M, TPath, Flatten<TData & v.InferOutput<TExtra>>, TOutput>;
+		return this as unknown as RemoteBuilder<M, TPath, Flatten<TData & v.InferOutput<TExtra>>, TOutput, TIsRequired>;
 	}
 
 	/**
@@ -324,7 +324,7 @@ class RemoteBuilder<
 	 *
 	 * Additional filters can still be added via `extend()` before or after.
 	 */
-	public paginated(): RemoteBuilder<M, TPath, Flatten<TData & PaginationInput>, Paginated<UnwrapArray<TOutput>>> {
+	public paginated(): RemoteBuilder<M, TPath, Flatten<TData & PaginationInput>, Paginated<UnwrapArray<TOutput>>, TIsRequired> {
 		this.extraEntries = { ...this.extraEntries, ...paginationEntries };
 		this.mappers.push((data) => {
 			const { page, size, sortBy, sort } = data as PaginationInput;
@@ -341,7 +341,8 @@ class RemoteBuilder<
 		return this as unknown as RemoteBuilder<
 			M, TPath,
 			Flatten<TData & PaginationInput>,
-			Paginated<UnwrapArray<TOutput>>
+			Paginated<UnwrapArray<TOutput>>,
+			TIsRequired
 		>;
 	}
 
@@ -354,13 +355,13 @@ class RemoteBuilder<
 	 * - `query` for GET routes
 	 * - `command` for everything else
 	 */
-	public declare(parseAs: 'json' | 'text' = 'json'): DeclareReturn<M, TData, TOutput> {
+	public declare(parseAs: 'json' | 'text' = 'json'): DeclareReturn<M, TData, TIsRequired extends true ? TOutput : TOutput | undefined> {
 		const pathEntries = Object.fromEntries(
 			[...this.pathKeys].map((k) => [k, v.string()])
 		);
 		const schema = v.object({ ...pathEntries, ...this.extraEntries });
 
-		const handler = async (data: TData) => {
+		const handler = async (data: TData): Promise<TIsRequired extends true ? TOutput : TOutput | undefined> => {
 			for (const fn of this.beforeFns) await fn(data);
 
 			// Accumulate contributions from all mappers into three call buckets.
@@ -399,7 +400,11 @@ class RemoteBuilder<
 				if (this.method !== 'get') Problem.validate(output.error);
 				if (output.response.status === 404) {
 					if (this.isRequired) Problem.throw(output.error);
-					return undefined as TOutput;
+					return undefined as TIsRequired extends true ? TOutput : TOutput | undefined;
+				}
+				if (output.response.status === 204) {
+					if (this.isRequired) Problem.throw(output.error);
+					return undefined as TIsRequired extends true ? TOutput : TOutput | undefined;
 				}
 				Problem.throw(output.error);
 			}
@@ -409,14 +414,13 @@ class RemoteBuilder<
 				: output.data;
 
 			for (const fn of this.afterFns) await fn(result as TOutput, data);
-
-			return result as TOutput;
+			return result;
 		};
 
 		// `schema as any` is required because `query`/`command` accept their own
 		// internal schema representation that we cannot express statically here.
-		if (this.method === 'get') return query(schema as any, handler) as DeclareReturn<M, TData, TOutput>;
-		return command(schema as any, handler) as DeclareReturn<M, TData, TOutput>;
+		if (this.method === 'get') return query(schema as any, handler as any) as DeclareReturn<M, TData, TIsRequired extends true ? TOutput : TOutput | undefined>;
+		return command(schema as any, handler as any) as DeclareReturn<M, TData, TIsRequired extends true ? TOutput : TOutput | undefined>;
 	}
 }
 

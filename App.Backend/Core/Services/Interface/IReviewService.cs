@@ -25,15 +25,15 @@ public interface IReviewService : IDomainService<Review>
     /// </summary>
     /// <param name="userProjectId">The user project to be reviewed.</param>
     /// <param name="rubricId">The rubric to use for evaluation.</param>
-    /// <param name="kind">The type of review (Self, Peer, Async, Auto).</param>
-    /// <param name="requestingUserId">The user requesting the review.</param>
+    /// <param name="initiatorId">The user requesting the review.</param>
+    /// <param name="variants">The types of review (Self, Peer, Async, Auto).</param>
     /// <param name="token">Cancellation token.</param>
     /// <returns>The created review.</returns>
     Task<Review> RequestReviewAsync(
         Guid userProjectId,
         Guid rubricId,
-        ReviewVariant kind,
-        Guid requestingUserId,
+        Guid initiatorId,
+        ReviewVariant[] variants,
         CancellationToken token = default
     );
 

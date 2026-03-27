@@ -1,24 +1,47 @@
 <script lang="ts">
-	import * as UserProjects from '$lib/remotes/user-project.remote';
 	import * as Avatar from '$lib/components/avatar';
 	import * as Card from '$lib/components/card';
-	import { Crown, Users } from '@lucide/svelte';
+	import * as Alert from '$lib/components/alert';
+	import { Crown, ClockFading, Users } from '@lucide/svelte';
 	import { Button } from '$lib/components/button';
 	import * as Page from './index.svelte';
+	import { page } from '$app/state';
 
 	const context = Page.getContext();
+	const members = $derived(await context.members);
 	const userProject = $derived(await context.userProject);
-	const members = $derived(userProject ? await UserProjects.members({ id: userProject.id }) : []);
+	const abandoned = $derived(members.find((v) => v.userId === page.data.session.userId && v.leftAt));
+	const formatter = new Intl.DateTimeFormat(page.data.locale, {
+		month: 'short',
+		day: 'numeric',
+		year: 'numeric'
+	});
 </script>
 
 <Card.Root class="py-0 shadow-none">
 	<Card.Content class="p-3">
 		<div class="mb-2 flex items-center justify-between">
-			<h3 class="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+			<h3
+				class="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase"
+			>
 				<Users size={12} />
 				Members
 			</h3>
 		</div>
+
+		{#if abandoned}
+			<Alert.Root class="border-dashed">
+				<ClockFading />
+				<Alert.Title>Project is currently Inactive</Alert.Title>
+				<Alert.Description>
+					You left this project on {formatter.format(new Date(abandoned.leftAt!))}.
+				</Alert.Description>
+			</Alert.Root>
+		{:else if !userProject}
+			<p class="text-xs text-muted-foreground">
+				User has not subscribed to this project yet.
+			</p>
+		{/if}
 
 		<ul class="flex items-center gap-1">
 			{#each members.filter((m) => !m.leftAt) as member (member.id)}

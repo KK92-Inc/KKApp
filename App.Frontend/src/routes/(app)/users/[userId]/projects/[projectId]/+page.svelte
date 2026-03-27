@@ -3,7 +3,7 @@
 	import * as Page from './index.svelte';
 	import * as Projects from '$lib/remotes/project.remote';
 	import * as UserProjects from '$lib/remotes/user-project.remote';
-	import * as Invites from '$lib/remotes/invite.remote';
+	import * as Invites from '$lib/remotes/member.remote';
 	import Button from '$lib/components/button/button.svelte';
 	import Thumbnail from '$lib/components/thumbnail.svelte';
 	import { toast } from 'svelte-sonner';
@@ -12,7 +12,13 @@
 	import { Skeleton } from '$lib/components/skeleton';
 
 	const { params }: PageProps = $props();
-	const context = Page.setContext(new Page.Context(params.projectId, params.userId));
+
+	Page.setContext(
+		new Page.Context(
+			() => params.projectId,
+			() => params.userId
+		)
+	);
 </script>
 
 {#snippet skeleton()}
@@ -52,8 +58,12 @@
 
 	<Layout>
 		{#snippet left()}
-			<Page.Thumbnail />
-			<Page.Members />
+			<div class="grid gap-2 mt-4">
+				<Page.Thumbnail />
+				<Page.Members />
+				<Page.Reviews />
+				<Page.Actions />
+			</div>
 		{/snippet}
 
 		{#snippet right()}

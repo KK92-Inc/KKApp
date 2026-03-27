@@ -14,7 +14,7 @@
 	import * as Item from '$lib/components/item/';
 	import Plus from '@lucide/svelte/icons/plus';
 	import { getUsers } from '$lib/remotes/user.remote';
-	import * as Invite from '$lib/remotes/invite.remote';
+	import * as Invite from '$lib/remotes/member.remote';
 
 	type Role = UserProjectMemberDO['role'];
 	type UserProjectMemberDO = components['schemas']['UserProjectMemberDO'];

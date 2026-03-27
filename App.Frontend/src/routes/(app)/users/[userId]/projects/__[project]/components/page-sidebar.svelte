@@ -5,7 +5,7 @@
 	import Thumbnail from '$lib/components/thumbnail.svelte';
 	import { subscribeProject, unsubscribeProject } from '$lib/remotes/subscribe.remote';
 	import { getUserProjectMembers } from '$lib/remotes/user-project.remote';
-	import * as Invite from '$lib/remotes/invite.remote';
+	import * as Invite from '$lib/remotes/member.remote';
 	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
 	import Members from './page-members.svelte';
 	import Reviews from './page-reviews.svelte';

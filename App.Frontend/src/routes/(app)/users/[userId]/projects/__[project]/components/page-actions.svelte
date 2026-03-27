@@ -2,7 +2,7 @@
 	import * as Card from '$lib/components/card';
 	import { Button } from '$lib/components/button';
 	import { subscribeProject, unsubscribeProject } from '$lib/remotes/subscribe.remote';
-	import * as Invite from '$lib/remotes/invite.remote';
+	import * as Invite from '$lib/remotes/member.remote';
 	import { getProject } from '$lib/remotes/project.remote';
 	import { getUserProjectByProjectId, getUserProjectMembers } from '$lib/remotes/user-project.remote';
 	import { History, UserCheck } from '@lucide/svelte';
