@@ -32,6 +32,7 @@ using App.Backend.API.Schemas.Operation;
 using App.Backend.Core.Services.Implementation;
 using App.Backend.Core.Services.Interface;
 using App.Backend.Core.Services.Options;
+using App.Backend.Core.Rules;
 using App.Backend.Database;
 using App.Backend.Domain.Enums;
 using App.Backend.Database.Interceptors;
@@ -180,7 +181,8 @@ public static class Services
 
         // Register Transient, Scoped, Singletons, ...
         builder.Services.AddScoped<IUserService, UserService>();
-        builder.Services.AddScoped<IRuleService, RuleServiceN>();
+        builder.Services.AddRuleEvaluators();
+        builder.Services.AddScoped<IRuleService, RuleService>();
         builder.Services.AddScoped<IReviewService, ReviewService>();
         builder.Services.AddScoped<IWorkspaceService, WorkspaceService>();
         builder.Services.AddScoped<IGoalService, GoalService>();
