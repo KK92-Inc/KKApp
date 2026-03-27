@@ -1,66 +1,116 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
+	import * as Page from './index.svelte';
 	import * as Projects from '$lib/remotes/project.remote';
 	import * as UserProjects from '$lib/remotes/user-project.remote';
 	import * as Invites from '$lib/remotes/invite.remote';
 	import Button from '$lib/components/button/button.svelte';
 	import Thumbnail from '$lib/components/thumbnail.svelte';
-	import { invalidateAll } from '$app/navigation';
+	import { toast } from 'svelte-sonner';
+	import { isHttpError } from '@sveltejs/kit';
+	import Layout from '$lib/components/layout.svelte';
+	import { Skeleton } from '$lib/components/skeleton';
 
-	const { data }: PageProps = $props();
+	const { params }: PageProps = $props();
+	const context = Page.setContext(new Page.Context(params.projectId, params.userId));
 </script>
 
-{#each await UserProjects.members({ id: data.userProject.id }) as member}
-	<div class="flex items-center gap-2">
-		<Thumbnail readonly src="/placeholder.svg" class="size-24 shrink-0" />
-		<span>{member.user.displayName}</span>
-	</div>
-{/each}
+{#snippet skeleton()}
+	<Layout>
+		{#snippet left()}
+			<div class="flex items-center gap-3 p-3">
+				<Skeleton class="size-32 shrink-0 rounded-md" />
+				<div class="flex min-w-0 flex-1 flex-col gap-2">
+					<Skeleton class="h-4 w-3/4 rounded" />
+					<Skeleton class="mt-1 h-3 w-1/4 rounded" />
+				</div>
+			</div>
+			<div class="p-3">
+				<div class="mb-2 flex items-center justify-between">
+					<Skeleton class="h-4 w-20 rounded" />
+				</div>
+				<div class="flex items-center gap-1">
+					<Skeleton class="size-8 rounded" />
+					<Skeleton class="size-8 rounded" />
+					<Skeleton class="size-8 rounded" />
+				</div>
+			</div>
+		{/snippet}
 
-<!-- {#if data.userProject}
+		{#snippet right()}
+			<div class="p-3">
+				<Skeleton class="block h-8 w-full rounded" />
+			</div>
+		{/snippet}
+	</Layout>
+{/snippet}
+
+<svelte:boundary>
+	{#snippet pending()}
+		{@render skeleton()}
+	{/snippet}
+
+	<Layout>
+		{#snippet left()}
+			<Page.Thumbnail />
+			<Page.Members />
+		{/snippet}
+
+		{#snippet right()}
+			Right
+		{/snippet}
+	</Layout>
+</svelte:boundary>
+
+<!-- {#if userProject}
+	{#each await UserProjects.members({ id: userProject.id }) as member}
+		<div class="flex items-center gap-2">
+			<Thumbnail readonly src="/placeholder.svg" class="size-24 shrink-0" />
+			<span>{member.user.displayName}</span>
+		</div>
+	{/each}
+
 	<div class="flex gap-2">
 		<Button
+			loading={Invites.send.pending > 0}
 			onclick={async () => {
-				await Invites.send({
-					userProjectId: data.userProject.id,
-					inviteeId: "74193b39-7c21-4711-9b8c-b8de3333ee88"
-				}).updates(UserProjects.members({ id: data.userProject.id }));
-
-				await invalidateAll();
+				try {
+					await Invites.send({
+userProjectId: userProject.id,
+inviteeId: '74193b39-7c21-4711-9b8c-b8de3333ee88'
+});
+				} catch (error) {
+					if (isHttpError(error)) {
+						toast.error(error.body.message ?? 'Failed to send invite');
+					}
+				}
 			}}
 		>
 			Invite
 		</Button>
 
 		<Button
+			loading={Invites.revoke.pending > 0}
 			onclick={async () => {
-				await Invites.revoke({
-					userProjectId: data.userProject.id,
-					inviteeId: "74193b39-7c21-4711-9b8c-b8de3333ee88"
-				}).updates(UserProjects.members({ id: data.userProject.id }));
+				try {
+					await Invites.revoke({
+userProjectId: userProject.id,
+inviteeId: '74193b39-7c21-4711-9b8c-b8de3333ee88'
+});
+				} catch (error) {
+					if (isHttpError(error)) {
+						toast.error(error.body.message ?? 'Failed to revoke invite');
+					}
+				}
 			}}
 		>
 			Revoke Invite
 		</Button>
 	</div>
-{/if} -->
-
-{#if data.userProject}
-	<div class="flex gap-2">
-		<form {...Invites.send}>
-			<input type="hidden" {...Invites.send.fields.userProjectId.as('text')} value={data.userProject.id} />
-			<input type="hidden" {...Invites.send.fields.inviteeId.as('text')} value="74193b39-7c21-4711-9b8c-b8de3333ee88" />
-			<Button type="submit">Send Invite</Button>
-		</form>
-
-		<form {...Invites.revoke}>
-			<input type="hidden" {...Invites.revoke.fields.userProjectId.as('text')} value={data.userProject.id} />
-			<input type="hidden" {...Invites.revoke.fields.inviteeId.as('text')} value="74193b39-7c21-4711-9b8c-b8de3333ee88" />
-			<Button type="submit">Revoke Invite</Button>
-		</form>
-	</div>
 {/if}
 
+<h1>{project?.name}</h1>
+
 <pre><code>
-{JSON.stringify(data, null, 2)}
-</code></pre>
+{JSON.stringify(userProject, null, 2)}
+</code></pre> -->

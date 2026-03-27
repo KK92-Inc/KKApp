@@ -3,21 +3,12 @@
 // See README in the root project for more information.
 // ============================================================================
 
-import * as v from "valibot";
-import { form } from '$app/server';
 import { Remote } from './index.svelte';
 import * as UserProject from './user-project.remote';
 
 // ============================================================================
 // Management
 // ============================================================================
-
-// export const send2 = form(v.object({
-// 	userProjectId: v.string(),
-// 	inviteeId: v.string()
-// }), async (data) => {
-// 	console.log('Sending invite with data:', data);
-// });
 
 export const send = Remote.POST('/member/{inviteeId}/project/{userProjectId}')
 	.after((_, data) => UserProject.members({ id: data.userProjectId }).refresh())

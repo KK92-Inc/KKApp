@@ -4,7 +4,7 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import { query, command, getRequestEvent, form } from '$app/server';
+import { query, command, getRequestEvent } from '$app/server';
 import type {
 	PathsWithMethod,
 	SuccessResponse,
@@ -14,7 +14,8 @@ import type {
 	HttpMethod
 } from 'openapi-typescript-helpers';
 import type { components, paths } from '$lib/api/api';
-import { error, invalid, type RemoteCommand, type RemoteForm, type RemoteFormInput, type RemoteQueryFunction } from '@sveltejs/kit';
+import { error, invalid, type RemoteCommand, type RemoteQueryFunction } from '@sveltejs/kit';
+import { parse } from 'node:path';
 
 // ============================================================================
 // Pagination
@@ -127,7 +128,6 @@ export class Problem {
 	 * @returns
 	 */
 	public static throw(problem?: ProblemDetails): never {
-		// invalid("Nope!")
 		// Log.dbg(JSON.stringify(problem, null, 2), '\n', new Error('Request failed').stack);
 		error(Number(problem?.status ?? 500), problem?.detail ?? problem?.title ?? 'Something went wrong...');
 	}
@@ -172,9 +172,9 @@ type ExtractPathParams<T extends string> = T extends `${string}{${infer Param}}$
 type UnwrapArray<T> = T extends Array<infer U> ? U : T;
 
 /** Return type of `declare()` — a query for GET, a command for everything else. */
-type DeclareReturn<M extends HttpMethod, TData extends RemoteFormInput, TOutput> = M extends 'get'
+type DeclareReturn<M extends HttpMethod, TData, TOutput> = M extends 'get'
 	? RemoteQueryFunction<TData, TOutput>
-	: RemoteForm<TData, TOutput>;
+	: RemoteCommand<TData, TOutput>;
 
 // ============================================================================
 // API call buckets
@@ -395,8 +395,12 @@ class RemoteBuilder<
 				body: buckets.body
 			});
 
-			if (output.error || (this.isRequired && !output.data)) {
+			if (output.error) {
 				if (this.method !== 'get') Problem.validate(output.error);
+				if (output.response.status === 404) {
+					if (this.isRequired) Problem.throw(output.error);
+					return undefined as TOutput;
+				}
 				Problem.throw(output.error);
 			}
 
@@ -411,12 +415,8 @@ class RemoteBuilder<
 
 		// `schema as any` is required because `query`/`command` accept their own
 		// internal schema representation that we cannot express statically here.
-		if (this.method === 'get') {
-			return query(schema as any, handler) as DeclareReturn<M, TData, TOutput>;
-		}
-		return form(schema as any, (data) => {
-			return handler(data);
-		}) as DeclareReturn<M, TData, TOutput>;
+		if (this.method === 'get') return query(schema as any, handler) as DeclareReturn<M, TData, TOutput>;
+		return command(schema as any, handler) as DeclareReturn<M, TData, TOutput>;
 	}
 }
 
@@ -436,3 +436,4 @@ export const Remote = {
 	PATCH: <TPath extends Routes<'patch'>>(path: TPath) =>
 		new RemoteBuilder<'patch', TPath>(path, 'patch'),
 } as const;
+
