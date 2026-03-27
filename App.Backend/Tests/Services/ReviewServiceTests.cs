@@ -18,11 +18,11 @@ namespace App.Backend.Tests.Services;
 public class ReviewServiceTests : ServiceTestBase
 {
     private readonly ReviewService _sut;
-    private readonly EligibilityService _eligibilityService;
+    private readonly RuleServiceN _eligibilityService;
 
     public ReviewServiceTests()
     {
-        _eligibilityService = new EligibilityService(Context);
+        _eligibilityService = new RuleServiceN(Context);
         _sut = new ReviewService(Context, _eligibilityService);
     }
 

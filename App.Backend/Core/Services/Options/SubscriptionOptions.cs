@@ -16,7 +16,12 @@ public class SubscriptionOptions
 
     /// <summary>
     /// The subscription enforcement mode.
-    /// Defaults to <see cref="CursusCompletion.Free"/>.
+    /// Defaults to <see cref="ProgressionMode.Free"/>.
     /// </summary>
-    public CursusCompletion Mode { get; set; } = CursusCompletion.Free;
+    public ProgressionMode Mode { get; init; } = ProgressionMode.Free;
+
+    /// <summary>
+    /// Cooldown period for subscribing/unsubscribing to the same entity.
+    /// </summary>
+    public TimeSpan Cooldown { get; init; } = TimeSpan.FromHours(6);
 }

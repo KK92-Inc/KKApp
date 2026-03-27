@@ -16,10 +16,10 @@ namespace App.Backend.API.Controllers;
 
 [Authorize]
 [ApiController]
-[Route("invite"), Tags("Invitations")]
-public class InviteController(
-    ILogger<InviteController> log,
-    IInviteService service,
+[Route("member"), Tags("Invitations")]
+public class MemberController(
+    ILogger<MemberController> log,
+    IMemberService service,
     ISubscriptionService subscription,
     IMessageBus bus
 ) : Controller

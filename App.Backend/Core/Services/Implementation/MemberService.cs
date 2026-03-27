@@ -13,7 +13,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace App.Backend.Core.Services.Implementation;
 
-public class InviteService(DatabaseContext ctx) : IInviteService
+public class MemberService(DatabaseContext ctx) : IMemberService
 {
     public async Task<UserProjectMember> InviteToProjectAsync(Guid inviterId, Guid inviteeId, Guid userProjectId, CancellationToken token)
     {

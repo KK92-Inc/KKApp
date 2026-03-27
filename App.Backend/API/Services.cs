@@ -189,7 +189,7 @@ public static class Services
         builder.Services.AddScoped<IProjectService, ProjectService>();
         builder.Services.AddScoped<IGitService, GitService>();
         builder.Services.AddScoped<INotificationService, NotificationService>();
-        builder.Services.AddScoped<IInviteService, InviteService>();
+        builder.Services.AddScoped<IMemberService, MemberService>();
         builder.Services.AddScoped<IUserCursusService, UserCursusService>();
         builder.Services.AddScoped<IUserGoalService, UserGoalService>();
         builder.Services.AddScoped<IUserProjectService, UserProjectService>();

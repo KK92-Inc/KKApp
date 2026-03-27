@@ -9,9 +9,8 @@ using App.Backend.Domain.Entities.Projects;
 
 namespace App.Backend.Core.Services.Interface;
 
-public interface IInviteService
+public interface IMemberService
 {
-
     /// <summary>
     /// Invite a user to an existing project session. Adds a Pending member row.
     /// </summary>
@@ -23,7 +22,7 @@ public interface IInviteService
     Task<UserProjectMember> InviteToProjectAsync(Guid inviterId, Guid inviteeId, Guid userProjectId, CancellationToken token);
 
     /// <summary>
-    ///
+    /// Remove a user from an existing project session. Removes the pending member row.
     /// </summary>
     /// <param name="inviterId"></param>
     /// <param name="inviteeId"></param>

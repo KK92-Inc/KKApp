@@ -14,6 +14,12 @@ namespace App.Backend.Core.Services.Interface;
 
 public interface ISubscriptionService
 {
+    public Task<bool> CanSubscribeToProjectAsync(Guid userId, Guid userProjectId, CancellationToken token);
+
+    public Task<bool> CanSubscribeToGoalAsync(Guid userId, Guid userGoalId, CancellationToken token);
+
+    public Task<bool> CanSubscribeToCursusAsync(Guid userId, Guid userCursusId, CancellationToken token);            
+
     /// <summary>
     /// Subscribe a user to a goal.
     /// </summary>

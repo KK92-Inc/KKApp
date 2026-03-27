@@ -22,7 +22,7 @@ public static class NotificationFactory
     public static Faker<Notification> Create(Guid? notifiableId = null) => new Faker<Notification>()
         .RuleFor(n => n.Id, f => f.Random.Guid())
         .RuleFor(n => n.NotifiableId, f => notifiableId ?? f.Random.Guid())
-        .RuleFor(n => n.Type, f => nameof(Notification))
+        // .RuleFor(n => n.Type, f => nameof(Notification))
         .RuleFor(n => n.Descriptor, f => f.PickRandom<NotificationMeta>())
         .RuleFor(n => n.Data, f => "{}")
         .RuleFor(n => n.ReadAt, f => null)

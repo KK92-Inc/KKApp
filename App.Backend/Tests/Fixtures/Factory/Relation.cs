@@ -23,4 +23,19 @@ public static class RelationFactory
         .RuleFor(gp => gp.ProjectId, f => projectId ?? f.Random.Guid())
         .RuleFor(gp => gp.CreatedAt, f => f.Date.PastOffset(1))
         .RuleFor(gp => gp.UpdatedAt, (f, gp) => gp.CreatedAt);
+
+    /// <summary>
+    /// Creates a Faker for CursusGoal relations.
+    /// </summary>
+    public static Faker<CursusGoal> CreateCursusGoal(
+        Guid? cursusId = null,
+        Guid? goalId = null,
+        Guid? parentGoalId = null,
+        Guid? choiceGroup = null) => new Faker<CursusGoal>()
+        .RuleFor(cg => cg.CursusId, f => cursusId ?? f.Random.Guid())
+        .RuleFor(cg => cg.GoalId, f => goalId ?? f.Random.Guid())
+        .RuleFor(cg => cg.ParentGoalId, f => parentGoalId)
+        .RuleFor(cg => cg.ChoiceGroup, f => choiceGroup)
+        .RuleFor(cg => cg.CreatedAt, f => f.Date.PastOffset(1))
+        .RuleFor(cg => cg.UpdatedAt, (f, cg) => cg.CreatedAt);
 }

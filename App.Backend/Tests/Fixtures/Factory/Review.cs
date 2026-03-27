@@ -49,8 +49,8 @@ public static class ReviewFactory
         .RuleFor(r => r.SupportedReviewKinds, f => supportedKinds ?? ReviewKinds.All)
         .RuleFor(r => r.CreatorId, f => creatorId ?? f.Random.Guid())
         .RuleFor(r => r.GitInfoId, f => gitInfoId)
-        .RuleFor(r => r.ReviewerEligibilityRules, f => new List<Rule>())
-        .RuleFor(r => r.RevieweeEligibilityRules, f => new List<Rule>())
+        // .RuleFor(r => r.ReviewerEligibilityRules, f => new List<Rule>())
+        // .RuleFor(r => r.RevieweeEligibilityRules, f => new List<Rule>())
         .RuleFor(r => r.CreatedAt, f => f.Date.PastOffset(1))
         .RuleFor(r => r.UpdatedAt, (f, r) => r.CreatedAt);
 }

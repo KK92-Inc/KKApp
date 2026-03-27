@@ -33,8 +33,8 @@ public class UserProject : BaseEntity
         RubricId = null;
 
         Members = [];
-        Transactions = [];
         Reviews = [];
+        Transactions = [];
     }
 
     /// <summary>
@@ -42,6 +42,12 @@ public class UserProject : BaseEntity
     /// </summary>
     [Column("state")]
     public EntityObjectState State { get; set; }
+
+    /// <summary>
+    /// Limit the amount of users that can partake in this project session.
+    /// </summary>
+    [Column("max_members")]
+    public int MaxMembers { get; set; }
 
     /// <summary>
     /// The project template this session is based on.

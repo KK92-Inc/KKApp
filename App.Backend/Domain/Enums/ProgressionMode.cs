@@ -8,7 +8,7 @@ namespace App.Backend.Domain.Enums;
 /// <summary>
 /// Controls how subscription chain enforcement works.
 /// </summary>
-public enum CursusCompletion
+public enum ProgressionMode
 {
     /// <summary>
     /// Anyone can subscribe to any cursus, goal, or project independently.

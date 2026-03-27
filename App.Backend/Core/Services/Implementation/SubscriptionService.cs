@@ -20,7 +20,16 @@ public class SubscriptionService(
     IOptions<SubscriptionOptions> options
 ) : ISubscriptionService
 {
-    private bool IsRestricted => options.Value.Mode is CursusCompletion.Restricted;
+    private bool IsRestricted => options.Value.Mode is ProgressionMode.Restricted;
+
+    public Task<bool> CanSubscribeToCursusAsync(Guid userId, Guid cursusId, CancellationToken token)
+        => Task.FromResult(!IsRestricted);
+
+    public Task<bool> CanSubscribeToGoalAsync(Guid userId, Guid goalId, CancellationToken token)
+        => Task.FromResult(!IsRestricted);
+
+    public Task<bool> CanSubscribeToProjectAsync(Guid userId, Guid projectId, CancellationToken token)
+        => Task.FromResult(!IsRestricted);
 
     public async Task<UserCursus> SubscribeToCursusAsync(Guid userId, Guid cursusId, CancellationToken token)
     {
@@ -339,5 +348,26 @@ public class SubscriptionService(
             await ctx.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
         }, token);
+    }
+
+    public Task<bool> ElligibleForProject(Guid userId, Guid projectId, CancellationToken token)
+    {
+        if (!IsRestricted)
+            return Task.FromResult(true);
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> ElligibleForGoal(Guid userId, Guid GoalId, CancellationToken token)
+    {
+        if (!IsRestricted)
+            return Task.FromResult(true);
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> ElligibleForCursus(Guid userId, Guid cursusId, CancellationToken token)
+    {
+        if (!IsRestricted)
+            return Task.FromResult(true);
+        throw new NotImplementedException();
     }
 }
