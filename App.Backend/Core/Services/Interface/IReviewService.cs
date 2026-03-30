@@ -29,7 +29,7 @@ public interface IReviewService : IDomainService<Review>
     /// <param name="variants">The types of review (Self, Peer, Async, Auto).</param>
     /// <param name="token">Cancellation token.</param>
     /// <returns>The created review.</returns>
-    Task<Review> RequestReviewAsync(
+    Task<IEnumerable<Review>> RequestReviewAsync(
         Guid userProjectId,
         Guid rubricId,
         Guid initiatorId,

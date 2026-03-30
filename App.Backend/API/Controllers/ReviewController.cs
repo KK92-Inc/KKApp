@@ -95,15 +95,13 @@ public class ReviewController(
     )
     {
         var requestingUserId = User.GetSID();
-        var reviews = await Task.WhenAll(dto.Kinds.Select(kind =>
-            service.RequestReviewAsync(
-                dto.UserProjectId,
-                dto.RubricId,
-                kind,
-                requestingUserId,
-                token
-            )
-        ));
+        var reviews = await service.RequestReviewAsync(
+            dto.UserProjectId,
+            dto.RubricId,
+            requestingUserId,
+            dto.Kinds,
+            token
+        );
 
         return Ok(reviews.Select(r => new ReviewDO(r)));
     }

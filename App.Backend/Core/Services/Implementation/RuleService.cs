@@ -3,11 +3,13 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-using App.Backend.Core.Rules;
+
+using App.Backend.Core.Engines.Evaluations;
+using App.Backend.Core.Engines.Evaluations.Enums;
 using App.Backend.Core.Services.Interface;
+using App.Backend.Domain;
 using App.Backend.Domain.Entities.Reviews;
 using App.Backend.Domain.Entities.Users;
-using App.Backend.Domain.Rules;
 
 namespace App.Backend.Core.Services.Implementation;
 
@@ -15,43 +17,41 @@ namespace App.Backend.Core.Services.Implementation;
 /// Service for evaluating eligibility rules.
 /// Delegates rule evaluation to the RuleDispatcher which routes to individual evaluators.
 /// </summary>
-public class RuleService(RuleDispatcher dispatcher) : IRuleService
+public sealed class RuleService(RuleEngine engine) : IRuleService
 {
     /// <inheritdoc />
-    public Task<RuleEngineResult> EvaluateAsync(IEnumerable<Rule> rules, RuleContext context, CancellationToken token = default)
+    public async Task<Result> EvaluateAsync(IEnumerable<Rule> rules, Context ctx, CancellationToken ct = default)
     {
-        return dispatcher.EvaluateAllAsync(rules, context, token);
+        return await engine.EvaluateAllAsync(rules, ctx, ct);
     }
 
     /// <inheritdoc />
-    public Task<RuleEngineResult> AbleToRequestReviewAsync(Rubric rubric, User user, UserProject userProject, CancellationToken token = default)
+    public async Task<Result> CanRequestReviewAsync(
+        Rubric rubric, User reviewee, UserProject project, CancellationToken ct = default)
     {
-        // If no reviewee rules are configured, allow by default
-        if (rubric.RevieweeRules.Count == 0)
-            return Task.FromResult(RuleEngineResult.Success());
+        if (rubric.RevieweeRules.Count is 0)
+            return Result.Success();
 
-        var context = new RuleContext
+        return await engine.EvaluateAllAsync(rubric.RevieweeRules, new ()
         {
-            User = user,
-            UserProject = userProject
-        };
-
-        return dispatcher.EvaluateAllAsync(rubric.RevieweeRules, context, token);
+            User           = reviewee,
+            Role           = Role.Reviewee,
+            SubjectProject = project
+        }, ct);
     }
 
     /// <inheritdoc />
-    public Task<RuleEngineResult> AbleToReviewAsync(Rubric rubric, User reviewer, UserProject userProject, CancellationToken token = default)
+    public async Task<Result> CanReviewAsync(
+        Rubric rubric, User reviewer, UserProject subjectProject, CancellationToken ct = default)
     {
-        // If no reviewer rules are configured, allow by default
-        if (rubric.ReviewerRules.Count == 0)
-            return Task.FromResult(RuleEngineResult.Success());
+        if (rubric.ReviewerRules.Count is 0)
+            return Result.Success();
 
-        var context = new RuleContext
+        return await engine.EvaluateAllAsync(rubric.ReviewerRules, new ()
         {
-            User = reviewer,
-            UserProject = userProject
-        };
-
-        return dispatcher.EvaluateAllAsync(rubric.ReviewerRules, context, token);
+            User           = reviewer,
+            Role           = Role.Reviewer,
+            SubjectProject = subjectProject
+        }, ct);
     }
 }

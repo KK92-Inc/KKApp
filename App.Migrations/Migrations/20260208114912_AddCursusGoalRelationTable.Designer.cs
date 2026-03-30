@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 using App.Backend.Database;
-using App.Backend.Domain.Rules;
+using App.Backend.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;

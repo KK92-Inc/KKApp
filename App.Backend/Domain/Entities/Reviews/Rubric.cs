@@ -5,10 +5,8 @@
 
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
-using App.Backend.Domain;
 using App.Backend.Domain.Entities.Users;
 using App.Backend.Domain.Enums;
-using App.Backend.Domain.Rules;
 using Microsoft.EntityFrameworkCore;
 
 // ============================================================================

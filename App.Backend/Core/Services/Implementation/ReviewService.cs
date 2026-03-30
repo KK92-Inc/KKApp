@@ -22,7 +22,7 @@ public class ReviewService(DatabaseContext ctx, IRuleService rules) : BaseServic
     private readonly DatabaseContext _context = ctx;
 
     /// <inheritdoc />
-    public async Task<Review> RequestReviewAsync(Guid userProjectId, Guid rubricId, Guid initiatorId, ReviewVariant[] variants, CancellationToken token = default)
+    public async Task<IEnumerable<Review>> RequestReviewAsync(Guid userProjectId, Guid rubricId, Guid initiatorId, ReviewVariant[] variants, CancellationToken token = default)
     {
         ServiceException.ThrowIf(variants.Length == 0, "At least one review variant must be requested.");
 
@@ -60,7 +60,7 @@ public class ReviewService(DatabaseContext ctx, IRuleService rules) : BaseServic
                 case ReviewVariant.Self:
                 case ReviewVariant.Peer:
                     // Peer review: initiator must be the leader
-                    ServiceException.ThrowIf(member?.Role is not UserProjectRole.Leader, "Only the project leader can request a peer review.");
+                    ServiceException.ThrowIf(member?.Role is not UserProjectRole.Leader, "Only the project leader can request a peer or self review.");
                     break;
                 case ReviewVariant.Async:
                     // Async review: initiator must NOT be a member (any role)
@@ -72,8 +72,8 @@ public class ReviewService(DatabaseContext ctx, IRuleService rules) : BaseServic
             }
 
             // 4. Rule engine checks (dynamic rules configured in rubric)
-            var ruleResult = await rules.AbleToRequestReviewAsync(rubric, initiator, userProject, token);
-            if (!ruleResult.IsEligible)
+            var ruleResult = await rules.CanRequestReviewAsync(rubric, initiator, userProject, token);
+            if (!ruleResult.IsSuccess)
                 throw new ServiceException(string.Join("; ", ruleResult.Reasons));
 
             // 5. Create the review
@@ -91,7 +91,7 @@ public class ReviewService(DatabaseContext ctx, IRuleService rules) : BaseServic
         }
 
         await _context.SaveChangesAsync(token);
-        return createdReviews.First();
+        return createdReviews;
     }
 
     /// <inheritdoc />
@@ -111,8 +111,8 @@ public class ReviewService(DatabaseContext ctx, IRuleService rules) : BaseServic
             ?? throw new ServiceException(404, "Reviewer not found.");
 
         // Check reviewer eligibility via rule engine
-        var ruleResult = await rules.AbleToReviewAsync(review.Rubric, reviewer, review.UserProject, token);
-        if (!ruleResult.IsEligible)
+        var ruleResult = await rules.CanReviewAsync(review.Rubric, reviewer, review.UserProject, token);
+        if (!ruleResult.IsSuccess)
             throw new ServiceException(403, string.Join("; ", ruleResult.Reasons));
 
         // Peer/Async reviews require reviewer to be a team member

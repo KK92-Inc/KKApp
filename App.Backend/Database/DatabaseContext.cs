@@ -10,7 +10,7 @@ using App.Backend.Domain.Entities;
 using App.Backend.Domain.Entities.Reviews;
 using App.Backend.Domain.Relations;
 using App.Backend.Domain.Entities.Projects;
-using App.Backend.Domain.Rules;
+using App.Backend.Domain;
 
 // ============================================================================
 

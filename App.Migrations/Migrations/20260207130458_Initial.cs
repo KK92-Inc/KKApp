@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using App.Backend.Domain.Rules;
+using App.Backend.Domain;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable

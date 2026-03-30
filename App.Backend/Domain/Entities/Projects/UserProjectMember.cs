@@ -22,7 +22,7 @@ public class UserProjectMember : BaseEntity
     public Guid UserProjectId { get; set; }
 
     [ForeignKey(nameof(UserProjectId))]
-    public virtual UserProject Creator { get; set; }
+    public virtual UserProject UserProject { get; set; }
 
 
     [Column("user_id")]

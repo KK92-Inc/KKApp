@@ -5,7 +5,6 @@
 
 using App.Backend.Domain.Entities.Reviews;
 using App.Backend.Domain.Enums;
-using App.Backend.Domain.Rules;
 using Bogus;
 
 // ============================================================================

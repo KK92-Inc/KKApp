@@ -32,12 +32,13 @@ using App.Backend.API.Schemas.Operation;
 using App.Backend.Core.Services.Implementation;
 using App.Backend.Core.Services.Interface;
 using App.Backend.Core.Services.Options;
-using App.Backend.Core.Rules;
 using App.Backend.Database;
 using App.Backend.Domain.Enums;
 using App.Backend.Database.Interceptors;
 using App.Backend.API.Jobs;
 using App.Backend.API.Jobs.Extensions;
+using App.Backend.Core.Engines.Evaluations;
+using App.Backend.Core.Engines.Evaluations.Rules;
 
 // ============================================================================
 
@@ -181,7 +182,6 @@ public static class Services
 
         // Register Transient, Scoped, Singletons, ...
         builder.Services.AddScoped<IUserService, UserService>();
-        builder.Services.AddRuleEvaluators();
         builder.Services.AddScoped<IRuleService, RuleService>();
         builder.Services.AddScoped<IReviewService, ReviewService>();
         builder.Services.AddScoped<IWorkspaceService, WorkspaceService>();
@@ -198,7 +198,15 @@ public static class Services
         builder.Services.AddScoped<ISpotlightService, SpotlightService>();
         builder.Services.AddTransient<IResend, ResendClient>();
 
-        // // builder.Services.AddSingleton<INotificationQueue, InMemoryNotificationQueue>();
+        builder.Services.AddScoped<RuleEngine>();
+        builder.Services.AddScoped<IRuleEvaluator, HasCursusEvaluator>();
+        builder.Services.AddScoped<IRuleEvaluator, HasProjectEvaluator>();
+        builder.Services.AddScoped<IRuleEvaluator, IsMemberEvaluator>();
+        builder.Services.AddScoped<IRuleEvaluator, MinDaysRegisteredEvaluator>();
+        builder.Services.AddScoped<IRuleEvaluator, MinProjectsCompletedEvaluator>();
+        builder.Services.AddScoped<IRuleEvaluator, MinReviewsCompletedEvaluator>();
+        builder.Services.AddScoped<IRuleEvaluator, SameTimezoneEvaluator>();
+
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddSingleton<IBroadcastRegistry, MemoryBroadcastRegistry>();
 

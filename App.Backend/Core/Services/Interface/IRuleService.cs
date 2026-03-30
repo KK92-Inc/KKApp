@@ -3,10 +3,10 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-using App.Backend.Core.Rules;
+using App.Backend.Domain;
 using App.Backend.Domain.Entities.Reviews;
 using App.Backend.Domain.Entities.Users;
-using App.Backend.Domain.Rules;
+using App.Backend.Core.Engines.Evaluations;
 
 namespace App.Backend.Core.Services.Interface;
 
@@ -16,46 +16,31 @@ namespace App.Backend.Core.Services.Interface;
 public interface IRuleService
 {
     /// <summary>
-    /// Evaluates a list of eligibility rules against a user context.
-    /// All rules must pass for the user to be eligible.
+    /// Ad-Hoc evaluation of a list of rules in a given context.
     /// </summary>
-    /// <param name="rules">The rules to evaluate.</param>
-    /// <param name="context">The context containing user and project info.</param>
-    /// <param name="token">Cancellation token.</param>
-    /// <returns>The eligibility result.</returns>
-    Task<RuleEngineResult> EvaluateAsync(
-        IEnumerable<Rule> rules,
-        RuleContext context,
-        CancellationToken token = default
-    );
+    /// <param name="rules"></param>
+    /// <param name="ctx"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    Task<Result> EvaluateAsync(IEnumerable<Rule> rules, Context ctx, CancellationToken ct = default);
 
     /// <summary>
-    /// Determines whether a user is eligible to act as a reviewer for a rubric.
+    /// Can this user request a review for the given project?
     /// </summary>
-    /// <param name="rubric">The rubric with reviewer eligibility rules.</param>
-    /// <param name="reviewer">The potential reviewer.</param>
-    /// <param name="userProject">The user project to be reviewed.</param>
-    /// <param name="token">Cancellation token.</param>
-    /// <returns>The eligibility result.</returns>
-    Task<RuleEngineResult> AbleToReviewAsync(
-        Rubric rubric,
-        User reviewer,
-        UserProject userProject,
-        CancellationToken token = default
-    );
+    /// <param name="rubric"></param>
+    /// <param name="reviewee"></param>
+    /// <param name="project"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    Task<Result> CanRequestReviewAsync(Rubric rubric, User reviewee, UserProject project, CancellationToken ct = default);
 
     /// <summary>
-    /// Determines whether a user project (and its owner) are eligible to request a review using the rubric.
+    /// Can this user review the given project?
     /// </summary>
-    /// <param name="rubric">The rubric with reviewee eligibility rules.</param>
-    /// <param name="userProject">The user project requesting review.</param>
-    /// <param name="user">The user making the request.</param>
-    /// <param name="token">Cancellation token.</param>
-    /// <returns>The eligibility result.</returns>
-    Task<RuleEngineResult> AbleToRequestReviewAsync(
-        Rubric rubric,
-        User user,
-        UserProject userProject,
-        CancellationToken token = default
-    );
+    /// <param name="rubric"></param>
+    /// <param name="reviewer"></param>
+    /// <param name="subjectProject"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    Task<Result> CanReviewAsync(Rubric rubric, User reviewer, UserProject subjectProject, CancellationToken ct = default);
 }
