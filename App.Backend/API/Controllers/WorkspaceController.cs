@@ -21,9 +21,11 @@ using App.Backend.Models.Requests.Users;
 using App.Backend.Models.Requests.Projects;
 using App.Backend.Models.Requests.Goals;
 using App.Backend.Models.Requests.Cursus;
+using App.Backend.Models.Requests.Rubrics;
 using App.Backend.Domain.Entities.Users;
 using App.Backend.Models.Responses.Entities.Projects;
 using App.Backend.Models.Responses.Entities.Cursus;
+using App.Backend.Models.Responses.Entities.Reviews;
 using App.Backend.Core;
 
 // ============================================================================
@@ -37,7 +39,8 @@ public class WorkspaceController(
     IWorkspaceService workspaceService,
     IProjectService projectService,
     IGoalService goalService,
-    ICursusService cursusService
+    ICursusService cursusService,
+    IRubricService rubricService
 ) : Controller
 {
     [HttpGet("current")]
@@ -166,6 +169,45 @@ public class WorkspaceController(
         }, token);
 
         return Ok(new ProjectDO(project));
+    }
+
+    [HttpPost("{workspace:guid}/rubric")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    // [ProtectedResource("workspaces", ["workspaces:write", "rubrics:write"])]
+    [EndpointSummary("Create a new rubric")]
+    [EndpointDescription("Create a new rubric with an associated git repository")]
+    public async Task<ActionResult<RubricDO>> AddRubric(
+        Guid workspace,
+        [FromBody] PostRubricEntityRequestDTO dto,
+        CancellationToken token
+    )
+    {
+        var space = await workspaceService.FindByIdAsync(workspace, token);
+        if (space is null)
+            return NotFound();
+        if (space.Ownership is EntityOwnership.Organization && !User.IsInRole("Staff"))
+            return Forbid();
+
+        var id = User.GetSID();
+        if (space.OwnerId is not null && space.OwnerId != id)
+            return Forbid();
+        if (await rubricService.FindBySlugAsync(dto.Name.ToSlug()) is not null)
+            return Conflict();
+
+        var rubric = await workspaceService.AddRubricAsync(space.Id, new()
+        {
+            Name = dto.Name,
+            Markdown = dto.Markdown ?? string.Empty,
+            Slug = dto.Name.ToSlug(),
+            Public = dto.Public,
+            Enabled = dto.Enabled,
+            SupportedReviewKinds = dto.SupportedReviewKinds,
+            ReviewerRules = dto.ReviewerRules ?? [],
+            RevieweeRules = dto.RevieweeRules ?? []
+        }, id, token);
+
+        return Ok(new RubricDO(rubric));
     }
 
     #endregion AddEntities

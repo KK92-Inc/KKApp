@@ -4,6 +4,7 @@
 // ============================================================================
 
 using System.ComponentModel.DataAnnotations;
+using App.Backend.Domain;
 using App.Backend.Domain.Entities.Reviews;
 using App.Backend.Domain.Enums;
 
@@ -52,12 +53,12 @@ public class RubricDO(Rubric rubric) : BaseEntityDO<Rubric>(rubric)
     /// <summary>
     /// Rules that determine who can be a reviewer.
     /// </summary>
-    // public List<Rule> ReviewerEligibilityRules { get; set; } = rubric.ReviewerEligibilityRules;
+    public ICollection<Rule> ReviewerRules { get; set; } = rubric.ReviewerRules;
 
     /// <summary>
     /// Rules that determine who can request a review.
     /// </summary>
-    // public List<Rule> RevieweeEligibilityRules { get; set; } = rubric.RevieweeEligibilityRules;
+    public ICollection<Rule> RevieweeRules { get; set; } = rubric.RevieweeRules;
 
     public static implicit operator RubricDO?(Rubric? rubric) =>
         rubric is null ? null : new(rubric);

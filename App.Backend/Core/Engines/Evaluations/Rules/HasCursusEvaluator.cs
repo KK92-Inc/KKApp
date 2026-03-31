@@ -26,6 +26,6 @@ public sealed class HasCursusEvaluator(DatabaseContext db) : IRuleEvaluator<HasC
 
         return enrolled
             ? Result.Success()
-            : Result.Failure(rule.Description ?? $"Must be enrolled in cursus '{rule.CursusSlug}'.");
+            : Result.Failure(rule.Description ?? $"Must be enrolled in cursus '{rule.CursusId}'.");
     }
 }

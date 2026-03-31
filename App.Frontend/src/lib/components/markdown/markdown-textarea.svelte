@@ -137,7 +137,7 @@
 			draggable="false"
 			{placeholder}
 			bind:value
-			class="field-sizing-content rounded-none shadow-none focus-visible:ring-0"
+			class="field-sizing-content rounded-none shadow-none focus-visible:ring-0 max-h-96"
 			{...rest}
 		/>
 		<div class="text-muted-foreground flex items-center gap-1.5 px-2 py-1.5 text-xs border border-t-0 border-input bg-muted rounded-b">

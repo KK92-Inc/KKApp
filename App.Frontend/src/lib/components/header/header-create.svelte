@@ -27,19 +27,19 @@
 		<DropdownMenu.Label>Creation Menu</DropdownMenu.Label>
 		<DropdownMenu.Separator />
 		<DropdownMenu.Group>
-			<DropdownMenu.Item href="/cursus/new">
+			<DropdownMenu.Item href="/cursus/create">
 				<GraduationCap />
 				New Cursus
 			</DropdownMenu.Item>
-			<DropdownMenu.Item href="/goals/new">
+			<DropdownMenu.Item href="/goals/create">
 				<Trophy />
 				New Goal
 			</DropdownMenu.Item>
-			<DropdownMenu.Item href="/projects/new">
+			<DropdownMenu.Item href="/projects/create">
 				<Archive />
 				New Project
 			</DropdownMenu.Item>
-			<DropdownMenu.Item href="/rubrics/new">
+			<DropdownMenu.Item href="/rubrics/create">
 				<MessageSquareCode />
 				New Rubric
 			</DropdownMenu.Item>

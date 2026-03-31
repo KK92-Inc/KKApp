@@ -4,6 +4,7 @@
 // ============================================================================
 
 using App.Backend.Domain.Entities;
+using App.Backend.Domain.Entities.Reviews;
 
 // ============================================================================
 
@@ -46,5 +47,15 @@ public interface IWorkspaceService : IDomainService<Workspace>, IUserQueryable<W
     /// <param name="token"></param>
     /// <returns></returns>
     public Task<Cursus> AddCursusAsync(Guid workspaceId, Cursus cursus, CancellationToken token = default);
+
+    /// <summary>
+    /// Creates a new rubric with an associated git repository into the specified workspace.
+    /// </summary>
+    /// <param name="workspaceId">The workspace ID.</param>
+    /// <param name="rubric">The rubric to create.</param>
+    /// <param name="creatorId">The creator user ID.</param>
+    /// <param name="token">The cancellation token.</param>
+    /// <returns>The created rubric.</returns>
+    public Task<Rubric> AddRubricAsync(Guid workspaceId, Rubric rubric, Guid creatorId, CancellationToken token = default);
 
 }

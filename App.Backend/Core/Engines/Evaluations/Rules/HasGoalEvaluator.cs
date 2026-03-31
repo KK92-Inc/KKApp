@@ -25,6 +25,6 @@ public sealed class HasGoalEvaluator(DatabaseContext db) : IRuleEvaluator<HasGoa
 
         return enrolled
             ? Result.Success()
-            : Result.Failure(rule.Description ?? $"Must have completed goal '{rule.GoalSlug}'.");
+            : Result.Failure(rule.Description ?? $"Must have completed goal '{rule.GoalId}'.");
     }
 }

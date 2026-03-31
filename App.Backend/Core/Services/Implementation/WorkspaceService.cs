@@ -10,6 +10,7 @@ using App.Backend.Models;
 using Microsoft.EntityFrameworkCore;
 using App.Backend.Domain.Enums;
 using App.Backend.Domain.Entities.Projects;
+using App.Backend.Domain.Entities.Reviews;
 using App.Backend.Domain.Entities;
 using System.Net;
 using System.Data;
@@ -93,5 +94,46 @@ public class WorkspaceService(DatabaseContext ctx, IGitService git) : BaseServic
         var output = await _context.Cursi.AddAsync(cursus);
         await _context.SaveChangesAsync(token);
         return output.Entity;
+    }
+
+    public async Task<Rubric> AddRubricAsync(Guid workspaceId, Rubric rubric, Guid creatorId, CancellationToken token = default)
+    {
+        var strategy = _context.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async (ct) =>
+        {
+            await using var transaction = await _context.Database.BeginTransactionAsync(ct);
+            var workspace = await FindByIdAsync(workspaceId, ct) ?? throw new ServiceException(404, "Workspace not found");
+            var owner = workspace.Owner?.Login ?? "root";
+
+            try
+            {
+                var name = rubric.Name.ToSlug();
+                if (!await git.CreateAsync(owner, name, ct))
+                    throw new ServiceException(409, "Repository for such rubric already exists");
+
+                var repo = await _context.GitInfo.AddAsync(new()
+                {
+                    Owner = owner,
+                    Name = name,
+                    Ownership = workspace.Owner is null ? EntityOwnership.Organization : EntityOwnership.User
+                }, ct);
+
+                await _context.SaveChangesAsync(ct);
+
+                rubric.GitInfoId = repo.Entity.Id;
+                rubric.CreatorId = creatorId;
+                var output = await _context.Rubrics.AddAsync(rubric, ct);
+
+                await _context.SaveChangesAsync(ct);
+                await transaction.CommitAsync(ct);
+                return output.Entity;
+            }
+            catch (Exception e)
+            {
+                await transaction.RollbackAsync(ct);
+                await git.DeleteAsync(owner, rubric.Name);
+                throw new ServiceException(500, $"Something went wrong: {e.Message}");
+            }
+        }, token);
     }
 }
