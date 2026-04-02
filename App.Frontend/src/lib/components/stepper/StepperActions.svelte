@@ -18,6 +18,8 @@
 		nextLabel?: string;
 		/** Label shown on the last step instead of nextLabel. @default "Finish" */
 		finishLabel?: string;
+		/** Is loading */
+		loading?: boolean;
 		/** Called when the user clicks Next on the final step. */
 		onfinish?: () => void;
 		class?: string;
@@ -31,6 +33,7 @@
 		nextLabel = 'Next',
 		finishLabel = 'Finish',
 		onfinish,
+		loading = false,
 		class: className = ''
 	}: Props = $props();
 
@@ -53,7 +56,7 @@
 		<Button
 			variant="outline"
 			onclick={() => ctx.prev()}
-			disabled={ctx.isFirst}
+			disabled={ctx.isFirst || loading}
 		>
 			<ChevronLeft class="mr-1 h-4 w-4" />
 			{prevLabel}
@@ -73,7 +76,7 @@
 	{#if nextSnippet}
 		{@render nextSnippet()}
 	{:else}
-		<Button onclick={handleNext}>
+		<Button onclick={handleNext} {loading}>
 			{ctx.isLast ? finishLabel : nextLabel}
 			{#if !ctx.isLast}
 				<ChevronRight class="ml-1 h-4 w-4" />
