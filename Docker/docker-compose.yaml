@@ -81,6 +81,10 @@ services:
         target: "/home/git/repos"
         source: "git-repos"
         read_only: false
+      - type: "volume"
+        target: "/etc/ssh/keys"
+        source: "git-ssh-keys"
+        read_only: false
     depends_on:
       database:
         condition: "service_started"

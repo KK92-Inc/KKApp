@@ -1,13 +1,11 @@
 #!/bin/sh
 # ============================================================================
-# Entrypoint for git-ssh container
-#
-# sshd's AuthorizedKeysCommand runs with a sanitized environment, so
-# Aspire-injected env vars (e.g. ConnectionStrings__db) are NOT available
-# to the auth binary. We persist them to a file that the auth binary reads.
+# Copyright (c) 2026 - W2Inc, All Rights Reserved.
+# See README.md in the project root for license information.
 # ============================================================================
-# TODO: Check if we really need *all* of them ?
-printenv > /etc/aspire-env
+ssh-keygen -A
+
+printf 'DATABASE_URL=%s\n' "$DB_URI" > /etc/aspire-env
 chmod 644 /etc/aspire-env
 chown -R git:git /home/git/repos
 

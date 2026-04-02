@@ -1,21 +1,18 @@
-# Basic SSH Config
 Port 22
 Protocol 2
-HostKey /etc/ssh/ssh_host_rsa_key
 HostKey /etc/ssh/ssh_host_ecdsa_key
 HostKey /etc/ssh/ssh_host_ed25519_key
 
-# Disable password auth (keys only)
+PermitRootLogin no
+AllowUsers git
+
 PasswordAuthentication no
-ChallengeResponseAuthentication no
-UsePAM yes
+KbdInteractiveAuthentication no
+UsePAM no
 
-# %u replaces with the username (which will always be "git")
-# %f is the fingerprint (optional, if you want to optimize)
-AuthorizedKeysCommand /usr/local/bin/auth %u %f %t %k
-AuthorizedKeysCommandUser root
+AuthorizedKeysCommand /usr/local/bin/auth %f %t %k
+AuthorizedKeysCommandUser nobody
 
-# 2. Prevent port forwarding (security)
 AllowAgentForwarding no
 AllowTcpForwarding no
 X11Forwarding no

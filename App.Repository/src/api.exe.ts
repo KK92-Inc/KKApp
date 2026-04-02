@@ -4,38 +4,37 @@
 // ============================================================================
 
 import { $ } from "bun";
-import { existsSync, type PathLike } from "fs";
-import { stderr, stdout } from "process";
+import { existsSync } from "fs";
+import { Log, env } from "./utilities";
+
+if (!import.meta.main) {
+	Log.die("This module is meant to be run as a script, not imported.");
+}
 
 // ============================================================================
 
-const REPO = process.env["REPOS"] ?? `${process.cwd()}/tmp/repos`;
-const path = (owner: string, name: string) => `${REPO}/${owner}/${name}`;
-const log = (msg: string) => stdout.write(`[GIT]: ${msg}\n`);
+const REPO = env("REPOSITORY_DIRECTORY") ?? `${process.cwd()}/tmp/repos`;
+const repoPath = (owner: string, name: string) => `${REPO}/${owner}/${name}`;
 
 // ============================================================================
 
 const server = Bun.serve({
 	error(error) {
 		const body = JSON.stringify({ error: `${error}\n${error.stack}\n` });
-		log(body);
-		return new Response(body, {
-			status: 500,
-		});
+		Log.error(body);
+		return new Response(body, { status: 500 });
 	},
 	routes: {
 		"/health": new Response("OK"),
 		"/repo/:owner/:name": {
-			/** Get a Repository */
 			GET: async (req) => {
-				const entity = path(req.params.owner, req.params.name);
+				const entity = repoPath(req.params.owner, req.params.name);
 				return new Response(null, {
 					status: existsSync(entity) ? 204 : 404,
 				});
 			},
-			/** Create a new Repository */
 			POST: async (req) => {
-				const entity = path(req.params.owner, req.params.name);
+				const entity = repoPath(req.params.owner, req.params.name);
 				if (existsSync(entity)) {
 					return new Response(null, { status: 409 });
 				}
@@ -44,9 +43,9 @@ const server = Bun.serve({
 				return new Response(null, { status: 201 });
 			},
 			DELETE: async (req) => {
-				const entity = path(req.params.owner, req.params.name);
-				if (existsSync(entity)) {
-					return new Response(null, { status: 409 });
+				const entity = repoPath(req.params.owner, req.params.name);
+				if (!existsSync(entity)) {
+					return new Response(null, { status: 404 });
 				}
 
 				await $`rm -rf ${entity}`.quiet();
@@ -55,8 +54,8 @@ const server = Bun.serve({
 		},
 		"/repo/:owner/:name/rename/:new": {
 			POST: async (req) => {
-				const newPath = path(req.params.owner, req.params.new);
-				const oldPath = path(req.params.owner, req.params.name);
+				const newPath = repoPath(req.params.owner, req.params.new);
+				const oldPath = repoPath(req.params.owner, req.params.name);
 				if (!existsSync(oldPath)) return new Response(null, { status: 404 });
 				if (existsSync(newPath)) return new Response(null, { status: 409 });
 				await $`mv ${oldPath} ${newPath}`.quiet();
@@ -65,7 +64,7 @@ const server = Bun.serve({
 		},
 		"/repo/:owner/:name/branches": {
 			GET: async (req) => {
-				const entity = path(req.params.owner, req.params.name);
+				const entity = repoPath(req.params.owner, req.params.name);
 				if (!existsSync(entity)) {
 					return new Response(null, { status: 404 });
 				}
@@ -77,11 +76,10 @@ const server = Bun.serve({
 				});
 			},
 		},
-		// Get Tree representation of the repo
 		"/repo/:owner/:name/tree/:branch/*": {
 			GET: async (req) => {
 				const branch = req.params.branch;
-				const entity = path(req.params.owner, req.params.name);
+				const entity = repoPath(req.params.owner, req.params.name);
 				const url = new URL(req.url);
 				const prefix = `/repo/${req.params.owner}/${req.params.name}/tree/${branch}/`;
 				const dir = url.pathname.startsWith(prefix)
@@ -96,21 +94,20 @@ const server = Bun.serve({
 				return new Response(result.text(), { status: 200 });
 			},
 		},
-		// Get Blob information of file in path
 		"/repo/:owner/:name/blob/:branch/*": {
 			GET: async (req) => {
 				const url = new URL(req.url);
 				const git = `${REPO}/${req.params.owner}/${req.params.name}`;
 				const prefix = `/repo/${req.params.owner}/${req.params.name}/blob/${req.params.branch}/`;
-				const path = url.pathname.startsWith(prefix)
+				const filePath = url.pathname.startsWith(prefix)
 					? url.pathname.slice(prefix.length)
 					: "";
 
 				if (!existsSync(git)) return new Response(null, { status: 404 });
-				if (!path) return new Response(null, { status: 400 });
+				if (!filePath) return new Response(null, { status: 400 });
 
 				const content =
-					await $`git -C ${git} show ${req.params.branch}:${path}`.quiet();
+					await $`git -C ${git} show ${req.params.branch}:${filePath}`.quiet();
 				return new Response(
 					Buffer.from(content.arrayBuffer()).toString("base64"),
 					{
@@ -123,4 +120,4 @@ const server = Bun.serve({
 	},
 });
 
-log(`Running on: http://${server.hostname}:${server.port}`);
+Log.info(`Running on: http://${server.hostname}:${server.port}`);
