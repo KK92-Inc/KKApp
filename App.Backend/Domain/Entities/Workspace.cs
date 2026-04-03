@@ -28,6 +28,10 @@ public class Workspace : BaseEntity
     [Column("ownership")]
     public EntityOwnership Ownership { get; set; }
 
+    /// <summary>
+    /// The user that owns this workspace, if applicable.
+    /// If null, this is a staff/system workspace.
+    /// </summary>
     [ForeignKey(nameof(OwnerId))]
     public virtual User? Owner { get; set; }
 

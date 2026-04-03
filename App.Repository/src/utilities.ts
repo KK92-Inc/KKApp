@@ -27,10 +27,17 @@ export const Log = {
  * If not provided, it will simply return undefined.
  * @returns The value of the environment variable, or undefined.
  */
+export function env(key: string): string | undefined;
+export function env(key: string, message: string): string;
 export function env(key: string, message?: string): string | undefined {
 	const value = process.env[key];
 	if (!value && message) {
-		Log.die(message ?? `Environment variable not set: ${key}`);
+		Log.die(message);
 	}
 	return value;
+}
+
+/** Defers the execution of a function until the current scope exits */
+export function defer(fn: () => void) {
+  return { [Symbol.dispose]: fn };
 }

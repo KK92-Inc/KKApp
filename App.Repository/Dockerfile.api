@@ -18,6 +18,8 @@ RUN apk add --no-cache git bash ca-certificates \
 
 COPY --from=builder /app/output/api /usr/local/bin/api
 
+COPY ./config/entrypoint.api.sh /usr/local/bin/entrypoint.sh
+
 RUN chown root:root /usr/local/bin/api \
     && chmod 755 /usr/local/bin/api
 
@@ -28,4 +30,4 @@ ENV REPOSITORY_DIRECTORY=/home/git/repos
 USER git
 EXPOSE 3000
 VOLUME ["/home/git/repos"]
-ENTRYPOINT ["/usr/local/bin/api"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

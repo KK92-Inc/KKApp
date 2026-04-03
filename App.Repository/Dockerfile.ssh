@@ -22,7 +22,7 @@ COPY --from=builder /app/output/shell /home/git/shell
 COPY --from=builder /app/output/auth /usr/local/bin/auth
 
 COPY ./config/sshd_config /etc/ssh/sshd_config
-COPY ./config/entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY ./config/entrypoint.shell.sh /usr/local/bin/entrypoint.sh
 
 RUN chown root:root /usr/local/bin/auth \
     && chown git:git /home/git/shell \
@@ -33,5 +33,4 @@ ENV REPOSITORY_DIRECTORY=/home/git/repos
 
 EXPOSE 22
 VOLUME ["/home/git/repos"]
-
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
