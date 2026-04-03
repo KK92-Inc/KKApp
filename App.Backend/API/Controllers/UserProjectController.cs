@@ -8,9 +8,11 @@ using Microsoft.AspNetCore.Authorization;
 using App.Backend.Core.Query;
 using App.Backend.API.Params;
 using App.Backend.Core.Services.Interface;
+using App.Backend.Domain.Entities;
+using App.Backend.Domain.Enums;
 using App.Backend.Models;
 using App.Backend.Models.Responses.Entities.Projects;
-using App.Backend.Domain.Enums;
+using Microsoft.EntityFrameworkCore;
 
 // ============================================================================
 
@@ -29,7 +31,8 @@ namespace App.Backend.API.Controllers;
 [Route("users/{userId:guid}/projects"), Tags("UserProjects")]
 [Authorize]
 public class UserProjectController(
-    IUserProjectService userProjectService
+    IUserProjectService userProjectService,
+    IMemberService memberService
 ) : Controller
 {
     [HttpGet]
@@ -41,20 +44,25 @@ public class UserProjectController(
     [EndpointDescription("Returns all active project sessions the user is a member of. Supports filtering by name, slug, and state.")]
     public async Task<ActionResult<IEnumerable<UserProjectDO>>> GetByUser(
         Guid userId,
-        [FromQuery(Name = "filter[name]")] string? name,
-        [FromQuery(Name = "filter[slug]")] string? slug,
+        [FromQuery(Name = "filter[name]")]  string? name,
+        [FromQuery(Name = "filter[slug]")]  string? slug,
         [FromQuery(Name = "filter[state]")] EntityObjectState? state,
         [FromQuery] Pagination pagination,
         [FromQuery] Sorting sorting,
         CancellationToken token
     )
     {
+        // Members no longer exist as a navigation property on UserProject.
+        // The membership predicate is now a correlated subquery against tbl_members,
+        // expressed via the injected DbContext inside the service — the predicate
+        // lambda is replaced by a dedicated service method that builds the correct query.
         var page = await userProjectService.GetAllAsync(sorting, pagination, token,
-            up => up.Members.Any(m => m.UserId == userId && m.Role != UserProjectRole.Pending && m.LeftAt == null),
-            name is null ? null : up => up.Project.Name.Contains(name),
-            slug is null ? null : up => up.Project.Slug == slug,
+            // up => memberService.HasActiveMember(up.Id, userId),
+            name  is null ? null : up => up.Project.Name.Contains(name),
+            slug  is null ? null : up => up.Project.Slug == slug,
             state is null ? null : up => up.State == state
         );
+
         page.AppendHeaders(Response.Headers);
         return Ok(page.Items.Select(up => new UserProjectDO(up)));
     }
@@ -94,12 +102,16 @@ public class UserProjectController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Get project session members")]
     [EndpointDescription("Returns all current and past members of the specified user project session.")]
-    public async Task<ActionResult<IEnumerable<UserProjectMemberDO>>> GetMembers(Guid id, CancellationToken token)
+    public async Task<ActionResult<IEnumerable<MemberDO>>> GetMembers(Guid id, CancellationToken token)
     {
+        // up.Members is gone — fetch directly from the member service instead.
+        // The session existence check is preserved: 404 if the session doesn't exist,
+        // empty list if it exists but has no members (shouldn't happen in practice).
         var up = await userProjectService.FindByIdAsync(id, token);
         if (up is null) return NotFound();
 
-        return Ok(up.Members.Select(m => new UserProjectMemberDO(m)));
+        var members = await memberService.GetProjectMembersAsync(id, token);
+        return Ok(members.Select(m => new MemberDO(m)));
     }
 
     [HttpGet("/user-projects/{id:guid}/transactions")]

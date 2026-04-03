@@ -32,7 +32,6 @@ public class UserProject : BaseEntity
         Rubric = null;
         RubricId = null;
 
-        Members = [];
         Reviews = [];
         Transactions = [];
     }
@@ -80,7 +79,7 @@ public class UserProject : BaseEntity
     /// <summary>
     /// Users partaking in this project session.
     /// </summary>
-    public virtual ICollection<UserProjectMember> Members { get; set; }
+    // public virtual ICollection<Member> Members { get; set; } // this is now gone
 
     /// <summary>
     /// Transactions related to user activities within this project.

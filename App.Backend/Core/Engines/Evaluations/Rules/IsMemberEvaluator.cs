@@ -4,6 +4,7 @@
 // ============================================================================
 
 using App.Backend.Database;
+using App.Backend.Domain.Enums;
 using App.Backend.Domain.Rules.Evaluations;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,9 +22,10 @@ public sealed class IsMemberEvaluator(DatabaseContext db) : IRuleEvaluator<IsMem
         if (ctx.SubjectProject is null)
             return Result.Skip("No subject project in context; IsMember rule is not applicable.");
 
-        var isMember = await db.UserProjectMembers
+        var isMember = await db.Members
             .AnyAsync(m =>
-                m.UserProjectId == ctx.SubjectProject.Id &&
+                m.EntityId == ctx.SubjectProject.Id &&
+                m.EntityType == MemberEntityType.UserProject &&
                 m.UserId == ctx.User.Id &&
                 m.LeftAt == null, ct);
 

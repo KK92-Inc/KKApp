@@ -50,7 +50,7 @@ public class DatabaseContext(DbContextOptions<DatabaseContext> options) : DbCont
     public DbSet<Notification> Notifications { get; set; }
     public DbSet<Spotlight> Spotlights { get; set; }
     public DbSet<SpotlightDismissal> SpotlightDismissals { get; set; }
-    public DbSet<UserProjectMember> UserProjectMembers { get; set; }
+    public DbSet<Member> Members { get; set; }
     public DbSet<UserProjectTransaction> UserProjectTransactions { get; set; }
 
     // Joins

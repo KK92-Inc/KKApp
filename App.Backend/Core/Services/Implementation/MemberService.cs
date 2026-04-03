@@ -5,9 +5,11 @@
 
 using App.Backend.Database;
 using App.Backend.Core.Services.Interface;
-using App.Backend.Domain.Entities.Projects;
+using App.Backend.Domain.Entities;
 using App.Backend.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
+using App.Backend.Domain.Entities.Users;
 
 // ============================================================================
 
@@ -15,7 +17,41 @@ namespace App.Backend.Core.Services.Implementation;
 
 public class MemberService(DatabaseContext ctx) : IMemberService
 {
-    public async Task<UserProjectMember> InviteToProjectAsync(Guid inviterId, Guid inviteeId, Guid userProjectId, CancellationToken token)
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Loads all Member rows for a given UserProject in one query.
+    /// Replaces the old Include(p => p.Members) pattern.
+    /// </summary>
+    private Task<List<Member>> LoadProjectMembersAsync(Guid userProjectId, CancellationToken ct)
+        => ctx.Members
+            .Where(m => m.EntityType == MemberEntityType.UserProject
+                     && m.EntityId == userProjectId)
+            .ToListAsync(ct);
+
+    // -------------------------------------------------------------------------
+    // Invite
+    // -------------------------------------------------------------------------
+
+    // Add to MemberService
+
+    public Task<List<Member>> GetProjectMembersAsync(Guid userProjectId, CancellationToken token)
+        => LoadProjectMembersAsync(userProjectId, token);
+
+    // Returns a composable LINQ expression EF can translate to SQL.
+    // This replaces the inline up.Members.Any(...) lambda that no longer compiles.
+    public Expression<Func<UserProject, bool>> HasActiveMember(Guid userProjectId, Guid userId)
+        => up => ctx.Members.Any(m =>
+            m.EntityType == MemberEntityType.UserProject &&
+            m.EntityId == userProjectId &&
+            m.UserId == userId &&
+            m.Role != MemberRole.Pending &&
+            m.LeftAt == null);
+
+    public async Task<Member> InviteToProjectAsync(
+        Guid inviterId, Guid inviteeId, Guid userProjectId, CancellationToken token)
     {
         if (inviterId == inviteeId)
             throw new ServiceException(400, "You cannot invite yourself");
@@ -25,55 +61,56 @@ public class MemberService(DatabaseContext ctx) : IMemberService
         {
             await using var transaction = await ctx.Database.BeginTransactionAsync(ct);
 
-            // Load the session with members and the project template (for MaxMembers)
+            // No longer Include(p => p.Members) — members live in tbl_members now
             var up = await ctx.UserProjects
-                .Include(p => p.Members)
                 .Include(p => p.Project)
                 .FirstOrDefaultAsync(p => p.Id == userProjectId, ct)
                 ?? throw new ServiceException(404, "Project session not found");
 
             if (up.State is not EntityObjectState.Active)
-                throw new ServiceException("Project session is not active");
+                throw new ServiceException(422, "Project session is not active");
 
-            // Only the leader can invite
-            var inviter = up.Members.FirstOrDefault(m => m.UserId == inviterId);
-            if (inviter is null || inviter.Role is not UserProjectRole.Leader)
+            var members = await LoadProjectMembersAsync(userProjectId, ct);
+
+            var inviter = members.FirstOrDefault(m => m.UserId == inviterId);
+            if (inviter is null || inviter.Role is not MemberRole.Leader)
                 throw new ServiceException(403, "Only the session leader can invite members");
 
-            // Check if the invitee is already an active member or has a pending invite
-            var existing = up.Members.FirstOrDefault(m => m.UserId == inviteeId && m.LeftAt == null);
+            var existing = members.FirstOrDefault(m => m.UserId == inviteeId && m.LeftAt == null);
             if (existing is not null)
             {
-                if (existing.Role is UserProjectRole.Pending)
+                if (existing.Role is MemberRole.Pending)
                     throw new ServiceException(409, "User already has a pending invite");
                 throw new ServiceException(409, "User is already a member of this session");
             }
 
-            // Count active members (non-left) against max
-            var count = up.Members.Count(m => m.LeftAt == null);
-            if (count >= 5) // TODO: Define on project or define on env ?
-                throw new ServiceException(422, $"Project session is full (max {5} members)");
+            var activeCount = members.Count(m => m.LeftAt == null);
+            if (activeCount >= up.MaxMembers)
+                throw new ServiceException(422, $"Project session is full (max {up.MaxMembers} members)");
 
-            // Reuse the existing left row if one exists, otherwise create a new one
-            UserProjectMember member;
-            var left = up.Members.FirstOrDefault(m => m.UserId == inviteeId && m.LeftAt is not null);
+            // Reuse a previously-left row to avoid accumulating duplicates
+            Member member;
+            var left = members.FirstOrDefault(m => m.UserId == inviteeId && m.LeftAt is not null);
             if (left is not null)
             {
-                left.Role = UserProjectRole.Pending;
+                left.Role = MemberRole.Pending;
                 left.LeftAt = null;
-                ctx.UserProjectMembers.Update(left);
+                ctx.Members.Update(left);
                 member = left;
             }
             else
             {
-                member = new UserProjectMember
+                member = new Member
                 {
-                    UserProjectId = userProjectId,
+                    EntityType = MemberEntityType.UserProject,
+                    EntityId = userProjectId,
+                    GitId = up.GitInfoId,   // null if the session has no repo yet
                     UserId = inviteeId,
-                    Role = UserProjectRole.Pending,
+                    Role = MemberRole.Pending,
                 };
-                await ctx.UserProjectMembers.AddAsync(member, ct);
+                await ctx.Members.AddAsync(member, ct);
             }
+
             await ctx.UserProjectTransactions.AddAsync(new()
             {
                 UserId = inviterId,
@@ -87,52 +124,59 @@ public class MemberService(DatabaseContext ctx) : IMemberService
         }, token);
     }
 
-    public async Task<UserProjectMember> UninviteFromProjectAsync(Guid inviterId, Guid inviteeId, Guid userProjectId, CancellationToken token)
+    // -------------------------------------------------------------------------
+    // Uninvite
+    // -------------------------------------------------------------------------
+
+    public async Task<Member> UninviteFromProjectAsync(
+        Guid inviterId, Guid inviteeId, Guid userProjectId, CancellationToken token)
     {
         if (inviterId == inviteeId)
             throw new ServiceException(400, "You cannot uninvite yourself");
 
         var up = await ctx.UserProjects
-            .Include(p => p.Members)
-            .Include(p => p.Project)
             .FirstOrDefaultAsync(p => p.Id == userProjectId, token)
             ?? throw new ServiceException(404, "Project session not found");
 
         if (up.State is not EntityObjectState.Active)
-            throw new ServiceException("Project session is not active");
+            throw new ServiceException(422, "Project session is not active");
 
-        // Only the leader can cancel invites
-        var inviter = up.Members.FirstOrDefault(m => m.UserId == inviterId);
-        if (inviter is null || inviter.Role is not UserProjectRole.Leader)
+        var members = await LoadProjectMembersAsync(userProjectId, token);
+
+        var inviter = members.FirstOrDefault(m => m.UserId == inviterId);
+        if (inviter is null || inviter.Role is not MemberRole.Leader)
             throw new ServiceException(403, "Only the session leader can cancel invites");
 
-        // Check if the invitee is a member or has a pending invite
-        var existing = up.Members.FirstOrDefault(m => m.UserId == inviteeId)
-            ?? throw new ServiceException(409, "User was never invited to be a member of this session");
+        var existing = members.FirstOrDefault(m => m.UserId == inviteeId)
+            ?? throw new ServiceException(409, "User was never invited to this session");
 
-        if (existing.Role is not UserProjectRole.Pending)
-            throw new ServiceException(409, "User is a member");
+        if (existing.Role is not MemberRole.Pending)
+            throw new ServiceException(409, "User is already an active member, use kick instead");
 
-        ctx.UserProjectMembers.Remove(existing);
+        ctx.Members.Remove(existing);
         await ctx.SaveChangesAsync(token);
         return existing;
     }
 
-    public async Task<UserProjectMember> AcceptInviteAsync(Guid userId, Guid userProjectId, CancellationToken token)
+    // -------------------------------------------------------------------------
+    // Accept / Decline invite
+    // -------------------------------------------------------------------------
+
+    public async Task<Member> AcceptInviteAsync(Guid userId, Guid userProjectId, CancellationToken token)
     {
         var strategy = ctx.Database.CreateExecutionStrategy();
         return await strategy.ExecuteAsync(async (ct) =>
         {
             await using var transaction = await ctx.Database.BeginTransactionAsync(ct);
 
-            var member = await ctx.UserProjectMembers
+            var member = await ctx.Members
                 .FirstOrDefaultAsync(m =>
-                    m.UserProjectId == userProjectId &&
+                    m.EntityType == MemberEntityType.UserProject &&
+                    m.EntityId == userProjectId &&
                     m.UserId == userId &&
-                    m.Role == UserProjectRole.Pending, ct)
+                    m.Role == MemberRole.Pending, ct)
                 ?? throw new ServiceException(404, "No pending invite found");
 
-            // Verify the session is still active
             var state = await ctx.UserProjects
                 .Where(p => p.Id == userProjectId)
                 .Select(p => p.State)
@@ -141,8 +185,8 @@ public class MemberService(DatabaseContext ctx) : IMemberService
             if (state is not EntityObjectState.Active)
                 throw new ServiceException(422, "Project session is no longer active");
 
-            member.Role = UserProjectRole.Member;
-            ctx.UserProjectMembers.Update(member);
+            member.Role = MemberRole.Member;
+            ctx.Members.Update(member);
 
             await ctx.UserProjectTransactions.AddAsync(new()
             {
@@ -164,14 +208,15 @@ public class MemberService(DatabaseContext ctx) : IMemberService
         {
             await using var transaction = await ctx.Database.BeginTransactionAsync(ct);
 
-            var member = await ctx.UserProjectMembers
+            var member = await ctx.Members
                 .FirstOrDefaultAsync(m =>
-                    m.UserProjectId == userProjectId &&
+                    m.EntityType == MemberEntityType.UserProject &&
+                    m.EntityId == userProjectId &&
                     m.UserId == userId &&
-                    m.Role == UserProjectRole.Pending, ct)
+                    m.Role == MemberRole.Pending, ct)
                 ?? throw new ServiceException(404, "No pending invite found");
 
-            ctx.UserProjectMembers.Remove(member);
+            ctx.Members.Remove(member);
 
             await ctx.UserProjectTransactions.AddAsync(new()
             {
@@ -185,7 +230,12 @@ public class MemberService(DatabaseContext ctx) : IMemberService
         }, token);
     }
 
-    public async Task TransferLeadershipAsync(Guid currentLeaderId, Guid newLeaderId, Guid userProjectId, CancellationToken token)
+    // -------------------------------------------------------------------------
+    // Leadership transfer
+    // -------------------------------------------------------------------------
+
+    public async Task TransferLeadershipAsync(
+        Guid currentLeaderId, Guid newLeaderId, Guid userProjectId, CancellationToken token)
     {
         if (currentLeaderId == newLeaderId)
             throw new ServiceException(400, "Cannot transfer leadership to yourself");
@@ -196,28 +246,28 @@ public class MemberService(DatabaseContext ctx) : IMemberService
             await using var transaction = await ctx.Database.BeginTransactionAsync(ct);
 
             var up = await ctx.UserProjects
-                .Include(p => p.Members)
                 .FirstOrDefaultAsync(p => p.Id == userProjectId, ct)
                 ?? throw new ServiceException(404, "Project session not found");
 
             if (up.State is not EntityObjectState.Active)
                 throw new ServiceException(422, "Project session is not active");
 
-            var leader = up.Members.FirstOrDefault(m => m.UserId == currentLeaderId);
-            if (leader is null || leader.Role is not UserProjectRole.Leader)
+            var members = await LoadProjectMembersAsync(userProjectId, ct);
+
+            var leader = members.FirstOrDefault(m => m.UserId == currentLeaderId);
+            if (leader is null || leader.Role is not MemberRole.Leader)
                 throw new ServiceException(403, "Only the session leader can transfer leadership");
 
-            var target = up.Members.FirstOrDefault(m => m.UserId == newLeaderId);
+            var target = members.FirstOrDefault(m => m.UserId == newLeaderId);
             if (target is null || target.LeftAt is not null)
                 throw new ServiceException(404, "Target user is not an active member of this session");
-            if (target.Role is UserProjectRole.Pending)
+            if (target.Role is MemberRole.Pending)
                 throw new ServiceException(422, "Cannot transfer leadership to a pending member");
 
-            leader.Role = UserProjectRole.Member;
-            target.Role = UserProjectRole.Leader;
+            leader.Role = MemberRole.Member;
+            target.Role = MemberRole.Leader;
 
-            ctx.UserProjectMembers.Update(leader);
-            ctx.UserProjectMembers.Update(target);
+            ctx.Members.UpdateRange(leader, target);
 
             await ctx.UserProjectTransactions.AddAsync(new()
             {
@@ -231,6 +281,10 @@ public class MemberService(DatabaseContext ctx) : IMemberService
         }, token);
     }
 
+    // -------------------------------------------------------------------------
+    // Leave / Kick
+    // -------------------------------------------------------------------------
+
     public async Task LeaveProjectAsync(Guid userId, Guid userProjectId, CancellationToken token)
     {
         var strategy = ctx.Database.CreateExecutionStrategy();
@@ -238,23 +292,24 @@ public class MemberService(DatabaseContext ctx) : IMemberService
         {
             await using var transaction = await ctx.Database.BeginTransactionAsync(ct);
 
-            var member = await ctx.UserProjectMembers
+            var member = await ctx.Members
                 .FirstOrDefaultAsync(m =>
-                    m.UserProjectId == userProjectId &&
+                    m.EntityType == MemberEntityType.UserProject &&
+                    m.EntityId == userProjectId &&
                     m.UserId == userId &&
                     m.LeftAt == null, ct)
                 ?? throw new ServiceException(404, "Not a member of this session");
 
-            if (member.Role is UserProjectRole.Leader)
+            if (member.Role is MemberRole.Leader)
                 throw new ServiceException(422,
                     "Leaders cannot leave — transfer leadership first or unsubscribe from the project");
 
-            if (member.Role is UserProjectRole.Pending)
+            if (member.Role is MemberRole.Pending)
                 throw new ServiceException(422,
                     "Use the decline endpoint to decline a pending invite");
 
             member.LeftAt = DateTimeOffset.UtcNow;
-            ctx.UserProjectMembers.Update(member);
+            ctx.Members.Update(member);
 
             await ctx.UserProjectTransactions.AddAsync(new()
             {
@@ -279,30 +334,28 @@ public class MemberService(DatabaseContext ctx) : IMemberService
             await using var transaction = await ctx.Database.BeginTransactionAsync(ct);
 
             var up = await ctx.UserProjects
-                .Include(p => p.Members)
                 .FirstOrDefaultAsync(p => p.Id == userProjectId, ct)
                 ?? throw new ServiceException(404, "Project session not found");
 
             if (up.State is not EntityObjectState.Active)
                 throw new ServiceException(422, "Project session is not active");
 
-            var leader = up.Members.FirstOrDefault(m => m.UserId == leaderId);
-            if (leader is null || leader.Role is not UserProjectRole.Leader)
+            var members = await LoadProjectMembersAsync(userProjectId, ct);
+
+            var leader = members.FirstOrDefault(m => m.UserId == leaderId);
+            if (leader is null || leader.Role is not MemberRole.Leader)
                 throw new ServiceException(403, "Only the session leader can kick members");
 
-            var target = up.Members.FirstOrDefault(m => m.UserId == memberId);
+            var target = members.FirstOrDefault(m => m.UserId == memberId);
             if (target is null || target.LeftAt is not null)
                 throw new ServiceException(404, "User is not an active member of this session");
 
-            if (target.Role is UserProjectRole.Pending)
-            {
-                // Pending members are just removed (same as uninvite)
-                ctx.UserProjectMembers.Remove(target);
-            }
+            if (target.Role is MemberRole.Pending)
+                ctx.Members.Remove(target);          // pending = just remove, no left_at
             else
             {
                 target.LeftAt = DateTimeOffset.UtcNow;
-                ctx.UserProjectMembers.Update(target);
+                ctx.Members.Update(target);
             }
 
             await ctx.UserProjectTransactions.AddAsync(new()

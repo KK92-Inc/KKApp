@@ -201,7 +201,7 @@ public static class Services
 
         builder.Services.AddScoped<RuleEngine>();
         builder.Services.AddScoped<IRuleEvaluator, HasCursusEvaluator>();
-        builder.Services.AddScoped<IRuleEvaluator, HasProjectEvaluator>();
+        builder.Services.AddScoped<IRuleEvaluator, CompletedProjectEvaluator>();
         builder.Services.AddScoped<IRuleEvaluator, IsMemberEvaluator>();
         builder.Services.AddScoped<IRuleEvaluator, MinDaysRegisteredEvaluator>();
         builder.Services.AddScoped<IRuleEvaluator, MinProjectsCompletedEvaluator>();

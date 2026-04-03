@@ -3,7 +3,10 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using System.Linq.Expressions;
+using App.Backend.Domain.Entities;
 using App.Backend.Domain.Entities.Projects;
+using App.Backend.Domain.Entities.Users;
 
 // ============================================================================
 
@@ -19,7 +22,14 @@ public interface IMemberService
     /// <param name="userProjectId"></param>
     /// <param name="token"></param>
     /// <returns></returns>
-    Task<UserProjectMember> InviteToProjectAsync(Guid inviterId, Guid inviteeId, Guid userProjectId, CancellationToken token);
+    Task<Member> InviteToProjectAsync(Guid inviterId, Guid inviteeId, Guid userProjectId, CancellationToken token);
+
+    // Add to IMemberService
+    Task<List<Member>> GetProjectMembersAsync(Guid userProjectId, CancellationToken token = default);
+
+    // EF-translatable expression used in GetAllAsync predicates — NOT async,
+    // returns an IQueryable-compatible bool expression
+    Expression<Func<UserProject, bool>> HasActiveMember(Guid userProjectId, Guid userId);
 
     /// <summary>
     /// Remove a user from an existing project session. Removes the pending member row.
@@ -29,12 +39,12 @@ public interface IMemberService
     /// <param name="userProjectId"></param>
     /// <param name="token"></param>
     /// <returns></returns>
-    Task<UserProjectMember> UninviteFromProjectAsync(Guid inviterId, Guid inviteeId, Guid userProjectId, CancellationToken token);
+    Task<Member> UninviteFromProjectAsync(Guid inviterId, Guid inviteeId, Guid userProjectId, CancellationToken token);
 
     /// <summary>
     /// Accept a pending invite — flips Pending → Member.
     /// </summary>
-    Task<UserProjectMember> AcceptInviteAsync(Guid userId, Guid userProjectId, CancellationToken token);
+    Task<Member> AcceptInviteAsync(Guid userId, Guid userProjectId, CancellationToken token);
 
     /// <summary>
     /// Decline a pending invite — removes the pending member row.

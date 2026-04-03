@@ -8,7 +8,8 @@ using System.Text.Json.Serialization;
 namespace App.Backend.Domain.Enums;
 
 /// <summary>
-/// Certain kinds of ownership for an entity.
+/// Describes the ownership type of an entity, for example:
+/// - A workspace can be owned by a user or an organization.
 /// </summary>
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum EntityOwnership

@@ -21,14 +21,21 @@ public class UserProjectService(DatabaseContext ctx) : BaseService<UserProject>(
 
     public async Task<UserProject?> FindByUserAndProjectAsync(Guid userId, Guid projectId, CancellationToken token = default)
     {
-        return await context.UserProjects
+        var result = await context.UserProjects
             .AsNoTracking()
-            .Include(up => up.Members)
+            .Join(context.Members.AsNoTracking(),
+                userProject => userProject.Id,
+                member => member.EntityId,
+                (userProject, member) => new { userProject, member })
             .FirstOrDefaultAsync(
-                up => up.ProjectId == projectId &&
-                up.Members.Any(m => m.UserId == userId &&
-                m.Role != UserProjectRole.Pending
-        ), token);
+                joined => joined.userProject.ProjectId == projectId &&
+                joined.member.UserId == userId &&
+                joined.member.LeftAt == null &&
+                joined.member.EntityType == MemberEntityType.UserProject &&
+                joined.member.Role != MemberRole.Pending,
+            token);
+
+        return result?.userProject;
     }
 
     public async Task<PaginatedList<UserProjectTransaction>> GetTransactionsAsync(Guid Id, ISorting sorting, IPagination pagination, CancellationToken token = default)

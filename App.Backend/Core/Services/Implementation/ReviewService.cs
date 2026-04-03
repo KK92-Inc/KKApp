@@ -7,11 +7,11 @@ using App.Backend.Database;
 using App.Backend.Core.Services.Interface;
 using App.Backend.Domain.Entities;
 using App.Backend.Domain.Entities.Users;
+using App.Backend.Domain.Entities.Reviews;
+using App.Backend.Domain.Enums;
 using App.Backend.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
-using App.Backend.Domain.Entities.Reviews;
-using App.Backend.Domain.Enums;
 
 // ============================================================================
 
@@ -22,17 +22,25 @@ public class ReviewService(DatabaseContext ctx, IRuleService rules) : BaseServic
     private readonly DatabaseContext _context = ctx;
 
     /// <inheritdoc />
-    public async Task<IEnumerable<Review>> RequestReviewAsync(Guid userProjectId, Guid rubricId, Guid initiatorId, ReviewVariant[] variants, CancellationToken token = default)
+    public async Task<IEnumerable<Review>> RequestReviewAsync(
+        Guid userProjectId, Guid rubricId, Guid initiatorId,
+        ReviewVariant[] variants, CancellationToken token = default)
     {
         ServiceException.ThrowIf(variants.Length == 0, "At least one review variant must be requested.");
 
-        // 1. Load all required entities upfront
+        // 1. Load all required entities upfront.
+        //    Members are no longer a navigation property — load separately.
         var userProject = await _context.UserProjects
             .Include(up => up.GitInfo)
-            .Include(up => up.Members.Where(m => m.LeftAt == null))
             .Include(up => up.Reviews)
             .FirstOrDefaultAsync(up => up.Id == userProjectId, token)
             ?? throw new ServiceException(404, "User project not found.");
+
+        var activeMembers = await _context.Members
+            .Where(m => m.EntityType == MemberEntityType.UserProject
+                     && m.EntityId == userProjectId
+                     && m.LeftAt == null)
+            .ToListAsync(token);
 
         var rubric = await _context.Rubrics
             .Include(r => r.GitInfo)
@@ -43,7 +51,7 @@ public class ReviewService(DatabaseContext ctx, IRuleService rules) : BaseServic
             .FirstOrDefaultAsync(u => u.Id == initiatorId, token)
             ?? throw new ServiceException(404, "Initiator not found.");
 
-        // 2. Static preconditions (project state)
+        // 2. Static preconditions
         ServiceException.ThrowIf(userProject.GitInfo is null, "Project has nothing submitted for review.");
         ServiceException.ThrowIf(
             userProject.State is not (EntityObjectState.Awaiting or EntityObjectState.Completed),
@@ -54,24 +62,27 @@ public class ReviewService(DatabaseContext ctx, IRuleService rules) : BaseServic
         var createdReviews = new List<Review>();
         foreach (var variant in variants.Distinct())
         {
-            var member = userProject.Members.FirstOrDefault(m => m.UserId == initiator.Id);
+            var member = activeMembers.FirstOrDefault(m => m.UserId == initiatorId);
             switch (variant)
             {
                 case ReviewVariant.Self:
                 case ReviewVariant.Peer:
-                    // Peer review: initiator must be the leader
-                    ServiceException.ThrowIf(member?.Role is not UserProjectRole.Leader, "Only the project leader can request a peer or self review.");
+                    ServiceException.ThrowIf(
+                        member?.Role is not MemberRole.Leader,
+                        "Only the project leader can request a peer or self review."
+                    );
                     break;
                 case ReviewVariant.Async:
-                    // Async review: initiator must NOT be a member (any role)
-                    ServiceException.ThrowIf(member is not null, "Only non-members can request an async review.");
+                    ServiceException.ThrowIf(
+                        member is not null,
+                        "Only non-members can request an async review."
+                    );
                     break;
                 case ReviewVariant.Auto:
-                    // TODO: Implement auto reviews, need to test RoboPeer integration first
                     throw new ServiceException(501, "Auto reviews are not supported yet.");
             }
 
-            // 4. Rule engine checks (dynamic rules configured in rubric)
+            // 4. Rule engine checks
             var ruleResult = await rules.CanRequestReviewAsync(rubric, initiator, userProject, token);
             if (!ruleResult.IsSuccess)
                 throw new ServiceException(string.Join("; ", ruleResult.Reasons));
@@ -83,7 +94,7 @@ public class ReviewService(DatabaseContext ctx, IRuleService rules) : BaseServic
                 State = ReviewState.Pending,
                 UserProjectId = userProjectId,
                 RubricId = rubricId,
-                ReviewerId = variant == ReviewVariant.Self ? initiatorId : null
+                ReviewerId = variant == ReviewVariant.Self ? initiatorId : null,
             };
 
             _dbSet.Add(review);
@@ -100,7 +111,6 @@ public class ReviewService(DatabaseContext ctx, IRuleService rules) : BaseServic
         var review = await _context.Reviews
             .Include(r => r.Rubric)
             .Include(r => r.UserProject)
-                .ThenInclude(up => up.Members.Where(m => m.LeftAt == null))
             .FirstOrDefaultAsync(r => r.Id == reviewId, token)
             ?? throw new ServiceException(404, "Review not found.");
 
@@ -110,15 +120,19 @@ public class ReviewService(DatabaseContext ctx, IRuleService rules) : BaseServic
             .FirstOrDefaultAsync(u => u.Id == reviewerId, token)
             ?? throw new ServiceException(404, "Reviewer not found.");
 
-        // Check reviewer eligibility via rule engine
         var ruleResult = await rules.CanReviewAsync(review.Rubric, reviewer, review.UserProject, token);
         if (!ruleResult.IsSuccess)
             throw new ServiceException(403, string.Join("; ", ruleResult.Reasons));
 
-        // Peer/Async reviews require reviewer to be a team member
+        // Peer/Async: reviewer must be an active team member — query tbl_members directly
         if (review.Kind is ReviewVariant.Peer or ReviewVariant.Async)
         {
-            var isMember = review.UserProject.Members.Any(m => m.UserId == reviewerId);
+            var isMember = await _context.Members.AnyAsync(m =>
+                m.EntityType == MemberEntityType.UserProject &&
+                m.EntityId == review.UserProjectId &&
+                m.UserId == reviewerId &&
+                m.LeftAt == null, token);
+
             ServiceException.ThrowIf(!isMember, $"{review.Kind} reviews must be performed by a team member.");
         }
 

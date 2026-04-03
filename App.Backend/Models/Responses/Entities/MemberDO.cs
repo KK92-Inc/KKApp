@@ -4,6 +4,7 @@
 // ============================================================================
 
 using System.ComponentModel.DataAnnotations;
+using App.Backend.Domain.Entities;
 using App.Backend.Domain.Entities.Projects;
 using App.Backend.Domain.Enums;
 
@@ -14,16 +15,19 @@ namespace App.Backend.Models.Responses.Entities.Projects;
 /// <summary>
 /// Data object representing a member of a user project.
 /// </summary>
-public class UserProjectMemberDO(UserProjectMember member) : BaseEntityDO<UserProjectMember>(member)
+public class MemberDO(Member member) : BaseEntityDO<Member>(member)
 {
     [Required]
-    public Guid UserProjectId { get; set; } = member.UserProjectId;
+    public Guid EntityId { get; set; } = member.EntityId;
+
+    [Required]
+    public MemberEntityType EntityType { get; set; } = member.EntityType;
 
     [Required]
     public Guid UserId { get; set; } = member.UserId;
 
     [Required]
-    public UserProjectRole Role { get; set; } = member.Role;
+    public MemberRole Role { get; set; } = member.Role;
 
     /// <summary>
     /// When the member left the project, if applicable.
@@ -37,6 +41,6 @@ public class UserProjectMemberDO(UserProjectMember member) : BaseEntityDO<UserPr
     [Required]
     public UserLightDO User { get; set; } = member.User;
 
-    public static implicit operator UserProjectMemberDO?(UserProjectMember? member) =>
+    public static implicit operator MemberDO?(Member? member) =>
         member is null ? null : new(member);
 }

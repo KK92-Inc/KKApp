@@ -10,7 +10,7 @@ using System.Text.Json.Serialization;
 namespace App.Backend.Domain.Enums;
 
 [JsonConverter(typeof(JsonStringEnumConverter))]
-public enum UserProjectRole
+public enum MemberRole
 {
     /// <summary>
     /// The user is pending assignment to a role.
@@ -19,13 +19,13 @@ public enum UserProjectRole
     Pending,
 
     /// <summary>
-    /// The user is a regular member of the project.
+    /// The user is a regular member of the entity.
     /// </summary>
     [JsonPropertyName(nameof(Member))]
     Member,
 
     /// <summary>
-    /// The user is a leader of the project session.
+    /// The user is a leader of the entity, i.e., has elevated permissions.
     /// </summary>
     [JsonPropertyName(nameof(Leader))]
     Leader

@@ -7,9 +7,10 @@ using App.Backend.Database;
 using App.Backend.Core.Services.Interface;
 using App.Backend.Domain.Entities;
 using App.Backend.Domain.Entities.Users;
+using App.Backend.Domain.Enums;
 using App.Backend.Models;
-using Microsoft.EntityFrameworkCore;
 using App.Backend.Core.Query;
+using Microsoft.EntityFrameworkCore;
 
 // ============================================================================
 
@@ -21,16 +22,17 @@ public class ProjectService(DatabaseContext ctx) : BaseService<Project>(ctx), IP
 
     public override Task DeleteAsync(Project entity, CancellationToken token = default)
     {
-        entity.Deprecated = true; // Deletion should be a soft delete.
+        entity.Deprecated = true;
         return UpdateAsync(entity, token);
     }
 
-    public async Task<Project?> FindBySlugAsync(string slug,CancellationToken token = default)
+    public async Task<Project?> FindBySlugAsync(string slug, CancellationToken token = default)
     {
         return await _dbSet.FirstOrDefaultAsync(p => p.Slug == slug, token);
     }
 
-    public async Task<PaginatedList<UserProject>> GetUserProjectsAsync(Guid userId, ISorting sorting, IPagination pagination, CancellationToken token = default)
+    public async Task<PaginatedList<UserProject>> GetUserProjectsAsync(
+        Guid userId, ISorting sorting, IPagination pagination, CancellationToken token = default)
     {
         return await _dbSet.AsQueryable<Project>()
             .Where(p => p.Active)
@@ -38,9 +40,13 @@ public class ProjectService(DatabaseContext ctx) : BaseService<Project>(ctx), IP
                 context.UserProjects,
                 project => project.Id,
                 userProject => userProject.ProjectId,
-                (project, userProject) => new { project, userProject }
+                (project, userProject) => new { userProject }
             )
-            .Where(joined => joined.userProject.Members.Any(m => m.UserId == userId))
+            .Where(joined => context.Members.Any(m =>
+                m.EntityType == MemberEntityType.UserProject &&
+                m.EntityId == joined.userProject.Id &&
+                m.UserId == userId &&
+                m.LeftAt == null))
             .Select(joined => joined.userProject)
             .Sort(sorting)
             .PaginateAsync(pagination, token);

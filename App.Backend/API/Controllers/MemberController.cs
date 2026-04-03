@@ -29,7 +29,7 @@ public class MemberController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Invite a user to a project session")]
     [EndpointDescription("The calling user (leader) invites another user to their active project session.")]
-    public async Task<ActionResult<UserProjectMemberDO>> InviteToProject(
+    public async Task<ActionResult<MemberDO>> InviteToProject(
         Guid inviteeId, Guid userProjectId, CancellationToken token)
     {
         // if (!await subscription.CanSubscribeToProjectAsync(User.GetSID(), userProjectId, token))
@@ -43,7 +43,7 @@ public class MemberController(
             UserProjectId: userProjectId
         ));
 
-        return Ok(new UserProjectMemberDO(member));
+        return Ok(new MemberDO(member));
     }
 
     [HttpDelete("{inviteeId:guid}/project/{userProjectId:guid}")]
@@ -51,7 +51,7 @@ public class MemberController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Remove a pending invite from a project session")]
     [EndpointDescription("Reject a pending invite")]
-    public async Task<ActionResult<UserProjectMemberDO>> UninviteToProject(
+    public async Task<ActionResult<MemberDO>> UninviteToProject(
         Guid inviteeId, Guid userProjectId, CancellationToken token)
     {
         var inviterId = User.GetSID();
@@ -63,7 +63,7 @@ public class MemberController(
             UserProjectId: userProjectId
         ));
 
-        return Ok(new UserProjectMemberDO(member));
+        return Ok(new MemberDO(member));
     }
 
     [HttpPost("{userProjectId:guid}/accept")]
@@ -71,12 +71,12 @@ public class MemberController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Accept a project invite")]
     [EndpointDescription("Accept a pending invitation to join a project session.")]
-    public async Task<ActionResult<UserProjectMemberDO>> AcceptInvite(
+    public async Task<ActionResult<MemberDO>> AcceptInvite(
         Guid userProjectId, CancellationToken token)
     {
         var userId = User.GetSID();
         var member = await service.AcceptInviteAsync(userId, userProjectId, token);
-        return Ok(new UserProjectMemberDO(member));
+        return Ok(new MemberDO(member));
     }
 
     [HttpPost("{userProjectId:guid}/decline")]

@@ -25,7 +25,7 @@ public class RuleEngineTests : ServiceTestBase
     {
         _engine = new RuleEngine([
             new HasCursusEvaluator(Context),
-            new HasProjectEvaluator(Context),
+            new CompletedProjectEvaluator(Context),
             new IsMemberEvaluator(Context),
             new MinDaysRegisteredEvaluator(),
             new MinProjectsCompletedEvaluator(Context),

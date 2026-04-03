@@ -5,6 +5,7 @@
 
 using App.Backend.Domain.Entities.Users;
 using App.Backend.Domain.Enums;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations.Schema;
 
 // ============================================================================
@@ -13,6 +14,7 @@ namespace App.Backend.Domain.Entities;
 
 
 [Table("tbl_git")]
+[Index(nameof(Name), nameof(Owner), IsUnique = true)]
 public class Git : BaseEntity
 {
     public Git()
