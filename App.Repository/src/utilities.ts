@@ -38,6 +38,23 @@ export function env(key: string, message?: string): string | undefined {
 }
 
 /** Defers the execution of a function until the current scope exits */
-export function defer(fn: () => void) {
-  return { [Symbol.dispose]: fn };
+export function defer(fn: () => void | Promise<void>) {
+	return {
+		[Symbol.dispose]: () => { void fn(); },
+		[Symbol.asyncDispose]: async () => { await fn(); }
+	};
+}
+
+/** Loads environment variables from the aspire file */
+export async function aspire() {
+	const env = Bun.file("/etc/aspire-env");
+	if (!await env.exists()) return;
+
+	const text = await env.text();
+	for (const line of text.split("\n")) {
+		const i = line.indexOf("=");
+		if (i > 0) {
+			process.env[line.slice(0, i)] = line.slice(i + 1);
+		}
+	}
 }

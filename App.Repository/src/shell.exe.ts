@@ -10,7 +10,7 @@
 import { join } from "path";
 import { spawn } from "bun";
 import { existsSync } from "fs";
-import { defer, env, Log } from "./utilities";
+import { aspire, defer, env, Log } from "./utilities";
 
 if (!import.meta.main) {
 	Log.die("This module is meant to be run as a script, not imported.");
@@ -54,82 +54,23 @@ async function authorized(login: string, repo: string): Promise<boolean> {
 		return false;
 	}
 
+	// Single query: resolve user + git in one shot, then check membership.
 	const sql = await new Bun.SQL().connect();
 	using _ = defer(async () => await sql.close());
-	const [user] = await sql<{ id: string }[]>`
-		SELECT id FROM tbl_user WHERE login = ${login}
-	`;
+	const [result] = await sql<{ authorized: boolean }[]>`
+    SELECT EXISTS (
+        SELECT 1
+        FROM tbl_user     u
+        JOIN tbl_git      g  ON g.owner = ${owner} AND g.name = ${name}
+        JOIN tbl_members  m  ON m.git_id  = g.id
+                            AND m.user_id  = u.id
+                            AND m.left_at  IS NULL
+                            AND m.role    != 0  -- exclude Pending
+        WHERE u.login = ${login}
+    ) AS authorized
+  `;
 
-	if (!user) {
-		Log.error(`User not found: ${login}`);
-		return false;
-	}
-
-	const [git] = await sql<{ id: string }[]>`
-		SELECT id FROM tbl_git
-		WHERE owner = ${owner} AND name = ${name}
-	`;
-
-	if (!git) {
-		Log.error(`Repository not found: ${owner}/${name}`);
-		return false;
-	}
-
-	// 1. Check if the repository is associated with a rubric.
-
-	const [rubric] = await sql<{ id: string }[]>`
-		SELECT id FROM tbl_rubric
-		WHERE git_info_id = ${git.id}
-	`;
-
-	if (rubric) {
-		Log.error(`TODO: Keycloak check missing.`);
-		return false;
-	}
-
-	// 2. Verify user project access
-
-	const [userProject] = await sql<{ id: string }[]>`
-		SELECT id FROM tbl_user_project
-		WHERE git_info_id = ${git.id}
-	`;
-
-	if (userProject) {
-		const [member] = await sql<{ role: number }[]>`
-			SELECT role FROM tbl_user_project_members
-			WHERE user_project_id = ${userProject.id} AND user_id = ${user.id}
-		`;
-
-		if (member && member.role !== 0) /* 0 = Pending */ {
-			return true;
-		}
-
-		Log.error(`Access to project ${owner}/${name} denied.`);
-		return false;
-	}
-
-	// 3. Workspace projects
-
-	const [project] = await sql<{ id: string, workspace_id: string }[]>`
-		SELECT id, workspace_id FROM tbl_projects
-		WHERE git_id = ${git.id}
-	`;
-
-	if (project) {
-		const [workspace] = await sql<{ id: string, owner_id: string }[]>`
-			SELECT id, owner_id FROM tbl_workspace
-			WHERE id = ${project.workspace_id} AND ownership = 1
-		`;
-
-		if (workspace && workspace.owner_id === user.id) {
-			return true;
-		}
-
-		Log.error(`Access to workspace project ${owner}/${name} denied.`);
-		return false;
-	}
-
-	return false;
+	return result?.authorized ?? false;
 }
 
 // ============================================================================
@@ -137,6 +78,7 @@ async function authorized(login: string, repo: string): Promise<boolean> {
 // ============================================================================
 
 // 1. Check if the user is authenticated and has access to the shell.
+await aspire();
 const user = env('USER', "Access Denied: Unknown user.");
 const original = env("SSH_ORIGINAL_COMMAND");
 if (!original) {
@@ -157,13 +99,13 @@ if (!git || !path) {
 
 // 3. Authorize the user against the database before proceeding
 if (!(await authorized(user, path!))) {
-	Log.die(`Unauthorized access to repository: ${path}`);
+	Log.die("Unauthorized access to repository");
 }
 
 // 4. Construct the full path to the repository and check if it exists.
 const fullpath = join(REPOSITORY_DIRECTORY, path!);
 if (!existsSync(fullpath)) {
-	Log.die(`Repository not found: ${fullpath}`);
+	Log.die("Repository not found");
 }
 
 // 5. Spawn the Git command as a child process.

@@ -16,17 +16,17 @@ public enum MemberRole
     /// The user is pending assignment to a role.
     /// </summary>
     [JsonPropertyName(nameof(Pending))]
-    Pending,
+    Pending = 0,
 
     /// <summary>
     /// The user is a regular member of the entity.
     /// </summary>
     [JsonPropertyName(nameof(Member))]
-    Member,
+    Member = 1,
 
     /// <summary>
     /// The user is a leader of the entity, i.e., has elevated permissions.
     /// </summary>
     [JsonPropertyName(nameof(Leader))]
-    Leader
+    Leader = 2
 }

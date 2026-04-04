@@ -8,7 +8,6 @@ AllowUsers git
 
 PasswordAuthentication no
 KbdInteractiveAuthentication no
-UsePAM no
 
 AuthorizedKeysCommand /usr/local/bin/auth %f %t %k
 AuthorizedKeysCommandUser nobody
