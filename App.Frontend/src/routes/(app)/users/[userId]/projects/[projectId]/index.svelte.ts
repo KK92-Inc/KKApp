@@ -43,16 +43,19 @@ export class Context {
 
 	get reviews() {
 		return Reviews.getByUserProjectId({
-			userProjectId: this.getProjectId()
+			projectId: this.getProjectId(),
+			userId: this.getUserId(),
 		});
 	}
 	get members() {
-		type MemberDO = components["schemas"]["UserProjectMemberDO"];
+		type MemberDO = components["schemas"]["MemberDO"];
 
 		return new Promise<MemberDO[]>(async (resolve) => {
 			const userProject = await this.userProject;
+			console.log("Fetched user project:", userProject);
 			if (!userProject) return resolve([]);
 			const members = await UserProjects.members({ id: userProject.id });
+			console.log("Fetched members:", members);
 			return resolve(members);
 		});
 	}

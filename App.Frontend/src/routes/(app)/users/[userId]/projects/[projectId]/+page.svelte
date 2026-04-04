@@ -1,13 +1,6 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
 	import * as Page from './index.svelte';
-	import * as Projects from '$lib/remotes/project.remote';
-	import * as UserProjects from '$lib/remotes/user-project.remote';
-	import * as Invites from '$lib/remotes/member.remote';
-	import Button from '$lib/components/button/button.svelte';
-	import Thumbnail from '$lib/components/thumbnail.svelte';
-	import { toast } from 'svelte-sonner';
-	import { isHttpError } from '@sveltejs/kit';
 	import Layout from '$lib/components/layout.svelte';
 	import { Skeleton } from '$lib/components/skeleton';
 

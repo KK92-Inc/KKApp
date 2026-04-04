@@ -12,15 +12,15 @@
 	let open = $state(false);
 	let { children }: LayoutProps = $props();
 
-	const events = init(new EventSourceContext('/proxy/events'));
-	events.listen('DemoEvent', (data) => {
-		toast.success(`Received event: ${JSON.stringify(data)}`, {
-			action: {
-				label: 'View',
-				onClick: () => alert(`Event details:\n\n${JSON.stringify(data, null, 2)}`)
-			}
-		});
-	});
+	// const events = init(new EventSourceContext('/proxy/events'));
+	// events.listen('DemoEvent', (data) => {
+	// 	toast.success(`Received event: ${JSON.stringify(data)}`, {
+	// 		action: {
+	// 			label: 'View',
+	// 			onClick: () => alert(`Event details:\n\n${JSON.stringify(data, null, 2)}`)
+	// 		}
+	// 	});
+	// });
 	// events.listen('DemoEvent', (data) => {
 	// 	console.log(data);
 	// });

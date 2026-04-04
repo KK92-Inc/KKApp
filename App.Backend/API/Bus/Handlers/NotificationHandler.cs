@@ -68,7 +68,7 @@ public class NotificationHandler(
                 Descriptor = notification.Meta,
                 ResourceId = notification.ResourceId,
                 NotifiableId = notification.NotifiableId,
-                Data = JsonSerializer.Serialize<NotificationData>(message.ToDatabase())
+                Data = JsonSerializer.Serialize(message.ToDatabase())
             }, token);
             logger.LogDebug("Writing notification to database.... [OK]");
         }

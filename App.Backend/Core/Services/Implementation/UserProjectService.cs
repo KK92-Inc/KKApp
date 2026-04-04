@@ -30,9 +30,7 @@ public class UserProjectService(DatabaseContext ctx) : BaseService<UserProject>(
             .FirstOrDefaultAsync(
                 joined => joined.userProject.ProjectId == projectId &&
                 joined.member.UserId == userId &&
-                joined.member.LeftAt == null &&
-                joined.member.EntityType == MemberEntityType.UserProject &&
-                joined.member.Role != MemberRole.Pending,
+                joined.member.EntityType == MemberEntityType.UserProject,
             token);
 
         return result?.userProject;
