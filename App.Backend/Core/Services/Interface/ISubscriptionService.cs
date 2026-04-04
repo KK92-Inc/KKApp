@@ -50,7 +50,7 @@ public interface ISubscriptionService
     /// <param name="userId"></param>
     /// <param name="projectId"></param>
     /// <returns></returns>
-    public Task UnsubscribeFromProjectAsync(Guid userId, Guid projectId, CancellationToken token);
+    public Task<UserProject> UnsubscribeFromProjectAsync(Guid userId, Guid projectId, CancellationToken token);
 
     /// <summary>
     /// Unsubscribe a user from a goal.
@@ -58,7 +58,7 @@ public interface ISubscriptionService
     /// <param name="userId"></param>
     /// <param name="goalId"></param>
     /// <returns></returns>
-    public Task UnsubscribeFromGoalAsync(Guid userId, Guid goalId, CancellationToken token);
+    public Task<UserGoal> UnsubscribeFromGoalAsync(Guid userId, Guid goalId, CancellationToken token);
 
     /// <summary>
     /// Unsubscribe a user from a cursus.
@@ -66,5 +66,5 @@ public interface ISubscriptionService
     /// <param name="userId"></param>
     /// <param name="cursusId"></param>
     /// <returns></returns>
-    public Task UnsubscribeFromCursusAsync(Guid userId, Guid cursusId, CancellationToken token);
+    public Task<UserCursus> UnsubscribeFromCursusAsync(Guid userId, Guid cursusId, CancellationToken token);
 }

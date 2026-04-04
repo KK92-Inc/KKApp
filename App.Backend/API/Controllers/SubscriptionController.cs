@@ -49,13 +49,13 @@ public class SubscriptionController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Unsubscribe a user from a cursus")]
     [EndpointDescription("Remove the specified user's enrollment from the given cursus. Staff can unenroll other users.")]
-    public async Task<ActionResult> UnsubscribeFromCursus(Guid userId, Guid cursusId, CancellationToken token)
+    public async Task<ActionResult<UserCursusDO>> UnsubscribeFromCursus(Guid userId, Guid cursusId, CancellationToken token)
     {
         if (!IsAllowed(userId))
             return Forbid();
 
-        await service.UnsubscribeFromCursusAsync(userId, cursusId, token);
-        return NoContent();
+        var userCursus = await service.UnsubscribeFromCursusAsync(userId, cursusId, token);
+        return Ok(new UserCursusDO(userCursus));
     }
 
     // ========================================================================
@@ -81,13 +81,13 @@ public class SubscriptionController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Unsubscribe a user from a goal")]
     [EndpointDescription("Remove the specified user's subscription to the given goal. Staff can unenroll other users.")]
-    public async Task<ActionResult> UnsubscribeFromGoal(Guid userId, Guid goalId, CancellationToken token)
+    public async Task<ActionResult<UserGoalDO>> UnsubscribeFromGoal(Guid userId, Guid goalId, CancellationToken token)
     {
         if (!IsAllowed(userId))
             return Forbid();
 
-        await service.UnsubscribeFromGoalAsync(userId, goalId, token);
-        return NoContent();
+        var userGoal = await service.UnsubscribeFromGoalAsync(userId, goalId, token);
+        return Ok(new UserGoalDO(userGoal));
     }
 
     // ========================================================================
@@ -113,13 +113,13 @@ public class SubscriptionController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Unsubscribe a user from a project")]
     [EndpointDescription("Remove the specified user from the project session. Staff can unenroll other users.")]
-    public async Task<ActionResult> UnsubscribeFromProject(Guid userId, Guid projectId, CancellationToken token)
+    public async Task<ActionResult<UserProjectDO>> UnsubscribeFromProject(Guid userId, Guid projectId, CancellationToken token)
     {
         if (!IsAllowed(userId))
             return Forbid();
 
-        await service.UnsubscribeFromProjectAsync(userId, projectId, token);
-        return NoContent();
+        var userProject = await service.UnsubscribeFromProjectAsync(userId, projectId, token);
+        return Ok(new UserProjectDO(userProject));
     }
 
     // ========================================================================

@@ -322,7 +322,7 @@ public class SubscriptionService(DatabaseContext ctx, IOptions<SubscriptionOptio
     // Unsubscribe
     // -------------------------------------------------------------------------
 
-    public async Task UnsubscribeFromCursusAsync(Guid userId, Guid cursusId, CancellationToken token = default)
+    public async Task<UserCursus> UnsubscribeFromCursusAsync(Guid userId, Guid cursusId, CancellationToken token = default)
     {
         var userCursus = ctx.UserCursi.FirstOrDefault(uc => uc.UserId == userId && uc.CursusId == cursusId);
         if (userCursus is null || userCursus.State is EntityObjectState.Inactive)
@@ -331,9 +331,10 @@ public class SubscriptionService(DatabaseContext ctx, IOptions<SubscriptionOptio
         userCursus.State = EntityObjectState.Inactive;
         ctx.UserCursi.Update(userCursus);
         await ctx.SaveChangesAsync(token);
+        return userCursus;
     }
 
-    public async Task UnsubscribeFromGoalAsync(Guid userId, Guid goalId, CancellationToken token = default)
+    public async Task<UserGoal> UnsubscribeFromGoalAsync(Guid userId, Guid goalId, CancellationToken token = default)
     {
         var goal = await ctx.UserGoals
             .Where(ug => ug.GoalId == goalId && ug.UserId == userId)
@@ -346,11 +347,12 @@ public class SubscriptionService(DatabaseContext ctx, IOptions<SubscriptionOptio
         goal.State = EntityObjectState.Inactive;
         ctx.UserGoals.Update(goal);
         await ctx.SaveChangesAsync(token);
+        return goal;
     }
 
-    public async Task UnsubscribeFromProjectAsync(Guid userId, Guid projectId, CancellationToken token = default)
+    public async Task<UserProject> UnsubscribeFromProjectAsync(Guid userId, Guid projectId, CancellationToken token = default)
     {
-        await ctx.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
+        return await ctx.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
         {
             await using var transaction = await ctx.Database.BeginTransactionAsync(ct);
 
@@ -417,6 +419,7 @@ public class SubscriptionService(DatabaseContext ctx, IOptions<SubscriptionOptio
 
             await ctx.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
+            return up;
         }, token);
     }
 }

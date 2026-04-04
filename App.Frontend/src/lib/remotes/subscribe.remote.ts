@@ -40,6 +40,9 @@ export const subscribeProject = Remote.POST('/subscribe/{userId}/projects/{proje
 		userId: data.userId,
 		projectId: data.projectId
 	}).refresh())
+	.after((userProject, _) => UserProjects.members({
+		id: userProject.id
+	}).refresh())
 	.declare();
 
 /** Remove a user from a project session. */
@@ -47,6 +50,9 @@ export const unsubscribeProject = Remote.DELETE('/subscribe/{userId}/projects/{p
 	.after((_, data) => UserProjects.getByUserAndProject({
 		userId: data.userId,
 		projectId: data.projectId
+	}).refresh())
+	.after((userProject, _) => UserProjects.members({
+		id: userProject.id
 	}).refresh())
 	.required(false)
 	.declare();
