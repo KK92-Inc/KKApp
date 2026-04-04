@@ -27,7 +27,6 @@ using Wolverine.Postgresql;
 using App.Backend.API.Filters;
 using App.Backend.API.Notifications.Registers.Interface;
 using App.Backend.API.Notifications.Registers.Implementation;
-using App.Backend.API.Schemas.Document;
 using App.Backend.API.Schemas.Operation;
 using App.Backend.Core.Services.Implementation;
 using App.Backend.Core.Services.Interface;
@@ -39,6 +38,8 @@ using App.Backend.API.Jobs;
 using App.Backend.API.Jobs.Extensions;
 using App.Backend.Core.Engines.Evaluations;
 using App.Backend.Core.Engines.Evaluations.Rules;
+using App.Backend.API.Schemas.Schema;
+using App.Backend.API.Schemas.Document;
 
 // ============================================================================
 
@@ -106,9 +107,12 @@ public static class Services
         // Misc Services
         builder.Services.AddOpenApi(o =>
         {
-            o.AddDocumentTransformer<InfoSchemeTransformer>();
-            o.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+            o.AddDocumentTransformer<InfoDocumentTransformer>();
+            o.AddDocumentTransformer<BearerDocumentTransformer>();
+            o.AddSchemaTransformer<RequiredDiscriminatorTransformer>();
+            o.AddSchemaTransformer<BreakRuleCircularRefTransformer>();
             o.AddOperationTransformer<BasicResponsesOperationTransformer>();
+            // Add OAuth2 security scheme if Keycloak is configured
             o.AddDocumentTransformer((document, context, cancellationToken) =>
             {
                 document.Components ??= new OpenApiComponents();

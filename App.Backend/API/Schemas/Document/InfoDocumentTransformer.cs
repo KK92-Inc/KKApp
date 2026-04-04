@@ -10,18 +10,18 @@ using Microsoft.AspNetCore.OpenApi;
 
 namespace App.Backend.API.Schemas.Document;
 
-internal sealed class InfoSchemeTransformer() : IOpenApiDocumentTransformer
+internal sealed class InfoDocumentTransformer() : IOpenApiDocumentTransformer
 {
     public async Task TransformAsync(OpenApiDocument document, OpenApiDocumentTransformerContext ctx, CancellationToken token)
     {
         document.Info = new()
         {
-            Title = "NXT API",
+            Title = "KK API",
             Version = "v1",
-            Description = "The NXT API provides access to NXT's data. THis way you can programmatically subscribe a project and more!",
+            Description = "Alpha version of the KK API. Subject to change without deprecation.",
             Contact = new OpenApiContact
             {
-                Email = "info@nextdemy.com",
+                Email = "not-available@kk92.net",
                 Name = "W2Wizard"
             }
         };

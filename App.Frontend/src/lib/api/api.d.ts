@@ -1806,9 +1806,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["UserProjectMemberDO"];
-                        "application/json": components["schemas"]["UserProjectMemberDO"];
-                        "text/json": components["schemas"]["UserProjectMemberDO"];
+                        "text/plain": components["schemas"]["MemberDO"];
+                        "application/json": components["schemas"]["MemberDO"];
+                        "text/json": components["schemas"]["MemberDO"];
                     };
                 };
                 /** @description Unauthorized */
@@ -1863,9 +1863,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["UserProjectMemberDO"];
-                        "application/json": components["schemas"]["UserProjectMemberDO"];
-                        "text/json": components["schemas"]["UserProjectMemberDO"];
+                        "text/plain": components["schemas"]["MemberDO"];
+                        "application/json": components["schemas"]["MemberDO"];
+                        "text/json": components["schemas"]["MemberDO"];
                     };
                 };
                 /** @description Unauthorized */
@@ -1933,9 +1933,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["UserProjectMemberDO"];
-                        "application/json": components["schemas"]["UserProjectMemberDO"];
-                        "text/json": components["schemas"]["UserProjectMemberDO"];
+                        "text/plain": components["schemas"]["MemberDO"];
+                        "application/json": components["schemas"]["MemberDO"];
+                        "text/json": components["schemas"]["MemberDO"];
                     };
                 };
                 /** @description Unauthorized */
@@ -2547,7 +2547,7 @@ export interface paths {
         };
         trace?: never;
     };
-    "/reviews/{userProjectId}": {
+    "/reviews": {
         parameters: {
             query?: never;
             header?: never;
@@ -2555,12 +2555,17 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get reviews for a specific user and project
-         * @description Returns the reviews for the currently authenticated user and the specified project.
+         * Query all reviews
+         * @description Returns a paginated list of reviews
          */
         get: {
             parameters: {
                 query?: {
+                    "filter[user_project_id]"?: string;
+                    "filter[reviewer_id]"?: string;
+                    "filter[rubric_id]"?: string;
+                    "filter[kind]"?: components["schemas"]["ReviewVariant"];
+                    "filter[status]"?: components["schemas"]["ReviewState"];
                     /** @description The page number/index */
                     "page[index]"?: number | string;
                     /** @description The amount of results per page */
@@ -2571,9 +2576,7 @@ export interface paths {
                     "sort[order]"?: components["schemas"]["Order"];
                 };
                 header?: never;
-                path: {
-                    userProjectId: string;
-                };
+                path?: never;
                 cookie?: never;
             };
             requestBody?: never;
@@ -2601,174 +2604,6 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content: {
-                        "text/plain": components["schemas"]["ProblemDetails"];
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "text/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ProblemDetails"];
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "text/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/reviews/{userId}/{projectId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get reviews for a specific user and project
-         * @description Returns the reviews for the currently authenticated user and the specified project.
-         */
-        get: {
-            parameters: {
-                query?: {
-                    /** @description The page number/index */
-                    "page[index]"?: number | string;
-                    /** @description The amount of results per page */
-                    "page[size]"?: number | string;
-                    /** @description The name of the property to use for sorting. */
-                    "sort[by]"?: string;
-                    /** @description The sort direction. */
-                    "sort[order]"?: components["schemas"]["Order"];
-                };
-                header?: never;
-                path: {
-                    userId: string;
-                    projectId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ReviewDO"][];
-                        "application/json": components["schemas"]["ReviewDO"][];
-                        "text/json": components["schemas"]["ReviewDO"][];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ProblemDetails"];
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "text/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ProblemDetails"];
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "text/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/reviews/rubrics/{userProjectId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get available rubrics for a user project
-         * @description Returns enabled rubrics that can be used for reviewing the specified user project.
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    userProjectId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["RubricDO"][];
-                        "application/json": components["schemas"]["RubricDO"][];
-                        "text/json": components["schemas"]["RubricDO"][];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
                     content?: never;
                 };
                 /** @description Not Found */
@@ -2791,302 +2626,6 @@ export interface paths {
                 };
             };
         };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/reviews/{reviewId}/assign/{reviewerId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Assign a reviewer to a pending review */
-        put: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    reviewId: string;
-                    reviewerId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ReviewDO"];
-                        "application/json": components["schemas"]["ReviewDO"];
-                        "text/json": components["schemas"]["ReviewDO"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/reviews/by-id/{reviewId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get a single review by its ID
-         * @description Returns the review with full details including reviewer and rubric.
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    reviewId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ReviewDO"];
-                        "application/json": components["schemas"]["ReviewDO"];
-                        "text/json": components["schemas"]["ReviewDO"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ProblemDetails"];
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "text/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/reviews/{reviewId}/start": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Transition a review to InProgress */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    reviewId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ReviewDO"];
-                        "application/json": components["schemas"]["ReviewDO"];
-                        "text/json": components["schemas"]["ReviewDO"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/reviews/{reviewId}/complete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Transition a review to Finished */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    reviewId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ReviewDO"];
-                        "application/json": components["schemas"]["ReviewDO"];
-                        "text/json": components["schemas"]["ReviewDO"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/reviews/request": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
         put?: never;
         /**
          * Request one or more reviews for a user project
@@ -3176,7 +2715,137 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/reviews/{reviewId}/pickup": {
+    "/reviews/{reviewId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a single review by its ID
+         * @description Returns the review with full details including reviewer and rubric.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    reviewId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ReviewDO"];
+                        "application/json": components["schemas"]["ReviewDO"];
+                        "text/json": components["schemas"]["ReviewDO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        /**
+         * Cancel a review
+         * @description Cancels the review with the specified ID.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    reviewId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reviews/{reviewId}/assign/{reviewerId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -3186,8 +2855,95 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Pick up a pending review as the current user
-         * @description Assigns the current user as reviewer and transitions the review to InProgress.
+         * Assign a reviewer to a pending review
+         * @description Assigns the specified user as reviewer for the review. Validates that the reviewer meets the rubric's eligibility requirements.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    reviewId: string;
+                    reviewerId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ReviewDO"];
+                        "application/json": components["schemas"]["ReviewDO"];
+                        "text/json": components["schemas"]["ReviewDO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reviews/{reviewId}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a review
+         * @description Transitions the review to InProgress and assigns the current user as the reviewer.
          */
         post: {
             parameters: {
@@ -3262,7 +3018,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/reviews/{reviewId}": {
+    "/reviews/{reviewId}/complete": {
         parameters: {
             query?: never;
             header?: never;
@@ -3271,9 +3027,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post?: never;
-        /** Cancel a pending review */
-        delete: {
+        /**
+         * Complete a review
+         * @description Transitions the review to Finished. The review content should be included in the request body.
+         */
+        post: {
             parameters: {
                 query?: never;
                 header?: never;
@@ -3284,12 +3042,16 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description No Content */
-                204: {
+                /** @description OK */
+                200: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ReviewDO"];
+                        "application/json": components["schemas"]["ReviewDO"];
+                        "text/json": components["schemas"]["ReviewDO"];
+                    };
                 };
                 /** @description Unauthorized */
                 401: {
@@ -3336,6 +3098,392 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rubrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Query all rubrics
+         * @description Retrieve a paginated list of all rubrics
+         */
+        get: {
+            parameters: {
+                query?: {
+                    "filter[id]"?: string;
+                    "filter[name]"?: string;
+                    "filter[slug]"?: string;
+                    "filter[enabled]"?: boolean;
+                    "filter[public]"?: boolean;
+                    "filter[creator_id]"?: string;
+                    /** @description The name of the property to use for sorting. */
+                    "sort[by]"?: string;
+                    /** @description The sort direction. */
+                    "sort[order]"?: components["schemas"]["Order"];
+                    /** @description The page number/index */
+                    "page[index]"?: number | string;
+                    /** @description The amount of results per page */
+                    "page[size]"?: number | string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["RubricDO"][];
+                        "application/json": components["schemas"]["RubricDO"][];
+                        "text/json": components["schemas"]["RubricDO"][];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        /**
+         * Delete a rubric
+         * @description Delete a rubric
+         */
+        delete: {
+            parameters: {
+                query?: {
+                    id?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rubrics/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Query a rubric
+         * @description Retrieve a specific rubric by ID
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["RubricDO"];
+                        "application/json": components["schemas"]["RubricDO"];
+                        "text/json": components["schemas"]["RubricDO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update a rubric
+         * @description Update rubric information
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PatchRubricEntityRequestDTO"];
+                    "text/json": components["schemas"]["PatchRubricEntityRequestDTO"];
+                    "application/*+json": components["schemas"]["PatchRubricEntityRequestDTO"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["RubricDO"];
+                        "application/json": components["schemas"]["RubricDO"];
+                        "text/json": components["schemas"]["RubricDO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/rubrics/{id}/has-markdown": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Check if RUBRIC.md exists
+         * @description Check if the rubric's git repository contains a RUBRIC.md file
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": boolean;
+                        "application/json": boolean;
+                        "text/json": boolean;
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -4800,9 +4948,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["UserProjectMemberDO"][];
-                        "application/json": components["schemas"]["UserProjectMemberDO"][];
-                        "text/json": components["schemas"]["UserProjectMemberDO"][];
+                        "text/plain": components["schemas"]["MemberDO"][];
+                        "application/json": components["schemas"]["MemberDO"][];
+                        "text/json": components["schemas"]["MemberDO"][];
                     };
                 };
                 /** @description Unauthorized */
@@ -5249,6 +5397,94 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workspace/{workspace}/rubric": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a new rubric
+         * @description Create a new rubric with an associated git repository
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    workspace: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PostRubricEntityRequestDTO"];
+                    "text/json": components["schemas"]["PostRubricEntityRequestDTO"];
+                    "application/*+json": components["schemas"]["PostRubricEntityRequestDTO"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["RubricDO"];
+                        "application/json": components["schemas"]["RubricDO"];
+                        "text/json": components["schemas"]["RubricDO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/workspace/{from}/transfer/cursus/{to}": {
         parameters: {
             query?: never;
@@ -5568,6 +5804,27 @@ export interface components {
             active: boolean;
             deprecated: boolean;
         };
+        MemberDO: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: uuid */
+            entityId: string;
+            entityType: components["schemas"]["MemberEntityType"];
+            /** Format: uuid */
+            userId: string;
+            role: components["schemas"]["MemberRole"];
+            /** Format: date-time */
+            leftAt: null | string;
+            user: components["schemas"]["UserLightDO"];
+        };
+        /** @enum {unknown} */
+        MemberEntityType: "Rubric" | "Project" | "UserProject" | "Goal" | "Cursus";
+        /** @enum {unknown} */
+        MemberRole: "Pending" | "Member" | "Leader";
         NotificationData: components["schemas"]["NotificationDataMessageDO"] | components["schemas"]["NotificationDataProjectInviteData"];
         NotificationDataMessageDO: {
             /** @enum {string} */
@@ -5612,6 +5869,15 @@ export interface components {
             active?: null | boolean;
             public?: null | boolean;
             deprecated?: null | boolean;
+        };
+        PatchRubricEntityRequestDTO: {
+            name?: null | string;
+            markdown?: null | string;
+            public?: null | boolean;
+            enabled?: null | boolean;
+            supportedReviewKinds?: null | components["schemas"]["ReviewKinds"];
+            reviewerRules?: null | components["schemas"]["Rule"][];
+            revieweeRules?: null | components["schemas"]["Rule"][];
         };
         PatchUserDetailsRequestDTO: {
             markdown?: null | string;
@@ -5662,6 +5928,15 @@ export interface components {
             /** Format: uuid */
             rubricId: string;
             kinds: components["schemas"]["ReviewVariant"][];
+        };
+        PostRubricEntityRequestDTO: {
+            name: string;
+            markdown?: null | string;
+            public?: boolean;
+            enabled?: boolean;
+            supportedReviewKinds?: components["schemas"]["ReviewKinds"];
+            reviewerRules?: null | components["schemas"]["Rule"][];
+            revieweeRules?: null | components["schemas"]["Rule"][];
         };
         PostSshKeyRequestDTO: {
             title: string;
@@ -5741,6 +6016,72 @@ export interface components {
             gitInfoId?: null | string;
             creator?: null | components["schemas"]["UserLightDO"];
             gitInfo?: null | components["schemas"]["GitDO"];
+            reviewerRules?: components["schemas"]["Rule"][];
+            revieweeRules?: components["schemas"]["Rule"][];
+        };
+        Rule: components["schemas"]["RuleAllOfRule"] | components["schemas"]["RuleAnyOfRule"] | components["schemas"]["RuleNotRule"] | components["schemas"]["RuleHasCursusRule"] | components["schemas"]["RuleHasProjectRule"] | components["schemas"]["RuleIsMemberRule"] | components["schemas"]["RuleMinDaysRegisteredRule"] | components["schemas"]["RuleMinProjectsCompletedRule"] | components["schemas"]["RuleMinReviewsCompletedRule"] | components["schemas"]["RuleSameTimezoneRule"];
+        RuleAllOfRule: {
+            /** @enum {string} */
+            $type: "all_of";
+            rules: components["schemas"]["Rule"][];
+            description?: null | string;
+        };
+        RuleAnyOfRule: {
+            /** @enum {string} */
+            $type: "any_of";
+            rules: components["schemas"]["Rule"][];
+            description?: null | string;
+        };
+        RuleHasCursusRule: {
+            /** @enum {string} */
+            $type: "has_cursus";
+            /** Format: uuid */
+            cursusId: string;
+            description?: null | string;
+        };
+        RuleHasProjectRule: {
+            /** @enum {string} */
+            $type: "has_project";
+            /** Format: uuid */
+            projectId: string;
+            description?: null | string;
+        };
+        RuleIsMemberRule: {
+            /** @enum {string} */
+            $type: "is_member";
+            description?: null | string;
+        };
+        RuleMinDaysRegisteredRule: {
+            /** @enum {string} */
+            $type: "min_days_registered";
+            /** Format: int32 */
+            days: number | string;
+            description?: null | string;
+        };
+        RuleMinProjectsCompletedRule: {
+            /** @enum {string} */
+            $type: "min_projects_completed";
+            /** Format: int32 */
+            count: number | string;
+            description?: null | string;
+        };
+        RuleMinReviewsCompletedRule: {
+            /** @enum {string} */
+            $type: "min_reviews_completed";
+            /** Format: int32 */
+            count: number | string;
+            description?: null | string;
+        };
+        RuleNotRule: {
+            /** @enum {string} */
+            $type: "not";
+            rule: components["schemas"]["Rule"];
+            description?: null | string;
+        };
+        RuleSameTimezoneRule: {
+            /** @enum {string} */
+            $type: "same_timezone";
+            description?: null | string;
         };
         SpotlightNotificationDO: {
             /** Format: uuid */
@@ -5870,24 +6211,6 @@ export interface components {
             project: components["schemas"]["ProjectDO"];
             gitInfo: null | components["schemas"]["GitDO"];
         };
-        UserProjectMemberDO: {
-            /** Format: uuid */
-            id: string;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
-            /** Format: uuid */
-            userProjectId: string;
-            /** Format: uuid */
-            userId: string;
-            role: components["schemas"]["UserProjectRole"];
-            /** Format: date-time */
-            leftAt: null | string;
-            user: components["schemas"]["UserLightDO"];
-        };
-        /** @enum {unknown} */
-        UserProjectRole: "Pending" | "Member" | "Leader";
         UserProjectTransactionDO: {
             /** Format: uuid */
             id: string;
