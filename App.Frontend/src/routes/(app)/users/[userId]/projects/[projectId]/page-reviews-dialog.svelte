@@ -6,9 +6,9 @@
 <Dialog.Root>
 	<Dialog.Trigger
 		type="button"
-		class={buttonVariants({ variant: 'outline', size: 'sm', class: 'h-5 px-1.5 text-[10px]' })}
+		class={buttonVariants({ variant: 'outline', size: 'sm'})}
 	>
-		Request Review
+		Request
 	</Dialog.Trigger>
 	<Dialog.Content class="sm:max-w-106.25">
 		<Dialog.Header>

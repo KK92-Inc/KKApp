@@ -18,4 +18,4 @@ export const getByUserAndProject = Remote.GET('/users/{userId}/projects/{project
 /** Get the members of a specific user project session */
 export const members = Remote.GET('/user-projects/{id}/members').declare();
 /** Get the paginated activity timeline of a user project session. */
-export const transactionPage = Remote.GET('/user-projects/{id}/transactions').paginated().declare();
+export const transactions = Remote.GET('/user-projects/{id}/transactions').paginated().declare();

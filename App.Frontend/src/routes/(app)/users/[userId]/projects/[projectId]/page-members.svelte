@@ -8,8 +8,11 @@
 	import { page } from '$app/state';
 
 	const context = Page.getContext();
-	const members = $derived(await context.members);
-	const userProject = $derived(await context.userProject);
+	const [ members, userProject] = await Promise.all([
+		await context.members,
+		await context.userProject
+	]);
+
 	const abandoned = $derived(members.find((v) => v.userId === page.data.session.userId && v.leftAt));
 	const formatter = new Intl.DateTimeFormat(page.data.locale, {
 		month: 'short',

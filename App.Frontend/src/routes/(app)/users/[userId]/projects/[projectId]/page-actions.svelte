@@ -15,8 +15,8 @@
 	const current = $derived(members.find((m) => m.userId === page.data.session.userId && !m.leftAt));
 </script>
 
-<Card.Root class="py-0 shadow-none">
-	<Card.Content class="p-3">
+<!-- <Card.Root class="py-0 shadow-none">
+	<Card.Content class="p-3"> -->
 		{#if page.params.userId !== page.data.session.userId && !current}
 			<p class="text-xs leading-relaxed text-muted-foreground">
 				To view your project page, click
@@ -34,7 +34,6 @@
 			</div>
 			<div class="flex gap-2">
 				<Button
-					size="sm"
 					class="flex-1"
 					loading={Invite.accept.pending > 0}
 					onclick={() => Invite.accept({ userProjectId: userProject.id })}
@@ -42,7 +41,6 @@
 					Accept
 				</Button>
 				<Button
-					size="sm"
 					variant="outline"
 					class="flex-1"
 					loading={Invite.decline.pending > 0}
@@ -53,7 +51,6 @@
 			</div>
 		{:else if current && userProject}
 			<Button
-				size="sm"
 				variant="outline"
 				class="w-full"
 				loading={Subscription.unsubscribeProject.pending > 0}
@@ -67,7 +64,6 @@
 			</Button>
 		{:else}
 			<Button
-				size="sm"
 				class="w-full"
 				loading={Subscription.subscribeProject.pending > 0}
 				onclick={() =>
@@ -79,5 +75,5 @@
 				Subscribe
 			</Button>
 		{/if}
-	</Card.Content>
-</Card.Root>
+	<!-- </Card.Content>
+</Card.Root> -->

@@ -2,16 +2,23 @@
 	import type { PageProps } from './$types';
 	import * as Page from './index.svelte';
 	import Layout from '$lib/components/layout.svelte';
+	import * as Git from '$lib/remotes/git.remote';
 	import { Skeleton } from '$lib/components/skeleton';
+	import * as Accordion from '$lib/components/accordion';
+	import Markdown from '$lib/components/markdown/markdown.svelte';
+	import { BookA, HistoryIcon } from '@lucide/svelte';
+	import * as Card from '$lib/components/card';
 
 	const { params }: PageProps = $props();
 
-	Page.setContext(
+	const context = Page.setContext(
 		new Page.Context(
 			() => params.projectId,
 			() => params.userId
 		)
 	);
+
+	const project = $derived(await context.project);
 </script>
 
 {#snippet skeleton()}
@@ -51,7 +58,7 @@
 
 	<Layout>
 		{#snippet left()}
-			<div class="grid gap-2 mt-4">
+			<div class="mt-4 grid gap-2">
 				<Page.Thumbnail />
 				<Page.Members />
 				<Page.Reviews />
@@ -60,7 +67,45 @@
 		{/snippet}
 
 		{#snippet right()}
-			Right
+			<div class="mt-4 grid gap-2">
+				<Page.Menu />
+				<Page.Files />
+
+				<Card.Root class="py-0 shadow-none">
+					<Card.Content class="p-0">
+						<Accordion.Root type="single">
+							<Accordion.Item value="item-1">
+								<Accordion.Trigger class="px-4">
+									<span class="flex items-center gap-2">
+										<BookA />
+										Project Overview
+									</span>
+								</Accordion.Trigger>
+								<Accordion.Content class="pl-4">
+									{#await Git.blob({ id: project.gitInfo.id, branch: context.branch ?? 'main', path: 'README.md' })}
+										<p class="p-4">Loading...</p>
+									{:then blob}
+										{@const decoded = new TextDecoder().decode(Uint8Array.from(atob(blob), c => c.charCodeAt(0)))}
+										<Markdown value={decoded} />
+									{/await}
+								</Accordion.Content>
+							</Accordion.Item>
+
+							<Accordion.Item value="item-2">
+								<Accordion.Trigger class="px-4">
+									<span class="flex items-center gap-2">
+										<HistoryIcon />
+										Session Timeline
+									</span>
+								</Accordion.Trigger>
+								<Accordion.Content class="pl-4">
+									<Page.Timeline />
+								</Accordion.Content>
+							</Accordion.Item>
+						</Accordion.Root>
+					</Card.Content>
+				</Card.Root>
+			</div>
 		{/snippet}
 	</Layout>
 </svelte:boundary>

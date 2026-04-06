@@ -31,8 +31,8 @@ export interface Paginated<T> {
 	data: T[];
 	page: number;
 	pages: number;
-	count: number;
 	size: number;
+	count: number;
 }
 
 /**
@@ -42,11 +42,11 @@ export interface Paginated<T> {
  * @returns A Paginated object.
  */
 export function page<T>(data: T[], response: Response): Paginated<T> {
-	const count = Number(response.headers.get('X-Total-Count') ?? data.length);
-	const size = Number(response.headers.get('X-Page-Size') ?? count);
-	const page = Number(response.headers.get('X-Page-Index') ?? 1);
-	const pages = Math.ceil(count / size);
-	return { data, page, pages, count, size };
+	const page = Number(response.headers.get('X-Page') ?? 1);
+	const perPage = Number(response.headers.get('X-Per-Page') ?? PAGINATION_PER_STEP);
+	const total = Number(response.headers.get('X-Total') ?? data.length);
+	const pages = Number(response.headers.get('X-Pages') ?? Math.ceil(total / perPage));
+	return { data, page, pages, count: total, size: perPage };
 }
 
 // ============================================================================

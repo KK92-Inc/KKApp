@@ -13,7 +13,6 @@
 	import * as DropdownMenu from '$lib/components/dropdown-menu/';
 	import { page } from '$app/state';
 	import { logout } from '$lib/remotes/account.remote';
-
 </script>
 
 <ButtonGroup.Root>
@@ -58,7 +57,7 @@
 			</DropdownMenu.Group>
 			<DropdownMenu.Separator />
 			<DropdownMenu.Group>
-				<DropdownMenu.Item onclick={() => logout()} variant="destructive">
+				<DropdownMenu.Item remote={logout} variant="destructive">
 					<LogOut />
 					Logout
 				</DropdownMenu.Item>

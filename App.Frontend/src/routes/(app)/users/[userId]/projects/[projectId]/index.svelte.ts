@@ -8,12 +8,17 @@ import { createContext } from "svelte";
 import * as Projects from "$lib/remotes/project.remote";
 import * as UserProjects from "$lib/remotes/user-project.remote";
 import * as Reviews from "$lib/remotes/reviews.remote";
+import * as Git from "$lib/remotes/git.remote";
+
+// ============================================================================
 
 export { default as Thumbnail } from "./page-thumbnail.svelte";
 export { default as Actions } from "./page-actions.svelte";
 export { default as Reviews } from "./page-reviews.svelte";
 export { default as ReviewsDialog } from "./page-reviews-dialog.svelte";
 export { default as Members } from "./page-members.svelte";
+export { default as Menu } from "./page-menu.svelte";
+export { default as Files } from "./page-files.svelte";
 export { default as Timeline } from "./page-timeline.svelte";
 
 // ============================================================================
@@ -25,6 +30,10 @@ export { default as Timeline } from "./page-timeline.svelte";
  * context without redundant requests.
  */
 export class Context {
+	public view = $state<"submission" | "assignment">("submission");
+	public branches = $derived<string[]>([]);
+	public branch = $derived(this.branches[0]);
+
 	constructor(
 		public readonly getProjectId: () => string,
 		public readonly getUserId: () => string
@@ -41,39 +50,76 @@ export class Context {
 		});
 	}
 
-	get reviews() {
-		return Reviews.getByUserProjectId({
-			projectId: this.getProjectId(),
-			userId: this.getUserId(),
+	async getBranches() {
+		const userProject = await this.userProject;
+		if (!userProject || !userProject.gitInfo) return [];
+
+		// Multi-line string, default is marked with a *
+		const temp = await Git.branches({
+			id: userProject.gitInfo.id
 		});
+
+		const parsed = temp
+			.split('\n')
+			.map(line => line.trim())
+			.filter(line => line.length > 0)
+			.map(line => {
+				const isDefault = line.startsWith('*');
+				const name = isDefault ? line.substring(1).trim() : line;
+				return { name, isDefault };
+			});
+
+		const defaultIndex = parsed.findIndex(branch => branch.isDefault);
+		if (defaultIndex > 0) {
+			const [defaultBranch] = parsed.splice(defaultIndex, 1);
+			parsed.unshift(defaultBranch);
+		}
+
+		console.log('Parsed branches:', parsed);
+		this.branches = parsed.map(branch => branch.name);
 	}
+
 	get members() {
 		type MemberDO = components["schemas"]["MemberDO"];
-
 		return new Promise<MemberDO[]>(async (resolve) => {
 			const userProject = await this.userProject;
-			console.log("Fetched user project:", userProject);
 			if (!userProject) return resolve([]);
 			const members = await UserProjects.members({ id: userProject.id });
-			console.log("Fetched members:", members);
 			return resolve(members);
 		});
 	}
 
-	// get reviews() {
-	// 	type ReviewDO = components["schemas"]["ReviewDO"];
+	reviews(params: Parameters<typeof Reviews.get>[0] = {}) {
+		type ReviewDO = components["schemas"]["ReviewDO"];
+		return new Promise<ReviewDO[]>(async (resolve) => {
+			const userProject = await this.userProject;
+			if (!userProject) return resolve([]);
+			const reviews = await Reviews.get({
+				userProjectId: userProject.id,
+				size: 5,
+				sort: 'Descending',
+				...params
+			});
 
-	// 	return new Promise<ReviewDO[]>(async (resolve) => {
-	// 		const userProject = await this.userProject;
-	// 		if (!userProject) return resolve([]);
-	// 		const reviews = await Reviews.getByUserProject({
-	// 			size: 5,
-	// 			userId: this.getUserId(),
-	// 			projectId: this.getProjectId()
-	// 		});
+			return resolve(reviews.data);
+		});
+	}
 
-	// 		return resolve(reviews);
-	// 	});
+	async transactions(params: Omit<Parameters<typeof UserProjects.transactions>[0], 'id'> = {}) {
+		const userProject = await this.userProject;
+		if (!userProject) return {
+			data: [],
+			page: 1,
+			pages: 1,
+			count: 0,
+			size: params.size ?? 5
+		};
+
+		return await UserProjects.transactions({
+			...params,
+			id: userProject.id,
+		});
+	}
 }
 
 // ============================================================================

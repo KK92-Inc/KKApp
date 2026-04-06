@@ -51,27 +51,14 @@ public class GitController(ILogger<GitController> log, IGitService git) : Contro
     [HttpGet("{id:guid}/blob/{branch}/{*path}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetBlob(Guid id, string branch, string path, CancellationToken token)
+    public async Task<ActionResult<string>> GetBlob(Guid id, string branch, string path, CancellationToken token)
     {
         var entity = await git.FindByIdAsync(id, token);
         if (entity is null)
             return NotFound();
 
-        var blobBase64 = await git.GetBlobAsync(entity.Owner, entity.Name, branch, path, token);
-        if (blobBase64 is null)
-            return NotFound();
-
-        byte[] content;
-        try
-        {
-            content = Convert.FromBase64String(blobBase64);
-        }
-        catch
-        {
-            // If the blob isn't valid base64, return it as plain text
-            return Content(blobBase64, "text/plain");
-        }
-
-        return File(content, "application/octet-stream");
+        var text = await git.GetBlobAsync(entity.Owner, entity.Name, branch, path, token);
+        if (text is null) return NotFound();
+        return Ok(text ?? string.Empty);
     }
 }
