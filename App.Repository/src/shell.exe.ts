@@ -15,7 +15,7 @@ if (!import.meta.main) {
 // ============================================================================
 
 const CMD_RGX = /^(git-upload-pack|git-receive-pack|git-upload-archive) '(.*)'$/;
-const REPOSITORY_DIRECTORY = Bun.env["REPOSITORY_DIRECTORY"] ?? "/home/git/repos";
+const REPO_DIR = Bun.env["REPOSITORY_DIRECTORY"] ?? "/home/git/repos";
 const HEADER = `
 ░█▀▀░▀█▀░▀█▀░█▀▀░█░█░█▀▀░█░░░█░░
 ░█░█░░█░░░█░░▀▀█░█▀█░█▀▀░█░░░█░░
@@ -24,76 +24,93 @@ const HEADER = `
 
 // ============================================================================
 
-function parseRepo(repo: string): { owner: string; name: string } | null {
+/*
+ * Strips a leading slash and optional ".git" suffix from the raw path the Git
+ * client sends (e.g. "/owner/repo.git") and splits it into its owner / name
+ * components. Returns null when the path doesn't conform to that two-part shape.
+ */
+function parse(repo: string): { owner: string; name: string } | null {
 	let clean = repo.startsWith("/") ? repo.slice(1) : repo;
 	clean = clean.endsWith(".git") ? clean.slice(0, -4) : clean;
 	const [owner, name] = clean.split("/");
 	return owner && name ? { owner, name } : null;
 }
 
-async function authorized(sql: SQL, login: string, repo: string): Promise<boolean> {
-	const parsed = parseRepo(repo);
+/*
+ * Checks whether the given login belongs to an active, non-pending member of
+ * the repository. A single EXISTS query covers the join across users, git
+ * records, and the membership table so we avoid multiple round-trips.
+ */
+async function authorize(sql: SQL, login: string, repo: string): Promise<boolean> {
+	const parsed = parse(repo);
 	if (!parsed) {
 		Log.error(`Invalid repository format: ${repo}`);
 		return false;
 	}
 
 	const { owner, name } = parsed;
-	const [result] = await sql<{ authorized: boolean }[]>`
+	const [row] = await sql<{ authorized: boolean }[]>`
 		SELECT EXISTS (
 			SELECT 1
-			FROM tbl_user    u
-			JOIN tbl_git     g  ON g.owner = ${owner} AND g.name = ${name}
-			JOIN tbl_members m  ON m.git_id  = g.id
-			                   AND m.user_id  = u.id
-			                   AND m.left_at  IS NULL
-			                   AND m.role    != 0  -- exclude Pending
+			FROM       tbl_user    u
+			JOIN       tbl_git     g  ON  g.owner = ${owner}
+			                         AND  g.name  = ${name}
+			JOIN       tbl_members m  ON  m.git_id  = g.id
+			                         AND  m.user_id  = u.id
+			                         AND  m.left_at  IS NULL
+			                         AND  m.role    != 0        -- exclude Pending
 			WHERE u.login = ${login}
 		) AS authorized
 	`;
 
-	return result?.authorized ?? false;
+	return row?.authorized ?? false;
 }
 
-async function recordPushTransaction(sql: SQL, login: string, repo: string): Promise<void> {
-	const parsed = parseRepo(repo);
+/*
+ * Records a push event against the matching user_project row. This is
+ * best-effort — a failure here must never roll back the push itself, since
+ * the data has already been written to the bare repository on disk.
+ */
+async function record(sql: SQL, login: string, repo: string): Promise<void> {
+	const parsed = parse(repo);
 	if (!parsed) return;
 
 	const { owner, name } = parsed;
-	const PUSH_VARIANT = 3; // Replace with the correct UserProjectTransactionVariant value
+	const PUSH_VARIANT = 3;
 
 	const result = await sql`
 		INSERT INTO tbl_user_project_transactions
 			(id, created_at, updated_at, user_project_id, user_id, type)
 		SELECT
-			gen_random_uuid(),
+			${Bun.randomUUIDv7()},
 			NOW(),
 			NOW(),
 			up.id,
 			u.id,
 			${PUSH_VARIANT}
-		FROM tbl_user         u
-		JOIN tbl_git          g  ON g.owner = ${owner}
-		                        AND g.name  = ${name}
-		JOIN tbl_user_project up ON up.git_info_id = g.id
+		FROM       tbl_user         u
+		JOIN       tbl_git          g   ON  g.owner       = ${owner}
+		                                AND  g.name        = ${name}
+		JOIN       tbl_user_project up  ON  up.git_info_id = g.id
 		WHERE u.login = ${login}
 	`;
 
 	if (result.count === 0) {
-		Log.error(`recordPushTransaction: no matching user_project found for ${login} → ${owner}/${name}`);
+		Log.error(`record: no matching user_project for ${login} → ${owner}/${name}`);
 	}
 }
 
 // ============================================================================
 // Entry Point
+//
+// Validates the SSH_ORIGINAL_COMMAND forwarded by sshd, checks that the
+// requesting user is an authorised member of the target repository, then
+// proxies the raw Git protocol through the appropriate git-*-pack binary.
+// A push transaction is recorded afterward on a clean exit.
 // ============================================================================
 
-// 1. aspire() may populate environment variables (db url, credentials, etc.)
-//    The SQL pool MUST be created after this so it picks them up.
 await aspire();
-
-const sql = new SQL(); // Reads DATABASE_URL / POSTGRES_URL from env — lazily connects
-
+const sql = new SQL();
 const user = env("USER", "Access Denied: Unknown user.");
 const original = env("SSH_ORIGINAL_COMMAND");
 
@@ -102,30 +119,27 @@ if (!original) {
 	process.stdout.write(`Hey ${user}, welcome to the KKShell server!\n`);
 	process.stdout.write(`You've authenticated! However, there is no shell access.\n`);
 	process.stdout.write(`\nGoodbye!\n`);
-	process.exit(0); // no queries were made, nothing to drain
+	process.exit(0);
 }
 
-// 2. Validate and unpack the command.
 const match = original.match(CMD_RGX);
 const [, git, path] = match ?? Log.die("Invalid command format!");
 if (!git || !path) {
 	Log.die("Unauthorized command.");
+	process.exit(1);
 }
 
-// 3. Authorise — first real query, pool opens a connection here.
-if (!(await authorized(sql, user, path))) {
+if (!(await authorize(sql, user, path))) {
 	await sql.close({ timeout: 0 });
 	Log.die("Unauthorized access to repository");
 }
 
-// 4. Ensure the repo exists on disk.
-const fullpath = join(REPOSITORY_DIRECTORY, path);
+const fullpath = join(REPO_DIR, path);
 if (!existsSync(fullpath)) {
 	await sql.close({ timeout: 0 });
 	Log.die("Repository not found");
 }
 
-// 5. Run the Git command.
 const command = spawn([git, fullpath], {
 	stdin: "inherit",
 	stdout: "inherit",
@@ -134,16 +148,13 @@ const command = spawn([git, fullpath], {
 
 const exitCode = await command.exited;
 
-// 6. Only record a transaction for successful pushes (git-receive-pack = `git push`).
 if (git === "git-receive-pack" && exitCode === 0) {
 	try {
-		await recordPushTransaction(sql, user, path);
+		await record(sql, user, path);
 	} catch (err) {
-		// Don't fail the push — the data is already written to git.
 		Log.error(`Failed to record push transaction: ${err}`);
 	}
 }
 
-// 7. Drain the pool and mirror git's exit code.
 await sql.close({ timeout: 5 });
 process.exit(exitCode);

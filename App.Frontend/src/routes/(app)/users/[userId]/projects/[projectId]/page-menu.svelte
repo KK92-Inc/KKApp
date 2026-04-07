@@ -21,7 +21,7 @@
 
 	let search = $state('');
 	const context = Page.getContext();
-	const [ project, userProject] = await Promise.all([
+	const [project, userProject] = await Promise.all([
 		await context.project,
 		await context.userProject,
 		await context.getBranches()
@@ -29,10 +29,24 @@
 
 	const url = $derived(`ssh://git@localhost:2222/${project.gitInfo.id}/${userProject?.gitInfo?.id}`);
 	const cmd = $derived(`git clone ${url}`);
+
+	if (!userProject) {
+		context.view = 'assignment';
+	}
 </script>
 
 {#snippet createBranch()}
-	<Button variant="ghost" class="w-full p-2">
+	<Button
+		variant="ghost"
+		class="w-full p-2"
+		onclick={async () => {
+			await Git.createBranch({
+				id: project.gitInfo.id,
+				ref: context.branch ?? 'HEAD',
+				child: search ?? `new-branch`
+			});
+		}}
+	>
 		<PlusIcon />
 		Create branch
 		{#if search.length > 0}
@@ -44,7 +58,7 @@
 <div class="flex items-center gap-2">
 	<Tabs.Root bind:value={context.view} class="w-max">
 		<Tabs.List>
-			<Tabs.Trigger value="submission">Submission</Tabs.Trigger>
+			<Tabs.Trigger disabled={!userProject} value="submission">Submission</Tabs.Trigger>
 			<Tabs.Trigger value="assignment">Assignment</Tabs.Trigger>
 		</Tabs.List>
 	</Tabs.Root>
@@ -55,11 +69,13 @@
 		<Popover.Root>
 			<Popover.Trigger>
 				{#snippet child({ props })}
-					<Button {...props} variant="outline" role="combobox">
-						<GitBranch />
-						{context.branch ?? 'Select a branch...'}
-						<ChevronsUpDownIcon class="opacity-50" />
-					</Button>
+					{#if !context.isEmpty}
+						<Button {...props} variant="outline" role="combobox">
+							<GitBranch />
+							{context.branch ?? 'Select a branch...'}
+							<ChevronsUpDownIcon class="opacity-50" />
+						</Button>
+					{/if}
 				{/snippet}
 			</Popover.Trigger>
 			<Popover.Content class="w-60 p-0" align="start">

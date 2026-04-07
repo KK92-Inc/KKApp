@@ -76,6 +76,62 @@ const server = Bun.serve({
 				});
 			},
 		},
+		"/repo/:owner/:name/branches/:ref/:child": {
+			POST: async (req) => {
+				const { owner, name, ref, child } = req.params;
+				const entity = repoPath(owner, name);
+				if (!existsSync(entity)) {
+					return new Response(null, { status: 404 });
+				}
+
+				try {
+					await $`git -C ${entity} branch ${child} ${ref}`.quiet();
+					return new Response(null, { status: 201 });
+				} catch {
+					return new Response(null, { status: 409 });
+				}
+			},
+		},
+		"/repo/:owner/:name/branches/:branch": {
+			DELETE: async (req) => {
+				const { owner, name, branch } = req.params;
+				const entity = repoPath(owner, name);
+				if (!existsSync(entity)) {
+					return new Response("Repository not found", { status: 404 });
+				}
+
+				// 2. Dynamically determine the default branch
+				let defaultBranch;
+				try {
+					// Ask Git where HEAD is pointing
+					const { stdout } = await $`git -C ${entity} symbolic-ref --short HEAD`.quiet();
+					defaultBranch = stdout.toString().trim();
+				} catch {
+					// Failsafe fallback if the repo is in a detached HEAD state
+					defaultBranch = "master";
+				}
+
+				// 3. Protect the dynamic default branch
+				if (branch === defaultBranch) {
+					return new Response(`Forbidden: Cannot delete default branch (${defaultBranch})`, { status: 403 });
+				}
+
+				try {
+					// 4. Attempt Deletion
+					await $`git -C ${entity} branch -D ${branch}`.quiet();
+					return new Response(null, { status: 204 });
+				} catch (error) {
+					if (error instanceof $.ShellError) {
+						const msg = error.stderr?.toString() ?? "";
+						if (msg.includes("not found")) {
+							return new Response("Branch not found", { status: 404 });
+						}
+					}
+
+					return new Response("Conflict: Branch cannot be deleted", { status: 409 });
+				}
+			},
+		},
 		"/repo/:owner/:name/tree/:branch/*": {
 			GET: async (req) => {
 				const branch = req.params.branch;

@@ -18,7 +18,10 @@
 		)
 	);
 
-	const project = $derived(await context.project);
+	const [ project, userProject] = await Promise.all([
+		await context.project,
+		await context.userProject
+	]);
 </script>
 
 {#snippet skeleton()}
@@ -61,7 +64,9 @@
 			<div class="mt-4 grid gap-2">
 				<Page.Thumbnail />
 				<Page.Members />
-				<Page.Reviews />
+				{#if userProject}
+					<Page.Reviews />
+				{/if}
 				<Page.Actions />
 			</div>
 		{/snippet}

@@ -33,6 +33,7 @@ export class Context {
 	public view = $state<"submission" | "assignment">("submission");
 	public branches = $derived<string[]>([]);
 	public branch = $derived(this.branches[0]);
+	public isEmpty = $derived(this.branches.length === 0);
 
 	constructor(
 		public readonly getProjectId: () => string,
@@ -52,31 +53,31 @@ export class Context {
 
 	async getBranches() {
 		const userProject = await this.userProject;
-		if (!userProject || !userProject.gitInfo) return [];
-
-		// Multi-line string, default is marked with a *
-		const temp = await Git.branches({
-			id: userProject.gitInfo.id
-		});
-
-		const parsed = temp
-			.split('\n')
-			.map(line => line.trim())
-			.filter(line => line.length > 0)
-			.map(line => {
-				const isDefault = line.startsWith('*');
-				const name = isDefault ? line.substring(1).trim() : line;
-				return { name, isDefault };
-			});
-
-		const defaultIndex = parsed.findIndex(branch => branch.isDefault);
-		if (defaultIndex > 0) {
-			const [defaultBranch] = parsed.splice(defaultIndex, 1);
-			parsed.unshift(defaultBranch);
+		if (!userProject || !userProject.gitInfo) {
+			this.branches = [];
+			return;
 		}
 
-		console.log('Parsed branches:', parsed);
-		this.branches = parsed.map(branch => branch.name);
+		try {
+			const temp = await Git.branches({ id: userProject.gitInfo.id });
+			const parsed = temp
+				.split('\n')
+				.map(line => line.trim())
+				.filter(line => line.length > 0)
+				.map(line => {
+					const isDefault = line.startsWith('*');
+					const name = isDefault ? line.substring(1).trim() : line;
+					return { name, isDefault };
+				});
+
+			// Sort default branch to the top
+			const sorted = parsed.sort((a, b) => (a.isDefault === b.isDefault ? 0 : a.isDefault ? -1 : 1));
+
+			// 3. Update the state
+			this.branches = sorted.map(b => b.name);
+		} catch (_) {
+			this.branches = [];
+		}
 	}
 
 	get members() {

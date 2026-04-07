@@ -1,11 +1,18 @@
 <script lang="ts">
 	import { parseGitTree } from '$lib/components/explorer';
-	import FileBrowser from '$lib/components/explorer/explorer.svelte';
+	import * as Explorer from '$lib/components/explorer';
+	import * as Git from '$lib/remotes/git.remote';
 	import type { PageProps } from './$types';
 
+	const { params }: PageProps = $props();
+	const tree = $derived(Git.treeViaUser({
+		projectId: params.projectId,
+		id: params.userId,
+		branch: params.branch,
+		path: params.path
+	}));
 
-	const { params, data }: PageProps = $props();
-	const files = $derived(parseGitTree(data.tree));
+	const files = $derived(parseGitTree(await tree));
 </script>
 
-<FileBrowser baseUrl="./src" dotdot nodes={files} />
+<Explorer.Browser baseUrl="./src" dotdot nodes={files} />

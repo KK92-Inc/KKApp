@@ -47,6 +47,18 @@ public interface IGitService
     public Task<bool> RenameAsync(string owner, string name, string newName, CancellationToken token = default);
 
     /// <summary>
+    /// Creates a new bare git repository.
+    /// </summary>
+    /// <returns>True if created (201), false if it already exists (409).</returns>
+    public Task<bool> CreateBranchAsync(string owner, string name, string @ref, string child, CancellationToken token = default);
+
+    /// <summary>
+    /// Deletes a repository.
+    /// </summary>
+    /// <returns>True if deleted (204), false if not found (404).</returns>
+    public Task<bool> DeleteBranchAsync(string owner, string name, string branch, CancellationToken token = default);
+
+    /// <summary>
     /// Gets the tree (ls-tree) listing for a given branch and path.
     /// </summary>
     /// <returns>The raw git ls-tree output, or null if not found.</returns>

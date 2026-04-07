@@ -122,4 +122,27 @@ public class GitService : IGitService
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadAsStringAsync(token);
     }
+
+    public async Task<bool> CreateBranchAsync(string owner, string name, string @ref, string child, CancellationToken token = default)
+    {
+        var response = await _http.PostAsync($"repo/{owner}/{name}/branches/{@ref}/{child}", null, token);
+        return response.StatusCode switch
+        {
+            HttpStatusCode.Created => true,
+            HttpStatusCode.Conflict => false,
+            _ => throw new ServiceException(500, $"Unexpected status {response.StatusCode} creating branch {owner}/{name}/{@ref}/{child}")
+        };
+    }
+
+    public async Task<bool> DeleteBranchAsync(string owner, string name, string branch, CancellationToken token = default)
+    {
+        var response = await _http.DeleteAsync($"repo/{owner}/{name}/branches/{branch}", token);
+        return response.StatusCode switch
+        {
+            HttpStatusCode.NoContent => true,
+            HttpStatusCode.NotFound => false,
+            HttpStatusCode.UnprocessableEntity => throw new ServiceException(422, $"Unable to delete branch: {branch}"),
+            _ => throw new ServiceException(500, $"Unexpected status {response.StatusCode} deleting branch {owner}/{name}/{branch}")
+        };
+    }
 }

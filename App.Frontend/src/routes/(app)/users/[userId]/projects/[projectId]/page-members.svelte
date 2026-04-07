@@ -42,7 +42,11 @@
 			</Alert.Root>
 		{:else if !userProject}
 			<p class="text-xs text-muted-foreground">
-				User has not subscribed to this project yet.
+			{#if context.getUserId() === page.data.session.userId}
+				You haven't subscribed to this project yet.
+			{:else}
+				This user hasn't subscribed to this project yet.
+			{/if}
 			</p>
 		{/if}
 
