@@ -2,7 +2,7 @@
 	import * as Item from '$lib/components/item';
 	import { Button } from '$lib/components/button/index.js';
 	import { KeyRound, Trash2Icon, TriangleAlert, X } from '@lucide/svelte';
-	import { removeKey, getKeys } from '$lib/remotes/ssh.remote';
+	import * as SSH from '$lib/remotes/ssh.remote';
 	import { page } from '$app/state';
 	import * as Empty from '$lib/components/empty';
 	import * as Alert from '$lib/components/alert';
@@ -12,6 +12,13 @@
 	import { useDialog } from '$lib/components/dialog';
 
 	const dialog = useDialog();
+	const keys = $derived(await SSH.get({}));
+	const confirm = $derived(
+		dialog.confirm(
+			'Delete SSH Key?',
+			"This will permanently delete the SSH key and if you'd like to use it in the future, you will need to upload it again."
+		)
+	);
 	const formatter = new Intl.DateTimeFormat(page.data.locale, {
 		dateStyle: 'medium',
 		timeStyle: 'short'
@@ -31,70 +38,88 @@
 		<Alert.Title>Make sure you recognize your keys!</Alert.Title>
 	</Alert.Root>
 
-	<svelte:boundary>
-		{@const keys = await getKeys()}
-		{#if keys === 0}
-			<Empty.Root class="m-auto h-80 bg-card/30">
-				<Empty.Header>
-					<Empty.Media variant="icon">
-						<X />
-					</Empty.Media>
-					<Empty.Title></Empty.Title>
-				</Empty.Header>
-				<Empty.Content>No SSH keys found.</Empty.Content>
-			</Empty.Root>
-		{:else}
-			<div class="grid w-full grid-cols-2 gap-2">
-				{#each keys as key (key.fingerprint)}
-					{@const instanceRemove = removeKey.for(key.fingerprint)}
-					<form {...instanceRemove}>
-						<input
-							hidden
-							{...instanceRemove.fields.fingerprint.as('text')}
-							value={key.fingerprint}
-						/>
-						<Item.Root variant="outline">
-							<Item.Content class="min-w-0">
-								<Item.Title>
-									<KeyRound size={16} />
-									<span>{key.title}</span>
-								</Item.Title>
-								<Item.Description>
-									{key.fingerprint}
-									<p class="mt-1 flex gap-2 text-xs text-muted-foreground">
-										<span>{key.keyType}</span>
-										<span>•</span>
-										<span>Created {formatter.format(new Date(key.createdAt))}</span>
-									</p>
-								</Item.Description>
-							</Item.Content>
-							<Item.Actions>
-								<Button
-									onclick={async (e) => {
-										e.preventDefault();
-										const form = e.currentTarget.closest('form');
-										await dialog
-											.confirm(
-												'Delete SSH Key?',
-												`
-											This action CANNOT be undone. This will permanently delete the SSH key and if you'd like to use it in the future, you will need to upload it again.
-											`
-											)
-											.confirmLabel('Delete')
-											.ok(() => form?.requestSubmit());
-									}}
-									type="submit"
-									variant="ghost"
-									size="icon"
-									aria-label="Delete SSH Key"
-								>
-									<Trash2Icon class="size-4 text-destructive" />
-								</Button>
-							</Item.Actions>
-						</Item.Root>
-					</form>
-				{/each}
-			</div>
-		{/if}
-	</svelte:boundary>
+	{#each keys as key (key.fingerprint)}
+		<Item.Root variant="outline">
+			<Item.Content class="min-w-0">
+				<Item.Title>
+					<KeyRound size={16} />
+					<span>{key.title}</span>
+				</Item.Title>
+				<Item.Description>
+					<span class="block">
+						{key.fingerprint}
+					</span>
+					<span>{key.keyType}</span>
+					<span>•</span>
+					<span>Created {formatter.format(new Date(key.createdAt))}</span>
+				</Item.Description>
+			</Item.Content>
+			<Item.Actions>
+				<Button
+					onclick={async () => {
+						if (await confirm) {
+							await SSH.remove({ fingerprint: key.fingerprint });
+						}
+					}}
+					type="submit"
+					variant="ghost"
+					size="icon"
+					aria-label="Delete SSH Key"
+				>
+					<Trash2Icon class="size-4 text-destructive" />
+				</Button>
+			</Item.Actions>
+		</Item.Root>
+	{:else}
+		<Empty.Root class="m-auto h-80 bg-card/30">
+			<Empty.Header>
+				<Empty.Media variant="icon">
+					<X />
+				</Empty.Media>
+				<Empty.Title>No SSH keys found.</Empty.Title>
+			</Empty.Header>
+		</Empty.Root>
+	{/each}
+	<!-- {#each keys as key (key.title)}
+		<Item.Root variant="outline">
+			<Item.Content class="min-w-0">
+				<Item.Title>
+					<KeyRound size={16} />
+					<span>{key.title}</span>
+				</Item.Title>
+				<Item.Description>
+					{key.fingerprint}
+					<p class="mt-1 flex gap-2 text-xs text-muted-foreground">
+						<span>{key.keyType}</span>
+						<span>•</span>
+						<span>Created {formatter.format(new Date(key.createdAt))}</span>
+					</p>
+				</Item.Description>
+			</Item.Content>
+			<Item.Actions>
+				<Button
+					onclick={async () => {
+						if (await confirm) {
+							await SSH.remove({ fingerprint: key.fingerprint });
+						}
+					}}
+					type="submit"
+					variant="ghost"
+					size="icon"
+					aria-label="Delete SSH Key"
+				>
+					<Trash2Icon class="size-4 text-destructive" />
+				</Button>
+			</Item.Actions>
+		</Item.Root>
+	{:else}
+		<Empty.Root class="m-auto h-80 bg-card/30">
+			<Empty.Header>
+				<Empty.Media variant="icon">
+					<X />
+				</Empty.Media>
+				<Empty.Title>No SSH keys found.</Empty.Title>
+			</Empty.Header>
+		</Empty.Root>
+	{/each} -->
 </div>
