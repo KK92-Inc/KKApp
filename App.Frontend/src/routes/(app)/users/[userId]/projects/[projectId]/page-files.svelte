@@ -34,8 +34,8 @@
 
 	const tree = $derived(
 		Git.treeViaUser({
-			projectId: context.getProjectId(),
-			id: context.getUserId(),
+			projectId: context.projectId(),
+			id: context.userId(),
 			branch: context.branch,
 			path: ''
 		})
@@ -84,5 +84,5 @@
 	</Card.Root>
 {:else}
 	<!-- TODO: Check what view we're on... -->
-	<Explorer.Browser baseUrl="./{context.getProjectId()}/{context.branch}" nodes={files} />
+	<Explorer.Browser baseUrl="./{context.projectId()}/{context.branch}" nodes={files} />
 {/if}

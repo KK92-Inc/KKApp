@@ -5,16 +5,16 @@
 		Play,
 		UserPlus,
 		UserMinus,
-		GitCommit,
 		Power,
-		CheckCircle,
 		Clock,
 		UserCheck,
 		UserX,
 		UserRoundX,
 		ArrowRightLeft,
 		Icon,
-		Pause
+		Pause,
+		GitCommitHorizontal,
+		CircleCheck
 	} from '@lucide/svelte';
 	import type { components } from '$lib/api/api';
 	import { page } from '$app/state';
@@ -23,12 +23,20 @@
 
 	let index = $state(1);
 	const context = Page.getContext();
-	const transactions = $derived(await context.transactions({
-		page: index,
-		sort: 'Descending',
-		size: 6
-	}));
+	const userProject = $derived(await context.userProject);
+	const getTransactions = $derived.by(async () => {
+		if (!userProject) return { data: [], pages: 1 };
+		const result = await UserProjects.transactions({
+			id: userProject.id,
+			page: index,
+			sort: 'Descending',
+			size: 6
+		});
 
+		return result;
+	});
+
+	const transactions = $derived(await getTransactions);
 	const formatter = new Intl.DateTimeFormat(page.data.locale, {
 		dateStyle: 'long',
 		timeStyle: 'short',
@@ -40,11 +48,11 @@
 		Started: { icon: Power, label: 'Session started', class: 'text-green-500' },
 		MemberJoined: { icon: UserPlus, label: 'Member joined', class: 'text-blue-500' },
 		MemberLeft: { icon: UserMinus, label: 'Member left', class: 'text-orange-500' },
-		GitCommit: { icon: GitCommit, label: 'Git commit', class: 'text-violet-500' },
+		GitCommit: { icon: GitCommitHorizontal, label: 'Git commit', class: 'text-violet-500' },
 		StateChangedToInActive: { icon: Pause, label: 'Session deactivated', class: 'text-red-500' },
 		StateChangedToActive: { icon: Play, label: 'Session reactivated', class: 'text-green-500' },
 		StateChangedToCompleted: {
-			icon: CheckCircle,
+			icon: CircleCheck,
 			label: 'Session completed',
 			class: 'text-emerald-500'
 		},

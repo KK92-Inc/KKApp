@@ -30,95 +30,24 @@ export { default as Timeline } from "./page-timeline.svelte";
  * context without redundant requests.
  */
 export class Context {
-	public view = $state<"submission" | "assignment">("submission");
 	public branches = $derived<string[]>([]);
 	public branch = $derived(this.branches[0]);
-	public isEmpty = $derived(this.branches.length === 0);
+	public isInitialized = $derived(this.branches.length > 0);
+	public view = $state<"submission" | "assignment">("submission");
 
 	constructor(
-		public readonly getProjectId: () => string,
-		public readonly getUserId: () => string
+		public readonly userId: () => string,
+		public readonly projectId: () => string,
 	) { }
 
 	get project() {
-		return Projects.get({ id: this.getProjectId() });
+		return Projects.get({ id: this.projectId() });
 	}
 
 	get userProject() {
 		return UserProjects.getByUserAndProject({
-			userId: this.getUserId(),
-			projectId: this.getProjectId()
-		});
-	}
-
-	async getBranches() {
-		const userProject = await this.userProject;
-		if (!userProject || !userProject.gitInfo) {
-			this.branches = [];
-			return;
-		}
-
-		try {
-			const temp = await Git.branches({ id: userProject.gitInfo.id });
-			const parsed = temp
-				.split('\n')
-				.map(line => line.trim())
-				.filter(line => line.length > 0)
-				.map(line => {
-					const isDefault = line.startsWith('*');
-					const name = isDefault ? line.substring(1).trim() : line;
-					return { name, isDefault };
-				});
-
-			// Sort default branch to the top
-			const sorted = parsed.sort((a, b) => (a.isDefault === b.isDefault ? 0 : a.isDefault ? -1 : 1));
-
-			// 3. Update the state
-			this.branches = sorted.map(b => b.name);
-		} catch (_) {
-			this.branches = [];
-		}
-	}
-
-	get members() {
-		type MemberDO = components["schemas"]["MemberDO"];
-		return new Promise<MemberDO[]>(async (resolve) => {
-			const userProject = await this.userProject;
-			if (!userProject) return resolve([]);
-			const members = await UserProjects.members({ id: userProject.id });
-			return resolve(members);
-		});
-	}
-
-	reviews(params: Parameters<typeof Reviews.get>[0] = {}) {
-		type ReviewDO = components["schemas"]["ReviewDO"];
-		return new Promise<ReviewDO[]>(async (resolve) => {
-			const userProject = await this.userProject;
-			if (!userProject) return resolve([]);
-			const reviews = await Reviews.get({
-				userProjectId: userProject.id,
-				size: 5,
-				sort: 'Descending',
-				...params
-			});
-
-			return resolve(reviews.data);
-		});
-	}
-
-	async transactions(params: Omit<Parameters<typeof UserProjects.transactions>[0], 'id'> = {}) {
-		const userProject = await this.userProject;
-		if (!userProject) return {
-			data: [],
-			page: 1,
-			pages: 1,
-			count: 0,
-			size: params.size ?? 5
-		};
-
-		return await UserProjects.transactions({
-			...params,
-			id: userProject.id,
+			userId: this.userId(),
+			projectId: this.projectId()
 		});
 	}
 }

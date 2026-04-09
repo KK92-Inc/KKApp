@@ -1,27 +1,47 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
+	import * as Alert from '$lib/components/alert';
 	import * as Page from './index.svelte';
 	import Layout from '$lib/components/layout.svelte';
 	import * as Git from '$lib/remotes/git.remote';
 	import { Skeleton } from '$lib/components/skeleton';
 	import * as Accordion from '$lib/components/accordion';
 	import Markdown from '$lib/components/markdown/markdown.svelte';
-	import { BookA, HistoryIcon } from '@lucide/svelte';
+	import { BookA, CircleAlert, HistoryIcon, RefreshCcw } from '@lucide/svelte';
 	import * as Card from '$lib/components/card';
+	import { Button } from '$lib/components/button';
+	import type { HttpError } from '@sveltejs/kit';
 
 	const { params }: PageProps = $props();
-
 	const context = Page.setContext(
 		new Page.Context(
-			() => params.projectId,
-			() => params.userId
+			() => params.userId,
+			() => params.projectId
 		)
 	);
 
-	const [ project, userProject] = await Promise.all([
-		await context.project,
-		await context.userProject
-	]);
+	const [project, userProject] = $derived(await Promise.all([context.project, context.userProject]));
+	const blob = $derived.by(async () => {
+		const branches = await Git.branches({ id: project.gitInfo.id });
+		if (branches.length === 0) {
+			return null;
+		}
+
+		const defaultBranch =
+			branches
+				.split('\n')
+				.find((line) => line.startsWith('*'))
+				?.replace('*', '')
+				.trim() ?? 'master';
+
+		const blob = await Git.blob({
+			id: project.gitInfo.id,
+			branch: defaultBranch,
+			path: 'README.md'
+		});
+
+		return new TextDecoder().decode(Uint8Array.from(atob(blob), (c) => c.charCodeAt(0)));
+	});
 </script>
 
 {#snippet skeleton()}
@@ -63,18 +83,18 @@
 		{#snippet left()}
 			<div class="mt-4 grid gap-2">
 				<Page.Thumbnail />
-				<Page.Members />
+				<!-- <Page.Members /> -->
 				{#if userProject}
 					<Page.Reviews />
 				{/if}
-				<Page.Actions />
+				<!-- <Page.Actions /> -->
 			</div>
 		{/snippet}
 
 		{#snippet right()}
 			<div class="mt-4 grid gap-2">
-				<Page.Menu />
-				<Page.Files />
+				<!-- <Page.Menu />
+				<Page.Files /> -->
 
 				<Card.Root class="py-0 shadow-none">
 					<Card.Content class="p-0">
@@ -87,12 +107,34 @@
 									</span>
 								</Accordion.Trigger>
 								<Accordion.Content class="pl-4">
-									{#await Git.blob({ id: project.gitInfo.id, branch: context.branch ?? 'main', path: 'README.md' })}
-										<p class="p-4">Loading...</p>
-									{:then blob}
-										{@const decoded = new TextDecoder().decode(Uint8Array.from(atob(blob), c => c.charCodeAt(0)))}
-										<Markdown value={decoded} />
-									{/await}
+									<svelte:boundary>
+										{@const readme = await blob}
+
+										{#snippet pending()}
+											<p>Loading...</p>
+										{/snippet}
+
+										{#snippet failed(e, reset)}
+											{@const err = e as HttpError}
+											<Alert.Root variant="destructive">
+												<CircleAlert />
+												<Alert.Title>{err.body.message}</Alert.Title>
+												<Alert.Description>
+													This could resolve itself or may be a bug.
+													<Button variant="outline" class="text-foreground" size="sm" onclick={reset}>
+														<RefreshCcw class="size-3" />
+														Try again
+													</Button>
+												</Alert.Description>
+											</Alert.Root>
+										{/snippet}
+
+										{#if readme}
+											<Markdown value={readme} />
+										{:else}
+											<p>No README found.</p>
+										{/if}
+									</svelte:boundary>
 								</Accordion.Content>
 							</Accordion.Item>
 
@@ -114,56 +156,3 @@
 		{/snippet}
 	</Layout>
 </svelte:boundary>
-
-<!-- {#if userProject}
-	{#each await UserProjects.members({ id: userProject.id }) as member}
-		<div class="flex items-center gap-2">
-			<Thumbnail readonly src="/placeholder.svg" class="size-24 shrink-0" />
-			<span>{member.user.displayName}</span>
-		</div>
-	{/each}
-
-	<div class="flex gap-2">
-		<Button
-			loading={Invites.send.pending > 0}
-			onclick={async () => {
-				try {
-					await Invites.send({
-userProjectId: userProject.id,
-inviteeId: '74193b39-7c21-4711-9b8c-b8de3333ee88'
-});
-				} catch (error) {
-					if (isHttpError(error)) {
-						toast.error(error.body.message ?? 'Failed to send invite');
-					}
-				}
-			}}
-		>
-			Invite
-		</Button>
-
-		<Button
-			loading={Invites.revoke.pending > 0}
-			onclick={async () => {
-				try {
-					await Invites.revoke({
-userProjectId: userProject.id,
-inviteeId: '74193b39-7c21-4711-9b8c-b8de3333ee88'
-});
-				} catch (error) {
-					if (isHttpError(error)) {
-						toast.error(error.body.message ?? 'Failed to revoke invite');
-					}
-				}
-			}}
-		>
-			Revoke Invite
-		</Button>
-	</div>
-{/if}
-
-<h1>{project?.name}</h1>
-
-<pre><code>
-{JSON.stringify(userProject, null, 2)}
-</code></pre> -->

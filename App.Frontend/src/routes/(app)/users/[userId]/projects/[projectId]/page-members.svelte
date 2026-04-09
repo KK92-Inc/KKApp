@@ -8,10 +8,10 @@
 	import { page } from '$app/state';
 
 	const context = Page.getContext();
-	const [ members, userProject] = await Promise.all([
-		await context.members,
-		await context.userProject
-	]);
+	const [ members, userProject] = $derived(await Promise.all([
+		context.members,
+		context.userProject
+	]));
 
 	const abandoned = $derived(members.find((v) => v.userId === page.data.session.userId && v.leftAt));
 	const formatter = new Intl.DateTimeFormat(page.data.locale, {
@@ -42,7 +42,7 @@
 			</Alert.Root>
 		{:else if !userProject}
 			<p class="text-xs text-muted-foreground">
-			{#if context.getUserId() === page.data.session.userId}
+			{#if context.userId() === page.data.session.userId}
 				You haven't subscribed to this project yet.
 			{:else}
 				This user hasn't subscribed to this project yet.

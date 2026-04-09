@@ -28,18 +28,12 @@ export const create = Remote.POST('/workspace/{workspace}/project')
 export const get = Remote.GET('/projects/{id}').declare();
 export const getPage = Remote.GET('/projects')
 	.extend(v.object({
-		...Filters.base,
-		...Filters.pagination,
-		...Filters.sort,
-		name: v.optional(v.string())
+		name: v.optional(v.string()),
+		slug: v.optional(v.string())
 	}), data => ({
 		query: {
 			'filter[name]': data.name,
 			'filter[slug]': data.slug,
-			'page[index]': data.page,
-			'page[size]': data.size,
-			'sort[by]': data.sortBy,
-			'sort[order]': data.sort
 		}
 	}))
 	.paginated()

@@ -1,240 +1,157 @@
 <script lang="ts">
-	import * as Card from '$lib/components/card';
+	import * as Item from '$lib/components/item';
+	import * as Empty from '$lib/components/empty';
 	import * as InputGroup from '$lib/components/input-group';
 	import * as Tabs from '$lib/components/tabs';
+	import * as Avatar from '$lib/components/avatar';
 	import Layout from '$lib/components/layout.svelte';
-	import Paginate from '$lib/components/paginate.svelte';
-	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
 	import { Badge } from '$lib/components/badge';
-	import { Button } from '$lib/components/button';
-	import { Search, Archive, ChevronRight } from '@lucide/svelte';
+	import { Search, Archive, FolderOpenIcon, Globe, Lock, Trash2, CalendarCheck } from '@lucide/svelte';
 	import * as Projects from '$lib/remotes/project.remote';
 	import * as UserProjects from '$lib/remotes/user-project.remote';
-	import useSearchParams from '$lib/hooks/url.svelte';
 	import useDebounce from '$lib/hooks/debounce.svelte';
-	import * as v from 'valibot';
 	import type { PageProps } from './$types';
-	import { Filters } from '$lib/api';
+	import { page } from '$app/state';
 
 	const { data, params }: PageProps = $props();
 	const isOwner = $derived(data.session.userId === params.userId);
-
-	const url = useSearchParams({
-		tab: v.fallback(v.picklist(['subscribed', 'available']), 'available'),
-		search: v.fallback(v.string(), ''),
-		page: v.fallback(
-			v.pipe(v.string(), v.transform(Number), v.check((n) => !isNaN(n) && n > 0)),
-			1
-		)
+	const formatter = new Intl.DateTimeFormat(page.data.locale, {
+		year: 'numeric',
+		month: 'short',
+		day: 'numeric'
 	});
 
-	const tab = url.query('tab');
-	const search = url.query('search');
-	const activePage = url.query('page');
-
+	let search = $state('');
+	let pageNum = $state(1);
+	let tab = $derived<'available' | 'subscribed'>(isOwner ? 'available' : 'subscribed');
 	const debounce = useDebounce((val: string) => {
-		activePage.value = 1;
-		if (val.length === 0) search.clear();
-		else search.value = val;
+		search = val;
 	}, 400);
 
-	// Visitors always see subscribed
-	const effectiveTab = $derived(isOwner ? tab.value : 'subscribed');
+	const result = $derived(
+		tab === 'available'
+			? await Projects.getPage({
+					name: search,
+					page: pageNum,
+					sortBy: 'deprecated',
+					sort: 'Ascending'
+				})
+			: await UserProjects.getByUserPage({
+					userId: params.userId,
+					name: search,
+					page: pageNum
+				})
+	);
 </script>
 
 <Layout cover variant="navbar">
 	{#snippet left()}
-		<aside class="flex h-full flex-col border-r bg-card">
-			<div class="space-y-3 p-4">
-				<div class="flex items-center gap-2">
-					<Archive class="size-4 text-muted-foreground" />
-					<h2 class="text-sm font-semibold">Projects</h2>
-				</div>
-
-				<InputGroup.Root>
-					<InputGroup.Input
-						placeholder="Search..."
-						value={search.value}
-						oninput={(e) => debounce.fn(e.currentTarget.value)}
-					/>
-					<InputGroup.Addon>
-						<Search class="size-4" />
-					</InputGroup.Addon>
-				</InputGroup.Root>
-
-				{#if isOwner}
-					<Tabs.Root
-						bind:value={tab.value}
-						onValueChange={() => {
-							search.clear();
-							activePage.clear();
-						}}
-					>
-						<Tabs.List class="w-full">
-							<Tabs.Trigger value="available" class="flex-1">Available</Tabs.Trigger>
-							<Tabs.Trigger value="subscribed" class="flex-1">Subscribed</Tabs.Trigger>
-						</Tabs.List>
-					</Tabs.Root>
-				{/if}
+		<aside class="flex h-full flex-col gap-4 border-r bg-card p-4">
+			<div class="flex items-center gap-2">
+				<Archive class="size-4 text-muted-foreground" />
+				<h2 class="text-sm font-semibold">Projects</h2>
 			</div>
+
+			<InputGroup.Root>
+				<InputGroup.Input
+					placeholder="Search..."
+					value={search}
+					oninput={(e) => debounce.fn(e.currentTarget.value)}
+				/>
+				<InputGroup.Addon>
+					<Search class="size-4" />
+				</InputGroup.Addon>
+			</InputGroup.Root>
+
+			<Tabs.Root
+				bind:value={tab}
+				onValueChange={() => {
+					search = '';
+					pageNum = 1;
+				}}
+			>
+				<Tabs.List class="w-full">
+					<Tabs.Trigger value="available" class="flex-1">Available</Tabs.Trigger>
+					<Tabs.Trigger value="subscribed" class="flex-1">Subscribed</Tabs.Trigger>
+				</Tabs.List>
+			</Tabs.Root>
 		</aside>
 	{/snippet}
 
 	{#snippet right()}
-		<div class="flex h-full flex-col">
-			<div class="border-b px-6 py-4">
-				<h1 class="text-lg font-semibold">
-					{effectiveTab === 'available' ? 'Available Projects' : 'Subscribed Projects'}
-				</h1>
-				<p class="text-sm text-muted-foreground">
-					{effectiveTab === 'available'
-						? 'Browse and subscribe to public projects.'
-						: isOwner
-							? 'Projects you are currently part of.'
-							: "Projects this user is part of."}
-				</p>
-			</div>
+		<Item.Group class="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
+			{#each result.data as entity (entity.id)}
+				{@const isUserProject = 'project' in entity}
+				{@const project = isUserProject ? entity.project : entity}
+				{@const state = isUserProject ? entity.state : null}
 
-			<div class="flex-1 overflow-y-auto p-6">
-				<svelte:boundary>
-					{#snippet pending()}
-						<div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-							{#each { length: 6 } as _}
-								<Skeleton class="h-36 rounded-lg" />
-							{/each}
-						</div>
+				<Item.Root variant="outline">
+					{#snippet child({ props })}
+						<a href="/users/{params.userId}/projects/{project.id}" {...props}>
+							<Item.Media>
+								<Avatar.Root class="rounded-xs border">
+									<Avatar.Fallback class="rounded-xs">
+										{project.name ? project.name.charAt(0).toUpperCase() : '?'}
+									</Avatar.Fallback>
+								</Avatar.Root>
+							</Item.Media>
+							<Item.Content>
+								<Item.Title>{project.name}</Item.Title>
+								<Item.Description>{project.description}</Item.Description>
+							</Item.Content>
+							<Item.Actions />
+							<Item.Footer class="justify-start">
+								{#if project.public}
+									<Badge variant="outline">
+										<Globe class="size-3" />
+										Public
+									</Badge>
+								{:else}
+									<Badge variant="secondary">
+										<Lock class="size-3" />
+										Private
+									</Badge>
+								{/if}
+								{#if project.deprecated}
+									<Badge variant="destructive">
+										<Trash2 class="size-3" />
+										Deprecated
+									</Badge>
+								{/if}
+								{#if state}
+									<Badge variant="secondary">
+										{state}
+									</Badge>
+								{/if}
+								{#if isUserProject}
+									<Badge variant="secondary">
+										<CalendarCheck class="size-3" />
+										{formatter.format(new Date(entity.createdAt))}
+									</Badge>
+								{/if}
+							</Item.Footer>
+						</a>
 					{/snippet}
-
-					{#if effectiveTab === 'available'}
-						{@const result = await Projects.getPage({
-							name: search.value,
-							page: activePage.value,
-							sort: Filters.sort.sort.default,
-							size: Filters.pagination.size.default,
-						})}
-
-						{#if result.data.length === 0}
-							<div class="flex flex-col items-center justify-center py-16 text-center">
-								<Archive class="mb-3 size-10 text-muted-foreground/40" />
-								<p class="text-sm text-muted-foreground">No projects found.</p>
-							</div>
-						{:else}
-							<div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-								{#each result.data as project (project.id)}
-									<Card.Root class="group transition-shadow hover:shadow-md">
-										<Card.Content class="p-4">
-											<div class="mb-2 flex items-start justify-between gap-2">
-												<h3 class="line-clamp-1 text-sm font-semibold group-hover:text-primary">
-													{project.name}
-												</h3>
-												<div class="flex shrink-0 gap-1">
-													{#if !project.active}
-														<Badge variant="outline" class="text-[10px]">Inactive</Badge>
-													{/if}
-													{#if project.deprecated}
-														<Badge variant="destructive" class="text-[10px]">Deprecated</Badge>
-													{/if}
-												</div>
-											</div>
-											<p class="mb-3 line-clamp-2 text-xs text-muted-foreground">
-												{project.description || 'No description.'}
-											</p>
-											<div class="flex items-center justify-between">
-												<span class="text-[11px] text-muted-foreground">
-													{project.workspace?.owner?.displayName ?? 'System'}
-												</span>
-												<Button
-													size="sm"
-													variant="ghost"
-													class="h-7 gap-1 text-xs"
-													data-sveltekit-preload-data="tap"
-													href={`/users/${params.userId}/projects/${project.id}`}
-												>
-													View <ChevronRight class="size-3" />
-												</Button>
-											</div>
-										</Card.Content>
-									</Card.Root>
-								{/each}
-							</div>
-
-							{#if result.pages > 1}
-								<div class="mt-6 flex justify-center">
-									<Paginate
-										count={result.count}
-										perPage={result.perPage}
-										page={activePage.value}
-										onPageChange={(p) => (activePage.value = p)}
-									/>
-								</div>
-							{/if}
-						{/if}
-
-					{:else}
-						{@const result = await UserProjects.getByUser({
-							userId: params.userId,
-						})}
-
-						{#if result.data.length === 0}
-							<div class="flex flex-col items-center justify-center py-16 text-center">
-								<Archive class="mb-3 size-10 text-muted-foreground/40" />
-								<p class="text-sm text-muted-foreground">
-									{isOwner ? 'You have no project subscriptions.' : 'No subscriptions yet.'}
-								</p>
-							</div>
-						{:else}
-							<div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-								{#each result.data as userProject (userProject.id)}
-									<Card.Root class="group transition-shadow hover:shadow-md">
-										<Card.Content class="p-4">
-											<div class="mb-2 flex items-start justify-between gap-2">
-												<h3 class="line-clamp-1 text-sm font-semibold group-hover:text-primary">
-													{userProject.project.name}
-												</h3>
-												<Badge variant="secondary" class="text-[10px]">
-													{userProject.state}
-												</Badge>
-											</div>
-											<p class="mb-3 line-clamp-2 text-xs text-muted-foreground">
-												{userProject.project.description || 'No description.'}
-											</p>
-											<div class="flex items-center justify-between">
-												{#if userProject.gitInfo}
-													<span class="text-[11px] text-muted-foreground">
-														{userProject.gitInfo.owner}/{userProject.gitInfo.name}
-													</span>
-												{:else}
-													<span></span>
-												{/if}
-												<Button
-													size="sm"
-													variant="ghost"
-													class="h-7 gap-1 text-xs"
-													data-sveltekit-preload-data="tap"
-													href={`/users/${params.userId}/projects/${userProject.project.id}`}
-												>
-													Open <ChevronRight class="size-3" />
-												</Button>
-											</div>
-										</Card.Content>
-									</Card.Root>
-								{/each}
-							</div>
-
-							{#if result.pages > 1}
-								<div class="mt-6 flex justify-center">
-									<Paginate
-										count={result.count}
-										perPage={result.perPage}
-										page={activePage.value}
-										onPageChange={(p) => (activePage.value = p)}
-									/>
-								</div>
-							{/if}
-						{/if}
-					{/if}
-				</svelte:boundary>
-			</div>
-		</div>
+				</Item.Root>
+			{:else}
+				<div class="col-span-1 sm:col-span-2 lg:col-span-3">
+					<Empty.Root
+						class="flex h-full flex-col items-center justify-center rounded-lg border border-dashed bg-muted/20 p-12 text-center"
+					>
+						<Empty.Header class="flex flex-col items-center gap-3">
+							<Empty.Media variant="icon" class="rounded-full bg-muted p-4">
+								<FolderOpenIcon class="h-8 w-8 text-muted-foreground" />
+							</Empty.Media>
+							<Empty.Title class="text-lg font-semibold">No Projects Found</Empty.Title>
+							<Empty.Description class="max-w-sm text-sm text-muted-foreground">
+								{search
+									? 'No projects match your search criteria.'
+									: "You don't have any projects assigned yet. When you do, they will appear here."}
+							</Empty.Description>
+						</Empty.Header>
+					</Empty.Root>
+				</div>
+			{/each}
+		</Item.Group>
 	{/snippet}
 </Layout>

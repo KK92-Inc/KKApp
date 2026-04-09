@@ -5,8 +5,10 @@
 	import { Badge } from '$lib/components/badge';
 
 	const context = Page.getContext();
-	const project = $derived(await context.project);
-	const userProject = $derived(await context.userProject);
+	const [project, userProject] = $derived(await Promise.all([
+		context.project,
+		context.userProject
+	]));
 </script>
 
 <Card.Root class="py-0 shadow-none">

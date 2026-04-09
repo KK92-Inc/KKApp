@@ -48,17 +48,18 @@
 	<div class={cn(!cover && 'container', 'mx-auto flex w-full flex-1 flex-col')}>
 		<div
 			class={cn(
-				'group/sidebar-wrapper 3xl:fixed:container 3xl:fixed:px-3 flex min-h-min w-full flex-1 items-start gap-x-4 px-0 [--sidebar-width:24rem] has-data-[variant=inset]:bg-sidebar',
+				'group/sidebar-wrapper 3xl:fixed:container 3xl:fixed:px-3 flex max-md:flex-col min-h-min w-full flex-1 items-start gap-x-4 px-0 [--sidebar-width:24rem] has-data-[variant=inset]:bg-sidebar',
 				reverse && 'flex-row-reverse',
 				variant === 'center' && 'my-4'
 			)}
 		>
 			<div
 				class={cn(
-					variant === 'center' && 'top-[calc(var(--header-height)+4rem)]',
+					variant === 'center' && 'lg:top-[calc(var(--header-height)+4rem)]',
 					variant === 'navbar' &&
-						'top-[calc(var(--header-height)+1px)] h-[calc(100svh-var(--header-height)-1px)]',
-					'sticky z-30 hidden w-(--sidebar-width) flex-col overscroll-none text-sidebar-foreground lg:flex',
+						'max-md:px-2',
+						'lg:top-[calc(var(--header-height)+1px)] lg:h-[calc(100svh-var(--header-height)-1px)]',
+					'z-30 flex w-full flex-col overscroll-none text-sidebar-foreground lg:sticky lg:w-(--sidebar-width)',
 					classL
 				)}
 			>

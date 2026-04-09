@@ -21,11 +21,11 @@
 
 	let search = $state('');
 	const context = Page.getContext();
-	const [project, userProject] = await Promise.all([
-		await context.project,
-		await context.userProject,
-		await context.getBranches()
-	]);
+	const [project, userProject] = $derived(await Promise.all([
+		context.project,
+		context.userProject,
+		context.getBranches()
+	]));
 
 	const url = $derived(`ssh://git@localhost:2222/${project.gitInfo.id}/${userProject?.gitInfo?.id}`);
 	const cmd = $derived(`git clone ${url}`);

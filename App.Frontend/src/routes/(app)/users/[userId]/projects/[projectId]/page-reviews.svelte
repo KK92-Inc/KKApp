@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as Reviews from "$lib/remotes/reviews.remote";
 	import * as Card from '$lib/components/card';
 	import * as DropdownMenu from '$lib/components/dropdown-menu/';
 	import * as Empty from '$lib/components/empty';
@@ -12,8 +13,20 @@
 	const context = Page.getContext();
 
 	let sort = $state<components['schemas']['Order']>('Descending');
-	const reviewsRoute = $derived(`/users/${context.getUserId()}/projects/${context.getProjectId()}/reviews`);
-	const reviews = $derived(await context.reviews({ sort }));
+	const userProject = $derived(await context.userProject);
+	const getReviews = $derived.by(async () => {
+		if (!userProject) return [];
+		const result = await Reviews.get({
+			sort,
+			size: 5,
+			userProjectId: userProject?.id
+		});
+
+		return result.data;
+	});
+
+	const reviews = $derived(await getReviews);
+	const route = $derived(`/users/${context.userId()}/projects/${context.projectId()}/reviews`);
 	const formatter = new Intl.DateTimeFormat(page.data.locale, {
 		month: 'short',
 		day: 'numeric',
@@ -32,16 +45,12 @@
 			</h3>
 			<div class="flex items-center gap-1">
 				<Page.ReviewsDialog />
-				<a href={reviewsRoute} class={buttonVariants({ variant: 'outline', size: 'sm' })}>
-					View all
-				</a>
+				<a href={route} class={buttonVariants({ variant: 'outline', size: 'sm' })}> View all </a>
 
 				<Separator orientation="vertical" class="h-4!" />
 
 				<DropdownMenu.Root>
-					<DropdownMenu.Trigger
-						class={buttonVariants({ variant: 'outline', size: 'sm' })}
-					>
+					<DropdownMenu.Trigger class={buttonVariants({ variant: 'outline', size: 'sm' })}>
 						Sort
 						<ListFilter class="size-3" />
 					</DropdownMenu.Trigger>
