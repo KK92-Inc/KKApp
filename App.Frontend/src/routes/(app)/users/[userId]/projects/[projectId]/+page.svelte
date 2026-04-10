@@ -13,13 +13,8 @@
 	import type { HttpError } from '@sveltejs/kit';
 
 	const { params }: PageProps = $props();
-	const context = Page.setContext(
-		new Page.Context(
-			() => params.userId,
-			() => params.projectId
-		)
-	);
 
+	const context = Page.getContext();
 	const [project, userProject] = $derived(await Promise.all([context.project, context.userProject]));
 	const blob = $derived.by(async () => {
 		const branches = await Git.branches({ id: project.gitInfo.id });
@@ -83,19 +78,18 @@
 		{#snippet left()}
 			<div class="mt-4 grid gap-2">
 				<Page.Thumbnail />
-				<!-- <Page.Members /> -->
+				<Page.Members />
 				{#if userProject}
 					<Page.Reviews />
 				{/if}
-				<!-- <Page.Actions /> -->
+				<Page.Actions />
 			</div>
 		{/snippet}
 
 		{#snippet right()}
 			<div class="mt-4 grid gap-2">
-				<!-- <Page.Menu />
-				<Page.Files /> -->
-
+				<Page.Menu />
+				<Page.Files userId={params.projectId} projectId={params.projectId} />
 				<Card.Root class="py-0 shadow-none">
 					<Card.Content class="p-0">
 						<Accordion.Root type="single">

@@ -2,6 +2,7 @@
 	import * as Page from './index.svelte';
 	import * as Invite from '$lib/remotes/member.remote';
 	import * as Subscription from '$lib/remotes/subscribe.remote';
+	import * as UserProjects from '$lib/remotes/user-project.remote';
 	import { page } from '$app/state';
 	import { UserCheck } from '@lucide/svelte';
 	import { Button } from '$lib/components/button';
@@ -9,10 +10,16 @@
 
 	const dialog = useDialog();
 	const context = Page.getContext();
-	const [members, project, userProject] = $derived(
-		await Promise.all([context.members, context.project, context.userProject])
+	const [project, userProject] = $derived(
+		await Promise.all([context.project, context.userProject])
 	);
 
+		const getMembers = $derived.by(async () => {
+		if (!userProject) return [];
+		return await UserProjects.members({ id: userProject.id });
+	});
+
+	const members = $derived(await getMembers);
 	const current = $derived(members.find((m) => m.userId === page.data.session.userId && !m.leftAt));
 	const subscribe = $derived(
 		dialog.confirm(

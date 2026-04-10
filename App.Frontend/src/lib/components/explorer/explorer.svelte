@@ -40,7 +40,7 @@
 				{@const par = node.type === '-' ? "blob" : "tree"}
 				<Table.Row class="border-t pl-4 text-left">
 					<Table.Cell class="font-medium">
-						<Button variant="link" href={`${url}/${par}/${node.path}`}>
+						<Button variant="link" class="text-primary-foreground" href={`${url}/${par}/${node.path}`}>
 							{#if node.type === '-'}
 								<File fill="" />
 							{:else}
@@ -51,6 +51,12 @@
 					</Table.Cell>
 					<Table.Cell>N/A</Table.Cell>
 					<Table.Cell>N/A</Table.Cell>
+				</Table.Row>
+			{:else}
+				<Table.Row class="border-t">
+					<Table.Cell colspan={3} class="p-4 text-center text-sm text-muted-foreground">
+						No files found.
+					</Table.Cell>
 				</Table.Row>
 			{/each}
 		</Table.Body>

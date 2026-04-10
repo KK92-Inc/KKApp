@@ -1,6 +1,13 @@
 <script>
-	import { Button, buttonVariants } from '$lib/components/button';
+	import * as Page from './index.svelte';
 	import * as Dialog from '$lib/components/dialog';
+	import * as Rubric from '$lib/remotes/rubric.remote';
+	import { Button, buttonVariants } from '$lib/components/button';
+
+	const context = Page.getContext();
+	const rubrics = $derived(await Rubric.getPage({
+
+	}))
 </script>
 
 <Dialog.Root>

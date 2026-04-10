@@ -1,7 +1,7 @@
 <script lang="ts">
 	import * as Tabs from '$lib/components/tabs';
 	import { Separator } from '$lib/components/separator';
-	import { Ellipse, Ellipsis, GitBranch, MoreHorizontal, PlusIcon } from '@lucide/svelte';
+	import { Ellipsis, GitBranch, PlusIcon } from '@lucide/svelte';
 	import * as Git from '$lib/remotes/git.remote';
 	import * as Project from '$lib/remotes/project.remote';
 	import * as UserProject from '$lib/remotes/user-project.remote';
@@ -9,30 +9,40 @@
 	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
 	import * as Command from '$lib/components/command';
 	import * as Popover from '$lib/components/popover';
-	import { Button, buttonVariants } from '$lib/components/button';
+	import { Button } from '$lib/components/button';
 	import { cn } from '$lib/utils.js';
-	import * as Dialog from '$lib/components/dialog';
-	import { Input } from '$lib/components/input';
-	import { Label } from '$lib/components/label';
 	import * as InputGroup from '$lib/components/input-group';
 	import * as DropdownMenu from '$lib/components/dropdown-menu';
-	import { page } from '$app/state';
 	import * as Page from './index.svelte';
 
 	let search = $state('');
 	const context = Page.getContext();
-	const [project, userProject] = $derived(await Promise.all([
-		context.project,
-		context.userProject,
-		context.getBranches()
-	]));
+	const [project, userProject] = $derived(await Promise.all([context.project, context.userProject]));
 
-	const url = $derived(`ssh://git@localhost:2222/${project.gitInfo.id}/${userProject?.gitInfo?.id}`);
-	const cmd = $derived(`git clone ${url}`);
+	const getBranches = async () => {
+		if (!userProject || !userProject.gitInfo?.id) return [];
+		const branches = await Git.branches({ id: userProject.gitInfo.id });
+		// Multi-line string, default branch starts with a * put that one first and remove the * from the name
+		return branches
+			.split('\n')
+			.filter((line) => line.trim().length > 0)
+			.sort((a, b) => {
+				if (a.startsWith('*')) return -1;
+				if (b.startsWith('*')) return 1;
+				return 0;
+			})
+			.map((line) => line.replace('*', '').trim());
+	};
 
-	if (!userProject) {
-		context.view = 'assignment';
-	}
+	const branches = $derived(await getBranches());
+
+	$effect(() => {
+		context.branches = branches;
+		console.log('branches', branches);
+		if (context.view === 'submission' && !userProject) {
+			context.view = 'assignment';
+		}
+	});
 </script>
 
 {#snippet createBranch()}
@@ -50,7 +60,7 @@
 		<PlusIcon />
 		Create branch
 		{#if search.length > 0}
-			"{search}"
+			<span class="max-w-18 truncate">"{search}"</span>
 		{/if}
 	</Button>
 {/snippet}
@@ -69,7 +79,7 @@
 		<Popover.Root>
 			<Popover.Trigger>
 				{#snippet child({ props })}
-					{#if !context.isEmpty}
+					{#if context.isInitialized}
 						<Button {...props} variant="outline" role="combobox">
 							<GitBranch />
 							{context.branch ?? 'Select a branch...'}
@@ -102,34 +112,45 @@
 			</Popover.Content>
 		</Popover.Root>
 		<!-- Git Clone Command -->
-		<InputGroup.Root class="max-w-max">
-			<InputGroup.Addon align="inline-end">
-				<InputGroup.Copy value={cmd} />
-			</InputGroup.Addon>
-			<InputGroup.Input id="title" autocomplete="off" autocorrect="off" autosave="off" readonly value={cmd} />
-			<InputGroup.Addon align="inline-start">
-				<DropdownMenu.Root>
-					<DropdownMenu.Trigger>
-						{#snippet child({ props })}
-							<InputGroup.Button {...props} variant="ghost" aria-label="More" size="icon-xs">
-								<Ellipsis />
-							</InputGroup.Button>
-						{/snippet}
-					</DropdownMenu.Trigger>
-					<DropdownMenu.Content align="start" class="[--radius:0.95rem]">
-						<DropdownMenu.Item href={`vscode://vscode.git/clone?url=${url}`}>
-							Open in VS Code
-						</DropdownMenu.Item>
-						<DropdownMenu.Item href={`cursor://vscode.git/clone?url=${url}`}>
-							Open in Cursor
-						</DropdownMenu.Item>
-						<DropdownMenu.Item href={`jetbrains://idea/checkout/git?checkout_url=${url}`}>
-							Open in IntelliJ
-						</DropdownMenu.Item>
-					</DropdownMenu.Content>
-				</DropdownMenu.Root>
-			</InputGroup.Addon>
-		</InputGroup.Root>
+		{#if userProject !== undefined}
+			{@const url = `ssh://git@localhost:2222/${project.id}/${userProject.id}`}
+			{@const cmd = `git clone ${url}`}
+			<InputGroup.Root class="max-w-max">
+				<InputGroup.Addon align="inline-end">
+					<InputGroup.Copy value={cmd} />
+				</InputGroup.Addon>
+				<InputGroup.Input
+					id="title"
+					autocomplete="off"
+					autocorrect="off"
+					autosave="off"
+					readonly
+					value={cmd}
+				/>
+				<InputGroup.Addon align="inline-start">
+					<DropdownMenu.Root>
+						<DropdownMenu.Trigger>
+							{#snippet child({ props })}
+								<InputGroup.Button {...props} variant="ghost" aria-label="More" size="icon-xs">
+									<Ellipsis />
+								</InputGroup.Button>
+							{/snippet}
+						</DropdownMenu.Trigger>
+						<DropdownMenu.Content align="start" class="[--radius:0.95rem]">
+							<DropdownMenu.Item href={`vscode://vscode.git/clone?url=${url}`}>
+								Open in VS Code
+							</DropdownMenu.Item>
+							<DropdownMenu.Item href={`cursor://vscode.git/clone?url=${url}`}>
+								Open in Cursor
+							</DropdownMenu.Item>
+							<DropdownMenu.Item href={`jetbrains://idea/checkout/git?checkout_url=${url}`}>
+								Open in IntelliJ
+							</DropdownMenu.Item>
+						</DropdownMenu.Content>
+					</DropdownMenu.Root>
+				</InputGroup.Addon>
+			</InputGroup.Root>
+		{/if}
 	{/if}
 	<Separator class="my-1 flex-1" />
 </div>

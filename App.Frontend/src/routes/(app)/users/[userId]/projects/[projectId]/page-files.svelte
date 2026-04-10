@@ -5,10 +5,17 @@
 	import * as Card from '$lib/components/card';
 	import * as InputGroup from '$lib/components/input-group';
 	import { parseGitTree } from '$lib/components/explorer';
+	import { CircleAlert, RefreshCcw } from '@lucide/svelte';
+	import * as Alert from '$lib/components/alert';
+	import type { HttpError } from '@sveltejs/kit';
+	import { Button } from '$lib/components/button';
 
 	const context = Page.getContext();
-	const userProject = $derived(await context.userProject);
+	const userId = $derived(context.userId());
+	const [project, userProject] = $derived(await Promise.all([context.project, context.userProject]));
+
 	const repoUrl = 'https://github.com/W2Wizard/test.git';
+
 	const mirror = $derived(
 		`
 		git remote add origin ${repoUrl}
@@ -32,16 +39,28 @@
 			.trim()
 	);
 
-	const tree = $derived(
-		Git.treeViaUser({
-			projectId: context.projectId(),
-			id: context.userId(),
-			branch: context.branch,
-			path: ''
-		})
-	);
+	const getViewTree = $derived.by(async () => {
+		if (context.view === 'submission') {
+			return await Git.treeViaUser({
+				projectId: project.id,
+				id: userId,
+				branch: context.branch,
+				path: ''
+			});
+		}
 
-	const files = $derived(parseGitTree(await tree));
+		return await Git.tree({
+			id: project.gitInfo.id,
+			branch: 'master',
+			path: ''
+		});
+	});
+
+	const baseUrl = $derived(
+		context.view === 'assignment'
+			? `/git/${project.gitInfo.id}/${context.branch}`
+			: `/git/${userProject?.gitInfo?.id}/${context.branch}`
+	);
 </script>
 
 {#snippet step(title: string, content: string)}
@@ -57,7 +76,7 @@
 	</section>
 {/snippet}
 
-{#if context.isEmpty && userProject && context.view === 'submission'}
+{#if !context.isInitialized && userProject && context.view === 'submission'}
 	<Card.Root class="gap-0 py-0">
 		<Card.Header class="gap-4 border-b bg-muted/40 p-4 pb-0">
 			<Card.Title>
@@ -72,9 +91,9 @@
 			</InputGroup.Root>
 			<p class="text-xs text-muted-foreground">
 				Get started by creating a new file or uploading an existing file. We recommend every repository
-				include a <span class="font-semibold">README</span>, a <span class="font-semibold">LICENSE</span>, and
-				a <span class="font-semibold">.gitignore</span>. You can add these files when you push your
-				repository.
+				include a <span class="font-semibold">README</span>, a
+				<span class="font-semibold">LICENSE</span>, and a
+				<span class="font-semibold">.gitignore</span>. You can add these files when you push your repository.
 			</p>
 		</Card.Header>
 		<Card.Content class="space-y-4 p-4">
@@ -83,6 +102,27 @@
 		</Card.Content>
 	</Card.Root>
 {:else}
-	<!-- TODO: Check what view we're on... -->
-	<Explorer.Browser baseUrl="./{context.projectId()}/{context.branch}" nodes={files} />
+	<svelte:boundary>
+		{#snippet pending()}
+			<p class="text-sm text-muted-foreground">Please wait while we fetch your files...</p>
+		{/snippet}
+
+		{#snippet failed(e, reset)}
+			{@const err = e as HttpError}
+			<Alert.Root variant="destructive">
+				<CircleAlert />
+				<Alert.Title>{err.body?.message ?? 'Something went wrong'}</Alert.Title>
+				<Alert.Description>
+					This could resolve itself or may be a bug.
+					<Button variant="outline" class="text-foreground" size="sm" onclick={reset}>
+						<RefreshCcw class="size-3" />
+						Try again
+					</Button>
+				</Alert.Description>
+			</Alert.Root>
+		{/snippet}
+
+		{@const files = parseGitTree(await getViewTree)}
+		<Explorer.Browser {baseUrl} nodes={files} />
+	</svelte:boundary>
 {/if}

@@ -5,14 +5,12 @@
 	import type { PageProps } from './$types';
 
 	const { params }: PageProps = $props();
-	const tree = $derived(Git.treeViaUser({
-		projectId: params.projectId,
-		id: params.userId,
+	const nodes = $derived(parseGitTree(await Git.tree({
+		id: params.id,
 		branch: params.branch,
 		path: params.path
-	}));
+	})));
 
-	const files = $derived(parseGitTree(await tree));
 </script>
 
-<Explorer.Browser baseUrl="./src" dotdot nodes={files} />
+<Explorer.Browser baseUrl="./src" dotdot {nodes} />

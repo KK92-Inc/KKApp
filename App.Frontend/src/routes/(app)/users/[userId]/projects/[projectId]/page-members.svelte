@@ -1,18 +1,21 @@
 <script lang="ts">
 	import * as Avatar from '$lib/components/avatar';
 	import * as Card from '$lib/components/card';
-	import * as Alert from '$lib/components/alert';
+	import * as Alert from '$lib/components/alert'
+	import * as UserProjects from '$lib/remotes/user-project.remote';
 	import { Crown, ClockFading, Users } from '@lucide/svelte';
 	import { Button } from '$lib/components/button';
 	import * as Page from './index.svelte';
 	import { page } from '$app/state';
 
 	const context = Page.getContext();
-	const [ members, userProject] = $derived(await Promise.all([
-		context.members,
-		context.userProject
-	]));
+	const userProject = $derived(await context.userProject);
+	const getMembers = $derived.by(async () => {
+		if (!userProject) return [];
+		return await UserProjects.members({ id: userProject.id });
+	});
 
+	const members = $derived(await getMembers);
 	const abandoned = $derived(members.find((v) => v.userId === page.data.session.userId && v.leftAt));
 	const formatter = new Intl.DateTimeFormat(page.data.locale, {
 		month: 'short',
