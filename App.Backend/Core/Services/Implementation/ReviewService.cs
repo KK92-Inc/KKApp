@@ -21,88 +21,64 @@ public class ReviewService(DatabaseContext ctx, IRuleService rules) : BaseServic
 {
     private readonly DatabaseContext _context = ctx;
 
-    /// <inheritdoc />
-    public async Task<IEnumerable<Review>> RequestReviewAsync(
-        Guid userProjectId, Guid rubricId, Guid initiatorId,
-        ReviewVariant[] variants, CancellationToken token = default)
+    public async Task<Review> RequestReviewAsync(Guid userProjectId, Guid rubricId, Guid initiatorId, CancellationToken token = default)
     {
-        ServiceException.ThrowIf(variants.Length == 0, "At least one review variant must be requested.");
-
-        // 1. Load all required entities upfront.
-        //    Members are no longer a navigation property — load separately.
+        // 1. Verify state of user project
         var userProject = await _context.UserProjects
             .Include(up => up.GitInfo)
             .Include(up => up.Reviews)
-            .FirstOrDefaultAsync(up => up.Id == userProjectId, token)
+            .FirstOrDefaultAsync(up => up.Id == userProjectId)
             ?? throw new ServiceException(404, "User project not found.");
 
-        var activeMembers = await _context.Members
+        ServiceException.ThrowIf(userProject.GitInfo is null, "Project has nothing submitted for review.");
+        var reviewable = userProject.State is EntityObjectState.Awaiting or EntityObjectState.Completed;
+        ServiceException.ThrowIf(reviewable is false, "Project is not in a reviewable state.");
+
+        // 2. Validate rubric being assignable to this project can actually be used to review this project
+        var rubric = await _context.Rubrics
+            .Include(r => r.GitInfo)
+            .FirstOrDefaultAsync(r => r.Id == rubricId && r.Enabled)
+            ?? throw new ServiceException(404, "Rubric not found or is disabled.");
+
+        var members = await _context.Members
             .Where(m => m.EntityType == MemberEntityType.UserProject
                      && m.EntityId == userProjectId
                      && m.LeftAt == null)
             .ToListAsync(token);
 
-        var rubric = await _context.Rubrics
-            .Include(r => r.GitInfo)
-            .FirstOrDefaultAsync(r => r.Id == rubricId && r.Enabled, token)
-            ?? throw new ServiceException(404, "Rubric not found or is disabled.");
+        // 3. Common sense preconditions based on review kind
+        var member = members.FirstOrDefault(m => m.UserId == initiatorId);
+        var isLeader = member?.Role is MemberRole.Leader;
 
-        var initiator = await _context.Users
-            .FirstOrDefaultAsync(u => u.Id == initiatorId, token)
+        if (rubric.ReviewVariant is ReviewKinds.Auto) // TODO: Implement auto review flow and remove this check
+            throw new ServiceException(501, "Auto reviews are not supported yet.");
+        if (rubric.ReviewVariant is ReviewKinds.Self && member is null)
+            throw new ServiceException(422, "Only project members can request a self review.");
+        if (rubric.ReviewVariant is ReviewKinds.Peer && (member is null || !isLeader))
+            throw new ServiceException(422, "Only team leaders can request a peer review.");
+        if (rubric.ReviewVariant is ReviewKinds.Async && (member is null || !isLeader))
+            throw new ServiceException(422, "Only team leaders can request an async review.");
+
+        // 4. Run additional business rules
+        var initiator = await _context.Users.FirstOrDefaultAsync(u => u.Id == initiatorId)
             ?? throw new ServiceException(404, "Initiator not found.");
+        var result = await rules.CanRequestReviewAsync(rubric, initiator, userProject, token);
+        if (!result.IsSuccess)
+            throw new ServiceException(string.Join("; ", result.Reasons));
 
-        // 2. Static preconditions
-        ServiceException.ThrowIf(userProject.GitInfo is null, "Project has nothing submitted for review.");
-        ServiceException.ThrowIf(
-            userProject.State is not (EntityObjectState.Awaiting or EntityObjectState.Completed),
-            "Project is not in a reviewable state."
-        );
-
-        // 3. Validate each requested variant and create reviews
-        var createdReviews = new List<Review>();
-        foreach (var variant in variants.Distinct())
+        // 5. Create the review
+        var review = new Review
         {
-            var member = activeMembers.FirstOrDefault(m => m.UserId == initiatorId);
-            switch (variant)
-            {
-                case ReviewVariant.Self:
-                case ReviewVariant.Peer:
-                    ServiceException.ThrowIf(
-                        member?.Role is not MemberRole.Leader,
-                        "Only the project leader can request a peer or self review."
-                    );
-                    break;
-                case ReviewVariant.Async:
-                    ServiceException.ThrowIf(
-                        member is not null,
-                        "Only non-members can request an async review."
-                    );
-                    break;
-                case ReviewVariant.Auto:
-                    throw new ServiceException(501, "Auto reviews are not supported yet.");
-            }
+            RubricId = rubricId,
+            State = ReviewState.Pending,
+            Kind = rubric.ReviewVariant,
+            UserProjectId = userProjectId,
+            ReviewerId = rubric.ReviewVariant is ReviewKinds.Self ? initiatorId : null,
+        };
 
-            // 4. Rule engine checks
-            var ruleResult = await rules.CanRequestReviewAsync(rubric, initiator, userProject, token);
-            if (!ruleResult.IsSuccess)
-                throw new ServiceException(string.Join("; ", ruleResult.Reasons));
-
-            // 5. Create the review
-            var review = new Review
-            {
-                Kind = variant,
-                State = ReviewState.Pending,
-                UserProjectId = userProjectId,
-                RubricId = rubricId,
-                ReviewerId = variant == ReviewVariant.Self ? initiatorId : null,
-            };
-
-            _dbSet.Add(review);
-            createdReviews.Add(review);
-        }
-
+        _dbSet.Add(review);
         await _context.SaveChangesAsync(token);
-        return createdReviews;
+        return review;
     }
 
     /// <inheritdoc />
@@ -125,7 +101,7 @@ public class ReviewService(DatabaseContext ctx, IRuleService rules) : BaseServic
             throw new ServiceException(403, string.Join("; ", ruleResult.Reasons));
 
         // Peer/Async: reviewer must be an active team member — query tbl_members directly
-        if (review.Kind is ReviewVariant.Peer or ReviewVariant.Async)
+        if (review.Kind is ReviewKinds.Peer or ReviewKinds.Async)
         {
             var isMember = await _context.Members.AnyAsync(m =>
                 m.EntityType == MemberEntityType.UserProject &&
@@ -149,7 +125,7 @@ public class ReviewService(DatabaseContext ctx, IRuleService rules) : BaseServic
 
         ServiceException.ThrowIf(review.State is not ReviewState.Pending, "Review must be pending to start.");
         ServiceException.ThrowIf(
-            review.ReviewerId is null && review.Kind != ReviewVariant.Auto,
+            review.ReviewerId is null && review.Kind is not ReviewKinds.Auto,
             "Review must have an assigned reviewer before starting."
         );
 

@@ -28,11 +28,4 @@ public record PostReviewRequestDTO
     /// </summary>
     [Required]
     public required Guid RubricId { get; init; }
-
-    /// <summary>
-    /// The review kinds to request (e.g. Self, Peer, Async).
-    /// One review is created per kind.
-    /// </summary>
-    [Required, MinLength(1)]
-    public required ReviewVariant[] Kinds { get; init; }
 }

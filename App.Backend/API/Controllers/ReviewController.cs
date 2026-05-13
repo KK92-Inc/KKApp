@@ -30,6 +30,7 @@ namespace App.Backend.API.Controllers;
 public class ReviewController(
     ILogger<ReviewController> log,
     IReviewService service,
+    IRubricService rubricService,
     IUserProjectService userProjects,
     DatabaseContext ctx
 ) : Controller
@@ -48,7 +49,7 @@ public class ReviewController(
         [FromQuery(Name = "filter[user_project_id]")] Guid? userProjectId,
         [FromQuery(Name = "filter[reviewer_id]")] Guid? reviewerId,
         [FromQuery(Name = "filter[rubric_id]")] Guid? rubricId,
-        [FromQuery(Name = "filter[kind]")] ReviewVariant? kind,
+        [FromQuery(Name = "filter[kind]")] ReviewKinds? kind,
         [FromQuery(Name = "filter[status]")] ReviewState? status,
         [FromQuery] Pagination pagination,
         [FromQuery] Sorting sorting,
@@ -89,7 +90,7 @@ public class ReviewController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Request one or more reviews for a user project")]
     [EndpointDescription("Creates review entries for the specified kinds. Self reviews are auto-assigned to the requesting user.")]
-    public async Task<ActionResult<IEnumerable<ReviewDO>>> RequestReviews(
+    public async Task<ActionResult<ReviewDO>> RequestReviews(
         [FromBody] PostReviewRequestDTO dto,
         CancellationToken token
     )
@@ -99,11 +100,10 @@ public class ReviewController(
             dto.UserProjectId,
             dto.RubricId,
             requestingUserId,
-            dto.Kinds,
             token
         );
 
-        return Ok(reviews.Select(r => new ReviewDO(r)));
+        return Ok(new ReviewDO(reviews));
     }
 
     [HttpPost("{reviewId:guid}/assign/{reviewerId:guid}")]

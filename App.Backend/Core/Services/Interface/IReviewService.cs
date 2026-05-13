@@ -29,11 +29,10 @@ public interface IReviewService : IDomainService<Review>
     /// <param name="variants">The types of review (Self, Peer, Async, Auto).</param>
     /// <param name="token">Cancellation token.</param>
     /// <returns>The created review.</returns>
-    Task<IEnumerable<Review>> RequestReviewAsync(
+    Task<Review> RequestReviewAsync(
         Guid userProjectId,
         Guid rubricId,
         Guid initiatorId,
-        ReviewVariant[] variants,
         CancellationToken token = default
     );
 
@@ -60,6 +59,14 @@ public interface IReviewService : IDomainService<Review>
     Task<Review> StartReviewAsync(Guid reviewId, CancellationToken token = default);
 
     /// <summary>
+    /// Cancels a pending review, removing it entirely.
+    /// Only pending reviews can be canceled.
+    /// </summary>
+    /// <param name="reviewId">The review to cancel.</param>
+    /// <param name="token">Cancellation token.</param>
+    Task CancelReviewAsync(Guid reviewId, CancellationToken token = default);
+
+    /// <summary>
     /// Completes a review, changing its state to Finished.
     /// </summary>
     /// <param name="reviewId">The review to complete.</param>
@@ -82,12 +89,4 @@ public interface IReviewService : IDomainService<Review>
     /// <param name="token">Cancellation token.</param>
     /// <returns>List of reviews assigned to the reviewer.</returns>
     Task<IEnumerable<Review>> GetReviewerAssignmentsAsync(Guid reviewerId, CancellationToken token = default);
-
-    /// <summary>
-    /// Cancels a pending review, removing it entirely.
-    /// Only pending reviews can be canceled.
-    /// </summary>
-    /// <param name="reviewId">The review to cancel.</param>
-    /// <param name="token">Cancellation token.</param>
-    Task CancelReviewAsync(Guid reviewId, CancellationToken token = default);
 }

@@ -27,8 +27,8 @@ public class UserProjectDO(UserProject userProject) : BaseEntityDO<UserProject>(
     /// <summary>
     /// The rubric selected for evaluating this project.
     /// </summary>
-    [Required, Description("The rubric selected for evaluating this project.")]
-    public Guid? RubricId { get; set; } = userProject.RubricId;
+    // [Required, Description("The rubric selected for evaluating this project.")]
+    // public Guid? RubricId { get; set; } = userProject.RubricId;
 
     /// <summary>
     /// The project template this instance is based on.

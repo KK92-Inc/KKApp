@@ -9,6 +9,12 @@ using System.Text.Json.Serialization;
 
 namespace App.Backend.Domain.Enums;
 
+/// <summary>
+/// Members is a generic association entity that links users to various other
+/// entities in the system (e.g. projects, rubrics).
+/// 
+/// This enum defines the types of entities that a member can be associated with.
+/// </summary>
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum MemberEntityType
 {

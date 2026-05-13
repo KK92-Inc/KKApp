@@ -41,7 +41,7 @@ public record PostRubricEntityRequestDTO
     /// <summary>
     /// The types of reviews this rubric supports.
     /// </summary>
-    public ReviewKinds SupportedReviewKinds { get; init; } = ReviewKinds.All;
+    public ReviewKinds SupportedReviewKinds { get; init; } = ReviewKinds.Self | ReviewKinds.Peer | ReviewKinds.Async | ReviewKinds.Auto;
 
     /// <summary>
     /// Rules that determine who is eligible to be a reviewer.

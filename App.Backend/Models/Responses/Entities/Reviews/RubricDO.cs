@@ -33,7 +33,7 @@ public class RubricDO(Rubric rubric) : BaseEntityDO<Rubric>(rubric)
     public bool Enabled { get; set; } = rubric.Enabled;
 
     [Required]
-    public ReviewKinds SupportedReviewKinds { get; set; } = rubric.SupportedReviewKinds;
+    public ReviewKinds Supports { get; set; } = rubric.ReviewVariant;
 
     [Required]
     public Guid CreatorId { get; set; } = rubric.CreatorId;

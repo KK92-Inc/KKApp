@@ -86,7 +86,7 @@ public class RubricController(ILogger<RubricController> log, IRubricService rubr
         rubric.Markdown = request.Markdown ?? rubric.Markdown;
         rubric.Public = request.Public ?? rubric.Public;
         rubric.Enabled = request.Enabled ?? rubric.Enabled;
-        rubric.SupportedReviewKinds = request.SupportedReviewKinds ?? rubric.SupportedReviewKinds;
+        rubric.ReviewVariant = request.SupportedReviewKinds ?? rubric.ReviewVariant;
         rubric.ReviewerRules = request.ReviewerRules ?? rubric.ReviewerRules;
         rubric.RevieweeRules = request.RevieweeRules ?? rubric.RevieweeRules;
 

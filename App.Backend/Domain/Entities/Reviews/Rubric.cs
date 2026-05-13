@@ -35,7 +35,7 @@ public class Rubric : BaseEntity
         GitInfoId = null;
         GitInfo = null;
 
-        SupportedReviewKinds = ReviewKinds.All;
+        ReviewVariant = ReviewKinds.Self | ReviewKinds.Peer | ReviewKinds.Async | ReviewKinds.Auto;
         RevieweeRules = [];
         ReviewerRules = [];
         UserProjects = [];
@@ -76,7 +76,7 @@ public class Rubric : BaseEntity
     /// The types of reviews this rubric supports.
     /// </summary>
     [Column("supported_variants")]
-    public ReviewKinds SupportedReviewKinds { get; set; }
+    public ReviewKinds ReviewVariant { get; set; }
 
     /// <summary>
     /// Rules that determine who is eligible to be a reviewer.

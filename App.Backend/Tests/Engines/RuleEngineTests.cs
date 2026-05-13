@@ -264,7 +264,7 @@ public class RuleEngineTests : ServiceTestBase
         Context.UserProjectMembers.Add(member);
         await Context.SaveChangesAsync();
 
-        var ctx = new Context { User = user, Role = Role.Reviewer, SubjectProject = userProject };
+        var ctx = new Context { User = user, Role = Role.Reviewer, UserProject = userProject };
         var rule = new IsMemberRule();
 
         // Act
@@ -280,7 +280,7 @@ public class RuleEngineTests : ServiceTestBase
         // Arrange
         var user = await UserFactory.Create().WithContext(Context).GenerateAsync();
 
-        var ctx = new Context { User = user, Role = Role.Reviewer, SubjectProject = null };
+        var ctx = new Context { User = user, Role = Role.Reviewer, UserProject = null };
         var rule = new IsMemberRule();
 
         // Act

@@ -19,12 +19,12 @@ public sealed class IsMemberEvaluator(DatabaseContext db) : IRuleEvaluator<IsMem
 {
     public async Task<Result> EvaluateAsync(IsMemberRule rule, Context ctx, CancellationToken ct)
     {
-        if (ctx.SubjectProject is null)
+        if (ctx.UserProject is null)
             return Result.Skip("No subject project in context; IsMember rule is not applicable.");
 
         var isMember = await db.Members
             .AnyAsync(m =>
-                m.EntityId == ctx.SubjectProject.Id &&
+                m.EntityId == ctx.UserProject.Id &&
                 m.EntityType == MemberEntityType.UserProject &&
                 m.UserId == ctx.User.Id &&
                 m.LeftAt == null, ct);

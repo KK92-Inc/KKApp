@@ -45,7 +45,7 @@ public static class ReviewFactory
         .RuleFor(r => r.Markdown, f => f.Lorem.Paragraphs(3))
         .RuleFor(r => r.Public, f => f.Random.Bool())
         .RuleFor(r => r.Enabled, f => true)
-        .RuleFor(r => r.SupportedReviewKinds, f => supportedKinds ?? ReviewKinds.All)
+        .RuleFor(r => r.ReviewVariant, f => supportedKinds ?? ReviewKinds.All)
         .RuleFor(r => r.CreatorId, f => creatorId ?? f.Random.Guid())
         .RuleFor(r => r.GitInfoId, f => gitInfoId)
         // .RuleFor(r => r.ReviewerEligibilityRules, f => new List<Rule>())

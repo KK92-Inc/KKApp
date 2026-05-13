@@ -20,7 +20,7 @@ public class Review : BaseEntity
 {
     public Review()
     {
-        Kind = ReviewVariant.Peer;
+        Kind = ReviewKinds.Peer;
         State = ReviewState.Pending;
 
         ReviewerId = null;
@@ -41,7 +41,7 @@ public class Review : BaseEntity
     /// The type of review (Self, Peer, Async, Auto).
     /// </summary>
     [Column("kind")]
-    public ReviewVariant Kind { get; set; }
+    public ReviewKinds Kind { get; set; }
 
     /// <summary>
     /// The current state of the review (Pending, InProgress, Finished).
@@ -66,6 +66,12 @@ public class Review : BaseEntity
     /// </summary>
     [Column("rubric_id")]
     public Guid RubricId { get; set; }
+
+    /// <summary>
+    /// The SHA of the commit that this review is associated with, if applicable.
+    /// </summary>
+    [Column("rubric_ref")]
+    public string RubricRef { get; set; }
 
     // Relations //
 

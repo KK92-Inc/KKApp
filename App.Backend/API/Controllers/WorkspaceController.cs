@@ -202,7 +202,7 @@ public class WorkspaceController(
             Slug = dto.Name.ToSlug(),
             Public = dto.Public,
             Enabled = dto.Enabled,
-            SupportedReviewKinds = dto.SupportedReviewKinds,
+            ReviewVariant = dto.SupportedReviewKinds,
             ReviewerRules = dto.ReviewerRules ?? [],
             RevieweeRules = dto.RevieweeRules ?? []
         }, id, token);

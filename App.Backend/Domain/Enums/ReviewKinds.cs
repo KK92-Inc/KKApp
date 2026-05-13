@@ -33,10 +33,5 @@ public enum ReviewKinds
     /// <summary>
     /// Supports automated reviews (LLM, tests, etc.).
     /// </summary>
-    Auto = 1 << 3,
-
-    /// <summary>
-    /// Supports all review types.
-    /// </summary>
-    All = Self | Peer | Async | Auto
+    Auto = 1 << 3
 }

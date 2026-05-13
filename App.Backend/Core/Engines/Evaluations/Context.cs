@@ -28,7 +28,7 @@ public record Context
     /// Present in both reviewer and reviewee checks so rules
     /// can inspect the project regardless of role.
     /// </summary>
-    public UserProject? SubjectProject { get; init; }
+    public required UserProject UserProject { get; init; }
 
     /// <summary>
     /// Injectable for deterministic testing of time-based rules.

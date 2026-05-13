@@ -17,7 +17,7 @@ namespace App.Backend.Models.Responses.Entities.Reviews;
 public class ReviewDO(Review review) : BaseEntityDO<Review>(review)
 {
     [Required]
-    public ReviewVariant Kind { get; set; } = review.Kind;
+    public ReviewKinds Kind { get; set; } = review.Kind;
 
     [Required]
     public ReviewState State { get; set; } = review.State;

@@ -11,7 +11,7 @@ import type { paths } from '$lib/api/api';
 import { BACKEND_URI } from '$lib/config';
 import { getRequestEvent } from '$app/server';
 import { MetaData } from './routes/index.svelte';
-import createClient, { type Middleware } from 'openapi-fetch';
+import createClient, { type Middleware } from 'openapi-fetch/dist/index.cjs';
 
 // ============================================================================
 // API client

@@ -18,6 +18,7 @@ using App.Backend.Models.Requests.Cursus;
 using Microsoft.EntityFrameworkCore;
 using App.Backend.Models.Responses.Entities.Projects;
 using App.Backend.Models.Requests.Projects;
+using App.Backend.Models.Responses.Entities.Reviews;
 
 // ============================================================================
 
@@ -26,7 +27,11 @@ namespace App.Backend.API.Controllers;
 [ApiController]
 [Route("projects")]
 [ProtectedResource("projects"), Authorize]
-public class ProjectController(ILogger<ProjectController> log, IProjectService projectService) : Controller
+public class ProjectController(
+    ILogger<ProjectController> log,
+    IProjectService projectService,
+    IRubricService rubricService
+) : Controller
 {
     [HttpGet]
     [ProtectedResource("projects", "projects:read")]
@@ -108,6 +113,33 @@ public class ProjectController(ILogger<ProjectController> log, IProjectService p
     {
         var project = await projectService.FindByIdAsync(id);
         return project is null ? NotFound() : Ok(new ProjectDO(project));
+    }
+
+    [HttpGet("{id:guid}/rubrics")]
+    [ProtectedResource("projects", "projects:read")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Get rubrics for a project")]
+    [EndpointDescription("Retrieve all rubrics associated with any user project session of the given project.")]
+    public async Task<ActionResult<IEnumerable<RubricDO>>> GetRubricsForProject(
+        Guid id,
+        [FromQuery] Sorting sorting,
+        [FromQuery] Pagination pagination,
+        CancellationToken token
+    )
+    {
+        var project = await projectService.FindByIdAsync(id);
+        if (project is null)
+            return NotFound();
+
+        var page = await rubricService.GetAllAsync(sorting, pagination, token,
+            r => r.UserProjects.Any(up => up.ProjectId == id)
+        );
+
+        page.AppendHeaders(Response.Headers);
+        return Ok(page.Items.Select(r => new RubricDO(r)));
     }
 
     [HttpPatch("{id:guid}")]

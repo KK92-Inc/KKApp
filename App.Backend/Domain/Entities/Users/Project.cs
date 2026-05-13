@@ -29,9 +29,6 @@ public class UserProject : BaseEntity
         GitInfo = null;
         GitInfoId = null;
 
-        Rubric = null;
-        RubricId = null;
-
         Reviews = [];
         Transactions = [];
     }
@@ -65,21 +62,6 @@ public class UserProject : BaseEntity
 
     [ForeignKey(nameof(GitInfoId))]
     public virtual Git? GitInfo { get; set; }
-
-    /// <summary>
-    /// The rubric selected for evaluating this user project.
-    /// If null, the default rubric from the project template is used.
-    /// </summary>
-    [Column("rubric_id")]
-    public Guid? RubricId { get; set; }
-
-    [ForeignKey(nameof(RubricId))]
-    public virtual Rubric? Rubric { get; set; }
-
-    /// <summary>
-    /// Users partaking in this project session.
-    /// </summary>
-    // public virtual ICollection<Member> Members { get; set; } // this is now gone
 
     /// <summary>
     /// Transactions related to user activities within this project.

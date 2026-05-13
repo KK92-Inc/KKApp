@@ -27,31 +27,31 @@ public sealed class RuleService(RuleEngine engine) : IRuleService
 
     /// <inheritdoc />
     public async Task<Result> CanRequestReviewAsync(
-        Rubric rubric, User reviewee, UserProject project, CancellationToken ct = default)
+        Rubric rubric, User reviewee, UserProject userProject, CancellationToken ct = default)
     {
         if (rubric.RevieweeRules.Count is 0)
             return Result.Success();
 
-        return await engine.EvaluateAllAsync(rubric.RevieweeRules, new ()
+        return await engine.EvaluateAllAsync(rubric.RevieweeRules, new()
         {
-            User           = reviewee,
-            Role           = Role.Reviewee,
-            SubjectProject = project
+            User = reviewee,
+            Role = Role.Reviewee,
+            UserProject = userProject
         }, ct);
     }
 
     /// <inheritdoc />
     public async Task<Result> CanReviewAsync(
-        Rubric rubric, User reviewer, UserProject subjectProject, CancellationToken ct = default)
+        Rubric rubric, User reviewer, UserProject userProject, CancellationToken ct = default)
     {
         if (rubric.ReviewerRules.Count is 0)
             return Result.Success();
 
-        return await engine.EvaluateAllAsync(rubric.ReviewerRules, new ()
+        return await engine.EvaluateAllAsync(rubric.ReviewerRules, new()
         {
-            User           = reviewer,
-            Role           = Role.Reviewer,
-            SubjectProject = subjectProject
+            User = reviewer,
+            Role = Role.Reviewer,
+            UserProject = userProject
         }, ct);
     }
 }
