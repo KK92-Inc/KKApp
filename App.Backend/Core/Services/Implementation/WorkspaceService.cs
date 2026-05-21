@@ -96,7 +96,7 @@ public class WorkspaceService(DatabaseContext ctx, IGitService git) : BaseServic
         return output.Entity;
     }
 
-    public async Task<Rubric> AddRubricAsync(Guid workspaceId, Rubric rubric, Guid creatorId, CancellationToken token = default)
+    public async Task<Rubric> AddRubricAsync(Guid workspaceId, Rubric rubric, CancellationToken token = default)
     {
         var strategy = _context.Database.CreateExecutionStrategy();
         return await strategy.ExecuteAsync(async (ct) =>
@@ -121,8 +121,16 @@ public class WorkspaceService(DatabaseContext ctx, IGitService git) : BaseServic
                 await _context.SaveChangesAsync(ct);
 
                 rubric.GitInfoId = repo.Entity.Id;
-                rubric.CreatorId = creatorId;
                 var output = await _context.Rubrics.AddAsync(rubric, ct);
+                await _context.SaveChangesAsync(ct);
+
+                // Add a default variant for the rubric as a bare minimum configuration
+                await _context.RubricsVariants.AddAsync(new()
+                {
+                    RubricId = output.Entity.Id,
+                    Kind = ReviewKinds.Self,
+                    Count = 1
+                }, ct);
 
                 await _context.SaveChangesAsync(ct);
                 await transaction.CommitAsync(ct);

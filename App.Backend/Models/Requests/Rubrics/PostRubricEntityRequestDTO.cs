@@ -3,9 +3,8 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-using System.ComponentModel.DataAnnotations;
-using App.Backend.Domain;
 using App.Backend.Domain.Enums;
+using System.ComponentModel.DataAnnotations;
 
 namespace App.Backend.Models.Requests.Rubrics;
 
@@ -16,40 +15,34 @@ namespace App.Backend.Models.Requests.Rubrics;
 /// </summary>
 public record PostRubricEntityRequestDTO
 {
-    /// <summary>
-    /// The name of the rubric.
-    /// </summary>
     [Required, StringLength(256, MinimumLength = 1)]
     public required string Name { get; init; }
 
-    /// <summary>
-    /// The markdown content describing the evaluation criteria.
-    /// </summary>
     [StringLength(65536)]
     public string? Markdown { get; init; }
 
-    /// <summary>
-    /// Whether this rubric is publicly visible.
-    /// </summary>
     public bool Public { get; init; } = false;
-
-    /// <summary>
-    /// Whether this rubric is currently enabled and can be used.
-    /// </summary>
     public bool Enabled { get; init; } = false;
+}
 
-    /// <summary>
-    /// The types of reviews this rubric supports.
-    /// </summary>
-    public ReviewKinds SupportedReviewKinds { get; init; } = ReviewKinds.Self | ReviewKinds.Peer | ReviewKinds.Async | ReviewKinds.Auto;
+/// <summary>
+/// Defines a single review kind and how many are required.
+/// </summary>
+public record RubricVariantDTO
+{
+    [Required]
+    public required ReviewKinds Kind { get; init; }
 
-    /// <summary>
-    /// Rules that determine who is eligible to be a reviewer.
-    /// </summary>
-    public ICollection<Rule>? ReviewerRules { get; init; }
+    [Required, Range(0, 100)]
+    public required int Required { get; init; }
+}
 
-    /// <summary>
-    /// Rules that determine who is eligible to request a review (reviewee).
-    /// </summary>
-    public ICollection<Rule>? RevieweeRules { get; init; }
+/// <summary>
+/// Replaces the entire variants configuration for a rubric.
+/// Kinds omitted are treated as disabled (count = 0).
+/// </summary>
+public record PutRubricVariantsRequestDTO
+{
+    [Required, MinLength(1)]
+    public required IEnumerable<RubricVariantDTO> Variants { get; init; }
 }

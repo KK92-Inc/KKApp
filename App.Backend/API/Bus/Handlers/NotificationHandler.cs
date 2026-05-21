@@ -3,6 +3,8 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+namespace App.Backend.API.Bus.Handlers;
+
 using Resend;
 using System.Text.Json;
 using Wolverine.Attributes;
@@ -10,11 +12,8 @@ using Razor.Templating.Core;
 using App.Backend.API.Notifications.Channels;
 using App.Backend.API.Notifications;
 using App.Backend.Core.Services.Interface;
-using System.Threading.Channels;
-using App.Backend.API.Bus.Messages;
 using App.Backend.API.Notifications.Registers.Interface;
 using App.Backend.API.Notifications.Variants;
-using App.Backend.Models.Responses.Entities.Notifications;
 
 // ============================================================================
 
@@ -28,8 +27,8 @@ public class NotificationHandler(
     IResend resend
 )
 {
-    public async Task Handle(WelcomeUserNotification payload, CancellationToken token) => await Internal(payload, token);
-    public async Task Handle(ProjectInviteNotification payload, CancellationToken token) => await Internal(payload, token);
+    public async Task Handle(WelcomeUserNotification p, CancellationToken t) => await Internal(p, t);
+    public async Task Handle(ProjectInviteNotification p, CancellationToken t) => await Internal(p, t);
 
     private async Task Internal(INotificationMessage notification, CancellationToken token)
     {

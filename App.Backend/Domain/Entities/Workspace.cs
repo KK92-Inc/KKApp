@@ -3,6 +3,7 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using App.Backend.Domain.Entities.Reviews;
 using App.Backend.Domain.Entities.Users;
 using App.Backend.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -37,5 +38,6 @@ public class Workspace : BaseEntity
 
     public virtual ICollection<Cursus> Cursi { get; set; }
     public virtual ICollection<Goal> Goals { get; set; }
+    public virtual ICollection<Rubric> Rubrics { get; set; }
     public virtual ICollection<Project> Projects { get; set; }
 }

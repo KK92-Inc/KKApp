@@ -7,6 +7,8 @@ using App.Backend.Database;
 using App.Backend.Core.Services.Interface;
 using App.Backend.Domain.Entities.Reviews;
 using Microsoft.EntityFrameworkCore;
+using App.Backend.Models.Requests.Rubrics;
+using App.Backend.Domain.Enums;
 
 // ============================================================================
 
@@ -21,23 +23,29 @@ public class RubricService(DatabaseContext ctx, IGitService git) : BaseService<R
         return await _dbSet.FirstOrDefaultAsync(r => r.Slug == slug, token);
     }
 
-    public async Task<bool> HasRubricMarkdownAsync(Guid rubricId, CancellationToken token = default)
+    public async Task<Rubric?> SetVariantsAsync(
+        Guid rubricId,
+        IEnumerable<(ReviewKinds Kind, int Required)> variants,
+        CancellationToken token = default)
     {
-        var rubric = await _dbSet
-            .Include(r => r.GitInfo)
+        var rubric = await _context.Rubrics
+            .Include(r => r.Variants)
             .FirstOrDefaultAsync(r => r.Id == rubricId, token);
 
-        if (rubric?.GitInfo is null)
-            return false;
+        if (rubric is null)
+            return null;
 
-        var blob = await git.GetBlobAsync(
-            rubric.GitInfo.Owner,
-            rubric.GitInfo.Name,
-            "main",
-            "RUBRIC.md",
-            token
-        );
+        _context.RubricsVariants.RemoveRange(rubric.Variants);
+        rubric.Variants = [.. variants.Where(v => v.Required > 0)
+            .Select(v => new RubricVariant
+            {
+                RubricId = rubricId,
+                Kind = v.Kind,
+                Count = v.Required,
+            })
+        ];
 
-        return blob is not null;
+        await _context.SaveChangesAsync(token);
+        return rubric;
     }
 }

@@ -86,7 +86,7 @@ public class RubricController(ILogger<RubricController> log, IRubricService rubr
         rubric.Markdown = request.Markdown ?? rubric.Markdown;
         rubric.Public = request.Public ?? rubric.Public;
         rubric.Enabled = request.Enabled ?? rubric.Enabled;
-        rubric.ReviewVariant = request.SupportedReviewKinds ?? rubric.ReviewVariant;
+        // rubric.ReviewVariant = request.SupportedReviewKinds ?? rubric.ReviewVariant;
         rubric.ReviewerRules = request.ReviewerRules ?? rubric.ReviewerRules;
         rubric.RevieweeRules = request.RevieweeRules ?? rubric.RevieweeRules;
 
@@ -110,23 +110,5 @@ public class RubricController(ILogger<RubricController> log, IRubricService rubr
 
         await rubricService.DeleteAsync(rubric);
         return NoContent();
-    }
-
-    [HttpGet("{id:guid}/has-markdown")]
-    [ProtectedResource("rubrics", "rubrics:read")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [EndpointSummary("Check if RUBRIC.md exists")]
-    [EndpointDescription("Check if the rubric's git repository contains a RUBRIC.md file")]
-    public async Task<ActionResult<bool>> HasMarkdown(Guid id, CancellationToken token)
-    {
-        var rubric = await rubricService.FindByIdAsync(id, token);
-        if (rubric is null)
-            return NotFound();
-
-        var hasMarkdown = await rubricService.HasRubricMarkdownAsync(id, token);
-        return Ok(hasMarkdown);
     }
 }

@@ -26,10 +26,9 @@ public interface IReviewService : IDomainService<Review>
     /// <param name="userProjectId">The user project to be reviewed.</param>
     /// <param name="rubricId">The rubric to use for evaluation.</param>
     /// <param name="initiatorId">The user requesting the review.</param>
-    /// <param name="variants">The types of review (Self, Peer, Async, Auto).</param>
     /// <param name="token">Cancellation token.</param>
-    /// <returns>The created review.</returns>
-    Task<Review> RequestReviewAsync(
+    /// <returns>The created reviews based on the variants that the rubric supports.</returns>
+    Task<IEnumerable<Review>> RequestReviewAsync(
         Guid userProjectId,
         Guid rubricId,
         Guid initiatorId,

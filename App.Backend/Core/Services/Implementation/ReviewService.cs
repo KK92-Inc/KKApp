@@ -21,64 +21,100 @@ public class ReviewService(DatabaseContext ctx, IRuleService rules) : BaseServic
 {
     private readonly DatabaseContext _context = ctx;
 
-    public async Task<Review> RequestReviewAsync(Guid userProjectId, Guid rubricId, Guid initiatorId, CancellationToken token = default)
+    public async Task<IEnumerable<Review>> RequestReviewAsync(Guid userProjectId, Guid rubricId, Guid initiatorId, CancellationToken token = default)
     {
-        // 1. Verify state of user project
-        var userProject = await _context.UserProjects
-            .Include(up => up.GitInfo)
-            .Include(up => up.Reviews)
-            .FirstOrDefaultAsync(up => up.Id == userProjectId)
-            ?? throw new ServiceException(404, "User project not found.");
-
-        ServiceException.ThrowIf(userProject.GitInfo is null, "Project has nothing submitted for review.");
-        var reviewable = userProject.State is EntityObjectState.Awaiting or EntityObjectState.Completed;
-        ServiceException.ThrowIf(reviewable is false, "Project is not in a reviewable state.");
-
-        // 2. Validate rubric being assignable to this project can actually be used to review this project
-        var rubric = await _context.Rubrics
-            .Include(r => r.GitInfo)
-            .FirstOrDefaultAsync(r => r.Id == rubricId && r.Enabled)
-            ?? throw new ServiceException(404, "Rubric not found or is disabled.");
-
-        var members = await _context.Members
-            .Where(m => m.EntityType == MemberEntityType.UserProject
-                     && m.EntityId == userProjectId
-                     && m.LeftAt == null)
-            .ToListAsync(token);
-
-        // 3. Common sense preconditions based on review kind
-        var member = members.FirstOrDefault(m => m.UserId == initiatorId);
-        var isLeader = member?.Role is MemberRole.Leader;
-
-        if (rubric.ReviewVariant is ReviewKinds.Auto) // TODO: Implement auto review flow and remove this check
-            throw new ServiceException(501, "Auto reviews are not supported yet.");
-        if (rubric.ReviewVariant is ReviewKinds.Self && member is null)
-            throw new ServiceException(422, "Only project members can request a self review.");
-        if (rubric.ReviewVariant is ReviewKinds.Peer && (member is null || !isLeader))
-            throw new ServiceException(422, "Only team leaders can request a peer review.");
-        if (rubric.ReviewVariant is ReviewKinds.Async && (member is null || !isLeader))
-            throw new ServiceException(422, "Only team leaders can request an async review.");
-
-        // 4. Run additional business rules
-        var initiator = await _context.Users.FirstOrDefaultAsync(u => u.Id == initiatorId)
-            ?? throw new ServiceException(404, "Initiator not found.");
-        var result = await rules.CanRequestReviewAsync(rubric, initiator, userProject, token);
-        if (!result.IsSuccess)
-            throw new ServiceException(string.Join("; ", result.Reasons));
-
-        // 5. Create the review
-        var review = new Review
+        var strategy = _context.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async (ct) =>
         {
-            RubricId = rubricId,
-            State = ReviewState.Pending,
-            Kind = rubric.ReviewVariant,
-            UserProjectId = userProjectId,
-            ReviewerId = rubric.ReviewVariant is ReviewKinds.Self ? initiatorId : null,
-        };
+            await using var transaction = await _context.Database.BeginTransactionAsync(ct);
 
-        _dbSet.Add(review);
-        await _context.SaveChangesAsync(token);
-        return review;
+            // 1. Verify state of user project
+            var userProject = await _context.UserProjects
+                .Include(up => up.GitInfo)
+                .Include(up => up.Reviews)
+                .FirstOrDefaultAsync(up => up.Id == userProjectId, ct)
+                ?? throw new ServiceException(404, "User project not found.");
+
+            ServiceException.ThrowIf(userProject.GitInfo is null, "Project has nothing submitted for review.");
+
+            // 1.5: Lock the project into an awaiting state (unless it is completed, then it doesn't matter)
+            switch (userProject.State)
+            {
+                case EntityObjectState.Awaiting:
+                    throw new ServiceException(422, "Project is already awaiting review.");
+                case EntityObjectState.Inactive:
+                    throw new ServiceException(422, "Project is currently inactive and cannot be reviewed.");
+                case EntityObjectState.Completed:
+                    break;
+                case EntityObjectState.Active:
+                    userProject.State = EntityObjectState.Awaiting;
+                    await _context.SaveChangesAsync(ct);
+                    break;
+                default: throw new ServiceException(500, "Invalid project state.");
+            }
+
+            // 2. Resolve rubric — prefer project-specific, fall back to wildcard
+            var rubric = await _context.Rubrics
+                .Include(r => r.GitInfo)
+                .Include(r => r.Variants)
+                .Where(r => r.Enabled && r.Id == rubricId
+                         && (r.ProjectId == userProject.ProjectId || r.ProjectId == null))
+                .OrderByDescending(r => r.ProjectId != null)
+                .FirstOrDefaultAsync(ct)
+                ?? throw new ServiceException(404, "No rubric available for this project.");
+
+            var variants = rubric.Variants.Where(v => v.Count > 0).ToList();
+            if (variants.Count is 0)
+                throw new ServiceException(422, "Rubric has no active review kinds configured.");
+
+            // 3. Common sense preconditions per active variant
+            var members = await _context.Members
+                .Where(m => m.EntityType == MemberEntityType.UserProject
+                         && m.EntityId == userProjectId
+                         && m.LeftAt == null)
+                .ToListAsync(ct);
+
+            var member = members.FirstOrDefault(m => m.UserId == initiatorId);
+            var isLeader = member?.Role is MemberRole.Leader;
+
+            foreach (var variant in variants)
+            {
+                switch (variant.Kind)
+                {
+                    case ReviewKinds.Self when member is null:
+                        throw new ServiceException(422, "Only project members can request a self review.");
+                    case ReviewKinds.Peer when member is null || !isLeader:
+                    case ReviewKinds.Async when member is null || !isLeader:
+                        throw new ServiceException(422, "Only team leaders can request a peer or async review.");
+                }
+            }
+
+            // 4. Run additional business rules
+            var initiator = await _context.Users.FirstOrDefaultAsync(u => u.Id == initiatorId, ct)
+                ?? throw new ServiceException(404, "Initiator not found.");
+            var result = await rules.CanRequestReviewAsync(rubric, initiator, userProject, ct);
+            if (!result.IsSuccess)
+                throw new ServiceException(string.Join("; ", result.Reasons));
+
+            // 5. Create N review rows per kind based on RequiredCount
+            var reviews = variants
+                .SelectMany(variant => Enumerable.Range(0, variant.Count)
+                    .Select(_ => new Review
+                    {
+                        RubricId = rubricId,
+                        Kind = variant.Kind,
+                        State = ReviewState.Pending,
+                        UserProjectId = userProjectId,
+                        RubricRef = "master", // TODO: Query the submitted branch somehow
+                        ReviewerId = variant.Kind is ReviewKinds.Self ? initiatorId : null,
+                    }))
+                .ToList();
+
+            _dbSet.AddRange(reviews);
+            await _context.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+            return reviews;
+        }, token);
     }
 
     /// <inheritdoc />

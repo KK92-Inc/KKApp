@@ -3,6 +3,7 @@ using System;
 using App.Backend.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Migrations.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    partial class DatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20260521120437_AddRubricsVariants")]
+    partial class AddRubricsVariants
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -564,10 +567,6 @@ namespace Migrations.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
-                    b.Property<Guid>("WorkspaceId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("workspace_id");
-
                     b.HasKey("Id");
 
                     b.HasIndex("CreatorId");
@@ -579,8 +578,6 @@ namespace Migrations.Migrations
                     b.HasIndex("ProjectId");
 
                     b.HasIndex("Slug");
-
-                    b.HasIndex("WorkspaceId");
 
                     b.ToTable("tbl_rubric");
                 });
@@ -1200,19 +1197,11 @@ namespace Migrations.Migrations
                         .WithMany()
                         .HasForeignKey("ProjectId");
 
-                    b.HasOne("App.Backend.Domain.Entities.Workspace", "Workspace")
-                        .WithMany("Rubrics")
-                        .HasForeignKey("WorkspaceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("Creator");
 
                     b.Navigation("GitInfo");
 
                     b.Navigation("Project");
-
-                    b.Navigation("Workspace");
                 });
 
             modelBuilder.Entity("App.Backend.Domain.Entities.Reviews.RubricVariant", b =>
@@ -1420,8 +1409,6 @@ namespace Migrations.Migrations
                     b.Navigation("Goals");
 
                     b.Navigation("Projects");
-
-                    b.Navigation("Rubrics");
                 });
 #pragma warning restore 612, 618
         }

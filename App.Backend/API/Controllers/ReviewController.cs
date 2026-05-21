@@ -15,6 +15,9 @@ using App.Backend.Database;
 using Microsoft.EntityFrameworkCore;
 using ImTools;
 using App.Backend.Domain.Entities.Reviews;
+using App.Backend.API.Bus.Messages;
+using App.Backend.Core;
+using Wolverine;
 
 // ============================================================================
 
@@ -32,6 +35,7 @@ public class ReviewController(
     IReviewService service,
     IRubricService rubricService,
     IUserProjectService userProjects,
+    IMessageBus bus,
     DatabaseContext ctx
 ) : Controller
 {
@@ -90,20 +94,31 @@ public class ReviewController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Request one or more reviews for a user project")]
     [EndpointDescription("Creates review entries for the specified kinds. Self reviews are auto-assigned to the requesting user.")]
-    public async Task<ActionResult<ReviewDO>> RequestReviews(
-        [FromBody] PostReviewRequestDTO dto,
-        CancellationToken token
-    )
+    public async Task<ActionResult<IEnumerable<ReviewDO>>> RequestReviews([FromBody] PostReviewRequestDTO dto, CancellationToken token)
     {
-        var requestingUserId = User.GetSID();
+        var requester = User.GetSID();
         var reviews = await service.RequestReviewAsync(
             dto.UserProjectId,
             dto.RubricId,
-            requestingUserId,
+            requester,
             token
         );
 
-        return Ok(new ReviewDO(reviews));
+        foreach (var review in reviews)
+        {
+            object message = review.Kind switch
+            {
+                ReviewKinds.Self => new RequestSelfReview(review.Id, dto.UserProjectId, requester),
+                ReviewKinds.Peer => new RequestPeerReview(review.Id, dto.UserProjectId),
+                ReviewKinds.Async => new RequestAsyncReview(review.Id, dto.UserProjectId),
+                // TODO: Implement auto review flow and remove this case
+                // ReviewKinds.Auto => new RequestAutoReview(review.Id, dto.UserProjectId),
+                _ => throw new ServiceException(500, $"Unhandled review kind: {review.Kind}")
+            };
+            await bus.PublishAsync(message);
+        }
+
+        return Ok(reviews.Select(r => new ReviewDO(r)));
     }
 
     [HttpPost("{reviewId:guid}/assign/{reviewerId:guid}")]

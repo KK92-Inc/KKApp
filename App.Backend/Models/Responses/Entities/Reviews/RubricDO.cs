@@ -3,10 +3,8 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-using System.ComponentModel.DataAnnotations;
-using App.Backend.Domain;
 using App.Backend.Domain.Entities.Reviews;
-using App.Backend.Domain.Enums;
+using System.ComponentModel.DataAnnotations;
 
 // ============================================================================
 
@@ -33,32 +31,16 @@ public class RubricDO(Rubric rubric) : BaseEntityDO<Rubric>(rubric)
     public bool Enabled { get; set; } = rubric.Enabled;
 
     [Required]
-    public ReviewKinds Supports { get; set; } = rubric.ReviewVariant;
+    public IEnumerable<RubricVariantDO> Variants { get; set; } = rubric.Variants.Select(v => new RubricVariantDO(v));
 
     [Required]
-    public Guid CreatorId { get; set; } = rubric.CreatorId;
+    public Guid? ProjectId { get; set; } = rubric.ProjectId;
 
-    public Guid? GitInfoId { get; set; } = rubric.GitInfoId;
+    [Required]
+    public UserLightDO Creator { get; set; } = rubric.Creator;
 
-    /// <summary>
-    /// The user who created this rubric.
-    /// </summary>
-    public UserLightDO? Creator { get; set; } = rubric.Creator;
-
-    /// <summary>
-    /// Git information for this rubric.
-    /// </summary>
+    [Required]
     public GitDO? GitInfo { get; set; } = rubric.GitInfo;
-
-    /// <summary>
-    /// Rules that determine who can be a reviewer.
-    /// </summary>
-    public ICollection<Rule> ReviewerRules { get; set; } = rubric.ReviewerRules;
-
-    /// <summary>
-    /// Rules that determine who can request a review.
-    /// </summary>
-    public ICollection<Rule> RevieweeRules { get; set; } = rubric.RevieweeRules;
 
     public static implicit operator RubricDO?(Rubric? rubric) =>
         rubric is null ? null : new(rubric);

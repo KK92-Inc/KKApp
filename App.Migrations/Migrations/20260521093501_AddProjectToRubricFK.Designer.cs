@@ -3,6 +3,7 @@ using System;
 using App.Backend.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Migrations.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    partial class DatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20260521093501_AddProjectToRubricFK")]
+    partial class AddProjectToRubricFK
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -545,6 +548,10 @@ namespace Migrations.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("public");
 
+                    b.Property<int>("ReviewVariant")
+                        .HasColumnType("integer")
+                        .HasColumnName("supported_variants");
+
                     b.Property<string>("RevieweeRules")
                         .IsRequired()
                         .HasColumnType("jsonb")
@@ -564,10 +571,6 @@ namespace Migrations.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
-                    b.Property<Guid>("WorkspaceId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("workspace_id");
-
                     b.HasKey("Id");
 
                     b.HasIndex("CreatorId");
@@ -580,44 +583,7 @@ namespace Migrations.Migrations
 
                     b.HasIndex("Slug");
 
-                    b.HasIndex("WorkspaceId");
-
                     b.ToTable("tbl_rubric");
-                });
-
-            modelBuilder.Entity("App.Backend.Domain.Entities.Reviews.RubricVariant", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id")
-                        .HasColumnOrder(0);
-
-                    b.Property<int>("Count")
-                        .HasColumnType("integer")
-                        .HasColumnName("count");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<int>("Kind")
-                        .HasColumnType("integer")
-                        .HasColumnName("kind");
-
-                    b.Property<Guid>("RubricId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("rubric_id");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("RubricId");
-
-                    b.ToTable("tbl_rubric_variant");
                 });
 
             modelBuilder.Entity("App.Backend.Domain.Entities.Spotlight", b =>
@@ -1200,30 +1166,11 @@ namespace Migrations.Migrations
                         .WithMany()
                         .HasForeignKey("ProjectId");
 
-                    b.HasOne("App.Backend.Domain.Entities.Workspace", "Workspace")
-                        .WithMany("Rubrics")
-                        .HasForeignKey("WorkspaceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("Creator");
 
                     b.Navigation("GitInfo");
 
                     b.Navigation("Project");
-
-                    b.Navigation("Workspace");
-                });
-
-            modelBuilder.Entity("App.Backend.Domain.Entities.Reviews.RubricVariant", b =>
-                {
-                    b.HasOne("App.Backend.Domain.Entities.Reviews.Rubric", "Rubric")
-                        .WithMany("Variants")
-                        .HasForeignKey("RubricId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Rubric");
                 });
 
             modelBuilder.Entity("App.Backend.Domain.Entities.SpotlightDismissal", b =>
@@ -1390,8 +1337,6 @@ namespace Migrations.Migrations
                     b.Navigation("Reviews");
 
                     b.Navigation("UserProjects");
-
-                    b.Navigation("Variants");
                 });
 
             modelBuilder.Entity("App.Backend.Domain.Entities.Spotlight", b =>
@@ -1420,8 +1365,6 @@ namespace Migrations.Migrations
                     b.Navigation("Goals");
 
                     b.Navigation("Projects");
-
-                    b.Navigation("Rubrics");
                 });
 #pragma warning restore 612, 618
         }

@@ -36,7 +36,7 @@ namespace App.Backend.API.Controllers;
 [Route("workspace")]
 public class WorkspaceController(
     ILogger<WorkspaceController> log,
-    IWorkspaceService workspaceService,
+    IWorkspaceService service,
     IProjectService projectService,
     IGoalService goalService,
     ICursusService cursusService,
@@ -50,7 +50,7 @@ public class WorkspaceController(
     [EndpointDescription("Retrieves the workspace of the currently authenticated user")]
     public async Task<ActionResult<WorkspaceDO>> GetWorkspace(CancellationToken token)
     {
-        var space = await workspaceService.FindByUserId(User.GetSID());
+        var space = await service.FindByUserId(User.GetSID());
         if (space is null) return NotFound();
         return Ok(new WorkspaceDO(space));
     }
@@ -67,7 +67,7 @@ public class WorkspaceController(
         CancellationToken token
     )
     {
-        var space = await workspaceService.FindByIdAsync(workspace, token);
+        var space = await service.FindByIdAsync(workspace, token);
         if (space is null)
             return NotFound();
         // For Root level workspaces (Organization owned), we must be staff
@@ -82,7 +82,7 @@ public class WorkspaceController(
         if (await cursusService.FindBySlugAsync(dto.Name.ToSlug()) is not null)
             return Conflict();
 
-        var cursus = await workspaceService.AddCursusAsync(space.Id, new()
+        var cursus = await service.AddCursusAsync(space.Id, new()
         {
             Name = dto.Name,
             WorkspaceId = workspace,
@@ -109,7 +109,7 @@ public class WorkspaceController(
         CancellationToken token
     )
     {
-        var space = await workspaceService.FindByIdAsync(workspace, token);
+        var space = await service.FindByIdAsync(workspace, token);
         if (space is null)
             return NotFound();
         if (space.Ownership is EntityOwnership.Organization && !User.IsInRole("Staff"))
@@ -121,7 +121,7 @@ public class WorkspaceController(
         if (await goalService.FindBySlugAsync(dto.Name.ToSlug()) is not null)
             return Conflict();
 
-        var goal = await workspaceService.AddGoalAsync(space.Id, new()
+        var goal = await service.AddGoalAsync(space.Id, new()
         {
             Name = dto.Name,
             WorkspaceId = workspace,
@@ -146,7 +146,7 @@ public class WorkspaceController(
         CancellationToken token
     )
     {
-        var space = await workspaceService.FindByIdAsync(workspace, token);
+        var space = await service.FindByIdAsync(workspace, token);
         if (space is null)
             return NotFound();
         if (space.Ownership is EntityOwnership.Organization && !User.IsInRole("Staff"))
@@ -158,7 +158,7 @@ public class WorkspaceController(
         if (await projectService.FindBySlugAsync(dto.Name.ToSlug()) is not null)
             return Conflict();
 
-        var project = await workspaceService.AddProjectAsync(space.Id, new()
+        var project = await service.AddProjectAsync(space.Id, new()
         {
             Name = dto.Name,
             WorkspaceId = workspace,
@@ -171,41 +171,64 @@ public class WorkspaceController(
         return Ok(new ProjectDO(project));
     }
 
-    [HttpPost("{workspace:guid}/rubric")]
+    [HttpPost("{id:guid}/rubric")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     // [ProtectedResource("workspaces", ["workspaces:write", "rubrics:write"])]
     [EndpointSummary("Create a new rubric")]
     [EndpointDescription("Create a new rubric with an associated git repository")]
-    public async Task<ActionResult<RubricDO>> AddRubric(
-        Guid workspace,
-        [FromBody] PostRubricEntityRequestDTO dto,
-        CancellationToken token
-    )
+    public async Task<ActionResult<RubricDO>> AddRubric(Guid id, [FromBody] PostRubricEntityRequestDTO body, CancellationToken token)
     {
-        var space = await workspaceService.FindByIdAsync(workspace, token);
+        var space = await service.FindByIdAsync(id, token);
         if (space is null)
             return NotFound();
         if (space.Ownership is EntityOwnership.Organization && !User.IsInRole("Staff"))
             return Forbid();
 
-        var id = User.GetSID();
-        if (space.OwnerId is not null && space.OwnerId != id)
+        var userId = User.GetSID();
+        if (space.OwnerId is not null && space.OwnerId != userId)
             return Forbid();
-        if (await rubricService.FindBySlugAsync(dto.Name.ToSlug()) is not null)
+        if (await rubricService.FindBySlugAsync(body.Name.ToSlug()) is not null)
             return Conflict();
 
-        var rubric = await workspaceService.AddRubricAsync(space.Id, new()
+        var rubric = await service.AddRubricAsync(space.Id, new()
         {
-            Name = dto.Name,
-            Markdown = dto.Markdown ?? string.Empty,
-            Slug = dto.Name.ToSlug(),
-            Public = dto.Public,
-            Enabled = dto.Enabled,
-            ReviewVariant = dto.SupportedReviewKinds,
-            ReviewerRules = dto.ReviewerRules ?? [],
-            RevieweeRules = dto.RevieweeRules ?? []
-        }, id, token);
+            Name = body.Name,
+            Markdown = body.Markdown ?? string.Empty,
+            Slug = body.Name.ToSlug(),
+            CreatorId = userId,
+            Public = body.Public,
+            Enabled = body.Enabled,
+        }, token);
+
+        return Ok(new RubricDO(rubric));
+    }
+
+    [HttpPut("{workspaceId:guid}/rubric/{rubricId:guid}/variants")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [EndpointSummary("Set rubric variant configuration")]
+    [EndpointDescription("Replaces the review kind composition for a rubric. Omitted kinds are disabled.")]
+    public async Task<ActionResult<RubricDO>> PutRubricVariants(
+        Guid workspaceId,
+        Guid rubricId,
+        [FromBody] PutRubricVariantsRequestDTO body,
+        CancellationToken token)
+    {
+        var space = await service.FindByIdAsync(workspaceId, token);
+        if (space is null)
+            return NotFound();
+        if (space.Ownership is EntityOwnership.Organization && !User.IsInRole("Staff"))
+            return Forbid();
+
+        var rubric = await rubricService.SetVariantsAsync(
+            rubricId,
+            body.Variants.Select(v => (v.Kind, v.Required)),
+            token
+        );
+
+        if (rubric is null)
+            return NotFound();
 
         return Ok(new RubricDO(rubric));
     }
@@ -228,8 +251,8 @@ public class WorkspaceController(
         [FromBody] IEnumerable<Guid> cursusIds,
         CancellationToken token)
     {
-        var source = await workspaceService.FindByIdAsync(from, token);
-        var target = await workspaceService.FindByIdAsync(to, token);
+        var source = await service.FindByIdAsync(from, token);
+        var target = await service.FindByIdAsync(to, token);
         if (source is null || target is null)
             return NotFound();
         if (!await cursusService.ExistsAsync(cursusIds, token))
@@ -260,8 +283,8 @@ public class WorkspaceController(
         [FromBody] IEnumerable<Guid> goalIds,
         CancellationToken token)
     {
-        var source = await workspaceService.FindByIdAsync(from, token);
-        var target = await workspaceService.FindByIdAsync(to, token);
+        var source = await service.FindByIdAsync(from, token);
+        var target = await service.FindByIdAsync(to, token);
         if (source is null || target is null)
             return NotFound();
         if (!await cursusService.ExistsAsync(goalIds, token))
@@ -292,8 +315,8 @@ public class WorkspaceController(
         [FromBody] IEnumerable<Guid> projectIds,
         CancellationToken token)
     {
-        var source = await workspaceService.FindByIdAsync(from, token);
-        var target = await workspaceService.FindByIdAsync(to, token);
+        var source = await service.FindByIdAsync(from, token);
+        var target = await service.FindByIdAsync(to, token);
         if (source is null || target is null)
             return NotFound();
         if (!await cursusService.ExistsAsync(projectIds, token))

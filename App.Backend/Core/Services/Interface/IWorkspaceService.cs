@@ -56,6 +56,6 @@ public interface IWorkspaceService : IDomainService<Workspace>, IUserQueryable<W
     /// <param name="creatorId">The creator user ID.</param>
     /// <param name="token">The cancellation token.</param>
     /// <returns>The created rubric.</returns>
-    public Task<Rubric> AddRubricAsync(Guid workspaceId, Rubric rubric, Guid creatorId, CancellationToken token = default);
+    public Task<Rubric> AddRubricAsync(Guid workspaceId, Rubric rubric, CancellationToken token = default);
 
 }

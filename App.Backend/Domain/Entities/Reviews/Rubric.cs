@@ -35,7 +35,7 @@ public class Rubric : BaseEntity
         GitInfoId = null;
         GitInfo = null;
 
-        ReviewVariant = ReviewKinds.Self | ReviewKinds.Peer | ReviewKinds.Async | ReviewKinds.Auto;
+        // ReviewVariant = ReviewKinds.Self;
         RevieweeRules = [];
         ReviewerRules = [];
         UserProjects = [];
@@ -73,12 +73,6 @@ public class Rubric : BaseEntity
     public bool Enabled { get; set; }
 
     /// <summary>
-    /// The types of reviews this rubric supports.
-    /// </summary>
-    [Column("supported_variants")]
-    public ReviewKinds ReviewVariant { get; set; }
-
-    /// <summary>
     /// Rules that determine who is eligible to be a reviewer.
     /// Stored as JSON.
     /// </summary>
@@ -99,10 +93,20 @@ public class Rubric : BaseEntity
     public Guid CreatorId { get; set; }
 
     /// <summary>
+    /// The project this rubric targets. If null it will be treated as a wildcard rubric.
+    /// </summary>
+    [Column("project_id")]
+    public Guid? ProjectId { get; set; }
+
+    /// <summary>
     /// Optional Git repository containing additional rubric resources (tests, scripts).
     /// </summary>
     [Column("git_info_id")]
     public Guid? GitInfoId { get; set; }
+
+    [Column("workspace_id")]
+    public Guid WorkspaceId { get; set; }
+
 
     // Relations //
 
@@ -111,6 +115,12 @@ public class Rubric : BaseEntity
 
     [ForeignKey(nameof(GitInfoId))]
     public virtual Git? GitInfo { get; set; }
+
+    [ForeignKey(nameof(ProjectId))]
+    public virtual Project? Project { get; set; }
+
+    [ForeignKey(nameof(WorkspaceId))]
+    public virtual Workspace Workspace { get; set; }
 
     /// <summary>
     /// Reviews that have been conducted using this rubric.
@@ -121,4 +131,9 @@ public class Rubric : BaseEntity
     /// User projects that have selected this rubric for evaluation.
     /// </summary>
     public virtual ICollection<UserProject> UserProjects { get; set; }
+
+    /// <summary>
+    /// Defines which review kinds are required and how many of each.
+    /// </summary>
+    public virtual ICollection<RubricVariant> Variants { get; set; } = [];
 }

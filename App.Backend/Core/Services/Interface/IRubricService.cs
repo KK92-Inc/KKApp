@@ -4,6 +4,8 @@
 // ============================================================================
 
 using App.Backend.Domain.Entities.Reviews;
+using App.Backend.Domain.Enums;
+using App.Backend.Models.Requests.Rubrics;
 
 // ============================================================================
 
@@ -12,10 +14,17 @@ namespace App.Backend.Core.Services.Interface;
 public interface IRubricService : IDomainService<Rubric>, ISlugQueryable<Rubric>
 {
     /// <summary>
-    /// Check if RUBRIC.md exists in the rubric's git repository.
+    /// Sets the variants for a rubric. This will replace all existing variants with the provided ones.
+    /// Variants state what review kinds are supported and how many of each kind are required.
+    /// Kinds omitted from the input are treated as non-required (count = 0).
     /// </summary>
-    /// <param name="rubricId">The rubric ID.</param>
-    /// <param name="token">The cancellation token.</param>
-    /// <returns>True if RUBRIC.md exists, false otherwise.</returns>
-    public Task<bool> HasRubricMarkdownAsync(Guid rubricId, CancellationToken token = default);
+    /// <param name="rubricId"></param>
+    /// <param name="variants"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public Task<Rubric?> SetVariantsAsync(
+        Guid rubricId,
+        IEnumerable<(ReviewKinds Kind, int Required)> variants,
+        CancellationToken token = default
+    );
 }
