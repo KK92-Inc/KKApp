@@ -121,6 +121,7 @@ public class WorkspaceService(DatabaseContext ctx, IGitService git) : BaseServic
                 await _context.SaveChangesAsync(ct);
 
                 rubric.GitInfoId = repo.Entity.Id;
+                rubric.WorkspaceId = workspace.Id;
                 var output = await _context.Rubrics.AddAsync(rubric, ct);
                 await _context.SaveChangesAsync(ct);
 
@@ -139,7 +140,7 @@ public class WorkspaceService(DatabaseContext ctx, IGitService git) : BaseServic
             catch (Exception e)
             {
                 await transaction.RollbackAsync(ct);
-                await git.DeleteAsync(owner, rubric.Name);
+                await git.DeleteAsync(owner, rubric.Name, ct);
                 throw new ServiceException(500, $"Something went wrong: {e.Message}");
             }
         }, token);

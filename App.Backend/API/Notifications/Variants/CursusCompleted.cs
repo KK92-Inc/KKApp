@@ -1,0 +1,34 @@
+// ============================================================================
+// Copyright (c) 2026 - W2Inc, All Rights Reserved.
+// See README.md in the project root for license information.
+// ============================================================================
+
+using App.Backend.Domain.Enums;
+using App.Backend.API.Views.Models;
+using App.Backend.API.Notifications.Channels;
+using Wolverine;
+using System.Net.Mail;
+using App.Backend.Domain.Entities.Users;
+using Microsoft.AspNetCore.SignalR;
+using App.Backend.Models.Responses.Entities;
+using App.Backend.Models.Responses.Entities.Notifications;
+using App.Backend.API.Bus.Messages;
+using App.Backend.Models.Responses.Entities.Cursus;
+
+namespace App.Backend.API.Notifications.Variants;
+
+// ============================================================================
+
+// Change 'class' to 'record'
+// Capitalize 'User' to follow property naming conventions
+public sealed record CursusCompleted(UserDO User, UserCursusDO UserCursus) : INotificationMessage, IDatabaseChannel
+{
+    public Guid? ResourceId => UserCursus.Id;
+
+    public Guid NotifiableId => User.Id;
+    public NotificationMeta Meta => NotificationMeta.User | NotificationMeta.Feed | NotificationMeta.Cursus;
+
+    public NotificationData ToDatabase() => new MessageDO(
+        $"# Congratulations, {User.Login}!\nYour cursus '{UserCursus.Cursus.Name}' has been completed."
+    );
+}

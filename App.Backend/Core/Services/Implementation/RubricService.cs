@@ -18,6 +18,15 @@ public class RubricService(DatabaseContext ctx, IGitService git) : BaseService<R
 {
     private readonly DatabaseContext _context = ctx;
 
+    public async Task<Rubric?> FindByProjectId(Guid projectId, CancellationToken token = default)
+    {
+        return await _context.Rubrics
+            .Include(r => r.Variants)
+            .Where(r => r.Enabled && (r.ProjectId == projectId || r.ProjectId == null))
+            .OrderByDescending(r => r.ProjectId != null)
+            .FirstOrDefaultAsync(token);
+    }
+
     public async Task<Rubric?> FindBySlugAsync(string slug, CancellationToken token = default)
     {
         return await _dbSet.FirstOrDefaultAsync(r => r.Slug == slug, token);

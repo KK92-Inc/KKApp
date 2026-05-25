@@ -33,7 +33,7 @@ public class UserCursusDO(UserCursus userCursus) : BaseEntityDO<UserCursus>(user
     /// <summary>
     /// The cursus the user is enrolled in.
     /// </summary>
-    public CursusDO? Cursus { get; set; } = userCursus.Cursus;
+    public CursusDO Cursus { get; set; } = userCursus.Cursus;
 
     /// <summary>
     /// The enrolled user.

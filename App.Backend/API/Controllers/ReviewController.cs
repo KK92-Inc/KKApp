@@ -92,14 +92,13 @@ public class ReviewController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [EndpointSummary("Request one or more reviews for a user project")]
+    [EndpointSummary("Request a review for a user project")]
     [EndpointDescription("Creates review entries for the specified kinds. Self reviews are auto-assigned to the requesting user.")]
     public async Task<ActionResult<IEnumerable<ReviewDO>>> RequestReviews([FromBody] PostReviewRequestDTO dto, CancellationToken token)
     {
         var requester = User.GetSID();
         var reviews = await service.RequestReviewAsync(
             dto.UserProjectId,
-            dto.RubricId,
             requester,
             token
         );
@@ -119,6 +118,31 @@ public class ReviewController(
         }
 
         return Ok(reviews.Select(r => new ReviewDO(r)));
+    }
+
+    [HttpGet("user-project/{userProjectId:guid}/status")]
+    [EndpointSummary("Get review progress for a user project")]
+    public async Task<ActionResult<ReviewProgressDO>> GetProgress(Guid userProjectId, CancellationToken token)
+    {
+        var userProject = await userProjects.FindByIdAsync(userProjectId, token);
+        if (userProject is null) return NotFound(new ProblemDetails { Title = "User project not found." });
+
+        var rubric = await rubricService.FindByProjectId(userProject.ProjectId, token);
+        if (rubric is null) return NotFound(new ProblemDetails { Title = "No rubric found for the project associated with this user project." });
+
+        var reviews = userProject.Reviews.ToList();
+        return Ok(new ReviewProgressDO(rubric)
+        {
+            Variants = [.. rubric.Variants
+               .Where(v => v.Count > 0)
+               .Select(v => new ReviewVariantProgressDO()
+               {
+                   Kind = v.Kind,
+                   Required = v.Count,
+                   Finished = reviews.Count(r => r.Kind == v.Kind && r.State is ReviewState.Finished),
+                   Active = reviews.Count(r => r.Kind == v.Kind && r.State is ReviewState.InProgress),
+               })]
+        });
     }
 
     [HttpPost("{reviewId:guid}/assign/{reviewerId:guid}")]
@@ -157,6 +181,7 @@ public class ReviewController(
     public async Task<ActionResult<ReviewDO>> CompleteReview(Guid reviewId, CancellationToken token)
     {
         var review = await service.CompleteReviewAsync(reviewId, token);
+        await bus.PublishAsync(new ReviewCompleted(review));
         return Ok(new ReviewDO(review));
     }
 

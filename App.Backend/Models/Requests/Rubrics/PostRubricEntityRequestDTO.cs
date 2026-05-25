@@ -19,9 +19,12 @@ public record PostRubricEntityRequestDTO
     public required string Name { get; init; }
 
     [StringLength(65536)]
-    public string? Markdown { get; init; }
+    public string? Markdown { get; init; } = null;
 
     public bool Public { get; init; } = false;
+
+    public Guid? ProjectId { get; init; } = null;
+
     public bool Enabled { get; init; } = false;
 }
 

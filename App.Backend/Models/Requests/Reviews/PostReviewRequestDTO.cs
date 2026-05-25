@@ -22,10 +22,4 @@ public record PostReviewRequestDTO
     /// </summary>
     [Required]
     public required Guid UserProjectId { get; init; }
-
-    /// <summary>
-    /// The rubric to use for evaluation.
-    /// </summary>
-    [Required]
-    public required Guid RubricId { get; init; }
 }

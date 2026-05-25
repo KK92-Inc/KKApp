@@ -9,9 +9,9 @@ using App.Backend.Domain.Entities.Users;
 using App.Backend.Domain.Enums;
 using App.Backend.Models;
 
-// ============================================================================
-
 namespace App.Backend.Core.Services.Interface;
+
+// ============================================================================
 
 public interface IReviewService : IDomainService<Review>
 {
@@ -28,9 +28,8 @@ public interface IReviewService : IDomainService<Review>
     /// <param name="initiatorId">The user requesting the review.</param>
     /// <param name="token">Cancellation token.</param>
     /// <returns>The created reviews based on the variants that the rubric supports.</returns>
-    Task<IEnumerable<Review>> RequestReviewAsync(
+    public Task<IEnumerable<Review>> RequestReviewAsync(
         Guid userProjectId,
-        Guid rubricId,
         Guid initiatorId,
         CancellationToken token = default
     );
@@ -43,7 +42,7 @@ public interface IReviewService : IDomainService<Review>
     /// <param name="reviewerId">The user to assign as reviewer.</param>
     /// <param name="token">Cancellation token.</param>
     /// <returns>The updated review.</returns>
-    Task<Review> AssignReviewerAsync(
+    public Task<Review> AssignReviewerAsync(
         Guid reviewId,
         Guid reviewerId,
         CancellationToken token = default
@@ -55,7 +54,7 @@ public interface IReviewService : IDomainService<Review>
     /// <param name="reviewId">The review to start.</param>
     /// <param name="token">Cancellation token.</param>
     /// <returns>The updated review.</returns>
-    Task<Review> StartReviewAsync(Guid reviewId, CancellationToken token = default);
+    public Task<Review> StartReviewAsync(Guid reviewId, CancellationToken token = default);
 
     /// <summary>
     /// Cancels a pending review, removing it entirely.
@@ -63,7 +62,7 @@ public interface IReviewService : IDomainService<Review>
     /// </summary>
     /// <param name="reviewId">The review to cancel.</param>
     /// <param name="token">Cancellation token.</param>
-    Task CancelReviewAsync(Guid reviewId, CancellationToken token = default);
+    public Task CancelReviewAsync(Guid reviewId, CancellationToken token = default);
 
     /// <summary>
     /// Completes a review, changing its state to Finished.
@@ -71,7 +70,7 @@ public interface IReviewService : IDomainService<Review>
     /// <param name="reviewId">The review to complete.</param>
     /// <param name="token">Cancellation token.</param>
     /// <returns>The updated review.</returns>
-    Task<Review> CompleteReviewAsync(Guid reviewId, CancellationToken token = default);
+    public Task<Review> CompleteReviewAsync(Guid reviewId, CancellationToken token = default);
 
     /// <summary>
     /// Gets all pending reviews for a user project.
@@ -79,7 +78,7 @@ public interface IReviewService : IDomainService<Review>
     /// <param name="userProjectId">The user project ID.</param>
     /// <param name="token">Cancellation token.</param>
     /// <returns>List of pending reviews.</returns>
-    Task<IEnumerable<Review>> GetPendingReviewsAsync(Guid userProjectId, CancellationToken token = default);
+    public Task<IEnumerable<Review>> GetPendingReviewsAsync(Guid userProjectId, CancellationToken token = default);
 
     /// <summary>
     /// Gets reviews assigned to a specific reviewer.
@@ -87,5 +86,5 @@ public interface IReviewService : IDomainService<Review>
     /// <param name="reviewerId">The reviewer's user ID.</param>
     /// <param name="token">Cancellation token.</param>
     /// <returns>List of reviews assigned to the reviewer.</returns>
-    Task<IEnumerable<Review>> GetReviewerAssignmentsAsync(Guid reviewerId, CancellationToken token = default);
+    public Task<IEnumerable<Review>> GetReviewerAssignmentsAsync(Guid reviewerId, CancellationToken token = default);
 }

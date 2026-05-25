@@ -21,7 +21,7 @@ public class ReviewService(DatabaseContext ctx, IRuleService rules) : BaseServic
 {
     private readonly DatabaseContext _context = ctx;
 
-    public async Task<IEnumerable<Review>> RequestReviewAsync(Guid userProjectId, Guid rubricId, Guid initiatorId, CancellationToken token = default)
+    public async Task<IEnumerable<Review>> RequestReviewAsync(Guid userProjectId, Guid initiatorId, CancellationToken token = default)
     {
         var strategy = _context.Database.CreateExecutionStrategy();
         return await strategy.ExecuteAsync(async (ct) =>
@@ -55,12 +55,10 @@ public class ReviewService(DatabaseContext ctx, IRuleService rules) : BaseServic
 
             // 2. Resolve rubric — prefer project-specific, fall back to wildcard
             var rubric = await _context.Rubrics
-                .Include(r => r.GitInfo)
                 .Include(r => r.Variants)
-                .Where(r => r.Enabled && r.Id == rubricId
-                         && (r.ProjectId == userProject.ProjectId || r.ProjectId == null))
+                .Where(r => r.Enabled && (r.ProjectId == userProject.ProjectId || r.ProjectId == null))
                 .OrderByDescending(r => r.ProjectId != null)
-                .FirstOrDefaultAsync(ct)
+                .FirstOrDefaultAsync(token)
                 ?? throw new ServiceException(404, "No rubric available for this project.");
 
             var variants = rubric.Variants.Where(v => v.Count > 0).ToList();
@@ -101,7 +99,7 @@ public class ReviewService(DatabaseContext ctx, IRuleService rules) : BaseServic
                 .SelectMany(variant => Enumerable.Range(0, variant.Count)
                     .Select(_ => new Review
                     {
-                        RubricId = rubricId,
+                        RubricId = rubric.Id,
                         Kind = variant.Kind,
                         State = ReviewState.Pending,
                         UserProjectId = userProjectId,
@@ -132,21 +130,34 @@ public class ReviewService(DatabaseContext ctx, IRuleService rules) : BaseServic
             .FirstOrDefaultAsync(u => u.Id == reviewerId, token)
             ?? throw new ServiceException(404, "Reviewer not found.");
 
-        var ruleResult = await rules.CanReviewAsync(review.Rubric, reviewer, review.UserProject, token);
-        if (!ruleResult.IsSuccess)
-            throw new ServiceException(403, string.Join("; ", ruleResult.Reasons));
-
-        // Peer/Async: reviewer must be an active team member — query tbl_members directly
-        if (review.Kind is ReviewKinds.Peer or ReviewKinds.Async)
-        {
-            var isMember = await _context.Members.AnyAsync(m =>
+        var membership = await _context.Members
+            .FirstOrDefaultAsync(m =>
                 m.EntityType == MemberEntityType.UserProject &&
                 m.EntityId == review.UserProjectId &&
                 m.UserId == reviewerId &&
                 m.LeftAt == null, token);
 
-            ServiceException.ThrowIf(!isMember, $"{review.Kind} reviews must be performed by a team member.");
+        switch (review.Kind)
+        {
+            case ReviewKinds.Self:
+                // Only a team leader can self-assign
+                ServiceException.ThrowIf(membership is null, "Self reviews must be assigned to a project member.");
+                ServiceException.ThrowIf(membership!.Role is not MemberRole.Leader, "Self reviews can only be assigned to a team leader.");
+                break;
+
+            case ReviewKinds.Peer:
+            case ReviewKinds.Async:
+                // Must be someone external — no team members allowed
+                ServiceException.ThrowIf(membership is not null, $"{review.Kind} reviews must be assigned to someone outside the project team.");
+                break;
+
+            case ReviewKinds.Auto:
+                throw new ServiceException(422, "Auto reviews cannot be manually assigned.");
         }
+
+        var result = await rules.CanReviewAsync(review.Rubric, reviewer, review.UserProject, token);
+        if (!result.IsSuccess)
+            throw new ServiceException(403, string.Join("; ", result.Reasons));
 
         review.ReviewerId = reviewerId;
         await _context.SaveChangesAsync(token);
@@ -189,9 +200,32 @@ public class ReviewService(DatabaseContext ctx, IRuleService rules) : BaseServic
         var review = await _dbSet.FirstOrDefaultAsync(r => r.Id == reviewId, token)
             ?? throw new ServiceException(404, "Review not found.");
 
-        ServiceException.ThrowIf(review.State is not ReviewState.Pending, "Only pending reviews can be canceled.");
+        ServiceException.ThrowIf(
+            review.State is ReviewState.Finished,
+            "Cannot cancel a finished review."
+        );
 
-        _dbSet.Remove(review);
+        review.State = ReviewState.Cancelled;
+        await _context.SaveChangesAsync(token);
+    }
+
+    public async Task CancelAllReviewsAsync(Guid userProjectId, CancellationToken token = default)
+    {
+        var active = await _dbSet
+            .Where(r => r.UserProjectId == userProjectId
+                     && r.State != ReviewState.Finished
+                     && r.State != ReviewState.Cancelled)
+            .ToListAsync(token);
+
+        foreach (var review in active)
+            review.State = ReviewState.Cancelled;
+
+        // If the project was locked to Awaiting, release it back to Active
+        var userProject = await _context.UserProjects
+            .FirstOrDefaultAsync(up => up.Id == userProjectId, token);
+        if (userProject?.State is EntityObjectState.Awaiting)
+            userProject.State = EntityObjectState.Active;
+
         await _context.SaveChangesAsync(token);
     }
 

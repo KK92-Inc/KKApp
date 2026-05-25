@@ -22,26 +22,20 @@ public class ReviewDO(Review review) : BaseEntityDO<Review>(review)
     [Required]
     public ReviewState State { get; set; } = review.State;
 
-    /// <summary>
-    /// The reviewer's user ID, if assigned.
-    /// </summary>
-    public Guid? ReviewerId { get; set; } = review.ReviewerId;
-
     [Required]
     public Guid UserProjectId { get; set; } = review.UserProjectId;
-
-    [Required]
-    public Guid RubricId { get; set; } = review.RubricId;
 
     /// <summary>
     /// The user performing the review, if assigned.
     /// </summary>
+    [Required]
     public UserLightDO? Reviewer { get; set; } = review.Reviewer;
 
     /// <summary>
     /// The rubric used for this review.
     /// </summary>
-    public RubricDO? Rubric { get; set; } = review.Rubric;
+    [Required]
+    public RubricLightDO Rubric { get; set; } = review.Rubric;
 
     public static implicit operator ReviewDO?(Review? review) =>
         review is null ? null : new(review);

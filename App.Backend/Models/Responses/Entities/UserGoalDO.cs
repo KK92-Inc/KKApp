@@ -28,7 +28,7 @@ public class UserGoalDO(UserGoal userGoal) : BaseEntityDO<UserGoal>(userGoal)
     /// <summary>
     /// The goal the user is enrolled in.
     /// </summary>
-    public GoalDO? Goal { get; set; } = userGoal.Goal;
+    public GoalDO Goal { get; set; } = userGoal.Goal;
 
     /// <summary>
     /// The user enrolled in this goal.
