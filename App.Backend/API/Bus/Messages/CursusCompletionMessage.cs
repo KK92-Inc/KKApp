@@ -3,8 +3,6 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-using App.Backend.Domain.Entities.Reviews;
-
 namespace App.Backend.API.Bus.Messages;
 
-public record ReviewCompletionMessage(Guid ReviewId);
+public record CursusCompletionMessage(Guid UserId, Guid CursusId);

@@ -18,8 +18,6 @@ namespace App.Backend.API.Notifications.Variants;
 
 // ============================================================================
 
-// Change 'class' to 'record'
-// Capitalize 'User' to follow property naming conventions
 public sealed record WelcomeUserNotification(UserDO User) : INotificationMessage, IBroadcastChannel, IDatabaseChannel
 {
     public Guid? ResourceId => null;

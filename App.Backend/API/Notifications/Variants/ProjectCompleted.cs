@@ -21,14 +21,19 @@ namespace App.Backend.API.Notifications.Variants;
 
 // Change 'class' to 'record'
 // Capitalize 'User' to follow property naming conventions
-public sealed record ProjectCompleted(UserDO User, UserProjectDO UserProject) : INotificationMessage, IDatabaseChannel
+public sealed record ProjectCompletedNotification(
+    Guid UserId,
+    string UserLogin,
+    Guid UserProjectId,
+    string ProjectName
+) : INotificationMessage, IDatabaseChannel
 {
-    public Guid? ResourceId => UserProject.Id;
+    public Guid? ResourceId => UserProjectId;
 
-    public Guid NotifiableId => User.Id;
+    public Guid NotifiableId => UserId;
     public NotificationMeta Meta => NotificationMeta.User | NotificationMeta.Feed | NotificationMeta.Project;
 
     public NotificationData ToDatabase() => new MessageDO(
-        $"# Congratulations, {User.Login}!\nYour project '{UserProject.Project.Name}' has been completed."
+        $"# Congratulations, {UserLogin}!\nYour project '{ProjectName}' has been completed."
     );
 }

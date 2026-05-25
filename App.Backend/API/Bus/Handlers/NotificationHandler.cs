@@ -29,6 +29,9 @@ public class NotificationHandler(
 {
     public async Task Handle(WelcomeUserNotification p, CancellationToken t) => await Internal(p, t);
     public async Task Handle(ProjectInviteNotification p, CancellationToken t) => await Internal(p, t);
+    public async Task Handle(ProjectCompletedNotification p, CancellationToken t) => await Internal(p, t);
+    public async Task Handle(GoalCompletedNotification p, CancellationToken t) => await Internal(p, t);
+    public async Task Handle(CursusCompletedNotification p, CancellationToken t) => await Internal(p, t);
 
     private async Task Internal(INotificationMessage notification, CancellationToken token)
     {

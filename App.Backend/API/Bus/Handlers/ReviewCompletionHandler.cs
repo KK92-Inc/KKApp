@@ -24,14 +24,9 @@ using Wolverine;
 
 
 [WolverineHandler]
-public class ReviewHandler(
-    INotificationService notificationService,
-    DatabaseContext context,
-    IMessageBus bus,
-    ILogger<ReviewHandler> logger
-)
+public class ReviewCompletionHandler(DatabaseContext context, IMessageBus bus, ILogger<ReviewCompletionHandler> logger)
 {
-    public async Task Handle(ReviewCompleted message, CancellationToken ct)
+    public async Task Handle(ReviewCompletionMessage message, CancellationToken ct)
     {
         var review = await context.Reviews.FirstOrDefaultAsync(r => r.Id == message.ReviewId, ct);
         if (review is null)
@@ -42,6 +37,7 @@ public class ReviewHandler(
 
         var userProject = await context.UserProjects
             .Include(up => up.Project)
+            .Include(up => up.Reviews)
             .FirstOrDefaultAsync(up => up.Id == review.UserProjectId, ct);
 
         if (userProject is null)
@@ -50,6 +46,31 @@ public class ReviewHandler(
             return;
         }
 
+        // Prefer project-specific rubric, fall back to wildcard
+        var rubric = await context.Rubrics
+            .Include(r => r.Variants)
+            .Where(r => r.Enabled && (r.ProjectId == userProject.ProjectId || r.ProjectId == null))
+            .OrderByDescending(r => r.ProjectId != null)
+            .FirstOrDefaultAsync(ct);
+
+        if (rubric is null)
+        {
+            logger.LogWarning("No rubric found for UserProject {UserProjectId}", userProject.Id);
+            return;
+        }
+
+        // All required review kinds must be satisfied before we proceed
+        var allComplete = rubric.Variants
+            .Where(v => v.Count > 0)
+            .All(v => userProject.Reviews.Count(r => r.Kind == v.Kind && r.State == ReviewState.Finished) >= v.Count);
+
+        if (!allComplete)
+        {
+            logger.LogInformation("UserProject {UserProjectId} still has pending required reviews", userProject.Id);
+            return;
+        }
+
+        userProject.State = EntityObjectState.Completed;
         var memberIds = await context.Members
             .Where(m =>
                 m.EntityType == MemberEntityType.UserProject &&
@@ -71,7 +92,6 @@ public class ReviewHandler(
 
     private async Task CheckGoalProgressionAsync(Guid userId, Guid projectId, CancellationToken ct)
     {
-        // Subquery: UserProject IDs this user has completed (via Members)
         var completedUserProjects = context.Members
             .Where(m =>
                 m.EntityType == MemberEntityType.UserProject &&
@@ -81,12 +101,8 @@ public class ReviewHandler(
                 context.UserProjects.Where(up => up.State == EntityObjectState.Completed),
                 m => m.EntityId,
                 up => up.Id,
-                (m, up) => up.ProjectId);   // <-- IQueryable, not materialized
+                (m, up) => up.ProjectId);
 
-        // Single query:
-        // - Goals that contain this project
-        // - User is subscribed to them
-        // - Every project in the goal is completed by the user
         var completedGoalIds = await context.GoalProject
             .Where(gp =>
                 context.GoalProject.Any(inner => inner.ProjectId == projectId && inner.GoalId == gp.GoalId) &&
@@ -94,9 +110,8 @@ public class ReviewHandler(
             .GroupBy(gp => gp.GoalId)
             .Where(g => g.All(gp => completedUserProjects.Contains(gp.ProjectId)))
             .Select(g => g.Key)
-            .ToListAsync(ct);               // only GUIDs, nothing more
+            .ToListAsync(ct);
 
-        // TODO: Publish notification...
         foreach (var goalId in completedGoalIds)
             await bus.PublishAsync(new GoalCompletionMessage(userId, goalId));
     }

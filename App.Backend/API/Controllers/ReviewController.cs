@@ -181,7 +181,9 @@ public class ReviewController(
     public async Task<ActionResult<ReviewDO>> CompleteReview(Guid reviewId, CancellationToken token)
     {
         var review = await service.CompleteReviewAsync(reviewId, token);
-        await bus.PublishAsync(new ReviewCompleted(review));
+        if (review is null)
+            return NotFound("Review not found");
+        await bus.PublishAsync(new ReviewCompletionMessage(review.Id));
         return Ok(new ReviewDO(review));
     }
 

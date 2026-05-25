@@ -21,14 +21,19 @@ namespace App.Backend.API.Notifications.Variants;
 
 // Change 'class' to 'record'
 // Capitalize 'User' to follow property naming conventions
-public sealed record CursusCompleted(UserDO User, UserCursusDO UserCursus) : INotificationMessage, IDatabaseChannel
+public sealed record CursusCompletedNotification(
+    Guid UserId,
+    string UserLogin,
+    Guid UserCursusId,
+    string CursusName
+) : INotificationMessage, IDatabaseChannel
 {
-    public Guid? ResourceId => UserCursus.Id;
+    public Guid? ResourceId => UserCursusId;
 
-    public Guid NotifiableId => User.Id;
+    public Guid NotifiableId => UserId;
     public NotificationMeta Meta => NotificationMeta.User | NotificationMeta.Feed | NotificationMeta.Cursus;
 
     public NotificationData ToDatabase() => new MessageDO(
-        $"# Congratulations, {User.Login}!\nYour cursus '{UserCursus.Cursus.Name}' has been completed."
+        $"# Congratulations, {UserLogin}!\nYour cursus '{CursusName}' has been completed."
     );
 }

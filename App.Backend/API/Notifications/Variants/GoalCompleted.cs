@@ -18,14 +18,19 @@ namespace App.Backend.API.Notifications.Variants;
 
 // ============================================================================
 
-public sealed record GoalCompleted(UserDO User, UserGoalDO UserGoal) : INotificationMessage, IDatabaseChannel
+// Pure, flat, serializer-friendly message contract
+public sealed record GoalCompletedNotification(
+    Guid UserId, 
+    string UserLogin, 
+    Guid UserGoalId, 
+    string GoalName
+) : INotificationMessage, IDatabaseChannel
 {
-    public Guid? ResourceId => UserGoal.Id;
-
-    public Guid NotifiableId => User.Id;
+    public Guid? ResourceId => UserGoalId;
+    public Guid NotifiableId => UserId;
     public NotificationMeta Meta => NotificationMeta.User | NotificationMeta.Feed | NotificationMeta.Goal;
 
     public NotificationData ToDatabase() => new MessageDO(
-        $"# Congratulations, {User.Login}!\nYour goal '{UserGoal.Goal.Name}' has been completed."
+        $"# Congratulations, {UserLogin}!\nYour goal '{GoalName}' has been completed."
     );
 }
