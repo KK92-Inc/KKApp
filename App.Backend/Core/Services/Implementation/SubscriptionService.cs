@@ -28,10 +28,9 @@ public class SubscriptionService(DatabaseContext context, IGitService git, TimeP
 
         if (existing is not null)
         {
+            CheckLock(existing.UnlocksAt);
             if (existing.State is EntityObjectState.Inactive)
             {
-                EnsureCooldownPassed(existing.UnlocksAt, "cursus");
-
                 existing.State = EntityObjectState.Active;
                 existing.UnlocksAt = null;
 
@@ -64,7 +63,7 @@ public class SubscriptionService(DatabaseContext context, IGitService git, TimeP
 
     public async Task<UserGoal> SubscribeToGoalAsync(Guid userId, Guid goalId, CancellationToken token = default)
     {
-        return await context.Database.CreateExecutionStrategy().ExecuteAsync<UserGoal>(async (ct) =>
+        return await context.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
         {
             await using var transaction = await context.Database.BeginTransactionAsync(ct);
             var existing = await context.UserGoals.FirstOrDefaultAsync(
@@ -73,24 +72,14 @@ public class SubscriptionService(DatabaseContext context, IGitService git, TimeP
 
             if (existing is not null)
             {
-                if (existing.State != EntityObjectState.Inactive)
-                    throw new ServiceException("Unable to subscribe to this goal.");
-
-                EnsureCooldownPassed(existing.UnlocksAt, "goal");
-
-                existing.State = EntityObjectState.Active;
-                existing.UnlocksAt = null;
-
-                context.UserGoals.Update(existing);
-
-                await CascadeActivateProjectsAsync(userId, [goalId], ct);
-
-                await context.SaveChangesAsync(ct);
-                await transaction.CommitAsync(ct);
-                return existing;
+                CheckLock(existing.UnlocksAt);
+                ServiceException.ThrowIf(
+                    existing.State is not EntityObjectState.Inactive,
+                    "Already subscribed to this goal."
+                );
             }
 
-            // 2. Is it standalone ? (Enforced only in Restricted mode)
+            // 1. Hierarchy Restriction Check (Enforced only in Restricted mode)
             if (_config.Mode is ProgressionMode.Restricted)
             {
                 var cursiWithGoal = context.CursusGoal
@@ -110,7 +99,21 @@ public class SubscriptionService(DatabaseContext context, IGitService git, TimeP
                 }
             }
 
-            // 3. Check goal project composition
+            if (existing is not null)
+            {
+                existing.State = EntityObjectState.Active;
+                existing.UnlocksAt = null;
+
+                context.UserGoals.Update(existing);
+
+                await CascadeActivateProjectsAsync(userId, [goalId], ct);
+
+                await context.SaveChangesAsync(ct);
+                await transaction.CommitAsync(ct);
+                return existing;
+            }
+
+            // 2. Check goal project composition
             var total = await context.GoalProject.CountAsync(gp => gp.GoalId == goalId, ct);
             var completed = await context.GoalProject
                 .Where(gp => gp.GoalId == goalId)
@@ -145,16 +148,44 @@ public class SubscriptionService(DatabaseContext context, IGitService git, TimeP
             await using var transaction = await context.Database.BeginTransactionAsync(ct);
             var existing = await context.UserProjects.Where(
                 up => up.ProjectId == projectId &&
-                context.Members.Any(m => m.EntityType == MemberEntityType.UserProject && m.EntityId == up.Id && m.UserId == userId && m.Role != MemberRole.Pending)
-                ).FirstOrDefaultAsync(ct);
+                context.Members.Any(
+                    m => m.EntityType == MemberEntityType.UserProject &&
+                    m.EntityId == up.Id &&
+                    m.UserId == userId &&
+                    m.Role != MemberRole.Pending
+                )
+            ).FirstOrDefaultAsync(ct);
 
             if (existing is not null)
             {
-                if (existing.State is not EntityObjectState.Inactive)
-                    throw new ServiceException("Already subscribed to this project.");
+                CheckLock(existing.UnlocksAt);
+                ServiceException.ThrowIf(
+                    existing.State is not EntityObjectState.Inactive,
+                    "Already subscribed to this project."
+                );
+            }
 
-                EnsureCooldownPassed(existing.UnlocksAt, "project");
+            // 1. Hierarchy Restriction check (Enforced only in Restricted mode)
+            if (_config.Mode is ProgressionMode.Restricted)
+            {
+                var goalsWithProject = context.GoalProject
+                    .Where(gp => gp.ProjectId == projectId)
+                    .Select(gp => gp.GoalId);
 
+                if (await goalsWithProject.AnyAsync(ct))
+                {
+                    bool subscribed = await context.UserGoals.AnyAsync(
+                        ug => ug.UserId == userId &&
+                        ug.State != EntityObjectState.Inactive &&
+                        goalsWithProject.Contains(ug.GoalId),
+                    ct);
+
+                    ServiceException.ThrowIf(!subscribed, "Please subscribe to a goal with this project to access it.");
+                }
+            }
+
+            if (existing is not null)
+            {
                 existing.State = EntityObjectState.Active;
                 existing.UnlocksAt = null;
 
@@ -185,25 +216,6 @@ public class SubscriptionService(DatabaseContext context, IGitService git, TimeP
                 await context.SaveChangesAsync(ct);
                 await transaction.CommitAsync(ct);
                 return existing;
-            }
-
-            // 2. Hierarchy Restriction check (Enforced only in Restricted mode)
-            if (_config.Mode is ProgressionMode.Restricted)
-            {
-                var goalsWithProject = context.GoalProject
-                    .Where(gp => gp.ProjectId == projectId)
-                    .Select(gp => gp.GoalId);
-
-                if (await goalsWithProject.AnyAsync(ct))
-                {
-                    bool subscribed = await context.UserGoals.AnyAsync(
-                        ug => ug.UserId == userId &&
-                        ug.State != EntityObjectState.Inactive &&
-                        goalsWithProject.Contains(ug.GoalId),
-                    ct);
-
-                    ServiceException.ThrowIf(!subscribed, "This project is not a standalone project");
-                }
             }
 
             // Setup session and Git repository
@@ -245,7 +257,7 @@ public class SubscriptionService(DatabaseContext context, IGitService git, TimeP
 
             await context.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
-            return result.Entity; // We use result to get generated data on save.
+            return result.Entity;
         }, token);
     }
 
@@ -336,18 +348,32 @@ public class SubscriptionService(DatabaseContext context, IGitService git, TimeP
 
     // ==============================================================================
 
-    private void EnsureCooldownPassed(DateTimeOffset? unlocksAt, string entityType)
+    /// <summary>
+    /// Make sure the user isn't trying to resubscribe during an active cooldown.
+    /// </summary>
+    /// <param name="unlocksAt">When the user can resubscribe.</param>
+    /// <exception cref="ServiceException"></exception>
+    private void CheckLock(DateTimeOffset? unlocksAt)
     {
         var now = time.GetUtcNow();
         if (unlocksAt.HasValue && now < unlocksAt.Value)
         {
             var remaining = unlocksAt.Value - now;
-            var formattedRemaining = $"{(int)remaining.TotalHours}h {remaining.Minutes}m";
-
-            throw new ServiceException($"Cooldown active. Please wait {formattedRemaining} before resubscribing to this {entityType}.");
+            var formatted = $"{(int)remaining.TotalHours}h {remaining.Minutes}m";
+            throw new ServiceException($"Please wait {formatted} before resubscribing");
         }
     }
 
+    /// <summary>
+    /// When a user resubscribes to a cursus, reactivate any goals that are part of that cursus and were inactivated due to the unsubscription.
+    /// This ensures that users don't lose progress on goals they were previously subscribed to when they rejoin a cursus.
+    /// 
+    /// The same applies for projects under those goals.
+    /// </summary>
+    /// <param name="userId"></param>
+    /// <param name="reactivatedCursusId"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
     private async Task CascadeActivateGoalsAsync(Guid userId, Guid reactivatedCursusId, CancellationToken ct)
     {
         var inactiveGoals = await context.UserGoals
@@ -368,6 +394,14 @@ public class SubscriptionService(DatabaseContext context, IGitService git, TimeP
         await CascadeActivateProjectsAsync(userId, activatedGoalIds, ct);
     }
 
+    /// <summary>
+    /// When a user resubscribes to a goal, reactivate any projects that are part of that goal and were inactivated due to the unsubscription.
+    /// This ensures that users don't lose progress on projects they were previously subscribed to when they rejoin a goal.
+    /// </summary>
+    /// <param name="userId"></param>
+    /// <param name="reactivatedGoalIds"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
     private async Task CascadeActivateProjectsAsync(Guid userId, List<Guid> reactivatedGoalIds, CancellationToken ct)
     {
         var inactiveProjects = await context.UserProjects
@@ -396,6 +430,15 @@ public class SubscriptionService(DatabaseContext context, IGitService git, TimeP
         await context.UserProjectTransactions.AddRangeAsync(transactions, ct);
     }
 
+    /// <summary>
+    /// When a user unsubscribes from a cursus, inactivate any goals that are part of that cursus and don't belong to any other active cursus for that user.
+    /// This ensures that users lose access to goals that are only available through the cursus they unsubscribed from,
+    /// while retaining access to goals that are available through other active cursuses.
+    /// </summary>
+    /// <param name="userId"></param>
+    /// <param name="unsubscribedCursusId"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
     private async Task CascadeDeactivateGoalsAsync(Guid userId, Guid unsubscribedCursusId, CancellationToken ct)
     {
         var orphanedGoals = await context.UserGoals
@@ -420,6 +463,15 @@ public class SubscriptionService(DatabaseContext context, IGitService git, TimeP
         await CascadeDeactivateProjectsAsync(userId, orphanedGoalIds, ct);
     }
 
+    /// <summary>
+    /// When a user unsubscribes from a goal, inactivate any projects that are part of that goal and don't belong to any other active goal or cursus for that user.
+    /// This ensures that users lose access to projects that are only available through the goal they unsubscribed from,
+    /// while retaining access to projects that are available through other active goals.
+    /// </summary>
+    /// <param name="userId"></param>
+    /// <param name="unsubscribedGoalIds"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
     private async Task CascadeDeactivateProjectsAsync(Guid userId, List<Guid> unsubscribedGoalIds, CancellationToken ct)
     {
         var orphanedProjects = await context.UserProjects
@@ -429,7 +481,10 @@ public class SubscriptionService(DatabaseContext context, IGitService git, TimeP
             .Where(up => !context.GoalProject.Any(gp =>
                 !unsubscribedGoalIds.Contains(gp.GoalId) &&
                 gp.ProjectId == up.ProjectId &&
-                context.UserGoals.Any(ug => ug.GoalId == gp.GoalId && ug.UserId == userId && ug.State != EntityObjectState.Inactive)))
+                (
+                    context.UserGoals.Any(ug => ug.GoalId == gp.GoalId && ug.UserId == userId && ug.State != EntityObjectState.Inactive) ||
+                    context.CursusGoal.Any(cg => cg.GoalId == gp.GoalId && context.UserCursi.Any(uc => uc.CursusId == cg.CursusId && uc.UserId == userId && uc.State != EntityObjectState.Inactive))
+                )))
             .ToListAsync(ct);
 
         if (orphanedProjects.Count == 0) return;
