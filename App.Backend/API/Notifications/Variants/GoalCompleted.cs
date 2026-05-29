@@ -18,7 +18,13 @@ namespace App.Backend.API.Notifications.Variants;
 
 // ============================================================================
 
-// Pure, flat, serializer-friendly message contract
+/// <summary>
+/// Represents a notification for when a goal is completed.
+/// </summary>
+/// <param name="UserId"></param>
+/// <param name="UserLogin"></param>
+/// <param name="UserGoalId"></param>
+/// <param name="GoalName"></param>
 public sealed record GoalCompletedNotification(
     Guid UserId, 
     string UserLogin, 

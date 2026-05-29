@@ -104,26 +104,7 @@ public class CursusController(
             return NotFound();
 
         var relations = await cursusService.GetTrackAsync(id, token);
-        return Ok(CursusTrackDO.FromRelations(cursus, relations));
-    }
-
-    [HttpGet("{id:guid}/track/user/{userId:guid}")]
-    [ProtectedResource("cursus", "cursus:read")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [EndpointSummary("Get user's cursus track state")]
-    [EndpointDescription("Retrieve the cursus track with the authenticated user's progress state computed per goal node. Goals the user hasn't started default to Inactive.")]
-    public async Task<ActionResult<UserCursusTrackDO>> GetMyTrack(Guid id, Guid userId, CancellationToken token)
-    {
-        var cursus = await cursusService.FindByIdAsync(id, token);
-        if (cursus is null)
-            return NotFound();
-
-        var relations = await cursusService.GetTrackAsync(id, token);
-        var userStates = await cursusService.GetTrackForUserAsync(id, userId, token);
-
-        return Ok(UserCursusTrackDO.FromRelations(cursus, userId, relations, userStates));
+        return Ok(CursusTrackDO.From(cursus, relations));
     }
 
     [HttpPost("{id:guid}/track")]
@@ -181,6 +162,6 @@ public class CursusController(
 
         var created = await cursusService.SetTrackAsync(id, nodes, token);
         var track = await cursusService.GetTrackAsync(id, token);
-        return Ok(CursusTrackDO.FromRelations(cursus, track));
+        return Ok(CursusTrackDO.From(cursus, track));
     }
 }

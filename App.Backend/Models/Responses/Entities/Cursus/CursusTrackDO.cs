@@ -44,7 +44,7 @@ public class CursusTrackDO
     /// <summary>
     /// Build a CursusTrackDO from a cursus entity and its goal relations.
     /// </summary>
-    public static CursusTrackDO FromRelations(Domain.Entities.Cursus cursus, IEnumerable<CursusGoal> relations)
+    public static CursusTrackDO From(Domain.Entities.Cursus cursus, IEnumerable<CursusGoal> relations)
     {
         return new CursusTrackDO
         {

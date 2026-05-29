@@ -52,12 +52,10 @@ public class GoalCompletionHandler(
 
     private async Task CheckCursusProgressionAsync(Guid userId, Guid goalId, CancellationToken ct)
     {
-        // All goals this user has completed (including the one just marked above)
         var completedGoalIds = context.UserGoals
             .Where(ug => ug.UserId == userId && ug.State == EntityObjectState.Completed)
             .Select(ug => ug.GoalId);
 
-        // Cursi that contain the just-completed goal AND the user is enrolled in
         var eligibleCursusIds = context.CursusGoal
             .Where(cg => cg.GoalId == goalId)
             .Select(cg => cg.CursusId)

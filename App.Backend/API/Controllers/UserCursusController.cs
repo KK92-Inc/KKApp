@@ -92,19 +92,23 @@ public class UserCursusController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Get user cursus track")]
-    [EndpointDescription("Returns the user's personalized progress track for a cursus enrollment, resolved from the stored graph.")]
+    [EndpointDescription("Returns the user's frozen track snapshot with per-node progression state and unlock status.")]
     public async Task<ActionResult<UserCursusTrackDO>> GetTrack(Guid id, CancellationToken token)
     {
         var uc = await userCursusService.FindByIdAsync(id, token);
-        if (uc is null)
-            return NotFound();
+        if (uc is null) return NotFound();
 
         var cursus = await cursusService.FindByIdAsync(uc.CursusId, token);
-        if (cursus is null)
-            return NotFound();
+        if (cursus is null) return NotFound();
 
-        var relations = await cursusService.GetTrackAsync(uc.CursusId, token);
-        var userStates = await cursusService.GetTrackForUserAsync(uc.CursusId, uc.UserId, token);
-        return Ok(UserCursusTrackDO.FromRelations(cursus, uc.UserId, relations, userStates));
+        // Load the user's frozen snapshot (what the track looked like at enrollment)
+        var snapshot = await userCursusService.GetSnapshotAsync(id, token);
+        if (snapshot.Count == 0) return NotFound();
+
+        // Fetch current goal states for only the goals in this snapshot
+        var userStates = await userCursusService.GetSnapshotStatesAsync(
+            uc.UserId, snapshot.Select(n => n.GoalId), token);
+
+        return Ok(UserCursusTrackDO.From(cursus, snapshot, userStates));
     }
 }

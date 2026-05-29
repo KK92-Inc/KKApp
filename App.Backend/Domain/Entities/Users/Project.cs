@@ -22,6 +22,7 @@ public class UserProject : BaseEntity
     public UserProject()
     {
         State = EntityObjectState.Inactive;
+        UnlocksAt = null;
 
         Project = null!;
         ProjectId = Guid.Empty;
@@ -38,6 +39,13 @@ public class UserProject : BaseEntity
     /// </summary>
     [Column("state")]
     public EntityObjectState State { get; set; }
+
+    /// <summary>
+    /// If set, locks modifications on the entity until the specified time.
+    /// E.g: Used for cooldowns after unsubscribing.
+    /// </summary>
+    [Column("unlocks_at")]
+    public DateTimeOffset? UnlocksAt { get; set; }
 
     /// <summary>
     /// Limit the amount of users that can partake in this project session.

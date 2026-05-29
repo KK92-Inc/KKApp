@@ -57,6 +57,7 @@ public class DatabaseContext(DbContextOptions<DatabaseContext> options) : DbCont
     // Joins
     public DbSet<GoalProject> GoalProject { get; set; }
     public DbSet<CursusGoal> CursusGoal { get; set; }
+    public DbSet<UserCursusGoal> UserCursusGoal { get; set; }
     // public DbSet<GoalCollaborator> GoalCollaborator { get; set; }
     // public DbSet<CursusCollaborator> CursusCollaborator { get; set; }
 #nullable restore

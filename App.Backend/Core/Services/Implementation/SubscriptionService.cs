@@ -12,443 +12,443 @@ using App.Backend.Domain.Enums;
 using App.Backend.Domain.Relations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using App.Backend.Core.Engines.Evaluations;
-
-// ============================================================================
+using App.Backend.Domain.Entities.Projects;
 
 namespace App.Backend.Core.Services.Implementation;
 
-public class SubscriptionService(DatabaseContext ctx, IGitService git, IOptions<SubscriptionOptions> options) : ISubscriptionService
+public class SubscriptionService(DatabaseContext context, IGitService git, TimeProvider time, IOptions<SubscriptionOptions> options) : ISubscriptionService
 {
-    private readonly SubscriptionOptions config = options.Value;
-
-    // -------------------------------------------------------------------------
-    // Can-subscribe checks
-    // -------------------------------------------------------------------------
-
-    public async Task<bool> CanSubscribeToCursusAsync(Guid userId, Guid cursusId, CancellationToken token = default)
-    {
-        if (config.Mode is ProgressionMode.Free)
-            return true;
-
-        return true;
-    }
-
-    public async Task<bool> CanSubscribeToGoalAsync(Guid userId, Guid goalId, CancellationToken token = default)
-    {
-        if (config.Mode is ProgressionMode.Free)
-            return true;
-
-        var userGoal = await ctx.UserGoals
-            .FirstOrDefaultAsync(ug => ug.UserId == userId && ug.GoalId == goalId, token);
-
-        if (userGoal?.State is EntityObjectState.Awaiting or EntityObjectState.Active or EntityObjectState.Completed)
-            return false;
-
-        var cursusGoals = await ctx.CursusGoal
-            .Where(cg => cg.GoalId == goalId)
-            .ToListAsync(token);
-
-        if (cursusGoals.Count == 0)
-            return true;
-
-        var enrolledCursusIds = await ctx.UserCursi
-            .Where(uc => uc.UserId == userId
-                      && (uc.State == EntityObjectState.Active || uc.State == EntityObjectState.Awaiting))
-            .Select(uc => uc.CursusId)
-            .ToListAsync(token);
-
-        var relevantCursusGoals = cursusGoals
-            .Where(cg => enrolledCursusIds.Contains(cg.CursusId))
-            .ToList();
-
-        if (relevantCursusGoals.Count == 0)
-            return false;
-
-        foreach (var cursusGoal in relevantCursusGoals)
-        {
-            if (await CanAdvanceToGoalInCursusAsync(userId, cursusGoal, token))
-                return true;
-        }
-
-        return false;
-    }
-
-    private async Task<bool> CanAdvanceToGoalInCursusAsync(Guid userId, CursusGoal cursusGoal, CancellationToken token = default)
-    {
-        if (cursusGoal.ParentGoalId.HasValue)
-        {
-            var parentUserGoal = await ctx.UserGoals
-                .FirstOrDefaultAsync(ug => ug.UserId == userId && ug.GoalId == cursusGoal.ParentGoalId.Value, token);
-
-            if (parentUserGoal?.State is not EntityObjectState.Completed)
-                return false;
-        }
-
-        if (cursusGoal.ChoiceGroup.HasValue)
-        {
-            var siblingGoalIds = await ctx.CursusGoal
-                .Where(cg =>
-                    cg.CursusId == cursusGoal.CursusId &&
-                    cg.ChoiceGroup == cursusGoal.ChoiceGroup &&
-                    cg.GoalId != cursusGoal.GoalId)
-                .Select(cg => cg.GoalId)
-                .ToListAsync(token);
-
-            var hasChosenSibling = await ctx.UserGoals
-                .AnyAsync(ug =>
-                    ug.UserId == userId &&
-                    siblingGoalIds.Contains(ug.GoalId) &&
-                    (ug.State == EntityObjectState.Active ||
-                     ug.State == EntityObjectState.Awaiting ||
-                     ug.State == EntityObjectState.Completed),
-                    token);
-
-            if (hasChosenSibling)
-                return false;
-        }
-
-        return true;
-    }
-
-    public async Task<bool> CanSubscribeToProjectAsync(Guid userId, Guid projectId, CancellationToken token = default)
-    {
-        if (config.Mode is ProgressionMode.Free)
-            return true;
-
-        var goalProjects = await ctx.GoalProject
-            .Where(gp => gp.ProjectId == projectId)
-            .Include(gp => gp.Goal)
-            .ToListAsync(token);
-
-        if (goalProjects.Count == 0)
-            return true;
-
-        var eligibleGoalIds = goalProjects
-            .Where(gp => gp.Goal.Active && !gp.Goal.Deprecated)
-            .Select(gp => gp.GoalId)
-            .ToList();
-
-        if (eligibleGoalIds.Count == 0)
-            return false;
-
-        return await ctx.UserGoals
-            .AnyAsync(ug =>
-                ug.UserId == userId &&
-                eligibleGoalIds.Contains(ug.GoalId) &&
-                ug.State == EntityObjectState.Active,
-                token);
-    }
-
-    // -------------------------------------------------------------------------
-    // Subscribe
-    // -------------------------------------------------------------------------
+    private readonly SubscriptionOptions _config = options.Value;
 
     public async Task<UserCursus> SubscribeToCursusAsync(Guid userId, Guid cursusId, CancellationToken token = default)
     {
-        var userCursus = await ctx.UserCursi
-            .FirstOrDefaultAsync(uc => uc.UserId == userId && uc.CursusId == cursusId, token);
+        var existing = await context.UserCursi.FirstOrDefaultAsync(
+            uc => uc.UserId == userId && uc.CursusId == cursusId,
+        token);
 
-        if (userCursus is not null)
+        if (existing is not null)
         {
-            if (userCursus.State is EntityObjectState.Active)
-                throw new ServiceException("Already subscribed to this cursus.");
-            if (userCursus.State is EntityObjectState.Completed)
-                throw new ServiceException("Cannot resubscribe to a completed cursus.");
-            if (userCursus.State is EntityObjectState.Awaiting)
-                throw new ServiceException("Subscription is awaiting approval.");
+            if (existing.State is EntityObjectState.Inactive)
+            {
+                EnsureCooldownPassed(existing.UnlocksAt, "cursus");
 
-            userCursus.State = EntityObjectState.Active;
-            ctx.UserCursi.Update(userCursus);
-            await ctx.SaveChangesAsync(token);
-            return userCursus;
+                existing.State = EntityObjectState.Active;
+                existing.UnlocksAt = null;
+
+                context.UserCursi.Update(existing);
+
+                await CascadeActivateGoalsAsync(userId, cursusId, token);
+
+                await context.SaveChangesAsync(token);
+                return existing;
+            }
+
+            throw existing.State switch
+            {
+                EntityObjectState.Active => new ServiceException("Already subscribed to this cursus."),
+                EntityObjectState.Completed => new ServiceException("Cannot resubscribe to a completed cursus."),
+                EntityObjectState.Awaiting => new ServiceException("Subscription is awaiting approval."),
+                _ => new ServiceException("Invalid subscription state.")
+            };
         }
 
-        var result = await ctx.UserCursi.AddAsync(new() { CursusId = cursusId, UserId = userId }, token);
-        await ctx.SaveChangesAsync(token);
+        var result = await context.UserCursi.AddAsync(new()
+        {
+            CursusId = cursusId,
+            UserId = userId
+        }, token);
+
+        await context.SaveChangesAsync(token);
         return result.Entity;
     }
 
     public async Task<UserGoal> SubscribeToGoalAsync(Guid userId, Guid goalId, CancellationToken token = default)
     {
-        var userGoal = await ctx.UserGoals
-            .Where(ug => ug.GoalId == goalId && ug.UserId == userId)
-            .FirstOrDefaultAsync(token);
-
-        if (userGoal is not null)
+        return await context.Database.CreateExecutionStrategy().ExecuteAsync<UserGoal>(async (ct) =>
         {
-            if (userGoal.State is not EntityObjectState.Inactive)
-                throw new ServiceException(409, "Already subscribed to this goal");
-            if (userGoal.State is EntityObjectState.Completed)
-                throw new ServiceException(422, "Goal is already completed");
+            await using var transaction = await context.Database.BeginTransactionAsync(ct);
+            var existing = await context.UserGoals.FirstOrDefaultAsync(
+                ug => ug.GoalId == goalId && ug.UserId == userId,
+            ct);
 
-            userGoal.State = EntityObjectState.Active;
-            ctx.UserGoals.Update(userGoal);
-            await ctx.SaveChangesAsync(token);
-            return userGoal;
-        }
-
-        // Check completion state across all projects under this goal.
-        // Members now live in tbl_members, so the subquery joins through there
-        // instead of the old navigation property.
-        var projectStats = await ctx.GoalProject
-            .Where(gp => gp.GoalId == goalId)
-            .Select(gp => new
+            if (existing is not null)
             {
-                IsCompleted = ctx.UserProjects.Any(up =>
-                    up.ProjectId == gp.ProjectId &&
-                    up.State == EntityObjectState.Completed &&
-                    ctx.Members.Any(m =>
-                        m.EntityType == MemberEntityType.UserProject &&
-                        m.EntityId == up.Id &&
-                        m.UserId == userId))
-            })
-            .ToListAsync(token);
+                if (existing.State != EntityObjectState.Inactive)
+                    throw new ServiceException("Unable to subscribe to this goal.");
 
-        var state = projectStats.Count > 0 && projectStats.All(p => p.IsCompleted)
-            ? EntityObjectState.Completed
-            : EntityObjectState.Active;
+                EnsureCooldownPassed(existing.UnlocksAt, "goal");
 
-        var result = await ctx.UserGoals.AddAsync(new()
-        {
-            GoalId = goalId,
-            UserId = userId,
-            State = state,
+                existing.State = EntityObjectState.Active;
+                existing.UnlocksAt = null;
+
+                context.UserGoals.Update(existing);
+
+                await CascadeActivateProjectsAsync(userId, [goalId], ct);
+
+                await context.SaveChangesAsync(ct);
+                await transaction.CommitAsync(ct);
+                return existing;
+            }
+
+            // 2. Is it standalone ? (Enforced only in Restricted mode)
+            if (_config.Mode is ProgressionMode.Restricted)
+            {
+                var cursiWithGoal = context.CursusGoal
+                    .Where(cg => cg.GoalId == goalId)
+                    .Select(gp => gp.CursusId);
+
+                if (await cursiWithGoal.AnyAsync(ct))
+                {
+                    bool subscribed = await context.UserCursi.AnyAsync(
+                        uc => uc.UserId == userId &&
+                        uc.State != EntityObjectState.Inactive &&
+                        cursiWithGoal.Contains(uc.CursusId),
+                    ct);
+
+                    if (!subscribed)
+                        throw new ServiceException("This goal is not a standalone goal. Subscribe to a cursus that contains this goal to access it.");
+                }
+            }
+
+            // 3. Check goal project composition
+            var total = await context.GoalProject.CountAsync(gp => gp.GoalId == goalId, ct);
+            var completed = await context.GoalProject
+                .Where(gp => gp.GoalId == goalId)
+               .CountAsync(gp => context.UserProjects.Any(up =>
+                   up.ProjectId == gp.ProjectId &&
+                   up.State == EntityObjectState.Completed &&
+                   context.Members.Any(m => m.EntityType == MemberEntityType.UserProject &&
+                       m.EntityId == up.Id &&
+                       m.UserId == userId
+                   )),
+               ct);
+
+            var userGoal = await context.UserGoals.AddAsync(new()
+            {
+                GoalId = goalId,
+                UserId = userId,
+                State = total > 0 && total == completed
+                    ? EntityObjectState.Completed
+                    : EntityObjectState.Active
+            }, ct);
+
+            await context.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+            return userGoal.Entity;
         }, token);
-
-        await ctx.SaveChangesAsync(token);
-        return result.Entity;
     }
 
     public async Task<UserProject> SubscribeToProjectAsync(Guid userId, Guid projectId, CancellationToken token = default)
     {
-        async Task<Git> createGitRepository(string owner, string name, CancellationToken token)
+        return await context.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
         {
-            var success = await git.CreateAsync(owner, name, token);
-            if (!success) throw new ServiceException(409, "Repository for such project already exists");
-            var result = await ctx.GitInfo.AddAsync(new Git
+            await using var transaction = await context.Database.BeginTransactionAsync(ct);
+            var existing = await context.UserProjects.Where(
+                up => up.ProjectId == projectId &&
+                context.Members.Any(m => m.EntityType == MemberEntityType.UserProject && m.EntityId == up.Id && m.UserId == userId && m.Role != MemberRole.Pending)
+                ).FirstOrDefaultAsync(ct);
+
+            if (existing is not null)
             {
-                Owner = owner,
-                Name = name,
-                Ownership = EntityOwnership.User
-            }, token);
+                if (existing.State is not EntityObjectState.Inactive)
+                    throw new ServiceException("Already subscribed to this project.");
 
-            return result.Entity;
-        }
+                EnsureCooldownPassed(existing.UnlocksAt, "project");
 
-        return await ctx.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
-        {
-            await using var transaction = await ctx.Database.BeginTransactionAsync(ct);
+                existing.State = EntityObjectState.Active;
+                existing.UnlocksAt = null;
 
-            // Find an existing session this user is a non-pending participant of.
-            // Can no longer use Include(up => up.Members) — join through tbl_members instead.
-            var up = await ctx.UserProjects
-                .Where(up =>
-                    up.ProjectId == projectId &&
-                    ctx.Members.Any(m =>
-                        m.EntityType == MemberEntityType.UserProject &&
-                        m.EntityId == up.Id &&
-                        m.UserId == userId &&
-                        m.Role != MemberRole.Pending))
-                .FirstOrDefaultAsync(ct);
+                context.UserProjects.Update(existing);
 
-
-            // There is an existing session — try to reactivate if possible
-            if (up is not null)
-            {
-                if (up.State == EntityObjectState.Active)
-                    throw new ServiceException(409, "Already subscribed to this project");
-                if (up.State != EntityObjectState.Inactive)
-                    throw new ServiceException(400, "Cannot subscribe to this project in its current state");
-
-                // Reactivate the session
-                up.State = EntityObjectState.Active;
-                ctx.UserProjects.Update(up);
-
-                // Clear LeftAt so future unsubscribes aren't blocked
-                var rejoiner = await ctx.Members
-                    .FirstOrDefaultAsync(m =>
-                        m.EntityType == MemberEntityType.UserProject &&
-                        m.EntityId == up.Id &&
-                        m.UserId == userId, ct);
-
-                if (up.GitInfoId is null)
-                {
-                    var repo = await createGitRepository(projectId.ToString(), up.Id.ToString(), ct);
-                    up.GitInfoId = repo.Id;
-                    ctx.UserProjects.Update(up);
-                }
+                var rejoiner = await context.Members.FirstOrDefaultAsync(m =>
+                    m.EntityType == MemberEntityType.UserProject &&
+                    m.EntityId == existing.Id &&
+                    m.UserId == userId,
+                ct);
 
                 if (rejoiner is not null)
                 {
                     rejoiner.LeftAt = null;
-                    rejoiner.GitId = up.GitInfoId;
-                    ctx.Members.Update(rejoiner);
+                    rejoiner.GitId = existing.GitInfoId;
+                    context.Members.Update(rejoiner);
                 }
 
-                await ctx.UserProjectTransactions.AddAsync(new()
+                await context.UserProjectTransactions.AddAsync(new()
                 {
                     UserId = userId,
-                    UserProjectId = up.Id,
+                    UserProjectId = existing.Id,
                     Type = UserProjectTransactionVariant.StateChangedToActive,
                 }, ct);
 
-                await ctx.SaveChangesAsync(ct);
+                // TODO: Unlock Git repository if needed
+                // await git.UnlockAsync(projectId.ToString(), existing.Id.ToString(), ct);
+                await context.SaveChangesAsync(ct);
                 await transaction.CommitAsync(ct);
-                return up;
+                return existing;
             }
 
-            // Cancel any pending invites for this project before starting a fresh session,
-            // so the user isn't stuck accepting/declining a stale invite.
-            var pendingInvites = await ctx.Members
-                .Where(m =>
-                    m.EntityType == MemberEntityType.UserProject &&
-                    m.UserId == userId &&
-                    m.Role == MemberRole.Pending &&
-                    ctx.UserProjects.Any(p => p.Id == m.EntityId && p.ProjectId == projectId))
-                .ToListAsync(ct);
+            // 2. Hierarchy Restriction check (Enforced only in Restricted mode)
+            if (_config.Mode is ProgressionMode.Restricted)
+            {
+                var goalsWithProject = context.GoalProject
+                    .Where(gp => gp.ProjectId == projectId)
+                    .Select(gp => gp.GoalId);
 
-            if (pendingInvites.Count > 0)
-                ctx.Members.RemoveRange(pendingInvites);
+                if (await goalsWithProject.AnyAsync(ct))
+                {
+                    bool subscribed = await context.UserGoals.AnyAsync(
+                        ug => ug.UserId == userId &&
+                        ug.State != EntityObjectState.Inactive &&
+                        goalsWithProject.Contains(ug.GoalId),
+                    ct);
 
-            // Create the session — then add the leader membership separately
-            // since Members is no longer a navigation collection on UserProject.
+                    ServiceException.ThrowIf(!subscribed, "This project is not a standalone project");
+                }
+            }
 
-            up = new UserProject
+            // Setup session and Git repository
+            var up = new UserProject
             {
                 ProjectId = projectId,
-                State = EntityObjectState.Active,
+                State = EntityObjectState.Active
             };
 
-            var gitRepo = await createGitRepository(projectId.ToString(), up.Id.ToString(), ct);
-            up.GitInfoId = gitRepo.Id;
+            var name = up.Id.ToString();
+            var owner = projectId.ToString();
+            var success = await git.CreateAsync(owner, name, ct);
+            ServiceException.ThrowIf(!success, "User repository already exists for project");
 
-            await ctx.UserProjects.AddAsync(up, ct);
-            // up.Id is generated by BaseEntity before SaveChanges, so it's safe to use here
-            await ctx.Members.AddAsync(new Member
+            var gitInfo = await context.GitInfo.AddAsync(new Git
             {
-                EntityType = MemberEntityType.UserProject,
+                Name = name,
+                Owner = owner,
+                Ownership = EntityOwnership.User
+            }, ct);
+
+            up.GitInfoId = gitInfo.Entity.Id;
+            var result = await context.UserProjects.AddAsync(up, ct);
+            await context.Members.AddAsync(new Member
+            {
                 EntityId = up.Id,
-                GitId = gitRepo.Id,
+                EntityType = MemberEntityType.UserProject,
                 UserId = userId,
+                GitId = gitInfo.Entity.Id,
                 Role = MemberRole.Leader,
             }, ct);
 
-            await ctx.UserProjectTransactions.AddAsync(new()
+            await context.UserProjectTransactions.AddAsync(new()
             {
                 UserId = userId,
                 UserProjectId = up.Id,
                 Type = UserProjectTransactionVariant.Started,
             }, ct);
 
-            await ctx.SaveChangesAsync(ct);
+            await context.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
-            return up;
+            return result.Entity; // We use result to get generated data on save.
         }, token);
     }
 
-    // -------------------------------------------------------------------------
-    // Unsubscribe
-    // -------------------------------------------------------------------------
+    // ==============================================================================
 
-    public async Task<UserCursus> UnsubscribeFromCursusAsync(Guid userId, Guid cursusId, CancellationToken token = default)
+    public async Task<UserProject> UnsubscribeFromProjectAsync(Guid userId, Guid projectId, CancellationToken token = default)
     {
-        var userCursus = ctx.UserCursi.FirstOrDefault(uc => uc.UserId == userId && uc.CursusId == cursusId);
-        if (userCursus is null || userCursus.State is EntityObjectState.Inactive)
-            throw new ServiceException(409, "Not subscribed to this cursus.");
+        return await context.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
+        {
+            await using var transaction = await context.Database.BeginTransactionAsync(ct);
 
-        userCursus.State = EntityObjectState.Inactive;
-        ctx.UserCursi.Update(userCursus);
-        await ctx.SaveChangesAsync(token);
-        return userCursus;
+            var existing = await context.UserProjects.Where(
+                up => up.ProjectId == projectId &&
+                context.Members.Any(m => m.EntityType == MemberEntityType.UserProject && m.EntityId == up.Id && m.UserId == userId && m.Role != MemberRole.Pending)
+            ).FirstOrDefaultAsync(ct);
+
+            if (existing is null || existing.State == EntityObjectState.Inactive)
+                throw new ServiceException("Not currently subscribed to this project.");
+
+            existing.State = EntityObjectState.Inactive;
+            existing.UnlocksAt = time.GetUtcNow().Add(_config.Cooldown);
+
+            context.UserProjects.Update(existing);
+
+            await context.UserProjectTransactions.AddAsync(new()
+            {
+                UserProjectId = existing.Id,
+                Type = UserProjectTransactionVariant.StateChangedToInActive,
+                UserId = userId,
+            }, ct);
+
+            await context.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+            return existing;
+
+        }, token);
     }
 
     public async Task<UserGoal> UnsubscribeFromGoalAsync(Guid userId, Guid goalId, CancellationToken token = default)
     {
-        var goal = await ctx.UserGoals
-            .Where(ug => ug.GoalId == goalId && ug.UserId == userId)
-            .FirstOrDefaultAsync(token)
-            ?? throw new ServiceException(404, "Not subscribed to this goal");
+        return await context.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
+        {
+            await using var transaction = await context.Database.BeginTransactionAsync(ct);
 
-        if (goal.State is EntityObjectState.Inactive)
-            throw new ServiceException(409, "Already unsubscribed from this goal");
+            var existing = await context.UserGoals.FirstOrDefaultAsync(
+                ug => ug.GoalId == goalId && ug.UserId == userId, ct);
 
-        goal.State = EntityObjectState.Inactive;
-        ctx.UserGoals.Update(goal);
-        await ctx.SaveChangesAsync(token);
-        return goal;
+            if (existing is null || existing.State == EntityObjectState.Inactive)
+                throw new ServiceException("Not currently subscribed to this goal.");
+
+            existing.State = EntityObjectState.Inactive;
+            existing.UnlocksAt = time.GetUtcNow().Add(_config.Cooldown);
+
+            context.UserGoals.Update(existing);
+
+            await CascadeDeactivateProjectsAsync(userId, [goalId], ct);
+
+            await context.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+            return existing;
+        }, token);
     }
 
-    public async Task<UserProject> UnsubscribeFromProjectAsync(Guid userId, Guid projectId, CancellationToken token = default)
+    public async Task<UserCursus> UnsubscribeFromCursusAsync(Guid userId, Guid cursusId, CancellationToken token = default)
     {
-        return await ctx.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
+        return await context.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
         {
-            await using var transaction = await ctx.Database.BeginTransactionAsync(ct);
+            await using var transaction = await context.Database.BeginTransactionAsync(ct);
 
-            // Find the session this user belongs to
-            var up = await ctx.UserProjects
-                .Where(up =>
-                    up.ProjectId == projectId &&
-                    ctx.Members.Any(m =>
-                        m.EntityType == MemberEntityType.UserProject &&
-                        m.EntityId == up.Id &&
-                        m.UserId == userId))
-                .FirstOrDefaultAsync(ct)
-                ?? throw new ServiceException(404, "Not subscribed to this project");
+            var existing = await context.UserCursi.FirstOrDefaultAsync(
+                uc => uc.UserId == userId && uc.CursusId == cursusId, ct);
 
-            var members = await ctx.Members
-                .Where(m => m.EntityType == MemberEntityType.UserProject
-                        && m.EntityId == up.Id)
-                .ToListAsync(ct);
+            if (existing is null || existing.State == EntityObjectState.Inactive)
+                throw new ServiceException("Not currently subscribed to this cursus.");
 
-            var member = members.First(m => m.UserId == userId);
-            if (member.LeftAt is not null)
-                throw new ServiceException(409, "Already left this project session");
+            existing.State = EntityObjectState.Inactive;
+            existing.UnlocksAt = time.GetUtcNow().Add(_config.Cooldown);
 
-            if (member.Role is MemberRole.Leader)
-            {
-                var hasOtherActiveMembers = members.Any(m =>
-                    m.UserId != userId &&
-                    m.LeftAt is null &&
-                    m.Role is MemberRole.Member or MemberRole.Leader);
+            context.UserCursi.Update(existing);
 
-                if (hasOtherActiveMembers)
-                    throw new ServiceException(422,
-                        "Transfer leadership or remove all members before leaving the session");
+            await CascadeDeactivateGoalsAsync(userId, cursusId, ct);
 
-                // Sole remaining leader — deactivate session and clean up pending invites
-                up.State = EntityObjectState.Inactive;
-                member.LeftAt = DateTimeOffset.UtcNow;
-                ctx.UserProjects.Update(up);
-                ctx.Members.Update(member);
-
-                var pendingMembers = members.Where(m => m.Role is MemberRole.Pending).ToList();
-                if (pendingMembers.Count > 0)
-                    ctx.Members.RemoveRange(pendingMembers);
-
-                await ctx.UserProjectTransactions.AddAsync(new()
-                {
-                    UserId = userId,
-                    UserProjectId = up.Id,
-                    Type = UserProjectTransactionVariant.StateChangedToInActive,
-                }, ct);
-            }
-            else
-            {
-                member.LeftAt = DateTimeOffset.UtcNow;
-                ctx.Members.Update(member);
-
-                await ctx.UserProjectTransactions.AddAsync(new()
-                {
-                    UserId = userId,
-                    UserProjectId = up.Id,
-                    Type = UserProjectTransactionVariant.MemberLeft,
-                }, ct);
-            }
-
-            await ctx.SaveChangesAsync(ct);
+            await context.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
-            return up;
+            return existing;
         }, token);
+    }
+
+    // ==============================================================================
+
+    private void EnsureCooldownPassed(DateTimeOffset? unlocksAt, string entityType)
+    {
+        var now = time.GetUtcNow();
+        if (unlocksAt.HasValue && now < unlocksAt.Value)
+        {
+            var remaining = unlocksAt.Value - now;
+            var formattedRemaining = $"{(int)remaining.TotalHours}h {remaining.Minutes}m";
+
+            throw new ServiceException($"Cooldown active. Please wait {formattedRemaining} before resubscribing to this {entityType}.");
+        }
+    }
+
+    private async Task CascadeActivateGoalsAsync(Guid userId, Guid reactivatedCursusId, CancellationToken ct)
+    {
+        var inactiveGoals = await context.UserGoals
+            .Where(ug => ug.UserId == userId && ug.State == EntityObjectState.Inactive)
+            .Where(ug => context.CursusGoal.Any(cg => cg.CursusId == reactivatedCursusId && cg.GoalId == ug.GoalId))
+            .ToListAsync(ct);
+
+        if (inactiveGoals.Count == 0) return;
+
+        foreach (var goal in inactiveGoals)
+        {
+            goal.State = EntityObjectState.Active;
+            goal.UnlocksAt = null;
+            context.UserGoals.Update(goal);
+        }
+
+        var activatedGoalIds = inactiveGoals.Select(g => g.GoalId).ToList();
+        await CascadeActivateProjectsAsync(userId, activatedGoalIds, ct);
+    }
+
+    private async Task CascadeActivateProjectsAsync(Guid userId, List<Guid> reactivatedGoalIds, CancellationToken ct)
+    {
+        var inactiveProjects = await context.UserProjects
+            .Where(up => up.State == EntityObjectState.Inactive)
+            .Where(up => context.Members.Any(m => m.EntityType == MemberEntityType.UserProject && m.EntityId == up.Id && m.UserId == userId && m.Role != MemberRole.Pending))
+            .Where(up => context.GoalProject.Any(gp => reactivatedGoalIds.Contains(gp.GoalId) && gp.ProjectId == up.ProjectId))
+            .ToListAsync(ct);
+
+        if (inactiveProjects.Count == 0) return;
+
+        var transactions = new List<UserProjectTransaction>();
+        foreach (var project in inactiveProjects)
+        {
+            project.State = EntityObjectState.Active;
+            project.UnlocksAt = null;
+            context.UserProjects.Update(project);
+
+            transactions.Add(new UserProjectTransaction
+            {
+                UserProjectId = project.Id,
+                Type = UserProjectTransactionVariant.StateChangedToActive,
+                UserId = userId,
+            });
+        }
+
+        await context.UserProjectTransactions.AddRangeAsync(transactions, ct);
+    }
+
+    private async Task CascadeDeactivateGoalsAsync(Guid userId, Guid unsubscribedCursusId, CancellationToken ct)
+    {
+        var orphanedGoals = await context.UserGoals
+            .Where(ug => ug.UserId == userId && ug.State != EntityObjectState.Inactive)
+            .Where(ug => context.CursusGoal.Any(cg => cg.CursusId == unsubscribedCursusId && cg.GoalId == ug.GoalId))
+            .Where(ug => !context.CursusGoal.Any(cg =>
+                cg.CursusId != unsubscribedCursusId &&
+                cg.GoalId == ug.GoalId &&
+                context.UserCursi.Any(uc => uc.CursusId == cg.CursusId && uc.UserId == userId && uc.State != EntityObjectState.Inactive)))
+            .ToListAsync(ct);
+
+        if (orphanedGoals.Count == 0) return;
+
+        foreach (var goal in orphanedGoals)
+        {
+            goal.State = EntityObjectState.Inactive;
+            goal.UnlocksAt = time.GetUtcNow().Add(_config.Cooldown);
+            context.UserGoals.Update(goal);
+        }
+
+        var orphanedGoalIds = orphanedGoals.Select(g => g.GoalId).ToList();
+        await CascadeDeactivateProjectsAsync(userId, orphanedGoalIds, ct);
+    }
+
+    private async Task CascadeDeactivateProjectsAsync(Guid userId, List<Guid> unsubscribedGoalIds, CancellationToken ct)
+    {
+        var orphanedProjects = await context.UserProjects
+            .Where(up => up.State != EntityObjectState.Inactive)
+            .Where(up => context.Members.Any(m => m.EntityType == MemberEntityType.UserProject && m.EntityId == up.Id && m.UserId == userId && m.Role != MemberRole.Pending))
+            .Where(up => context.GoalProject.Any(gp => unsubscribedGoalIds.Contains(gp.GoalId) && gp.ProjectId == up.ProjectId))
+            .Where(up => !context.GoalProject.Any(gp =>
+                !unsubscribedGoalIds.Contains(gp.GoalId) &&
+                gp.ProjectId == up.ProjectId &&
+                context.UserGoals.Any(ug => ug.GoalId == gp.GoalId && ug.UserId == userId && ug.State != EntityObjectState.Inactive)))
+            .ToListAsync(ct);
+
+        if (orphanedProjects.Count == 0) return;
+
+        var transactions = new List<UserProjectTransaction>();
+        foreach (var project in orphanedProjects)
+        {
+            project.State = EntityObjectState.Inactive;
+            project.UnlocksAt = time.GetUtcNow().Add(_config.Cooldown);
+            context.UserProjects.Update(project);
+
+            transactions.Add(new UserProjectTransaction
+            {
+                UserProjectId = project.Id,
+                Type = UserProjectTransactionVariant.StateChangedToInActive,
+                UserId = userId,
+            });
+        }
+
+        await context.UserProjectTransactions.AddRangeAsync(transactions, ct);
     }
 }

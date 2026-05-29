@@ -20,6 +20,7 @@ public class UserCursus : BaseEntity
     public UserCursus()
     {
         State = EntityObjectState.Active;
+        UnlocksAt = null;
 
         UserId = Guid.Empty;
         User = null!;
@@ -30,6 +31,13 @@ public class UserCursus : BaseEntity
 
     [Column("state")]
     public EntityObjectState State { get; set; }
+
+    /// <summary>
+    /// If set, locks modifications on the entity until the specified time.
+    /// E.g: Used for cooldowns after unsubscribing.
+    /// </summary>
+    [Column("unlocks_at")]
+    public DateTimeOffset? UnlocksAt { get; set; }
 
     [Column("user_id")]
     public Guid UserId { get; set; }
@@ -42,10 +50,4 @@ public class UserCursus : BaseEntity
 
     [ForeignKey(nameof(CursusId))]
     public virtual Cursus Cursus { get; set; }
-
-    /// <summary>
-    /// The track / path of the Cursus stored in the .graph format.
-    /// </summary>
-    [Column("track", TypeName = "jsonb")]
-    public string? Track { get; set; }
 }

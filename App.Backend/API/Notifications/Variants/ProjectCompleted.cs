@@ -19,8 +19,13 @@ namespace App.Backend.API.Notifications.Variants;
 
 // ============================================================================
 
-// Change 'class' to 'record'
-// Capitalize 'User' to follow property naming conventions
+/// <summary>
+/// Represents a notification for when a project is completed.
+/// </summary>
+/// <param name="UserId"></param>
+/// <param name="UserLogin"></param>
+/// <param name="UserProjectId"></param>
+/// <param name="ProjectName"></param>
 public sealed record ProjectCompletedNotification(
     Guid UserId,
     string UserLogin,

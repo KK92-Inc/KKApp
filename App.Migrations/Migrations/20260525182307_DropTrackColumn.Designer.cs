@@ -3,6 +3,7 @@ using System;
 using App.Backend.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Migrations.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    partial class DatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20260525182307_DropTrackColumn")]
+    partial class DropTrackColumn
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -868,10 +871,6 @@ namespace Migrations.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("state");
 
-                    b.Property<DateTimeOffset?>("UnlocksAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("unlocks_at");
-
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
@@ -908,10 +907,6 @@ namespace Migrations.Migrations
                     b.Property<int>("State")
                         .HasColumnType("integer")
                         .HasColumnName("state");
-
-                    b.Property<DateTimeOffset?>("UnlocksAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("unlocks_at");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -960,10 +955,6 @@ namespace Migrations.Migrations
                     b.Property<int>("State")
                         .HasColumnType("integer")
                         .HasColumnName("state");
-
-                    b.Property<DateTimeOffset?>("UnlocksAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("unlocks_at");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -1071,43 +1062,6 @@ namespace Migrations.Migrations
                     b.HasIndex("GoalId");
 
                     b.ToTable("rel_goal_project");
-                });
-
-            modelBuilder.Entity("App.Backend.Domain.Relations.UserCursusGoal", b =>
-                {
-                    b.Property<Guid>("UserCursusId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_cursus_id");
-
-                    b.Property<Guid>("GoalId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("goal_id");
-
-                    b.Property<Guid?>("ChoiceGroup")
-                        .HasColumnType("uuid")
-                        .HasColumnName("choice_group");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("ParentGoalId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("parent_goal_id");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.HasKey("UserCursusId", "GoalId");
-
-                    b.HasIndex("GoalId");
-
-                    b.HasIndex("UserCursusId", "ParentGoalId");
-
-                    b.HasIndex("UserCursusId", "ChoiceGroup", "GoalId");
-
-                    b.ToTable("rel_cursus_goal_snapshot");
                 });
 
             modelBuilder.Entity("App.Backend.Domain.Entities.Comment", b =>
@@ -1412,25 +1366,6 @@ namespace Migrations.Migrations
                     b.Navigation("Goal");
 
                     b.Navigation("Project");
-                });
-
-            modelBuilder.Entity("App.Backend.Domain.Relations.UserCursusGoal", b =>
-                {
-                    b.HasOne("App.Backend.Domain.Entities.Goal", "Goal")
-                        .WithMany()
-                        .HasForeignKey("GoalId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("App.Backend.Domain.Entities.Users.UserCursus", "UserCursus")
-                        .WithMany()
-                        .HasForeignKey("UserCursusId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Goal");
-
-                    b.Navigation("UserCursus");
                 });
 
             modelBuilder.Entity("App.Backend.Domain.Entities.Git", b =>

@@ -19,8 +19,13 @@ namespace App.Backend.API.Notifications.Variants;
 
 // ============================================================================
 
-// Change 'class' to 'record'
-// Capitalize 'User' to follow property naming conventions
+/// <summary>
+/// Notification sent when a user completes a cursus.
+/// </summary>
+/// <param name="UserId"></param>
+/// <param name="UserLogin"></param>
+/// <param name="UserCursusId"></param>
+/// <param name="CursusName"></param>
 public sealed record CursusCompletedNotification(
     Guid UserId,
     string UserLogin,

@@ -13,112 +13,92 @@ using App.Backend.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
-// ============================================================================
-
 namespace App.Backend.Core.Services.Implementation;
 
-public class ReviewService(DatabaseContext ctx, IRuleService rules) : BaseService<Review>(ctx), IReviewService
+public class ReviewService(DatabaseContext context, IRuleService rules) : BaseService<Review>(context), IReviewService
 {
-    private readonly DatabaseContext _context = ctx;
+    // ============================================================================
+    // Public API (Core Actions)
+    // ============================================================================
 
     public async Task<IEnumerable<Review>> RequestReviewAsync(Guid userProjectId, Guid initiatorId, CancellationToken token = default)
     {
-        var strategy = _context.Database.CreateExecutionStrategy();
-        return await strategy.ExecuteAsync(async (ct) =>
+        return await context.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
         {
-            await using var transaction = await _context.Database.BeginTransactionAsync(ct);
+            await using var transaction = await context.Database.BeginTransactionAsync(ct);
 
-            // 1. Verify state of user project
-            var userProject = await _context.UserProjects
+            // 1. Verify project state
+            var userProject = await context.UserProjects
                 .Include(up => up.GitInfo)
-                .Include(up => up.Reviews)
                 .FirstOrDefaultAsync(up => up.Id == userProjectId, ct)
                 ?? throw new ServiceException(404, "User project not found.");
 
             ServiceException.ThrowIf(userProject.GitInfo is null, "Project has nothing submitted for review.");
 
-            // 1.5: Lock the project into an awaiting state (unless it is completed, then it doesn't matter)
-            switch (userProject.State)
-            {
-                case EntityObjectState.Awaiting:
-                    throw new ServiceException(422, "Project is already awaiting review.");
-                case EntityObjectState.Inactive:
-                    throw new ServiceException(422, "Project is currently inactive and cannot be reviewed.");
-                case EntityObjectState.Completed:
-                    break;
-                case EntityObjectState.Active:
-                    userProject.State = EntityObjectState.Awaiting;
-                    await _context.SaveChangesAsync(ct);
-                    break;
-                default: throw new ServiceException(500, "Invalid project state.");
-            }
+            if (userProject.State is EntityObjectState.Awaiting or EntityObjectState.Inactive)
+                throw new ServiceException(422, $"Project is currently {userProject.State.ToString().ToLower()} and cannot be reviewed.");
+            
+            if (userProject.State is EntityObjectState.Active)
+                userProject.State = EntityObjectState.Awaiting;
 
-            // 2. Resolve rubric — prefer project-specific, fall back to wildcard
-            var rubric = await _context.Rubrics
+            // 2. Resolve rubric
+            var rubric = await context.Rubrics
                 .Include(r => r.Variants)
                 .Where(r => r.Enabled && (r.ProjectId == userProject.ProjectId || r.ProjectId == null))
                 .OrderByDescending(r => r.ProjectId != null)
-                .FirstOrDefaultAsync(token)
+                .FirstOrDefaultAsync(ct)
                 ?? throw new ServiceException(404, "No rubric available for this project.");
 
-            var variants = rubric.Variants.Where(v => v.Count > 0).ToList();
-            if (variants.Count is 0)
-                throw new ServiceException(422, "Rubric has no active review kinds configured.");
+            var activeVariants = rubric.Variants.Where(v => v.Count > 0).ToList();
+            ServiceException.ThrowIf(activeVariants.Count == 0, "Rubric has no active review kinds configured.");
 
-            // 3. Common sense preconditions per active variant
-            var members = await _context.Members
-                .Where(m => m.EntityType == MemberEntityType.UserProject
-                         && m.EntityId == userProjectId
-                         && m.LeftAt == null)
-                .ToListAsync(ct);
+            // 3. Preconditions & Membership Checks
+            var member = await context.Members
+                .FirstOrDefaultAsync(m => m.EntityType == MemberEntityType.UserProject && m.EntityId == userProjectId && m.UserId == initiatorId && m.LeftAt == null, ct);
 
-            var member = members.FirstOrDefault(m => m.UserId == initiatorId);
             var isLeader = member?.Role is MemberRole.Leader;
 
-            foreach (var variant in variants)
+            foreach (var variant in activeVariants)
             {
-                switch (variant.Kind)
-                {
-                    case ReviewKinds.Self when member is null:
-                        throw new ServiceException(422, "Only project members can request a self review.");
-                    case ReviewKinds.Peer when member is null || !isLeader:
-                    case ReviewKinds.Async when member is null || !isLeader:
-                        throw new ServiceException(422, "Only team leaders can request a peer or async review.");
-                }
+                if (variant.Kind is ReviewKinds.Self && member is null)
+                    throw new ServiceException(422, "Only project members can request a self review.");
+
+                if (variant.Kind is ReviewKinds.Peer or ReviewKinds.Async && (member is null || !isLeader))
+                    throw new ServiceException(422, "Only team leaders can request a peer or async review.");
             }
 
-            // 4. Run additional business rules
-            var initiator = await _context.Users.FirstOrDefaultAsync(u => u.Id == initiatorId, ct)
+            // 4. Business Rules
+            var initiator = await context.Users.FirstOrDefaultAsync(u => u.Id == initiatorId, ct)
                 ?? throw new ServiceException(404, "Initiator not found.");
-            var result = await rules.CanRequestReviewAsync(rubric, initiator, userProject, ct);
-            if (!result.IsSuccess)
-                throw new ServiceException(string.Join("; ", result.Reasons));
 
-            // 5. Create N review rows per kind based on RequiredCount
-            var reviews = variants
-                .SelectMany(variant => Enumerable.Range(0, variant.Count)
-                    .Select(_ => new Review
-                    {
-                        RubricId = rubric.Id,
-                        Kind = variant.Kind,
-                        State = ReviewState.Pending,
-                        UserProjectId = userProjectId,
-                        RubricRef = "master", // TODO: Query the submitted branch somehow
-                        ReviewerId = variant.Kind is ReviewKinds.Self ? initiatorId : null,
-                    }))
+            var ruleResult = await rules.CanRequestReviewAsync(rubric, initiator, userProject, ct);
+            if (!ruleResult.IsSuccess)
+                throw new ServiceException(string.Join("; ", ruleResult.Reasons));
+
+            // 5. Generate Reviews
+            var reviews = activeVariants
+                .SelectMany(variant => Enumerable.Range(0, variant.Count).Select(_ => new Review
+                {
+                    RubricId = rubric.Id,
+                    Kind = variant.Kind,
+                    State = ReviewState.Pending,
+                    UserProjectId = userProjectId,
+                    RubricRef = "master", // TODO: Query the submitted branch
+                    ReviewerId = variant.Kind is ReviewKinds.Self ? initiatorId : null,
+                }))
                 .ToList();
 
             _dbSet.AddRange(reviews);
-            await _context.SaveChangesAsync(ct);
+            await context.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
+
             return reviews;
         }, token);
     }
 
-    /// <inheritdoc />
     public async Task<Review> AssignReviewerAsync(Guid reviewId, Guid reviewerId, CancellationToken token = default)
     {
-        var review = await _context.Reviews
+        var review = await _dbSet
             .Include(r => r.Rubric)
             .Include(r => r.UserProject)
             .FirstOrDefaultAsync(r => r.Id == reviewId, token)
@@ -126,62 +106,53 @@ public class ReviewService(DatabaseContext ctx, IRuleService rules) : BaseServic
 
         ServiceException.ThrowIf(review.State is not ReviewState.Pending, "Review must be pending to assign a reviewer.");
 
-        var reviewer = await _context.Users
-            .FirstOrDefaultAsync(u => u.Id == reviewerId, token)
+        var reviewer = await context.Users.FirstOrDefaultAsync(u => u.Id == reviewerId, token)
             ?? throw new ServiceException(404, "Reviewer not found.");
 
-        var membership = await _context.Members
-            .FirstOrDefaultAsync(m =>
-                m.EntityType == MemberEntityType.UserProject &&
-                m.EntityId == review.UserProjectId &&
-                m.UserId == reviewerId &&
-                m.LeftAt == null, token);
+        var membership = await context.Members
+            .FirstOrDefaultAsync(m => m.EntityType == MemberEntityType.UserProject && m.EntityId == review.UserProjectId && m.UserId == reviewerId && m.LeftAt == null, token);
 
         switch (review.Kind)
         {
             case ReviewKinds.Self:
-                // Only a team leader can self-assign
-                ServiceException.ThrowIf(membership is null, "Self reviews must be assigned to a project member.");
-                ServiceException.ThrowIf(membership!.Role is not MemberRole.Leader, "Self reviews can only be assigned to a team leader.");
+                ServiceException.ThrowIf(membership?.Role is not MemberRole.Leader, "Self reviews must be assigned to a project team leader.");
                 break;
-
             case ReviewKinds.Peer:
             case ReviewKinds.Async:
-                // Must be someone external — no team members allowed
                 ServiceException.ThrowIf(membership is not null, $"{review.Kind} reviews must be assigned to someone outside the project team.");
                 break;
-
             case ReviewKinds.Auto:
                 throw new ServiceException(422, "Auto reviews cannot be manually assigned.");
         }
 
-        var result = await rules.CanReviewAsync(review.Rubric, reviewer, review.UserProject, token);
-        if (!result.IsSuccess)
-            throw new ServiceException(403, string.Join("; ", result.Reasons));
+        var ruleResult = await rules.CanReviewAsync(review.Rubric, reviewer, review.UserProject, token);
+        if (!ruleResult.IsSuccess)
+            throw new ServiceException(403, string.Join("; ", ruleResult.Reasons));
 
         review.ReviewerId = reviewerId;
-        await _context.SaveChangesAsync(token);
+        await context.SaveChangesAsync(token);
+
         return review;
     }
 
-    /// <inheritdoc />
+    // ============================================================================
+    // Public API (State Management)
+    // ============================================================================
+
     public async Task<Review> StartReviewAsync(Guid reviewId, CancellationToken token = default)
     {
         var review = await _dbSet.FirstOrDefaultAsync(r => r.Id == reviewId, token)
             ?? throw new ServiceException(404, "Review not found.");
 
         ServiceException.ThrowIf(review.State is not ReviewState.Pending, "Review must be pending to start.");
-        ServiceException.ThrowIf(
-            review.ReviewerId is null && review.Kind is not ReviewKinds.Auto,
-            "Review must have an assigned reviewer before starting."
-        );
+        ServiceException.ThrowIf(review.ReviewerId is null && review.Kind is not ReviewKinds.Auto, "Review must have an assigned reviewer before starting.");
 
         review.State = ReviewState.InProgress;
-        await _context.SaveChangesAsync(token);
+        await context.SaveChangesAsync(token);
+
         return review;
     }
 
-    /// <inheritdoc />
     public async Task<Review> CompleteReviewAsync(Guid reviewId, CancellationToken token = default)
     {
         var review = await _dbSet.FirstOrDefaultAsync(r => r.Id == reviewId, token)
@@ -190,46 +161,46 @@ public class ReviewService(DatabaseContext ctx, IRuleService rules) : BaseServic
         ServiceException.ThrowIf(review.State is not ReviewState.InProgress, "Review must be in progress to complete.");
 
         review.State = ReviewState.Finished;
-        await _context.SaveChangesAsync(token);
+        await context.SaveChangesAsync(token);
+
         return review;
     }
 
-    /// <inheritdoc />
     public async Task CancelReviewAsync(Guid reviewId, CancellationToken token = default)
     {
         var review = await _dbSet.FirstOrDefaultAsync(r => r.Id == reviewId, token)
             ?? throw new ServiceException(404, "Review not found.");
 
-        ServiceException.ThrowIf(
-            review.State is ReviewState.Finished,
-            "Cannot cancel a finished review."
-        );
+        ServiceException.ThrowIf(review.State is ReviewState.Finished, "Cannot cancel a finished review.");
 
         review.State = ReviewState.Cancelled;
-        await _context.SaveChangesAsync(token);
+        await context.SaveChangesAsync(token);
     }
 
     public async Task CancelAllReviewsAsync(Guid userProjectId, CancellationToken token = default)
     {
-        var active = await _dbSet
-            .Where(r => r.UserProjectId == userProjectId
-                     && r.State != ReviewState.Finished
-                     && r.State != ReviewState.Cancelled)
+        var activeReviews = await _dbSet
+            .Where(r => r.UserProjectId == userProjectId && r.State != ReviewState.Finished && r.State != ReviewState.Cancelled)
             .ToListAsync(token);
 
-        foreach (var review in active)
+        foreach (var review in activeReviews)
+        {
             review.State = ReviewState.Cancelled;
+        }
 
-        // If the project was locked to Awaiting, release it back to Active
-        var userProject = await _context.UserProjects
-            .FirstOrDefaultAsync(up => up.Id == userProjectId, token);
+        var userProject = await context.UserProjects.FirstOrDefaultAsync(up => up.Id == userProjectId, token);
         if (userProject?.State is EntityObjectState.Awaiting)
+        {
             userProject.State = EntityObjectState.Active;
+        }
 
-        await _context.SaveChangesAsync(token);
+        await context.SaveChangesAsync(token);
     }
 
-    /// <inheritdoc />
+    // ============================================================================
+    // Public API (Queries)
+    // ============================================================================
+
     public async Task<IEnumerable<Review>> GetPendingReviewsAsync(Guid userProjectId, CancellationToken token = default)
     {
         return await _dbSet
@@ -239,7 +210,6 @@ public class ReviewService(DatabaseContext ctx, IRuleService rules) : BaseServic
             .ToListAsync(token);
     }
 
-    /// <inheritdoc />
     public async Task<IEnumerable<Review>> GetReviewerAssignmentsAsync(Guid reviewerId, CancellationToken token = default)
     {
         return await _dbSet

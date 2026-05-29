@@ -23,5 +23,5 @@ public class SubscriptionOptions
     /// <summary>
     /// Cooldown period for subscribing/unsubscribing to the same entity.
     /// </summary>
-    public TimeSpan Cooldown { get; init; } = TimeSpan.FromHours(6);
+    public TimeSpan Cooldown { get; init; } = TimeSpan.FromHours(4);
 }

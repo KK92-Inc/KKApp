@@ -26,11 +26,6 @@ public class UserCursusDO(UserCursus userCursus) : BaseEntityDO<UserCursus>(user
     public Guid CursusId { get; set; } = userCursus.CursusId;
 
     /// <summary>
-    /// The user's personalized track/path through the cursus.
-    /// </summary>
-    public string? Track { get; set; } = userCursus.Track;
-
-    /// <summary>
     /// The cursus the user is enrolled in.
     /// </summary>
     public CursusDO Cursus { get; set; } = userCursus.Cursus;

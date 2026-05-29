@@ -54,14 +54,6 @@ public class Cursus : BaseEntity
     [Column("completion")]
     public CompletionMode CompletionMode { get; set; } = CompletionMode.Ring;
 
-    /// <summary>
-    /// Legacy: The track / path of the Cursus stored in the .graph format.
-    /// Deprecated in favor of the relational CursusGoal table.
-    /// </summary>
-    [Column("track", TypeName = "jsonb")]
-    [Obsolete("Use the CursusGoal relation table instead. This column is kept for migration compatibility.")]
-    public string? Track { get; set; }
-
     [Column("workspace_id")]
     public Guid WorkspaceId { get; set; }
 

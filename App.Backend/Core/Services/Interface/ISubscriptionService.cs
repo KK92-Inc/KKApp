@@ -12,59 +12,59 @@ using App.Backend.Models;
 
 namespace App.Backend.Core.Services.Interface;
 
+/// <summary>
+/// Manages user subscriptions to various domain entities like Goals, Projects, and Cursuses.
+/// </summary>
 public interface ISubscriptionService
 {
-    public Task<bool> CanSubscribeToProjectAsync(Guid userId, Guid userProjectId, CancellationToken token);
-
-    public Task<bool> CanSubscribeToGoalAsync(Guid userId, Guid userGoalId, CancellationToken token);
-
-    public Task<bool> CanSubscribeToCursusAsync(Guid userId, Guid userCursusId, CancellationToken token);            
-
     /// <summary>
-    /// Subscribe a user to a goal.
+    /// Subscribes a user to a goal.
     /// </summary>
-    /// <param name="userId">The user ID.</param>
-    /// <param name="request">The subscription request.</param>
+    /// <param name="userId">The unique identifier of the user.</param>
+    /// <param name="goalId">The unique identifier of the goal.</param>
+    /// <param name="token">A token to monitor for cancellation requests.</param>
     /// <returns>The created user goal.</returns>
-    public Task<UserGoal> SubscribeToGoalAsync(Guid userId, Guid goalId, CancellationToken token);
+    Task<UserGoal> SubscribeToGoalAsync(Guid userId, Guid goalId, CancellationToken token = default);
 
     /// <summary>
-    /// Subscribe a user to a project.
+    /// Subscribes a user to a project.
     /// </summary>
-    /// <param name="userId"></param>
-    /// <param name="projectId"></param>
-    /// <returns></returns>
-    public Task<UserProject> SubscribeToProjectAsync(Guid userId, Guid projectId, CancellationToken token);
+    /// <param name="userId">The unique identifier of the user.</param>
+    /// <param name="projectId">The unique identifier of the project.</param>
+    /// <param name="token">A token to monitor for cancellation requests.</param>
+    /// <returns>The created user project.</returns>
+    Task<UserProject> SubscribeToProjectAsync(Guid userId, Guid projectId, CancellationToken token = default);
 
     /// <summary>
-    /// Subscribe a user to a cursus.
+    /// Subscribes a user to a cursus.
     /// </summary>
-    /// <param name="userId"></param>
-    /// <param name="cursusId"></param>
-    /// <returns></returns>
-    public Task<UserCursus> SubscribeToCursusAsync(Guid userId, Guid cursusId, CancellationToken token);
+    /// <param name="userId">The unique identifier of the user.</param>
+    /// <param name="cursusId">The unique identifier of the cursus.</param>
+    /// <param name="token">A token to monitor for cancellation requests.</param>
+    /// <returns>The created user cursus.</returns>
+    Task<UserCursus> SubscribeToCursusAsync(Guid userId, Guid cursusId, CancellationToken token = default);
 
     /// <summary>
-    /// Unsubscribe a user from a project.
+    /// Unsubscribes a user from a project.
     /// </summary>
-    /// <param name="userId"></param>
-    /// <param name="projectId"></param>
-    /// <returns></returns>
-    public Task<UserProject> UnsubscribeFromProjectAsync(Guid userId, Guid projectId, CancellationToken token);
+    /// <param name="userId">The unique identifier of the user.</param>
+    /// <param name="projectId">The unique identifier of the project.</param>
+    /// <param name="token">A token to monitor for cancellation requests.</param>
+    Task<UserProject> UnsubscribeFromProjectAsync(Guid userId, Guid projectId, CancellationToken token = default);
 
     /// <summary>
-    /// Unsubscribe a user from a goal.
+    /// Unsubscribes a user from a goal.
     /// </summary>
-    /// <param name="userId"></param>
-    /// <param name="goalId"></param>
-    /// <returns></returns>
-    public Task<UserGoal> UnsubscribeFromGoalAsync(Guid userId, Guid goalId, CancellationToken token);
+    /// <param name="userId">The unique identifier of the user.</param>
+    /// <param name="goalId">The unique identifier of the goal.</param>
+    /// <param name="token">A token to monitor for cancellation requests.</param>
+    Task<UserGoal> UnsubscribeFromGoalAsync(Guid userId, Guid goalId, CancellationToken token = default);
 
     /// <summary>
-    /// Unsubscribe a user from a cursus.
+    /// Unsubscribes a user from a cursus.
     /// </summary>
-    /// <param name="userId"></param>
-    /// <param name="cursusId"></param>
-    /// <returns></returns>
-    public Task<UserCursus> UnsubscribeFromCursusAsync(Guid userId, Guid cursusId, CancellationToken token);
+    /// <param name="userId">The unique identifier of the user.</param>
+    /// <param name="cursusId">The unique identifier of the cursus.</param>
+    /// <param name="token">A token to monitor for cancellation requests.</param>
+    Task<UserCursus> UnsubscribeFromCursusAsync(Guid userId, Guid cursusId, CancellationToken token = default);
 }

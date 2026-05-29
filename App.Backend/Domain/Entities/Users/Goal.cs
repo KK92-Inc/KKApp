@@ -22,7 +22,18 @@ public class UserGoal : BaseEntity
         Goal = null!;
 
         State = EntityObjectState.Active;
+        UnlocksAt = null;
     }
+
+    [Column("state")]
+    public EntityObjectState State { get; set; }
+
+    /// <summary>
+    /// If set, locks modifications on the entity until the specified time.
+    /// E.g: Used for cooldowns after unsubscribing.
+    /// </summary>
+    [Column("unlocks_at")]
+    public DateTimeOffset? UnlocksAt { get; set; }
 
     [Column("user_id")]
     public Guid UserId { get; set; }
@@ -35,7 +46,4 @@ public class UserGoal : BaseEntity
 
     [ForeignKey(nameof(GoalId))]
     public virtual Goal Goal { get; set; }
-
-    [Column("state")]
-    public EntityObjectState State { get; set; }
 }
