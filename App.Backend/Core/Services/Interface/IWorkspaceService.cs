@@ -58,4 +58,11 @@ public interface IWorkspaceService : IDomainService<Workspace>, IUserQueryable<W
     /// <returns>The created rubric.</returns>
     public Task<Rubric> AddRubricAsync(Guid workspaceId, Rubric rubric, CancellationToken token = default);
 
+    /// <summary>
+    /// Creates a new OAuth2.0 developer application with an associated client in Keycloak into the specified workspace. 
+    /// </summary>
+    /// <param name="workspaceId"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public Task<Application> AddApplicationAsync(Guid workspaceId, CancellationToken token = default);
 }

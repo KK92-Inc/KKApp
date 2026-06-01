@@ -3,30 +3,21 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-using System.ComponentModel;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.AspNetCore.Authorization;
-using App.Backend.Core.Query;
-using App.Backend.API.Params;
-using App.Backend.Core.Services.Implementation;
-using App.Backend.Domain;
-using App.Backend.Core.Services.Interface;
-using App.Backend.Models;
 using Keycloak.AuthServices.Authorization;
+
+using App.Backend.Core;
+using App.Backend.Core.Services.Interface;
 using App.Backend.Domain.Enums;
 using App.Backend.Models.Responses.Entities;
-using App.Backend.Models.Responses.Entities.Notifications;
-using App.Backend.Models.Requests.Users;
 using App.Backend.Models.Requests.Projects;
 using App.Backend.Models.Requests.Goals;
 using App.Backend.Models.Requests.Cursus;
 using App.Backend.Models.Requests.Rubrics;
-using App.Backend.Domain.Entities.Users;
 using App.Backend.Models.Responses.Entities.Projects;
 using App.Backend.Models.Responses.Entities.Cursus;
 using App.Backend.Models.Responses.Entities.Reviews;
-using App.Backend.Core;
 
 // ============================================================================
 
@@ -188,7 +179,7 @@ public class WorkspaceController(
         var userId = User.GetSID();
         if (space.OwnerId is not null && space.OwnerId != userId)
             return Forbid();
-        if (await rubricService.FindBySlugAsync(body.Name.ToSlug()) is not null)
+        if (await rubricService.FindBySlugAsync(body.Name.ToSlug(), token) is not null)
             return Conflict();
 
         var rubric = await service.AddRubricAsync(space.Id, new()
@@ -202,6 +193,28 @@ public class WorkspaceController(
         }, token);
 
         return Ok(new RubricDO(rubric));
+    }
+
+    [HttpPost("{id:guid}/application")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    // [ProtectedResource("workspaces", ["applications:write"])]
+    [EndpointSummary("Create a new application")]
+    [EndpointDescription("Create a new application with an associated git repository")]
+    public async Task<IActionResult> AddApplication(Guid id, CancellationToken token)
+    {
+        var space = await service.FindByIdAsync(id, token);
+        if (space is null)
+            return NotFound();
+        if (space.Ownership is EntityOwnership.Organization && !User.IsInRole("Staff"))
+            return Forbid();
+
+        var userId = User.GetSID();
+        if (space.OwnerId is not null && space.OwnerId != userId)
+            return Forbid();
+
+        var application = await service.AddApplicationAsync(space.Id, token);
+        return NoContent();
     }
 
     [HttpPut("{workspaceId:guid}/rubric/{rubricId:guid}/variants")]

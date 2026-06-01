@@ -78,4 +78,22 @@ public interface IGitService
     /// <param name="token">The cancellation token. </param>
     /// <returns>The list of branch names.</returns>
     public Task<string> GetBranchesAsync(string owner, string name, CancellationToken token = default);
+
+    /// <summary>
+    /// Locks the repository by adding a pre-receive hook that rejects all pushes.
+    /// </summary>
+    /// <param name="owner"></param>
+    /// <param name="name"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public Task<bool> LockAsync(string owner, string name, CancellationToken token = default);
+
+    /// <summary>
+    /// Unlocks the repository by removing the pre-receive hook.
+    /// </summary>
+    /// <param name="owner"></param>
+    /// <param name="name"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public Task<bool> UnlockAsync(string owner, string name, CancellationToken token = default);
 }

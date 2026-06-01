@@ -173,7 +173,53 @@ const server = Bun.serve({
 				);
 			},
 		},
+
+		"/repo/:owner/:name/lock": {
+			POST: async (req) => {
+				const { owner, name } = req.params;
+				const entity = repoPath(owner, name);
+
+				if (!existsSync(entity)) {
+					return new Response(null, { status: 404 });
+				}
+
+				// Write a pre-receive hook that rejects everything
+				const hook = `${entity}/hooks/pre-receive`;
+				const script = `#!/bin/sh\n\necho " Push rejected: Repository is locked for evaluation." >&2\nexit 1\n`;
+
+				try {
+					await Bun.write(hook, script);
+					await $`chmod +x ${hook}`.quiet();
+					return new Response(null, { status: 200 });
+				} catch (error) {
+					return new Response(null, { status: 500 });
+				}
+			},
+		},
+
+		"/repo/:owner/:name/unlock": {
+			POST: async (req) => {
+				const { owner, name } = req.params;
+				const entity = repoPath(owner, name);
+
+				if (!existsSync(entity)) {
+					return new Response(null, { status: 404 });
+				}
+
+				const hook = `${entity}/hooks/pre-receive`;
+				if (existsSync(hook)) {
+					try {
+						await $`rm ${hook}`.quiet();
+					} catch {
+						return new Response(null, { status: 500 });
+					}
+				}
+
+				return new Response(null, { status: 200 });
+			},
+		},
 	},
+
 });
 
 Log.info(`Running on: http://${server.hostname}:${server.port}`);

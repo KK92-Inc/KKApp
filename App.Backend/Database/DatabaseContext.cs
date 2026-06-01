@@ -53,6 +53,7 @@ public class DatabaseContext(DbContextOptions<DatabaseContext> options) : DbCont
     public DbSet<SpotlightDismissal> SpotlightDismissals { get; set; }
     public DbSet<Member> Members { get; set; }
     public DbSet<UserProjectTransaction> UserProjectTransactions { get; set; }
+    public DbSet<Application> Applications { get; set; }
 
     // Joins
     public DbSet<GoalProject> GoalProject { get; set; }

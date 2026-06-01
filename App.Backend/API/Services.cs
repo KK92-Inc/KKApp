@@ -32,29 +32,52 @@ using App.Backend.Core.Services.Implementation;
 using App.Backend.Core.Services.Interface;
 using App.Backend.Core.Services.Options;
 using App.Backend.Database;
-using App.Backend.Domain.Enums;
 using App.Backend.Database.Interceptors;
-using App.Backend.API.Jobs;
 using App.Backend.API.Jobs.Extensions;
 using App.Backend.Core.Engines.Evaluations;
 using App.Backend.Core.Engines.Evaluations.Rules;
 using App.Backend.API.Schemas.Schema;
 using App.Backend.API.Schemas.Document;
+using Duende.AccessTokenManagement;
 
 // ============================================================================
 
 namespace App.Backend.API;
 
 /// <summary>
-/// Static service initilization class.
+/// Static service registration class. All DI wiring happens here.
 /// </summary>
 public static class Services
 {
     public static WebApplicationBuilder Register(WebApplicationBuilder builder)
     {
+        RegisterCore(builder);
+        RegisterAuthentication(builder);
+        RegisterOpenApi(builder);
+        RegisterCaching(builder);
+        RegisterDatabase(builder);
+        RegisterMessageBus(builder);
+        RegisterDomainServices(builder);
+        RegisterScheduling(builder);
+        RegisterRateLimiting(builder);
+        RegisterLogging(builder);
+
+        return builder;
+    }
+
+    // Core
+    // ============================================================================
+
+    private static void RegisterCore(WebApplicationBuilder builder)
+    {
         builder.Services.AddOptions();
         builder.Services.AddRazorTemplating();
         builder.Services.AddProblemDetails();
+        builder.Services.AddHttpContextAccessor();
+        builder.Services.AddResponseCompression();
+        builder.Services.AddEndpointsApiExplorer();
+        builder.Services.AddSingleton(TimeProvider.System);
+
         builder.Services.AddControllers(o =>
         {
             o.AddProtectedResources();
@@ -67,22 +90,22 @@ public static class Services
 
         builder.Services.AddHttpClient<GitService>();
         builder.Services.Configure<GitServiceOptions>(
-            builder.Configuration.GetSection(GitServiceOptions.SectionName)
-        );
+            builder.Configuration.GetSection(GitServiceOptions.SectionName));
         builder.Services.Configure<SubscriptionOptions>(
-            builder.Configuration.GetSection(SubscriptionOptions.SectionName)
-        );
+            builder.Configuration.GetSection(SubscriptionOptions.SectionName));
 
         builder.Services.AddHttpClient<ResendClient>();
         builder.Services.Configure<ResendClientOptions>(o =>
         {
             o.ApiToken = Environment.GetEnvironmentVariable("RESEND_APITOKEN")!;
         });
+    }
 
-        // builder.Services
-        //     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-        //     .AddKeycloakWebApi(builder.Configuration);
+    // Authentication & Authorization
+    // ============================================================================
 
+    private static void RegisterAuthentication(WebApplicationBuilder builder)
+    {
         builder.Services.AddKeycloakWebApiAuthentication(builder.Configuration, options =>
         {
             options.Audience = "intra";
@@ -98,13 +121,17 @@ public static class Services
             .AddKeycloakAuthorization()
             .AddAuthorizationServer(builder.Configuration);
 
-        builder.Services
-            .AddKeycloakProtectionHttpClient(
-                builder.Configuration,
-                keycloakClientSectionName: KeycloakProtectionClientOptions.Section
-            );
+        // Authenticated admin client, used to manage clients, secrets, etc.
+        AddKeycloakAdminHttpClient(builder);
+        // UMA protection client, used for resource-level authorization checks.
+        AddKeycloakProtectionHttpClient(builder);
+    }
 
-        // Misc Services
+    // OpenAPI / Scalar
+    // ============================================================================
+
+    private static void RegisterOpenApi(WebApplicationBuilder builder)
+    {
         builder.Services.AddOpenApi(o =>
         {
             o.AddDocumentTransformer<InfoDocumentTransformer>();
@@ -112,7 +139,10 @@ public static class Services
             o.AddSchemaTransformer<RequiredDiscriminatorTransformer>();
             o.AddSchemaTransformer<BreakRuleCircularRefTransformer>();
             o.AddOperationTransformer<BasicResponsesOperationTransformer>();
-            // Add OAuth2 security scheme if Keycloak is configured
+
+            // Register the Keycloak OAuth2 security scheme.
+            // Uses Authorization Code + PKCE instead of Implicit so that Scalar
+            // can automatically refresh expired tokens without re-authenticating.
             o.AddDocumentTransformer((document, context, cancellationToken) =>
             {
                 document.Components ??= new OpenApiComponents();
@@ -131,6 +161,7 @@ public static class Services
                             {
                                 AuthorizationUrl = new Uri($"{options.KeycloakUrlRealm}protocol/openid-connect/auth"),
                                 TokenUrl = new Uri($"{options.KeycloakUrlRealm}protocol/openid-connect/token"),
+                                RefreshUrl = new Uri($"{options.KeycloakUrlRealm}protocol/openid-connect/token"),
                             }
                         }
                     });
@@ -138,71 +169,123 @@ public static class Services
 
                 return Task.CompletedTask;
             });
-        });
+            // o.AddDocumentTransformer((document, _, _) =>
+            // {
+            //     document.Components ??= new OpenApiComponents();
 
+            //     var kcOptions = builder.Configuration
+            //         .GetKeycloakOptions<KeycloakAuthenticationOptions>();
+
+            //     if (kcOptions?.AuthServerUrl is { } realmUrl)
+            //     {
+            //         var oidcBase = $"{realmUrl}protocol/openid-connect";
+            //         document.Components.SecuritySchemes?.TryAdd("OAuth2", new OpenApiSecurityScheme
+            //         {
+            //             Name = "Keycloak",
+            //             Type = SecuritySchemeType.OAuth2,
+            //             OpenIdConnectUrl = new Uri(oidcBase),
+            //             Flows = new OpenApiOAuthFlows
+            //             {
+            //                 AuthorizationCode = new OpenApiOAuthFlow
+            //                 {
+            //                     AuthorizationUrl = new Uri($"{oidcBase}/auth"),
+            //                     TokenUrl = new Uri($"{oidcBase}/token"),
+            //                     RefreshUrl = new Uri($"{oidcBase}/token"),
+            //                 }
+            //             }
+            //         });
+            //     }
+
+            //     return Task.CompletedTask;
+            // });
+        });
+    }
+
+    // Caching
+    // ============================================================================
+    private static void RegisterCaching(WebApplicationBuilder builder)
+    {
         builder.Services.AddStackExchangeRedisCache(options =>
         {
             options.Configuration = builder.Configuration.GetConnectionString("cache");
             options.InstanceName = "KKBackend";
         });
-        builder.Services.AddResponseCompression();
-        builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddHttpContextAccessor();
+
         builder.Services.AddOutputCache(options =>
         {
             options.AddBasePolicy(b => b.Expire(TimeSpan.FromSeconds(30)));
-            options.AddPolicy("NoCache", builder => builder.NoCache());
+            options.AddPolicy("NoCache", b => b.NoCache());
             options.AddPolicy("1m", b => b.Expire(TimeSpan.FromMinutes(1)));
             options.AddPolicy("5m", b => b.Expire(TimeSpan.FromMinutes(5)));
             options.AddPolicy("30m", b => b.Expire(TimeSpan.FromMinutes(30)));
             options.AddPolicy("1h", b => b.Expire(TimeSpan.FromHours(1)));
         });
+    }
 
-        // Database
+    // Database
+    // ============================================================================
+
+    private static void RegisterDatabase(WebApplicationBuilder builder)
+    {
         var cs = builder.Configuration.GetConnectionString("db");
+
         builder.AddNpgsqlDbContext<DatabaseContext>("db", null, options =>
         {
             options.UseNpgsql(cs);
             options.UseLazyLoadingProxies();
             options.AddInterceptors(new SshKeyInterceptor());
             options.AddInterceptors(new SavingChangesInterceptor(TimeProvider.System));
+
             if (builder.Environment.IsDevelopment())
                 options.EnableSensitiveDataLogging();
         });
+    }
 
-        // Messaging Bus (confusingly named use?)
+    // Message Bus
+    // ============================================================================
+
+    private static void RegisterMessageBus(WebApplicationBuilder builder)
+    {
+        var cs = builder.Configuration.GetConnectionString("db");
+
         builder.Host.UseWolverine(opts =>
         {
-            opts.PersistMessagesWithPostgresql(cs!).EnableMessageTransport(o =>
-            {
-                o.AutoProvision();
-            });
-
-            // Outgoing async messages go here
+            opts.PersistMessagesWithPostgresql(cs!).EnableMessageTransport(o => o.AutoProvision());
             opts.PublishAllMessages().ToPostgresqlQueue("outbound");
-            // Background workers listen here
             opts.ListenToPostgresqlQueue("outbound").MaximumMessagesToReceive(50);
         });
+    }
 
-        // Register Transient, Scoped, Singletons, ...
-        builder.Services.AddScoped<IUserService, UserService>();
-        builder.Services.AddScoped<IRuleService, RuleService>();
-        builder.Services.AddScoped<IReviewService, ReviewService>();
-        builder.Services.AddScoped<IWorkspaceService, WorkspaceService>();
-        builder.Services.AddScoped<IGoalService, GoalService>();
-        builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
-        builder.Services.AddScoped<ICursusService, CursusService>();
-        builder.Services.AddScoped<IProjectService, ProjectService>();
-        builder.Services.AddScoped<IRubricService, RubricService>();
+    // Domain Services
+    // ============================================================================
+
+    private static void RegisterDomainServices(WebApplicationBuilder builder)
+    {
+        // Infrastructure
         builder.Services.AddScoped<IGitService, GitService>();
         builder.Services.AddScoped<INotificationService, NotificationService>();
+        builder.Services.AddScoped<ISpotlightService, SpotlightService>();
+        builder.Services.AddTransient<IResend, ResendClient>();
+        builder.Services.AddSingleton<IBroadcastRegistry, MemoryBroadcastRegistry>();
+
+        // User
+        builder.Services.AddScoped<IUserService, UserService>();
         builder.Services.AddScoped<IMemberService, MemberService>();
         builder.Services.AddScoped<IUserCursusService, UserCursusService>();
         builder.Services.AddScoped<IUserGoalService, UserGoalService>();
         builder.Services.AddScoped<IUserProjectService, UserProjectService>();
-        builder.Services.AddScoped<ISpotlightService, SpotlightService>();
-        builder.Services.AddTransient<IResend, ResendClient>();
 
+        // Academic
+        builder.Services.AddScoped<IWorkspaceService, WorkspaceService>();
+        builder.Services.AddScoped<IGoalService, GoalService>();
+        builder.Services.AddScoped<ICursusService, CursusService>();
+        builder.Services.AddScoped<IProjectService, ProjectService>();
+        builder.Services.AddScoped<IRubricService, RubricService>();
+        builder.Services.AddScoped<IReviewService, ReviewService>();
+
+        // Rules
+        builder.Services.AddScoped<IRuleService, RuleService>();
+        builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
         builder.Services.AddScoped<RuleEngine>();
         builder.Services.AddScoped<IRuleEvaluator, HasCursusEvaluator>();
         builder.Services.AddScoped<IRuleEvaluator, CompletedProjectEvaluator>();
@@ -211,28 +294,36 @@ public static class Services
         builder.Services.AddScoped<IRuleEvaluator, MinProjectsCompletedEvaluator>();
         builder.Services.AddScoped<IRuleEvaluator, MinReviewsCompletedEvaluator>();
         builder.Services.AddScoped<IRuleEvaluator, SameTimezoneEvaluator>();
+    }
 
-        builder.Services.AddSingleton(TimeProvider.System);
-        builder.Services.AddSingleton<IBroadcastRegistry, MemoryBroadcastRegistry>();
+    // Scheduling
+    // ============================================================================
 
-        // Quartz
+    private static void RegisterScheduling(WebApplicationBuilder builder)
+    {
         builder.Services.AddQuartz(quartz =>
         {
-            quartz.SchedulerName = "NXT";
             quartz.SchedulerId = "Queue";
+            quartz.SchedulerName = "KKScheduler";
             quartz.UseDefaultThreadPool(x => x.MaxConcurrency = 5);
-            // quartz.Register<SampleJob>();
         });
 
         builder.Services.AddQuartzHostedService(o => o.WaitForJobsToComplete = true);
+    }
 
-        // Rate limit
+    // Rate Limiting
+    // ============================================================================
+
+    private static void RegisterRateLimiting(WebApplicationBuilder builder)
+    {
         builder.Services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = 429;
             options.AddPolicy("AuthenticatedRateLimit", context =>
                 RateLimitPartition.GetSlidingWindowLimiter(
-                    partitionKey: context.User.Identity?.Name ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                    partitionKey: context.User.Identity?.Name
+                        ?? context.Connection.RemoteIpAddress?.ToString()
+                        ?? "unknown",
                     factory: _ => new SlidingWindowRateLimiterOptions
                     {
                         PermitLimit = 100,
@@ -242,17 +333,72 @@ public static class Services
                         QueueLimit = 10
                     }));
         });
+    }
 
-        // Logging
+    // Logging
+    // ============================================================================
+
+    private static void RegisterLogging(WebApplicationBuilder builder)
+    {
         builder.Services.AddSerilog((services, lc) => lc
             .ReadFrom.Configuration(builder.Configuration)
             .ReadFrom.Services(services)
             .Enrich.FromLogContext()
             .WriteTo.Console(new ExpressionTemplate(
                 "[{@t:HH:mm:ss} {@l:u3}{#if @tr is not null} ({substring(@tr,0,4)}:{substring(@sp,0,4)}){#end}] {@m}\n{@x}",
-                theme: TemplateTheme.Code
-            )));
+                theme: TemplateTheme.Code)));
+    }
 
-        return builder;
+    // Keycloak HTTP Clients
+    // ============================================================================
+
+    /// <summary>
+    /// Shared helper: populate a Duende CC client from keycloak appsettings options.
+    /// </summary>
+    private static void BindKeycloak(ClientCredentialsClient client, KeycloakInstallationOptions options)
+    {
+        client.ClientId = ClientId.Parse(options.Resource);
+        client.ClientSecret = ClientSecret.Parse(options.Credentials.Secret);
+        client.TokenEndpoint = new Uri(options.KeycloakTokenEndpoint);
+    }
+
+    /// <summary>
+    /// Registers an authenticated <see cref="HttpClient"/> named <c>kc_admin</c>
+    /// targeting <c>/admin/realms/{realm}/</c>. Token is managed automatically
+    /// via client credentials and attached to every outgoing request.
+    /// </summary>
+    private static void AddKeycloakAdminHttpClient(WebApplicationBuilder builder)
+    {
+        var name = ClientCredentialsClientName.Parse("kc_admin");
+        var options = builder.Configuration.GetKeycloakOptions<KeycloakAdminClientOptions>()!;
+
+        builder.Services
+            .AddClientCredentialsTokenManagement()
+            .AddClient(name, client => BindKeycloak(client, options));
+
+        builder.Services // NOTE(W2): We avoid using the package because it lacks methods.
+            .AddHttpClient(name, client =>
+            {
+                client.BaseAddress = new Uri($"{options.AuthServerUrl}admin/realms/{options.Realm}/");
+            })
+            .AddClientCredentialsTokenHandler(name);
+    }
+
+    /// <summary>
+    /// Registers the Keycloak UMA protection client used for resource-level
+    /// authorization checks (RPT token introspection, permission queries, etc).
+    /// </summary>
+    private static void AddKeycloakProtectionHttpClient(WebApplicationBuilder builder)
+    {
+        var name = ClientCredentialsClientName.Parse("kc_protection");
+        var options = builder.Configuration.GetKeycloakOptions<KeycloakProtectionClientOptions>()!;
+
+        builder.Services
+            .AddClientCredentialsTokenManagement()
+            .AddClient(name, client => BindKeycloak(client, options));
+
+        builder.Services
+            .AddKeycloakProtectionHttpClient(options)
+            .AddClientCredentialsTokenHandler(name);
     }
 }

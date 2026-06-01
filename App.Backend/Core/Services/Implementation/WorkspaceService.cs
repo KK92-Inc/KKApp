@@ -14,14 +14,20 @@ using App.Backend.Domain.Entities.Reviews;
 using App.Backend.Domain.Entities;
 using System.Net;
 using System.Data;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text.Json;
+using System.Net.Http;
 
 // ============================================================================
 
 namespace App.Backend.Core.Services.Implementation;
 
-public class WorkspaceService(DatabaseContext ctx, IGitService git) : BaseService<Workspace>(ctx), IWorkspaceService
+public class WorkspaceService(DatabaseContext ctx, IGitService git, IHttpClientFactory httpClientFactory) : BaseService<Workspace>(ctx), IWorkspaceService
 {
     private readonly DatabaseContext _context = ctx;
+
+    private readonly HttpClient keycloak = httpClientFactory.CreateClient("kc_admin");
 
     public async Task<Workspace?> FindByUserId(Guid id, CancellationToken token = default)
     {
@@ -143,6 +149,62 @@ public class WorkspaceService(DatabaseContext ctx, IGitService git) : BaseServic
                 await git.DeleteAsync(owner, rubric.Name, ct);
                 throw new ServiceException(500, $"Something went wrong: {e.Message}");
             }
+        }, token);
+    }
+
+    public async Task<Application> AddApplicationAsync(Guid workspaceId, CancellationToken token = default)
+    {
+        var workspace = await FindByIdAsync(workspaceId, token)
+            ?? throw new ServiceException(404, "Workspace not found");
+
+        var strategy = _context.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async (ct) =>
+        {
+            await using var transaction = await _context.Database.BeginTransactionAsync(ct);
+            var clientId = $"w2id-{Guid.CreateVersion7().ToString("N")[..12]}";
+
+            var app = new Application
+            {
+                ClientId = clientId,
+                Name = $"KKApp Integration {clientId}",
+                Description = "OAuth2.0 client application created by KKApp for integration purposes",
+                WorkspaceId = workspace.Id
+            };
+
+            var output = await _context.Applications.AddAsync(app, ct);
+            await _context.SaveChangesAsync(ct);
+
+            var response = await keycloak.PostAsJsonAsync("clients", new
+            {
+                name = output.Entity.Name,
+                clientId = output.Entity.ClientId,
+                description = output.Entity.Description,
+                enabled = true,
+                protocol = "openid-connect",
+                publicClient = false,
+                standardFlowEnabled = true,
+                consentRequired = true, // Critical for "Sign In With..." flows
+                redirectUris = output.Entity.RedirectUris ?? new List<string>(),
+                attributes = new Dictionary<string, string> {
+                { "pkce.code.challenge.method", "S256" }
+            }
+            }, token);
+
+            response.EnsureSuccessStatusCode();
+
+            // Keycloak exposes the path to the newly generated UUID in the Location header
+            var locationHeader = response.Headers.Location?.ToString();
+            var internalId = locationHeader!.Split('/').Last();
+
+            // Fetch the client secret auto-generated upon confidential creation
+            var secretResponse = await keycloak.GetFromJsonAsync<JsonElement>($"clients/{internalId}/client-secret", token);
+            var secretValue = secretResponse.GetProperty("value").GetString();
+
+            // TODO: Map the secretValue to a DTO and return it to your frontend so the user 
+            // can view it exactly once. 
+            await transaction.CommitAsync(ct);
+
+            return output.Entity;
         }, token);
     }
 }

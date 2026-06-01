@@ -132,4 +132,46 @@ public class GitController(ILogger<GitController> log, IGitService git, IUserPro
         if (!success) return Conflict();
         return NoContent();
     }
+
+    [HttpPost("{id:guid}/lock")]
+    [EndpointSummary("Lock repository")]
+    [EndpointDescription("Locks the git repository to reject all pushes and prevent modifications (e.g., during an evaluation).")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> LockRepository(Guid id, CancellationToken token)
+    {
+        var entity = await git.FindByIdAsync(id, token);
+
+        log.LogDebug("Locking Git Entity: {git}", entity);
+        if (entity is null)
+            return NotFound();
+
+        var success = await git.LockAsync(entity.Owner, entity.Name, token);
+
+        if (!success)
+            return NotFound("Underlying repository not found.");
+
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/unlock")]
+    [EndpointSummary("Unlock repository")]
+    [EndpointDescription("Unlocks a previously locked git repository, allowing pushes and modifications again.")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UnlockRepository(Guid id, CancellationToken token)
+    {
+        var entity = await git.FindByIdAsync(id, token);
+
+        log.LogDebug("Unlocking Git Entity: {git}", entity);
+        if (entity is null)
+            return NotFound();
+
+        var success = await git.UnlockAsync(entity.Owner, entity.Name, token);
+
+        if (!success)
+            return NotFound("Underlying repository not found.");
+
+        return NoContent();
+    }
 }

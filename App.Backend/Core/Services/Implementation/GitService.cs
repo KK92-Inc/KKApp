@@ -112,6 +112,7 @@ public class GitService : IGitService
         return await response.Content.ReadAsStringAsync(token);
     }
 
+    /// <inheritdoc />
     public async Task<string> GetBranchesAsync(string owner, string name, CancellationToken token = default)
     {
         var response = await _http.GetAsync($"repo/{owner}/{name}/branches", token);
@@ -123,6 +124,7 @@ public class GitService : IGitService
         return await response.Content.ReadAsStringAsync(token);
     }
 
+    /// <inheritdoc />
     public async Task<bool> CreateBranchAsync(string owner, string name, string @ref, string child, CancellationToken token = default)
     {
         var response = await _http.PostAsync($"repo/{owner}/{name}/branches/{@ref}/{child}", null, token);
@@ -134,6 +136,7 @@ public class GitService : IGitService
         };
     }
 
+    /// <inheritdoc />
     public async Task<bool> DeleteBranchAsync(string owner, string name, string branch, CancellationToken token = default)
     {
         var response = await _http.DeleteAsync($"repo/{owner}/{name}/branches/{branch}", token);
@@ -143,6 +146,32 @@ public class GitService : IGitService
             HttpStatusCode.NotFound => false,
             HttpStatusCode.UnprocessableEntity => throw new ServiceException(422, $"Unable to delete branch: {branch}"),
             _ => throw new ServiceException(500, $"Unexpected status {response.StatusCode} deleting branch {owner}/{name}/{branch}")
+        };
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> LockAsync(string owner, string name, CancellationToken token = default)
+    {
+        var response = await _http.PostAsync($"repo/{owner}/{name}/lock", null, token);
+
+        return response.StatusCode switch
+        {
+            HttpStatusCode.OK => true,
+            HttpStatusCode.NotFound => false,
+            _ => throw new ServiceException((int)response.StatusCode, $"Unexpected status {response.StatusCode} locking repo {owner}/{name}")
+        };
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> UnlockAsync(string owner, string name, CancellationToken token = default)
+    {
+        var response = await _http.PostAsync($"repo/{owner}/{name}/unlock", null, token);
+
+        return response.StatusCode switch
+        {
+            HttpStatusCode.OK => true,
+            HttpStatusCode.NotFound => false,
+            _ => throw new ServiceException((int)response.StatusCode, $"Unexpected status {response.StatusCode} unlocking repo {owner}/{name}")
         };
     }
 }
