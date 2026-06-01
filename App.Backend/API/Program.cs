@@ -16,14 +16,13 @@ var app = Services.Register(WebApplication.CreateBuilder(args)).Build();
 app.MapOpenApi();
 app.UseStatusCodePages();
 app.UseExceptionHandler();
-
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseSerilogRequestLogging();
 app.UseResponseCompression();
 
 // app.MapControllers().RequireAuthorization();
-app.MapControllers();
+app.MapControllers().RequireAuthorization();;
 
 // app.UseRouting();
 // app.UseAuthentication();

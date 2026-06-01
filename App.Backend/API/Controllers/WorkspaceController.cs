@@ -217,35 +217,6 @@ public class WorkspaceController(
         return NoContent();
     }
 
-    [HttpPut("{workspaceId:guid}/rubric/{rubricId:guid}/variants")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [EndpointSummary("Set rubric variant configuration")]
-    [EndpointDescription("Replaces the review kind composition for a rubric. Omitted kinds are disabled.")]
-    public async Task<ActionResult<RubricDO>> PutRubricVariants(
-        Guid workspaceId,
-        Guid rubricId,
-        [FromBody] PutRubricVariantsRequestDTO body,
-        CancellationToken token)
-    {
-        var space = await service.FindByIdAsync(workspaceId, token);
-        if (space is null)
-            return NotFound();
-        if (space.Ownership is EntityOwnership.Organization && !User.IsInRole("Staff"))
-            return Forbid();
-
-        var rubric = await rubricService.SetVariantsAsync(
-            rubricId,
-            body.Variants.Select(v => (v.Kind, v.Required)),
-            token
-        );
-
-        if (rubric is null)
-            return NotFound();
-
-        return Ok(new RubricDO(rubric));
-    }
-
     #endregion AddEntities
 
 

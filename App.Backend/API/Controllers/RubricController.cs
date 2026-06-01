@@ -11,6 +11,7 @@ using Keycloak.AuthServices.Authorization;
 using Microsoft.EntityFrameworkCore;
 using App.Backend.Models.Responses.Entities.Reviews;
 using App.Backend.Models.Requests.Rubrics;
+using App.Backend.Domain.Entities.Reviews;
 
 // ============================================================================
 
@@ -18,8 +19,8 @@ namespace App.Backend.API.Controllers;
 
 [ApiController]
 [Route("rubrics")]
-[ProtectedResource("rubrics"), Authorize]
-public class RubricController(ILogger<RubricController> log, IRubricService rubricService) : Controller
+[ProtectedResource("rubrics")]
+public class RubricController(ILogger<RubricController> log, IRubricService service) : Controller
 {
     [HttpGet]
     [ProtectedResource("rubrics", "rubrics:read")]
@@ -40,7 +41,7 @@ public class RubricController(ILogger<RubricController> log, IRubricService rubr
         CancellationToken token
     )
     {
-        var page = await rubricService.GetAllAsync(sorting, pagination, token,
+        var page = await service.GetAllAsync(sorting, pagination, token,
             id is null ? null : r => r.Id == id,
             string.IsNullOrWhiteSpace(name) ? null : r => EF.Functions.ILike(r.Name, $"%{name}%"),
             string.IsNullOrWhiteSpace(slug) ? null : r => r.Slug == slug,
@@ -63,7 +64,7 @@ public class RubricController(ILogger<RubricController> log, IRubricService rubr
     [EndpointDescription("Retrieve a specific rubric by ID")]
     public async Task<ActionResult<RubricDO>> GetById(Guid id)
     {
-        var rubric = await rubricService.FindByIdAsync(id);
+        var rubric = await service.FindByIdAsync(id);
         return rubric is null ? NotFound() : Ok(new RubricDO(rubric));
     }
 
@@ -76,25 +77,59 @@ public class RubricController(ILogger<RubricController> log, IRubricService rubr
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Update a rubric")]
     [EndpointDescription("Update rubric information")]
-    public async Task<ActionResult<RubricDO>> Update(Guid id, [FromBody] PatchRubricEntityRequestDTO request)
+    public async Task<ActionResult<RubricDO>> Update(Guid id, [FromBody] PatchRubricEntityRequestDTO body, CancellationToken token)
     {
-        var rubric = await rubricService.FindByIdAsync(id);
+        var rubric = await service.FindByIdAsync(id, token);
         if (rubric is null)
             return NotFound();
+        if (rubric.CreatorId != User.GetSID() && !User.IsInRole("admin"))
+            return Forbid();
 
-        rubric.Name = request.Name ?? rubric.Name;
-        rubric.Markdown = request.Markdown ?? rubric.Markdown;
-        rubric.Public = request.Public ?? rubric.Public;
-        rubric.Enabled = request.Enabled ?? rubric.Enabled;
-        // rubric.ReviewVariant = request.SupportedReviewKinds ?? rubric.ReviewVariant;
-        rubric.ReviewerRules = request.ReviewerRules ?? rubric.ReviewerRules;
-        rubric.RevieweeRules = request.RevieweeRules ?? rubric.RevieweeRules;
+        rubric.Name = body.Name ?? rubric.Name;
+        rubric.Markdown = body.Markdown ?? rubric.Markdown;
+        rubric.Public = body.Public ?? rubric.Public;
+        rubric.Enabled = body.Enabled ?? rubric.Enabled;
+        rubric.ReviewerRules = body.ReviewerRules ?? rubric.ReviewerRules;
+        rubric.RevieweeRules = body.RevieweeRules ?? rubric.RevieweeRules;
 
-        await rubricService.UpdateAsync(rubric);
+        await service.UpdateAsync(rubric, token);
         return Ok(new RubricDO(rubric));
     }
 
-    [HttpDelete]
+    [HttpPut("{id:guid}/variants")]
+    [ProtectedResource("rubrics", "rubrics:write")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [EndpointSummary("Set rubric variant configuration")]
+    [EndpointDescription("Replaces the review kind composition for a rubric. Omitted kinds are disabled.")]
+    public async Task<ActionResult<RubricDO>> PutRubricVariants(
+        Guid id,
+        [FromBody] PutRubricVariantsRequestDTO body,
+        CancellationToken token
+    )
+    {
+        var rubric = await service.FindByIdAsync(id, token);
+        if (rubric is null)
+            return NotFound();
+        if (rubric.CreatorId != User.GetSID() && !User.IsInRole("admin"))
+            return Forbid();
+
+        rubric = await service.SetVariantsAsync(
+            id,
+            body.Variants.Select(v => new RubricVariant() {
+                Kind = v.Kind,
+                Count = v.Required
+            }),
+            token
+        );
+
+        if (rubric is null)
+            return NotFound();
+
+        return Ok(new RubricDO(rubric));
+    }
+
+    [HttpDelete("{id:guid}")]
     [ProtectedResource("rubrics", "rubrics:delete")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -102,13 +137,13 @@ public class RubricController(ILogger<RubricController> log, IRubricService rubr
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Delete a rubric")]
     [EndpointDescription("Delete a rubric")]
-    public async Task<IActionResult> Delete([FromQuery] Guid id)
+    public async Task<IActionResult> Delete(Guid id, CancellationToken token)
     {
-        var rubric = await rubricService.FindByIdAsync(id);
+        var rubric = await service.FindByIdAsync(id, token);
         if (rubric is null)
             return NotFound();
 
-        await rubricService.DeleteAsync(rubric);
+        await service.DeleteAsync(rubric, token);
         return NoContent();
     }
 }

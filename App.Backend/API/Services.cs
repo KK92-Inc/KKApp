@@ -39,6 +39,7 @@ using App.Backend.Core.Engines.Evaluations.Rules;
 using App.Backend.API.Schemas.Schema;
 using App.Backend.API.Schemas.Document;
 using Duende.AccessTokenManagement;
+using Microsoft.AspNetCore.Authorization;
 
 // ============================================================================
 
@@ -97,7 +98,8 @@ public static class Services
         builder.Services.AddHttpClient<ResendClient>();
         builder.Services.Configure<ResendClientOptions>(o =>
         {
-            o.ApiToken = Environment.GetEnvironmentVariable("RESEND_APITOKEN")!;
+            o.ApiToken = builder.Configuration["Resend:Secret"]
+                ?? throw new InvalidOperationException("Resend API token is not configured.");
         });
     }
 
@@ -106,11 +108,7 @@ public static class Services
 
     private static void RegisterAuthentication(WebApplicationBuilder builder)
     {
-        builder.Services.AddKeycloakWebApiAuthentication(builder.Configuration, options =>
-        {
-            options.Audience = "intra";
-        });
-
+        builder.Services.AddKeycloakWebApiAuthentication(builder.Configuration);
         builder.Services
             .AddAuthorization()
             .AddAuthorizationBuilder()
@@ -159,6 +157,13 @@ public static class Services
                         {
                             Implicit = new OpenApiOAuthFlow
                             {
+                                Scopes = new Dictionary<string, string>
+                                {
+                                    { "openid", "Authenticate using Keycloak" },
+                                    { "profile", "Access user profile information" },
+                                    { "email", "Access user email address" },
+                                    { "roles", "Access user roles" }
+                                },
                                 AuthorizationUrl = new Uri($"{options.KeycloakUrlRealm}protocol/openid-connect/auth"),
                                 TokenUrl = new Uri($"{options.KeycloakUrlRealm}protocol/openid-connect/token"),
                                 RefreshUrl = new Uri($"{options.KeycloakUrlRealm}protocol/openid-connect/token"),
@@ -169,35 +174,6 @@ public static class Services
 
                 return Task.CompletedTask;
             });
-            // o.AddDocumentTransformer((document, _, _) =>
-            // {
-            //     document.Components ??= new OpenApiComponents();
-
-            //     var kcOptions = builder.Configuration
-            //         .GetKeycloakOptions<KeycloakAuthenticationOptions>();
-
-            //     if (kcOptions?.AuthServerUrl is { } realmUrl)
-            //     {
-            //         var oidcBase = $"{realmUrl}protocol/openid-connect";
-            //         document.Components.SecuritySchemes?.TryAdd("OAuth2", new OpenApiSecurityScheme
-            //         {
-            //             Name = "Keycloak",
-            //             Type = SecuritySchemeType.OAuth2,
-            //             OpenIdConnectUrl = new Uri(oidcBase),
-            //             Flows = new OpenApiOAuthFlows
-            //             {
-            //                 AuthorizationCode = new OpenApiOAuthFlow
-            //                 {
-            //                     AuthorizationUrl = new Uri($"{oidcBase}/auth"),
-            //                     TokenUrl = new Uri($"{oidcBase}/token"),
-            //                     RefreshUrl = new Uri($"{oidcBase}/token"),
-            //                 }
-            //             }
-            //         });
-            //     }
-
-            //     return Task.CompletedTask;
-            // });
         });
     }
 
@@ -207,8 +183,8 @@ public static class Services
     {
         builder.Services.AddStackExchangeRedisCache(options =>
         {
-            options.Configuration = builder.Configuration.GetConnectionString("cache");
             options.InstanceName = "KKBackend";
+            options.Configuration = builder.Configuration.GetConnectionString("cache");
         });
 
         builder.Services.AddOutputCache(options =>
@@ -346,7 +322,8 @@ public static class Services
             .Enrich.FromLogContext()
             .WriteTo.Console(new ExpressionTemplate(
                 "[{@t:HH:mm:ss} {@l:u3}{#if @tr is not null} ({substring(@tr,0,4)}:{substring(@sp,0,4)}){#end}] {@m}\n{@x}",
-                theme: TemplateTheme.Code)));
+                theme: TemplateTheme.Code)
+            ));
     }
 
     // Keycloak HTTP Clients

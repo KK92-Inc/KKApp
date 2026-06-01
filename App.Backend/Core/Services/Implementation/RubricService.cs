@@ -32,29 +32,54 @@ public class RubricService(DatabaseContext ctx, IGitService git) : BaseService<R
         return await _dbSet.FirstOrDefaultAsync(r => r.Slug == slug, token);
     }
 
+    public async Task<IEnumerable<RubricVariant>?> GetVariantsAsync(Guid rubricId, CancellationToken token = default)
+    {
+        return await _context.RubricsVariants
+            .AsNoTracking() // <-- Bypasses the change tracker for read-only speed
+            .Where(rv => rv.RubricId == rubricId)
+            .ToListAsync(token);
+    }
+
     public async Task<Rubric?> SetVariantsAsync(
         Guid rubricId,
-        IEnumerable<(ReviewKinds Kind, int Required)> variants,
+        IEnumerable<RubricVariant> variants,
         CancellationToken token = default)
     {
-        var rubric = await _context.Rubrics
-            .Include(r => r.Variants)
-            .FirstOrDefaultAsync(r => r.Id == rubricId, token);
-
+        // 1. Fetch only the parent Rubric (No .Include() needed!)
+        var rubric = await _context.Rubrics.FirstOrDefaultAsync(r => r.Id == rubricId, token);
         if (rubric is null)
             return null;
 
-        _context.RubricsVariants.RemoveRange(rubric.Variants);
-        rubric.Variants = [.. variants.Where(v => v.Required > 0)
+        // Optional: Wrap in a transaction so Delete and Add succeed/fail together
+        await using var transaction = await _context.Database.BeginTransactionAsync(token);
+
+        // 2. Bulk delete existing variants instantly in the DB
+        await _context.RubricsVariants
+            .Where(rv => rv.RubricId == rubricId)
+            .ExecuteDeleteAsync(token);
+
+        // 3. Prepare and add new variants
+        var newVariants = variants
+            .Where(v => v.Count > 0)
             .Select(v => new RubricVariant
             {
                 RubricId = rubricId,
                 Kind = v.Kind,
-                Count = v.Required,
+                Count = v.Count,
             })
-        ];
+            .ToList();
 
-        await _context.SaveChangesAsync(token);
+        if (newVariants.Count > 0)
+        {
+            _context.RubricsVariants.AddRange(newVariants);
+            await _context.SaveChangesAsync(token);
+        }
+
+        await transaction.CommitAsync(token);
+
+        // 4. Attach the new variants so the returned Rubric object is fully populated
+        rubric.Variants = newVariants;
+
         return rubric;
     }
 }

@@ -347,6 +347,7 @@
           "attributes": {}
         }
       ],
+      "w2id-019e8340663a": [],
       "account": [
         {
           "id": "c0f3255e-1f1b-4a13-b6e2-6c868f42ff02",
@@ -516,9 +517,12 @@
       ],
       "clientRoles": {
         "realm-management": [
+          "manage-authorization",
+          "manage-clients",
           "view-realm",
           "view-clients",
-          "view-authorization"
+          "view-authorization",
+          "create-client"
         ],
         "intra": [
           "uma_protection"
@@ -757,6 +761,7 @@
       "clientAuthenticatorType": "client-secret",
       "secret": "**********",
       "redirectUris": [
+        "http://localhost*",
         "https://intra.kk92.net/*"
       ],
       "webOrigins": [
@@ -774,7 +779,7 @@
       "frontchannelLogout": true,
       "protocol": "openid-connect",
       "attributes": {
-        "client.secret.creation.time": "1769071761",
+        "client.secret.creation.time": "1780317892",
         "client.introspection.response.allow.jwt.claim.enabled": "false",
         "standard.token.exchange.enabled": "false",
         "login_theme": "keycloak.v2",
@@ -875,12 +880,31 @@
             "claim.name": "client_id",
             "jsonType.label": "String"
           }
+        },
+        {
+          "id": "b1c302d3-741e-4eb6-a553-17328f7c2bbd",
+          "name": "realm-management-roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-client-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "lightweight.claim": "false",
+            "access.token.claim": "true",
+            "claim.name": "resource_access.realm-management.roles",
+            "jsonType.label": "String",
+            "usermodel.clientRoleMapping.clientId": "realm-management"
+          }
         }
       ],
       "defaultClientScopes": [
         "service_account",
         "web-origins",
         "acr",
+        "roles",
         "profile",
         "basic",
         "email"
@@ -889,7 +913,6 @@
         "address",
         "phone",
         "organization",
-        "roles",
         "offline_access",
         "microprofile-jwt"
       ],
@@ -1001,7 +1024,7 @@
             "displayName": "Rubrics",
             "attributes": {},
             "uris": [
-              "/*"
+              "/rubrics/*"
             ],
             "scopes": [
               {
@@ -1147,7 +1170,7 @@
             "logic": "POSITIVE",
             "decisionStrategy": "AFFIRMATIVE",
             "config": {
-              "applyPolicies": "[\"Role: Student\",\"Role: Staff\"]"
+              "applyPolicies": "[\"Role: Staff\",\"Role: Student\"]"
             }
           },
           {
@@ -1155,7 +1178,7 @@
             "description": "Policy to allow for the management of entities (e.g: Creating/Delete Projects, ...)",
             "type": "aggregate",
             "logic": "POSITIVE",
-            "decisionStrategy": "UNANIMOUS",
+            "decisionStrategy": "AFFIRMATIVE",
             "config": {
               "applyPolicies": "[\"Role: Admin\",\"Role: Staff\"]"
             }
@@ -1168,7 +1191,7 @@
             "decisionStrategy": "UNANIMOUS",
             "config": {
               "resources": "[\"comments\"]",
-              "scopes": "[\"comments:delete\",\"comments:read\",\"comments:write\"]",
+              "scopes": "[\"comments:read\",\"comments:delete\",\"comments:write\"]",
               "applyPolicies": "[\"Access: Basic\"]"
             }
           },
@@ -1228,7 +1251,7 @@
             "decisionStrategy": "UNANIMOUS",
             "config": {
               "resources": "[\"projects\"]",
-              "scopes": "[\"projects:write\",\"projects:delete\"]",
+              "scopes": "[\"projects:delete\",\"projects:write\"]",
               "applyPolicies": "[\"Access: Manage\"]"
             }
           },
@@ -1252,7 +1275,7 @@
             "decisionStrategy": "UNANIMOUS",
             "config": {
               "resources": "[\"reviews\"]",
-              "scopes": "[\"reviews:write\",\"reviews:delete\"]",
+              "scopes": "[\"reviews:delete\",\"reviews:write\"]",
               "applyPolicies": "[\"Access: Basic\"]"
             }
           },
@@ -1300,7 +1323,7 @@
             "decisionStrategy": "UNANIMOUS",
             "config": {
               "resources": "[\"goals\"]",
-              "scopes": "[\"goals:write\",\"goals:delete\"]",
+              "scopes": "[\"goals:delete\",\"goals:write\"]",
               "applyPolicies": "[\"Access: Manage\"]"
             }
           },
@@ -1312,7 +1335,7 @@
             "decisionStrategy": "UNANIMOUS",
             "config": {
               "resources": "[\"user\"]",
-              "scopes": "[\"user:settings:write\",\"user:settings:read\"]",
+              "scopes": "[\"user:settings:read\",\"user:settings:write\"]",
               "applyPolicies": "[\"Access: Basic\"]"
             }
           },
@@ -1574,6 +1597,54 @@
           }
         }
       ],
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "roles",
+        "profile",
+        "basic",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "organization",
+        "offline_access",
+        "microprofile-jwt"
+      ]
+    },
+    {
+      "id": "b64c3df7-ff9b-4122-b2a7-ec2a476ae97c",
+      "clientId": "w2id-019e8340663a",
+      "name": "KKApp Integration w2id-019e8340663a",
+      "description": "OAuth2.0 client application created by KKApp for integration purposes",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "**********",
+      "redirectUris": [],
+      "webOrigins": [],
+      "notBefore": 0,
+      "bearerOnly": false,
+      "consentRequired": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "publicClient": false,
+      "frontchannelLogout": false,
+      "protocol": "openid-connect",
+      "attributes": {
+        "realm_client": "false",
+        "client.secret.creation.time": "1780318496",
+        "backchannel.logout.session.required": "true",
+        "pkce.code.challenge.method": "S256",
+        "backchannel.logout.revoke.offline.tokens": "false"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": false,
+      "nodeReRegistrationTimeout": -1,
       "defaultClientScopes": [
         "web-origins",
         "acr",
@@ -2427,14 +2498,14 @@
         "subComponents": {},
         "config": {
           "allowed-protocol-mapper-types": [
-            "oidc-sha256-pairwise-sub-mapper",
-            "saml-role-list-mapper",
-            "oidc-address-mapper",
-            "oidc-usermodel-property-mapper",
-            "saml-user-property-mapper",
             "oidc-usermodel-attribute-mapper",
+            "saml-user-property-mapper",
+            "oidc-address-mapper",
+            "oidc-full-name-mapper",
             "saml-user-attribute-mapper",
-            "oidc-full-name-mapper"
+            "saml-role-list-mapper",
+            "oidc-usermodel-property-mapper",
+            "oidc-sha256-pairwise-sub-mapper"
           ]
         }
       },
@@ -2461,14 +2532,14 @@
         "subComponents": {},
         "config": {
           "allowed-protocol-mapper-types": [
-            "saml-user-property-mapper",
-            "saml-user-attribute-mapper",
-            "oidc-usermodel-attribute-mapper",
-            "saml-role-list-mapper",
-            "oidc-sha256-pairwise-sub-mapper",
             "oidc-address-mapper",
+            "saml-user-property-mapper",
+            "saml-role-list-mapper",
+            "oidc-full-name-mapper",
+            "saml-user-attribute-mapper",
+            "oidc-sha256-pairwise-sub-mapper",
             "oidc-usermodel-property-mapper",
-            "oidc-full-name-mapper"
+            "oidc-usermodel-attribute-mapper"
           ]
         }
       },

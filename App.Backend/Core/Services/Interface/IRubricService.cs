@@ -45,9 +45,14 @@ public interface IRubricService : IDomainService<Rubric>, ISlugQueryable<Rubric>
     /// <param name="variants"></param>
     /// <param name="token"></param>
     /// <returns></returns>
-    public Task<Rubric?> SetVariantsAsync(
-        Guid rubricId,
-        IEnumerable<(ReviewKinds Kind, int Required)> variants,
-        CancellationToken token = default
-    );
+    public Task<Rubric?> SetVariantsAsync(Guid id, IEnumerable<RubricVariant> variants, CancellationToken token = default);
+
+    /// <summary>
+    /// Returns the review variants configured for the specified rubric.
+    /// Variants state what review kinds are supported and how many of each kind are required.
+    /// </summary>
+    /// <param name="rubricId"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public Task<IEnumerable<RubricVariant>?> GetVariantsAsync(Guid id, CancellationToken token = default);
 }
