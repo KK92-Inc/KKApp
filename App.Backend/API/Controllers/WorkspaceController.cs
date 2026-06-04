@@ -47,32 +47,29 @@ public class WorkspaceController(
 {
     [HttpGet("current")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    // [ProtectedResource("workspaces", "workspaces:read")]
+    [ProtectedResource("workspaces", "workspaces:read")]
     [EndpointSummary("Get the workspace of the user")]
     [EndpointDescription("Retrieves the workspace of the currently authenticated user")]
     public async Task<ActionResult<WorkspaceDO>> GetWorkspace(CancellationToken token)
     {
         var space = await service.FindByUserId(User.GetSID(), token);
-        if (space is null)
-        {
-            // If it is a new user, we just create it for them.
-            var result = await service.CreateAsync(new Workspace() {
-                OwnerId = User.GetSID(),
-                Ownership = EntityOwnership.User
-            }, token);
+        if (space is not null) return Ok(new WorkspaceDO(space));
 
-            return Ok(new WorkspaceDO(result));
-        }
-        return Ok(new WorkspaceDO(space));
+        // If it is a new user, we just create it for them.
+        return Ok(new WorkspaceDO(await service.CreateAsync(new()
+        {
+            OwnerId = User.GetSID(),
+            Ownership = EntityOwnership.User
+        }, token)));
     }
 
-    #region AddEntities
     [HttpPost("{workspace:guid}/cursus")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    // [ProtectedResource("workspaces", "workspaces:read")]
+    [ProtectedResource("cursus", "cursus:write")]
+    [ProtectedResource("workspaces", "workspaces:write")]
     [EndpointSummary("Create a new cursus")]
     [EndpointDescription("Create a new cursus to be added to the workspace")]
     public async Task<ActionResult<CursusDO>> AddCursus(
@@ -116,7 +113,8 @@ public class WorkspaceController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    // [ProtectedResource("workspaces", ["workspaces:write", "goals:write"])]
+    [ProtectedResource("goals", "goals:write")]
+    [ProtectedResource("workspaces", "workspaces:write")]
     [EndpointSummary("Create a new goal")]
     [EndpointDescription("Directly create a new goal to be added to the workspace")]
     public async Task<ActionResult<GoalDO>> AddGoal(
@@ -155,7 +153,8 @@ public class WorkspaceController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    [ProtectedResource("workspaces", ["workspaces:write"])]
+    [ProtectedResource("projects", "projects:write")]
+    [ProtectedResource("workspaces", "workspaces:write")]
     [EndpointSummary("Create a new project")]
     [EndpointDescription("Directly create a new project to be added to the workspace")]
     public async Task<ActionResult<ProjectDO>> AddProject(
@@ -173,7 +172,7 @@ public class WorkspaceController(
         var id = User.GetSID();
         if (space.OwnerId is not null && space.OwnerId != id)
             return Forbid();
-        if (await projectService.FindBySlugAsync(dto.Name.ToSlug()) is not null)
+        if (await projectService.FindBySlugAsync(dto.Name.ToSlug(), token) is not null)
             return Conflict();
 
         var project = await service.AddProjectAsync(space.Id, new()
@@ -194,7 +193,8 @@ public class WorkspaceController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    // [ProtectedResource("workspaces", ["workspaces:write", "rubrics:write"])]
+    [ProtectedResource("rubrics", "rubrics:write")]
+    [ProtectedResource("workspaces", "workspaces:write")]
     [EndpointSummary("Create a new rubric")]
     [EndpointDescription("Create a new rubric to be added to the workspace")]
     public async Task<ActionResult<RubricDO>> AddRubric(Guid id, [FromBody] PostRubricEntityRequestDTO body, CancellationToken token)
@@ -227,7 +227,8 @@ public class WorkspaceController(
     [HttpPost("{id:guid}/application")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    // [ProtectedResource("workspaces", "applications:write")]
+    [ProtectedResource("applications", "applications:write")]
+    [ProtectedResource("workspaces", "workspaces:write")]
     [EndpointSummary("Create a new application")]
     [EndpointDescription("Create a new application client linked to this workspace and fetch its initial credential secret.")]
     public async Task<IActionResult> AddApplication(Guid id, [FromBody] PostApplicationRequestDTO dto, CancellationToken token)
@@ -265,7 +266,8 @@ public class WorkspaceController(
     [HttpPatch("{id:guid}/application/{appId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    // [ProtectedResource("workspaces", "applications:write")]
+    [ProtectedResource("applications", "applications:write")]
+    [ProtectedResource("workspaces", "workspaces:write")]
     [EndpointSummary("Update an existing application")]
     [EndpointDescription("Update an existing application metadata configuration and synchronize changes out to Keycloak.")]
     public async Task<IActionResult> UpdateApplication(Guid id, Guid appId, [FromBody] PatchApplicationRequestDTO dto, CancellationToken token)
@@ -287,7 +289,8 @@ public class WorkspaceController(
     }
 
     [HttpDelete("{id:guid}/application/{appId:guid}")]
-    // [ProtectedResource("workspaces", "applications:delete")]
+    [ProtectedResource("applications", "applications:delete")]
+    [ProtectedResource("workspaces", "workspaces:delete")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [EndpointSummary("Delete an existing application")]
@@ -307,6 +310,8 @@ public class WorkspaceController(
 
     [HttpPost("{id:guid}/application/{appId:guid}/secret/rotate")]
     // [ProtectedResource("workspaces", "applications:write")]
+    [ProtectedResource("applications", "applications:write")]
+    [ProtectedResource("workspaces", "workspaces:write")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [EndpointSummary("Rotate client secret (Step 1)")]
@@ -325,16 +330,13 @@ public class WorkspaceController(
         return NoContent();
     }
 
-    #endregion AddEntities
-
-    #region TransferEntities
-
     [Authorize(Policy = "IsStaff")]
     [HttpPost("{from:guid}/transfer/cursus/{to:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    [ProtectedResource("workspaces", ["workspaces:write", "cursus:write"])]
+    [ProtectedResource("cursus", "cursus:write")]
+    [ProtectedResource("workspaces", "workspaces:write")]
     [EndpointSummary("Transfer cursus between workspaces")]
     [EndpointDescription("Transfer one or more cursus from one workspace to another")]
     public async Task<ActionResult> TransferCursus(
@@ -367,7 +369,8 @@ public class WorkspaceController(
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    [ProtectedResource("workspaces", ["workspaces:write", "goals:write"])]
+    [ProtectedResource("goals", "goals:write")]
+    [ProtectedResource("workspaces", "workspaces:write")]
     [EndpointSummary("Transfer goals between workspaces")]
     [EndpointDescription("Transfer one or more goals from one workspace to another")]
     public async Task<ActionResult> TransferGoals(
@@ -400,7 +403,8 @@ public class WorkspaceController(
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    [ProtectedResource("workspaces", ["workspaces:write"])]
+    [ProtectedResource("projects", "projects:write")]
+    [ProtectedResource("workspaces", "workspaces:write")]
     [EndpointSummary("Transfer projects between workspaces")]
     [EndpointDescription("Transfer one or more projects from one workspace to another")]
     public async Task<ActionResult> TransferProjects(
@@ -444,6 +448,7 @@ public class WorkspaceController(
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [ProtectedResource("workspaces", "workspaces:write")]
     [EndpointSummary("Invite a user to a workspace")]
     [EndpointDescription("Invites another user to the workspace, granting them access to its projects and resources upon acceptance.")]
     public async Task<ActionResult<MemberDO>> InviteAsync(Guid Id, Guid inviteeId, CancellationToken token)
@@ -476,6 +481,7 @@ public class WorkspaceController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [ProtectedResource("workspaces", "workspaces:write")]
     [EndpointSummary("Cancel a pending invite")]
     [EndpointDescription("The session leader cancels a pending invitation before it is accepted.")]
     public async Task<ActionResult<MemberDO>> UninviteAsync(Guid Id, Guid inviteeId, CancellationToken token)
@@ -550,6 +556,7 @@ public class WorkspaceController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [ProtectedResource("workspaces", "workspaces:write")]
     [EndpointSummary("Leave a workspace")]
     [EndpointDescription("The user leaves a workspace.")]
     public async Task<ActionResult> LeaveAsync(Guid Id, CancellationToken token)
@@ -578,6 +585,7 @@ public class WorkspaceController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [ProtectedResource("workspaces", "workspaces:write")]
     [EndpointSummary("Kick a member from a workspace")]
     [EndpointDescription("Remove a member from a workspace.")]
     public async Task<ActionResult> KickAsync(Guid Id, Guid memberId, CancellationToken token)
@@ -605,7 +613,4 @@ public class WorkspaceController(
     {
         throw new NotImplementedException();
     }
-
-    #endregion TransferEntities
-
 }

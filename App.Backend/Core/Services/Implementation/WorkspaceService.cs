@@ -54,7 +54,7 @@ public class WorkspaceService(DatabaseContext ctx, IGitService git) : BaseServic
 
     public async Task<Workspace> GetRootWorkspace(CancellationToken token = default)
     {
-        var root = await _context.Workspaces.FirstOrDefaultAsync(w => w.Ownership == EntityOwnership.Organization);
+        var root = await _context.Workspaces.FirstOrDefaultAsync(w => w.OwnerId == null, token);
         return root ?? throw new ServiceException(501, "Environment is missing a root workspace");
     }
 
@@ -77,7 +77,9 @@ public class WorkspaceService(DatabaseContext ctx, IGitService git) : BaseServic
                 {
                     Owner = owner,
                     Name = name,
-                    Ownership = workspace.Owner is null ? EntityOwnership.Organization : EntityOwnership.User
+                    Ownership = workspace.Owner is null
+                        ? EntityOwnership.Organization
+                        : EntityOwnership.User
                 }, ct);
 
                 await _context.SaveChangesAsync(ct);
@@ -85,14 +87,6 @@ public class WorkspaceService(DatabaseContext ctx, IGitService git) : BaseServic
                 project.GitId = repo.Entity.Id;
                 project.WorkspaceId = workspace.Id;
                 var output = await _context.Projects.AddAsync(project, ct);
-
-                // await _context.Members.AddAsync(new()
-                // {
-                //     UserId = workspace.OwnerId ?? Guid.Empty,
-                //     EntityId = output.Entity.Id,
-                //     EntityType = MemberEntityType.Project,
-                //     Role = MemberRole.Leader
-                // }, ct);
 
                 await _context.SaveChangesAsync(ct);
                 await transaction.CommitAsync(ct);
