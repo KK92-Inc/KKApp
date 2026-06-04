@@ -3,6 +3,7 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace App.Backend.Models.Requests.Notifications;
@@ -18,17 +19,20 @@ public record PostNotificationRequestDTO
     /// The user ID to notify.
     /// </summary>
     [Required]
+    [Description("The ID of the user to notify.")]
     public required Guid UserId { get; init; }
 
     /// <summary>
     /// The notification message.
     /// </summary>
     [Required, StringLength(1024, MinimumLength = 1)]
+    [Description("The notification message content.")]
     public required string Message { get; init; }
 
     /// <summary>
     /// Optional URL to link the notification to.
     /// </summary>
     [Url]
+    [Description("Optional URL to link the notification to.")]
     public string? Href { get; init; }
 }

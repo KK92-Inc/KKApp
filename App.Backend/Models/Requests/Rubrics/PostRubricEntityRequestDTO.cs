@@ -4,6 +4,7 @@
 // ============================================================================
 
 using App.Backend.Domain.Enums;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace App.Backend.Models.Requests.Rubrics;
@@ -16,15 +17,20 @@ namespace App.Backend.Models.Requests.Rubrics;
 public record PostRubricEntityRequestDTO
 {
     [Required, StringLength(256, MinimumLength = 1)]
+    [Description("The name of the rubric.")]
     public required string Name { get; init; }
 
     [StringLength(65536)]
+    [Description("Optional markdown documentation for the rubric.")]
     public string? Markdown { get; init; } = null;
 
+    [Description("Indicates whether the rubric is publicly visible.")]
     public bool Public { get; init; } = false;
 
+    [Description("Optional project ID this rubric is associated with.")]
     public Guid? ProjectId { get; init; } = null;
 
+    [Description("Indicates whether the rubric is enabled.")]
     public bool Enabled { get; init; } = false;
 }
 
@@ -34,9 +40,11 @@ public record PostRubricEntityRequestDTO
 public record RubricVariantDTO
 {
     [Required]
+    [Description("The review kind this variant applies to.")]
     public required ReviewKinds Kind { get; init; }
 
     [Required, Range(0, 100)]
+    [Description("The number of reviews of this kind required (0-100).")]
     public required int Required { get; init; }
 }
 
@@ -47,5 +55,6 @@ public record RubricVariantDTO
 public record PutRubricVariantsRequestDTO
 {
     [Required, MinLength(1)]
+    [Description("The list of review variant requirements for this rubric.")]
     public required IEnumerable<RubricVariantDTO> Variants { get; init; }
 }

@@ -3,6 +3,7 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace App.Backend.Models.Requests.Spotlights;
@@ -29,24 +30,28 @@ public record PostSpotlightRequestDTO
     /// <summary>
     /// Optional call-to-action button text.
     /// </summary>
-    [StringLength(64)]
+    [StringLength(64, MinimumLength = 1)]
+    [Description("Optional call-to-action button text.")]
     public string? ActionText { get; init; }
 
     /// <summary>
     /// Optional URL for the call-to-action button.
     /// </summary>
     [Url]
+    [Description("Optional URL for the call-to-action button.")]
     public string? Href { get; init; }
 
     /// <summary>
     /// Optional background image URL.
     /// </summary>
     [Url]
+    [Description("Optional background image URL.")]
     public string? BackgroundUrl { get; init; }
 
     /// <summary>
     /// When the spotlight should start being displayed.
     /// </summary>
+    [Description("Optional start date/time for the spotlight.")]
     public DateTimeOffset? StartsAt { get; init; }
 
     /// <summary>

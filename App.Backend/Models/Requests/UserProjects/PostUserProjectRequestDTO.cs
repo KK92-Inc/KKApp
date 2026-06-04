@@ -3,6 +3,7 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace App.Backend.Models.Requests.UserProjects;
@@ -18,10 +19,12 @@ public record PostUserProjectRequestDTO
     /// The project ID to subscribe to.
     /// </summary>
     [Required]
+    [Description("The ID of the project to start/subscribe to.")]
     public required Guid ProjectId { get; init; }
 
     /// <summary>
     /// Optional cursus ID context for the project.
     /// </summary>
+    [Description("Optional cursus ID context for the project.")]
     public Guid? CursusId { get; init; }
 }

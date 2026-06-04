@@ -83,7 +83,8 @@ public class ProjectController(
     //     return Created();
     // }
 
-    [HttpDelete]
+    [Tags("Workspace")]
+    [HttpDelete("{id:guid}")]
     [ProtectedResource("projects", "projects:delete")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -91,7 +92,7 @@ public class ProjectController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Delete a project")]
     [EndpointDescription("Delete a project and its user instances")]
-    public async Task<IActionResult> Delete([FromQuery] Guid id)
+    public async Task<IActionResult> Delete(Guid id)
     {
         var project = await projectService.FindByIdAsync(id);
         if (project is null)
@@ -159,10 +160,9 @@ public class ProjectController(
 
         project.Name = request.Name ?? project.Name;
         project.Description = request.Description ?? project.Description;
-        // project.Slug = request.Slug ?? project.Slug;
         project.Active = request.Active ?? project.Active;
         project.Public = request.Public ?? project.Public;
-        project.Deprecated = request.Deprecated ?? project.Deprecated;
+        project.MaxMembers = request.MaxMembers ?? project.MaxMembers;
         await projectService.UpdateAsync(project);
         return Ok(new ProjectDO(project));
     }

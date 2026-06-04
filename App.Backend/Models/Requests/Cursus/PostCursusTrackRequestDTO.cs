@@ -3,6 +3,7 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace App.Backend.Models.Requests.Cursus;
@@ -18,12 +19,14 @@ public record CursusTrackNodeDTO
     /// The goal ID this node represents.
     /// </summary>
     [Required]
+    [Description("The goal ID this node represents.")]
     public required Guid GoalId { get; init; }
 
     /// <summary>
     /// The parent goal ID within this cursus track.
     /// Null for root-level goals.
     /// </summary>
+    [Description("The parent goal ID within this cursus track. Null for root-level goals.")]
     public Guid? ParentId { get; init; }
 
     /// <summary>
@@ -31,6 +34,7 @@ public record CursusTrackNodeDTO
     /// value are alternatives — the user must complete at least one from
     /// the group. Null means the goal is required.
     /// </summary>
+    [Description("Choice group identifier for alternative goals. Siblings with the same value are alternatives; null means required.")]
     public Guid? Group { get; init; }
 }
 
@@ -45,5 +49,6 @@ public record PostCursusTrackRequestDTO
     /// to form the hierarchy. Root nodes have no parent.
     /// </summary>
     [Required, MinLength(1)]
+    [Description("The flat list of track nodes forming the cursus hierarchy.")]
     public required IList<CursusTrackNodeDTO> Nodes { get; init; }
 }

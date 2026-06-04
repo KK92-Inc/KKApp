@@ -3,6 +3,7 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace App.Backend.Models.Requests.UserProjects;
@@ -18,5 +19,6 @@ public record PostUserProjectMemberRequestDTO
     /// The user ID to add as a member.
     /// </summary>
     [Required]
+    [Description("The ID of the user to add as a member.")]
     public required Guid UserId { get; init; }
 }

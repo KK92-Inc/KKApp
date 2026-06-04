@@ -11,6 +11,7 @@ using App.Backend.Domain.Enums;
 using App.Backend.Models;
 using App.Backend.Core.Query;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 // ============================================================================
 
@@ -19,6 +20,11 @@ namespace App.Backend.Core.Services.Implementation;
 public class ProjectService(DatabaseContext ctx) : BaseService<Project>(ctx), IProjectService
 {
     private readonly DatabaseContext context = ctx;
+
+    public override Task<PaginatedList<Project>> GetAllAsync(ISorting sorting, IPagination pagination, CancellationToken token = default, params Expression<Func<Project, bool>>?[] filters)
+    {
+        return base.GetAllAsync(sorting, pagination, token, [..filters, p => p.Public]);
+    }
 
     public override Task DeleteAsync(Project entity, CancellationToken token = default)
     {

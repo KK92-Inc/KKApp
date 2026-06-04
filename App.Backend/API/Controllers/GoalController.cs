@@ -55,7 +55,8 @@ public class GoalController(
         return Ok(page.Items.Select(g => new GoalDO(g)));
     }
 
-    [HttpDelete]
+    [Tags("Workspace")]
+    [HttpDelete("{id:guid}")]
     [ProtectedResource("goals", "goals:delete")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -63,7 +64,7 @@ public class GoalController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Delete a goal")]
     [EndpointDescription("Delete a goal and its associations")]
-    public async Task<IActionResult> Delete([FromQuery] Guid id)
+    public async Task<IActionResult> Delete(Guid id)
     {
         var goal = await goalService.FindByIdAsync(id);
         if (goal is null)

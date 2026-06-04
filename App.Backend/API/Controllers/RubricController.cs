@@ -129,6 +129,7 @@ public class RubricController(ILogger<RubricController> log, IRubricService serv
         return Ok(new RubricDO(rubric));
     }
 
+    [Tags("Workspace")]
     [HttpDelete("{id:guid}")]
     [ProtectedResource("rubrics", "rubrics:delete")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

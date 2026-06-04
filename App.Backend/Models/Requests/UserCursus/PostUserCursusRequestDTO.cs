@@ -3,6 +3,7 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace App.Backend.Models.Requests.UserCursus;
@@ -18,5 +19,6 @@ public record PostUserCursusRequestDTO
     /// The cursus ID to subscribe to.
     /// </summary>
     [Required]
+    [Description("The ID of the cursus to subscribe to.")]
     public required Guid CursusId { get; init; }
 }

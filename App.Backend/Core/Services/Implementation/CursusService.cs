@@ -12,14 +12,27 @@ using App.Backend.Domain.Enums;
 using App.Backend.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using App.Backend.Core.Query;
+using System.Linq.Expressions;
 
 // ============================================================================
 
 namespace App.Backend.Core.Services.Implementation;
 
-public class CursusService(DatabaseContext ctx, ILogger<CursusService> log) : BaseService<Cursus>(ctx), ICursusService
+public class CursusService(DatabaseContext ctx, ILogger<CursusService> log) : BaseService<Cursus>(ctx), ICursusService, ISlugQueryable<Cursus>
 {
     private readonly DatabaseContext context = ctx;
+
+    public override Task<PaginatedList<Cursus>> GetAllAsync(ISorting sorting, IPagination pagination, CancellationToken token = default, params Expression<Func<Cursus, bool>>?[] filters)
+    {
+        return base.GetAllAsync(sorting, pagination, token, [..filters, c => c.Public]);
+    }
+
+    public override Task DeleteAsync(Cursus entity, CancellationToken token = default)
+    {
+        entity.Deprecated = true;
+        return UpdateAsync(entity, token);
+    }
 
     /// <inheritdoc />
     public async Task<IEnumerable<CursusGoal>> SetTrackAsync(

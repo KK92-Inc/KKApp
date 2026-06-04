@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 // ============================================================================
@@ -14,12 +15,15 @@ namespace App.Backend.Models.Requests.Application;
 public class PostApplicationRequestDTO
 {
     [Required]
-    [StringLength(255)]
+    [StringLength(255, MinimumLength = 1)]
+    [Description("The name of the application.")]
     public required string Name { get; set; }
 
     [Required]
-    [StringLength(2048)]
+    [StringLength(2048, MinimumLength = 1)]
+    [Description("A description of the application.")]
     public required string Description { get; set; }
 
+    [Description("List of allowed redirect URIs after authentication.")]
     public ICollection<string> RedirectUris { get; set; } = [];
 }

@@ -3,6 +3,7 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace App.Backend.Models.Requests.UserGoals;
@@ -18,5 +19,6 @@ public record PostUserGoalRequestDTO
     /// The goal ID to subscribe to.
     /// </summary>
     [Required]
+    [Description("The ID of the goal to subscribe to.")]
     public required Guid GoalId { get; init; }
 }

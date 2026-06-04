@@ -3,6 +3,7 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using App.Backend.Domain.Enums;
 
@@ -33,27 +34,32 @@ public record PostCursusRequestDTO
     /// Optional description of the cursus.
     /// </summary>
     [StringLength(16384)]
+    [Description("Optional description of the cursus.")]
     public string? Description { get; init; }
 
     /// <summary>
     /// Whether the cursus is active.
     /// </summary>
+    [Description("Indicates whether the cursus is currently active.")]
     public bool Active { get; init; } = true;
 
     /// <summary>
     /// Whether the project is public.
     /// </summary>
+    [Description("Indicates whether the cursus is publicly visible.")]
     public bool Public { get; init; } = false;
 
     /// <summary>
     /// The cursus variant (Fixed track or Dynamic free-roam).
     /// Defaults to Fixed.
     /// </summary>
+    [Description("The cursus variant: Static (fixed track) or Dynamic (free-roam).")]
     public CursusVariant Variant { get; init; } = CursusVariant.Static;
 
     /// <summary>
     /// How users progress through the track: level-by-level (Ring) or
     /// branch-independent (FreeStyle). Defaults to Ring.
     /// </summary>
+    [Description("How users progress through the track: Ring (level-by-level) or FreeStyle (branch-independent).")]
     public CompletionMode CompletionMode { get; init; } = CompletionMode.Ring;
 }

@@ -58,7 +58,8 @@ public class CursusController(
         return Ok(page.Items.Select(c => new CursusDO(c)));
     }
 
-    [HttpDelete]
+    [Tags("Workspace")]
+    [HttpDelete("{id:guid}")]
     [ProtectedResource("cursus", "cursus:delete")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -66,7 +67,7 @@ public class CursusController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Delete a cursus")]
     [EndpointDescription("Delete a cursus and its user instances")]
-    public async Task<IActionResult> Delete([FromQuery] Guid id)
+    public async Task<IActionResult> Delete(Guid id)
     {
         var cursus = await cursusService.FindByIdAsync(id);
         if (cursus is null)

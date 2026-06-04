@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using App.Backend.Core.Query;
 using App.Backend.Domain.Entities.Users;
 using Microsoft.Extensions.Logging;
+using System.Linq.Expressions;
 
 // ============================================================================
 
@@ -20,6 +21,17 @@ namespace App.Backend.Core.Services.Implementation;
 public class GoalService(DatabaseContext ctx, ILogger<GoalService> log) : BaseService<Goal>(ctx), IGoalService
 {
     private readonly DatabaseContext _context = ctx;
+
+    public override Task<PaginatedList<Goal>> GetAllAsync(ISorting sorting, IPagination pagination, CancellationToken token = default, params Expression<Func<Goal, bool>>?[] filters)
+    {
+        return base.GetAllAsync(sorting, pagination, token, [..filters, g => g.Public]);
+    }
+
+    public override Task DeleteAsync(Goal entity, CancellationToken token = default)
+    {
+        entity.Deprecated = true;
+        return UpdateAsync(entity, token);
+    }
 
     public async Task<Goal?> FindBySlugAsync(string slug, CancellationToken token = default)
     {

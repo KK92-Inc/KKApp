@@ -3,6 +3,7 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using App.Backend.Domain.Enums;
 
@@ -21,5 +22,6 @@ public record PostReviewRequestDTO
     /// The user project ID being reviewed.
     /// </summary>
     [Required]
+    [Description("The user project ID being reviewed.")]
     public required Guid UserProjectId { get; init; }
 }

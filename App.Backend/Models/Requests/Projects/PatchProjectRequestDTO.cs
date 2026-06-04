@@ -3,6 +3,7 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace App.Backend.Models.Requests.Projects;
@@ -15,29 +16,35 @@ namespace App.Backend.Models.Requests.Projects;
 public record PatchProjectRequestDTO
 {
     /// <summary>
-    /// Optional name update.
+    /// The name of the project.
     /// </summary>
     [StringLength(256, MinimumLength = 1)]
+    [Description("The name of the project.")]
     public string? Name { get; init; }
 
     /// <summary>
-    /// Optional description update.
+    /// Optional description of the project.
     /// </summary>
-    [StringLength(16384)]
+    [StringLength(2048, MinimumLength = 1)]
+    [Description("Optional description of the project.")]
     public string? Description { get; init; }
 
     /// <summary>
-    /// Optional active status update.
+    /// Whether the project is active.
     /// </summary>
+    [Description("Indicates whether the project is currently active.")]
     public bool? Active { get; init; }
 
     /// <summary>
-    /// Optional public status update.
+    /// Whether the project is public.
     /// </summary>
+    [Description("Indicates whether the project is currently public.")]
     public bool? Public { get; init; }
 
     /// <summary>
-    /// Optional deprecated status update.
+    /// The maximum number of members allowed in the project.
     /// </summary>
-    public bool? Deprecated { get; init; }
+    [Range(1, 10)]
+    [Description("The maximum number of members allowed in the project.")]
+    public int? MaxMembers { get; init; } = 1;
 }

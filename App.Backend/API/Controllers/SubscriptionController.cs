@@ -23,7 +23,10 @@ namespace App.Backend.API.Controllers;
 [Route("subscribe"), Tags("Subscriptions")]
 public class SubscriptionController(
     ILogger<SubscriptionController> log,
-    ISubscriptionService service
+    ISubscriptionService service,
+    ICursusService cursusService,
+    IGoalService goalService,
+    IProjectService projectService
 ) : Controller
 {
     // ========================================================================
@@ -37,9 +40,19 @@ public class SubscriptionController(
     [EndpointDescription("Enroll the specified user in the given cursus. Staff can enroll other users.")]
     public async Task<ActionResult<UserCursusDO>> SubscribeToCursus(Guid userId, Guid cursusId, CancellationToken token)
     {
-        if (!IsAllowed(userId))
+        if (User.GetSID() != userId && !User.IsInRole("Staff"))
             return Forbid();
 
+        var cursus = await cursusService.FindByIdAsync(cursusId, token);
+        if (cursus is null) return NotFound();
+        if (cursus.Deprecated || !cursus.Active)
+        {
+            return UnprocessableEntity(new ProblemDetails()
+            {
+                Title = "Cursus is unavailable",
+                Detail = "This cursus is unavailable and cannot be subscribed to."
+            });
+        }
         var userCursus = await service.SubscribeToCursusAsync(userId, cursusId, token);
         return Ok(new UserCursusDO(userCursus));
     }
@@ -51,8 +64,12 @@ public class SubscriptionController(
     [EndpointDescription("Remove the specified user's enrollment from the given cursus. Staff can unenroll other users.")]
     public async Task<ActionResult<UserCursusDO>> UnsubscribeFromCursus(Guid userId, Guid cursusId, CancellationToken token)
     {
-        if (!IsAllowed(userId))
+        if (User.GetSID() != userId && !User.IsInRole("Staff"))
             return Forbid();
+
+        var cursus = await cursusService.FindByIdAsync(cursusId, token);
+        if (cursus is null)
+            return NotFound();
 
         var userCursus = await service.UnsubscribeFromCursusAsync(userId, cursusId, token);
         return Ok(new UserCursusDO(userCursus));
@@ -69,8 +86,19 @@ public class SubscriptionController(
     [EndpointDescription("Create a subscription for the specified user to the given goal. Staff can enroll other users.")]
     public async Task<ActionResult<UserGoalDO>> SubscribeToGoal(Guid userId, Guid goalId, CancellationToken token)
     {
-        if (!IsAllowed(userId))
+        if (User.GetSID() != userId && !User.IsInRole("Staff"))
             return Forbid();
+
+        var goal = await goalService.FindByIdAsync(goalId, token);
+        if (goal is null) return NotFound();
+        if (goal.Deprecated || !goal.Active)
+        {
+            return UnprocessableEntity(new ProblemDetails()
+            {
+                Title = "Goal is unavailable",
+                Detail = "This goal is unavailable and cannot be subscribed to."
+            });
+        }
 
         var userGoal = await service.SubscribeToGoalAsync(userId, goalId, token);
         return Ok(new UserGoalDO(userGoal));
@@ -83,8 +111,12 @@ public class SubscriptionController(
     [EndpointDescription("Remove the specified user's subscription to the given goal. Staff can unenroll other users.")]
     public async Task<ActionResult<UserGoalDO>> UnsubscribeFromGoal(Guid userId, Guid goalId, CancellationToken token)
     {
-        if (!IsAllowed(userId))
+        if (User.GetSID() != userId && !User.IsInRole("Staff"))
             return Forbid();
+
+        var goal = await goalService.FindByIdAsync(goalId, token);
+        if (goal is null)
+            return NotFound();
 
         var userGoal = await service.UnsubscribeFromGoalAsync(userId, goalId, token);
         return Ok(new UserGoalDO(userGoal));
@@ -101,8 +133,19 @@ public class SubscriptionController(
     [EndpointDescription("Create a project session for the specified user. Staff can enroll other users.")]
     public async Task<ActionResult<UserProjectDO>> SubscribeToProject(Guid userId, Guid projectId, CancellationToken token)
     {
-        if (!IsAllowed(userId))
+        if (User.GetSID() != userId && !User.IsInRole("Staff"))
             return Forbid();
+
+        var project = await projectService.FindByIdAsync(projectId, token);
+        if (project is null) return NotFound();
+        if (project.Deprecated || !project.Active)
+        {
+            return UnprocessableEntity(new ProblemDetails()
+            {
+                Title = "Project is unavailable",
+                Detail = "This project is unavailable and cannot be subscribed to."
+            });
+        }
 
         var userProject = await service.SubscribeToProjectAsync(userId, projectId, token);
         return Ok(new UserProjectDO(userProject));
@@ -115,20 +158,13 @@ public class SubscriptionController(
     [EndpointDescription("Remove the specified user from the project session. Staff can unenroll other users.")]
     public async Task<ActionResult<UserProjectDO>> UnsubscribeFromProject(Guid userId, Guid projectId, CancellationToken token)
     {
-        if (!IsAllowed(userId))
+        var project = await projectService.FindByIdAsync(projectId, token);
+        if (project is null)
+            return NotFound();
+        if (User.GetSID() != userId && !User.IsInRole("Staff"))
             return Forbid();
 
         var userProject = await service.UnsubscribeFromProjectAsync(userId, projectId, token);
         return Ok(new UserProjectDO(userProject));
     }
-
-    // ========================================================================
-    // Helpers
-    // ========================================================================
-
-    /// <summary>
-    /// Check if the current user is allowed to act on behalf of the target user.
-    /// Users can act on themselves; staff can act on anyone.
-    /// </summary>
-    private bool IsAllowed(Guid targetUserId) => User.GetSID() == targetUserId || User.IsInRole("staff");
 }

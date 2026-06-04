@@ -3,6 +3,7 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace App.Backend.Models.Requests.Comments;
@@ -23,5 +24,6 @@ public record PostCommentRequestDTO
     /// <summary>
     /// Optional parent comment ID for nested replies.
     /// </summary>
+    [Description("ID of parent comment for nested replies.")]
     public Guid? ParentId { get; init; }
 }

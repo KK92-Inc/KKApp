@@ -3,6 +3,7 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace App.Backend.Models.Requests.Goals;
@@ -32,15 +33,18 @@ public record PostGoalRequestDTO
     /// Optional description of the goal.
     /// </summary>
     [StringLength(16384)]
+    [Description("Optional description of the goal.")]
     public string? Description { get; init; }
 
     /// <summary>
     /// Whether the goal is active.
     /// </summary>
+    [Description("Indicates whether the goal is currently active.")]
     public bool Active { get; init; } = true;
 
     /// <summary>
     /// Whether the project is public.
     /// </summary>
+    [Description("Indicates whether the goal is publicly visible.")]
     public bool Public { get; init; } = false;
 }

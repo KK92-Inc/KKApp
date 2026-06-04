@@ -9,6 +9,8 @@ using App.Backend.Domain.Entities.Reviews;
 using Microsoft.EntityFrameworkCore;
 using App.Backend.Models.Requests.Rubrics;
 using App.Backend.Domain.Enums;
+using App.Backend.Core.Query;
+using System.Linq.Expressions;
 
 // ============================================================================
 
@@ -17,6 +19,17 @@ namespace App.Backend.Core.Services.Implementation;
 public class RubricService(DatabaseContext ctx, IGitService git) : BaseService<Rubric>(ctx), IRubricService
 {
     private readonly DatabaseContext _context = ctx;
+
+    public override Task<PaginatedList<Rubric>> GetAllAsync(ISorting sorting, IPagination pagination, CancellationToken token = default, params Expression<Func<Rubric, bool>>?[] filters)
+    {
+        return base.GetAllAsync(sorting, pagination, token, [..filters, r => r.Public]);
+    }
+
+    public override Task DeleteAsync(Rubric entity, CancellationToken token = default)
+    {
+        entity.Deprecated = true;
+        return UpdateAsync(entity, token);
+    }
 
     public async Task<Rubric?> FindByProjectId(Guid projectId, CancellationToken token = default)
     {

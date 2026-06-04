@@ -34,7 +34,7 @@ public class UserProjectDO(UserProject userProject) : BaseEntityDO<UserProject>(
     /// The project template this instance is based on.
     /// </summary>
     [Required, Description("The project template this instance is based on.")]
-    public ProjectDO Project { get; set; } = userProject.Project;
+    public ProjectLightDO Project { get; set; } = userProject.Project;
 
     /// <summary>
     /// Git repository information for this project instance.

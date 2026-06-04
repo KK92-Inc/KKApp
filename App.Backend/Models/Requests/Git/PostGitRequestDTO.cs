@@ -3,6 +3,7 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace App.Backend.Models.Requests.Git;
@@ -18,12 +19,14 @@ public record PostGitRequestDTO
     /// The remote URL for the git repository.
     /// </summary>
     [Required, Url]
+    [Description("The remote URL for the git repository.")]
     public required string Remote { get; init; }
 
     /// <summary>
     /// The branch name to use.
     /// </summary>
     [Required, StringLength(256, MinimumLength = 1)]
+    [Description("The branch name to use (e.g., 'main', 'develop').")]
     public required string Branch { get; init; }
 
     /// <summary>
@@ -31,5 +34,6 @@ public record PostGitRequestDTO
     /// </summary>
     [StringLength(40, MinimumLength = 40)]
     [RegularExpression(@"^[a-fA-F0-9]{40}$", ErrorMessage = "Commit must be a valid SHA-1 hash")]
+    [Description("The specific commit SHA-1 hash to reference.")]
     public string? Commit { get; init; }
 }

@@ -28,6 +28,7 @@ public class Rubric : BaseEntity
         Markdown = string.Empty;
         Public = false;
         Enabled = false;
+        Deprecated = false;
 
         CreatorId = Guid.Empty;
         Creator = null!;
@@ -71,6 +72,12 @@ public class Rubric : BaseEntity
     /// </summary>
     [Column("enabled")]
     public bool Enabled { get; set; }
+
+    /// <summary>
+    /// Whether this rubric has been deprecated and should no longer be used for new reviews.
+    /// </summary>
+    [Column("deprecated")]
+    public bool Deprecated { get; set; }
 
     /// <summary>
     /// Rules that determine who is eligible to be a reviewer.

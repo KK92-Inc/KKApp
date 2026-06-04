@@ -3,6 +3,7 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using App.Backend.Domain.Enums;
 
@@ -18,5 +19,6 @@ public record PatchUserProjectRequestDTO
     /// <summary>
     /// Optional status update.
     /// </summary>
+    [Description("The current status of the user's project.")]
     public EntityObjectState? Status { get; init; }
 }

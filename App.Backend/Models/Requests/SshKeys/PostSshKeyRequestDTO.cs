@@ -4,6 +4,7 @@
 // ============================================================================
 
 using App.Backend.Models.Validators;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace App.Backend.Models.Requests.SshKeys;
@@ -18,12 +19,13 @@ public class PostSshKeyRequestDTO : RequestDTO
     /// <summary>
     /// A user-friendly name for the key (e.g., "Work Laptop", "Personal Desktop").
     /// </summary>
-    [Required, MaxLength(255)]
+    [Required, StringLength(255, MinimumLength = 1)]
+    [Description("A user-friendly name for the SSH key (e.g., 'Work Laptop').")]
     public required string Title { get; set; }
 
     /// <summary>
     /// The full SSH public key (e.g., "ssh-ed25519 AAAA... user@host").
     /// </summary>
-    [Required, MaxLength(2048), PublicKey]
+    [Required, StringLength(2048, MinimumLength = 1), PublicKey]
     public required string PublicKey { get; set; }
 }

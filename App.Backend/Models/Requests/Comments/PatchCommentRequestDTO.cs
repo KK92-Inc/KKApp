@@ -3,6 +3,7 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace App.Backend.Models.Requests.Comments;
@@ -18,5 +19,6 @@ public record PatchCommentRequestDTO
     /// The updated markdown content.
     /// </summary>
     [StringLength(16384, MinimumLength = 1)]
+    [Description("The markdown content of the comment.")]
     public string? Markdown { get; init; }
 }

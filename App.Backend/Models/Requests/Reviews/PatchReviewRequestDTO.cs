@@ -3,6 +3,7 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using App.Backend.Domain.Enums;
 
@@ -19,16 +20,19 @@ public record PatchReviewRequestDTO
     /// Optional feedback update.
     /// </summary>
     [StringLength(16384)]
+    [Description("Feedback or comments on the review.")]
     public string? Feedback { get; init; }
 
     /// <summary>
     /// Optional status update.
     /// </summary>
+    [Description("The current status of the review.")]
     public ReviewState? Status { get; init; }
 
     /// <summary>
     /// Optional final mark update.
     /// </summary>
     [Range(0, 100)]
+    [Description("The final mark/score for the review (0-100).")]
     public int? FinalMark { get; init; }
 }

@@ -3,6 +3,7 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace App.Backend.Models.Requests.Users;
@@ -17,15 +18,17 @@ public record PatchUserRequestDTO
     /// <summary>
     /// Optional display name update.
     /// </summary>
-    [Required, StringLength(100)]
+    [StringLength(100, MinimumLength = 1)]
+    [Description("The display name for the user.")]
     public string? DisplayName { get; init; }
 
     /// <summary>
     /// Optional avatar URL update.
     /// </summary>
-    [Required, Url]
+    [Url]
+    [Description("URL to the user's avatar image.")]
     public string? AvatarUrl { get; init; }
 
-    [Required]
+    [Description("Additional user details.")]
     public PatchUserDetailsRequestDTO? Details { get; init; }
 }
