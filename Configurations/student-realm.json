@@ -347,7 +347,16 @@
           "attributes": {}
         }
       ],
-      "w2id-019e8340663a": [],
+      "w2id-019e8340663a": [
+        {
+          "id": "276a0227-0f8a-4bc9-a106-09d5c45832e8",
+          "name": "uma_protection",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "b64c3df7-ff9b-4122-b2a7-ec2a476ae97c",
+          "attributes": {}
+        }
+      ],
       "account": [
         {
           "id": "c0f3255e-1f1b-4a13-b6e2-6c868f42ff02",
@@ -531,6 +540,25 @@
           "manage-account"
         ]
       },
+      "notBefore": 0,
+      "groups": []
+    },
+    {
+      "id": "46c86840-902d-4262-b9d6-a7faab67a8b4",
+      "username": "service-account-w2id-019e8340663a",
+      "emailVerified": false,
+      "enabled": true,
+      "createdTimestamp": 1780396231972,
+      "totp": false,
+      "serviceAccountClientId": "w2id-019e8340663a",
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "default-roles-student",
+        "staff",
+        "student",
+        "admin"
+      ],
       "notBefore": 0,
       "groups": []
     }
@@ -904,7 +932,6 @@
         "service_account",
         "web-origins",
         "acr",
-        "roles",
         "profile",
         "basic",
         "email"
@@ -913,6 +940,7 @@
         "address",
         "phone",
         "organization",
+        "roles",
         "offline_access",
         "microprofile-jwt"
       ],
@@ -1618,12 +1646,18 @@
       "clientId": "w2id-019e8340663a",
       "name": "KKApp Integration w2id-019e8340663a",
       "description": "OAuth2.0 client application created by KKApp for integration purposes",
+      "rootUrl": "",
+      "adminUrl": "",
+      "baseUrl": "",
       "surrogateAuthRequired": false,
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "secret": "**********",
-      "redirectUris": [],
+      "redirectUris": [
+        "http://localhost:36327/",
+        "http://localhost:5000/callback"
+      ],
       "webOrigins": [],
       "notBefore": 0,
       "bearerOnly": false,
@@ -1631,14 +1665,18 @@
       "standardFlowEnabled": true,
       "implicitFlowEnabled": false,
       "directAccessGrantsEnabled": true,
-      "serviceAccountsEnabled": false,
+      "serviceAccountsEnabled": true,
       "publicClient": false,
       "frontchannelLogout": false,
       "protocol": "openid-connect",
       "attributes": {
         "realm_client": "false",
+        "oidc.ciba.grant.enabled": "false",
         "client.secret.creation.time": "1780318496",
         "backchannel.logout.session.required": "true",
+        "standard.token.exchange.enabled": "false",
+        "oauth2.device.authorization.grant.enabled": "false",
+        "display.on.consent.screen": "false",
         "pkce.code.challenge.method": "S256",
         "backchannel.logout.revoke.offline.tokens": "false"
       },
@@ -1646,6 +1684,7 @@
       "fullScopeAllowed": false,
       "nodeReRegistrationTimeout": -1,
       "defaultClientScopes": [
+        "service_account",
         "web-origins",
         "acr",
         "roles",
@@ -2355,10 +2394,10 @@
     "saml_organization",
     "profile",
     "email",
-    "roles",
     "web-origins",
     "acr",
-    "basic"
+    "basic",
+    "roles"
   ],
   "defaultOptionalClientScopes": [
     "offline_access",
@@ -3383,7 +3422,7 @@
     "acr.loa.map": "{}"
   },
   "keycloakVersion": "26.3.3",
-  "userManagedAccessAllowed": false,
+  "userManagedAccessAllowed": true,
   "organizationsEnabled": false,
   "verifiableCredentialsEnabled": false,
   "adminPermissionsEnabled": false,

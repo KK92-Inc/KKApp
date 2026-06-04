@@ -5,6 +5,7 @@
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.OpenApi;
 using Keycloak.AuthServices.Authorization;
 
 using App.Backend.Core;
@@ -18,6 +19,9 @@ using App.Backend.Models.Requests.Rubrics;
 using App.Backend.Models.Responses.Entities.Projects;
 using App.Backend.Models.Responses.Entities.Cursus;
 using App.Backend.Models.Responses.Entities.Reviews;
+using App.Backend.Models.Responses.Entities.Applications;
+using App.Backend.Models.Requests.Applications;
+using App.Backend.Domain.Entities;
 
 // ============================================================================
 
@@ -28,6 +32,7 @@ namespace App.Backend.API.Controllers;
 public class WorkspaceController(
     ILogger<WorkspaceController> log,
     IWorkspaceService service,
+    IApplicationService applicationService,
     IProjectService projectService,
     IGoalService goalService,
     ICursusService cursusService,
@@ -128,7 +133,7 @@ public class WorkspaceController(
     [HttpPost("{workspace:guid}/project")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    // [ProtectedResource("workspaces", ["workspaces:write", "projects:write"])]
+    [ProtectedResource("workspaces", ["workspaces:write"])]
     [EndpointSummary("Create a new project")]
     [EndpointDescription("Directly create a new project to be added to the workspace")]
     public async Task<ActionResult<ProjectDO>> AddProject(
@@ -198,27 +203,73 @@ public class WorkspaceController(
     [HttpPost("{id:guid}/application")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    // [ProtectedResource("workspaces", ["applications:write"])]
+    [ProtectedResource("workspaces", ["applications:write"])]
     [EndpointSummary("Create a new application")]
     [EndpointDescription("Create a new application with an associated git repository")]
-    public async Task<IActionResult> AddApplication(Guid id, CancellationToken token)
+    public async Task<IActionResult> AddApplication(Guid id, [FromBody] PostApplicationRequestDTO dto, CancellationToken token)
     {
         var space = await service.FindByIdAsync(id, token);
-        if (space is null)
+        if (space is null) return NotFound();
+
+        var clientId = $"w2id-{Guid.CreateVersion7().ToString("N")[..12]}";
+        var app = await applicationService.CreateAsync(new Application
+        {
+            Name = dto.Name,
+            Description = dto.Description,
+            ClientId = clientId,
+            WorkspaceId = space.Id,
+            RedirectUris = dto.RedirectUris,
+        }, token);
+
+        return Ok(new ApplicationDO(app));
+    }
+
+    [HttpPatch("{id:guid}/application/{appId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProtectedResource("workspaces", ["applications:write"])]
+    [EndpointSummary("Update an existing application")]
+    [EndpointDescription("Update an existing application and its associated client in Keycloak")]
+    public async Task<IActionResult> UpdateApplication(Guid id, Guid appId, [FromBody] PatchApplicationRequestDTO dto, CancellationToken token)
+    {
+        var space = await service.FindByIdAsync(id, token);
+        if (space is null) return NotFound();
+
+        var app = await applicationService.FindByIdAsync(appId, token);
+        if (app is null || app.WorkspaceId != space.Id)
             return NotFound();
-        if (space.Ownership is EntityOwnership.Organization && !User.IsInRole("Staff"))
-            return Forbid();
 
-        var userId = User.GetSID();
-        if (space.OwnerId is not null && space.OwnerId != userId)
-            return Forbid();
+        if (await applicationService.FindByIdAsync(appId, token) is Application existingApp && existingApp.Id != appId)
+            return Conflict();
 
-        var application = await service.AddApplicationAsync(space.Id, token);
+        app.Name = dto.Name ?? app.Name;
+        app.Description = dto.Description ?? app.Description;
+        app.RedirectUris = dto.RedirectUris ?? app.RedirectUris;
+        await applicationService.UpdateAsync(app, token);
+        return Ok(new ApplicationDO(app));
+    }
+
+    [HttpDelete("{id:guid}/application/{appId:guid}")]
+    [ProtectedResource("workspaces", ["applications:delete"])]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [EndpointSummary("Delete an existing application")]
+    [EndpointDescription("Delete an existing application and its associated client in Keycloak")]
+    public async Task<IActionResult> DeleteApplication(Guid id, Guid appId, CancellationToken token)
+    {
+        var space = await service.FindByIdAsync(id, token);
+        if (space is null) return NotFound();
+
+        var app = await applicationService.FindByIdAsync(appId, token);
+        if (app is null || app.WorkspaceId != space.Id)
+            return NotFound();
+
+        await applicationService.DeleteAsync(app, token);
         return NoContent();
     }
 
     #endregion AddEntities
-
 
     #region TransferEntities
 
@@ -271,7 +322,7 @@ public class WorkspaceController(
         var target = await service.FindByIdAsync(to, token);
         if (source is null || target is null)
             return NotFound();
-        if (!await cursusService.ExistsAsync(goalIds, token))
+        if (!await goalService.ExistsAsync(goalIds, token))
             return Problem(detail: "Request contains invalid ID(s)");
 
         foreach (var id in goalIds)
@@ -290,7 +341,7 @@ public class WorkspaceController(
     [HttpPost("{from:guid}/transfer/project/{to:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProtectedResource("workspaces", ["workspaces:write", "projects:write"])]
+    [ProtectedResource("workspaces", ["workspaces:write"])]
     [EndpointSummary("Transfer projects between workspaces")]
     [EndpointDescription("Transfer one or more projects from one workspace to another")]
     public async Task<ActionResult> TransferProjects(
@@ -299,12 +350,19 @@ public class WorkspaceController(
         [FromBody] IEnumerable<Guid> projectIds,
         CancellationToken token)
     {
+        if (from == to)
+            return NoContent();
+        if (!projectIds.Any())
+            return NoContent();
+
         var source = await service.FindByIdAsync(from, token);
         var target = await service.FindByIdAsync(to, token);
         if (source is null || target is null)
             return NotFound();
-        if (!await cursusService.ExistsAsync(projectIds, token))
-            return Problem(detail: "Request contains invalid ID(s)");
+
+        // 2. FIX: Validate against the correct service/table
+        if (!await projectService.ExistsAsync(projectIds, token))
+            return UnprocessableEntity(new ProblemDetails { Detail = "Request contains invalid ID(s)" });
 
         foreach (var id in projectIds)
         {
@@ -315,6 +373,7 @@ public class WorkspaceController(
                 await projectService.UpdateAsync(project, token);
             }
         }
+
         return NoContent();
     }
 

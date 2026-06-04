@@ -40,6 +40,7 @@ using App.Backend.API.Schemas.Schema;
 using App.Backend.API.Schemas.Document;
 using Duende.AccessTokenManagement;
 using Microsoft.AspNetCore.Authorization;
+using Keycloak.AuthServices.Authorization.Requirements;
 
 // ============================================================================
 
@@ -62,7 +63,6 @@ public static class Services
         RegisterScheduling(builder);
         RegisterRateLimiting(builder);
         RegisterLogging(builder);
-
         return builder;
     }
 
@@ -109,14 +109,30 @@ public static class Services
     private static void RegisterAuthentication(WebApplicationBuilder builder)
     {
         builder.Services.AddKeycloakWebApiAuthentication(builder.Configuration);
-        builder.Services
-            .AddAuthorization()
+        builder.Services.AddAuthorization(options =>
+            {
+                // Fix the IsStaff policy to be a pure role/claim check
+                options.AddPolicy("IsStaff", policy =>
+                {
+                    policy.RequireAuthenticatedUser();
+
+                    // Use standard role checking (if your claims transformation maps realm roles)
+                    policy.RequireRole("staff");
+
+                    // OR if you aren't using standard mapping, check the Keycloak claim directly:
+                    // policy.RequireClaim("realm_access.roles", "staff");
+                });
+            })
             .AddAuthorizationBuilder()
             .AddPolicy("IsStaff", b => b.RequireClaim(ClaimTypes.Role, "staff"))
             .AddPolicy("IsDeveloper", b => b.RequireClaim(ClaimTypes.Role, "developer"));
 
         builder.Services
-            .AddKeycloakAuthorization()
+            .AddKeycloakAuthorization(options =>
+            {
+                options.RoleClaimType = ClaimTypes.Role;
+                options.EnableRolesMapping = RolesClaimTransformationSource.Realm;
+            })
             .AddAuthorizationServer(builder.Configuration);
 
         // Authenticated admin client, used to manage clients, secrets, etc.

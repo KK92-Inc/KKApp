@@ -65,4 +65,22 @@ public interface IWorkspaceService : IDomainService<Workspace>, IUserQueryable<W
     /// <param name="token"></param>
     /// <returns></returns>
     public Task<Application> AddApplicationAsync(Guid workspaceId, CancellationToken token = default);
+
+    /// <summary>
+    /// Updates an existing OAuth2.0 developer application and its associated client in Keycloak within the specified workspace.
+    /// </summary>
+    /// <param name="workspaceId"></param>
+    /// <param name="updatedApp"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public Task<Application> UpdateApplicationAsync(Guid workspaceId, Application updatedApp, CancellationToken token = default);
+
+    /// <summary>
+    /// Deletes an existing OAuth2.0 developer application and its associated client in Keycloak within the specified workspace.
+    /// </summary>
+    /// <param name="workspaceId"></param>
+    /// <param name="applicationId"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public Task DeleteApplicationAsync(Guid workspaceId, Guid applicationId, CancellationToken token = default);
 }

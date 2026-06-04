@@ -184,7 +184,8 @@ public class WorkspaceService(DatabaseContext ctx, IGitService git, IHttpClientF
                 publicClient = false,
                 standardFlowEnabled = true,
                 consentRequired = true, // Critical for "Sign In With..." flows
-                redirectUris = output.Entity.RedirectUris ?? new List<string>(),
+                serviceAccountsEnabled = true,
+                redirectUris = output.Entity.RedirectUris ?? [],
                 attributes = new Dictionary<string, string> {
                 { "pkce.code.challenge.method", "S256" }
             }
@@ -205,6 +206,41 @@ public class WorkspaceService(DatabaseContext ctx, IGitService git, IHttpClientF
             await transaction.CommitAsync(ct);
 
             return output.Entity;
+        }, token);
+    }
+
+    public async Task<Application> UpdateApplicationAsync(Guid workspaceId, Application updatedApp, CancellationToken token = default)
+    {
+        var app = await _context.Applications.FirstOrDefaultAsync(a => a.Id == updatedApp.Id, token)
+            ?? throw new ServiceException(404, "Application registration not found");
+
+        app.Name = updatedApp.Name;
+        app.Description = updatedApp.Description;
+        app.RedirectUris = updatedApp.RedirectUris;
+
+        var output = _context.Applications.Update(app);
+        await _context.SaveChangesAsync(token);
+        return output.Entity;
+    }
+
+    public async Task DeleteApplicationAsync(Guid workspaceId, Guid applicationId, CancellationToken token = default)
+    {
+        var app = await _context.Applications.FirstOrDefaultAsync(a => a.Id == applicationId, token)
+            ?? throw new ServiceException(404, "Application registration not found");
+
+        var strategy = _context.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async (ct) =>
+        {
+            await using var transaction = await _context.Database.BeginTransactionAsync(ct);
+
+            _context.Applications.Remove(app);
+            await _context.SaveChangesAsync(ct);
+
+            // Cascade removal out to the Keycloak infrastructure realm
+            var response = await keycloak.DeleteAsync($"clients/{app.KeycloakId}", ct);
+            response.EnsureSuccessStatusCode();
+
+            await transaction.CommitAsync(ct);
         }, token);
     }
 }
