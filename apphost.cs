@@ -82,6 +82,7 @@ var api = builder.AddDockerfile("git-api", "./App.Repository", "Dockerfile.api")
 
 var ssh = builder.AddDockerfile("git-ssh", "./App.Repository", "Dockerfile.ssh")
     .WithVolume("git-repos", "/home/git/repos")
+    .WithBindMount("./App.Repository/config/keys", "/etc/ssh/keys")
     .WithEndpoint(targetPort: 22, scheme: "tcp", name: "ssh")
     .WithReference(database)
     .WaitFor(database)
