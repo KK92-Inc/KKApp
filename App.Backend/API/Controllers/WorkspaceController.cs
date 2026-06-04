@@ -238,14 +238,12 @@ public class WorkspaceController(
 
         // 1. Establish unique system client identifier standard
         var uniqueId = Guid.CreateVersion7().ToString("N")[..12];
-        var slugifiedName = dto.Name.ToSlug();
-
         var app = await applicationService.CreateAsync(new Application
         {
             Name = dto.Name,
             Description = dto.Description,
-            Enabled = true,
-            ClientId = $"w2id-{slugifiedName}-{uniqueId}",
+            Enabled = dto.Enabled,
+            ClientId = $"w2id-{dto.Name.ToSlug()}-{uniqueId}",
             WorkspaceId = space.Id,
             RedirectUris = dto.RedirectUris ?? [],
         }, token);

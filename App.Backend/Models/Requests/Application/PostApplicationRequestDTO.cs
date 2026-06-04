@@ -20,6 +20,10 @@ public class PostApplicationRequestDTO
     public required string Name { get; set; }
 
     [Required]
+    [Description("Whether the application is enabled.")]
+    public required bool Enabled { get; set; }
+
+    [Required]
     [StringLength(2048, MinimumLength = 1)]
     [Description("A description of the application.")]
     public required string Description { get; set; }
