@@ -45,4 +45,17 @@ public class UserProjectService(DatabaseContext ctx) : BaseService<UserProject>(
             .Sort(sorting)
             .PaginateAsync(pagination, token);
     }
+
+    public async Task<UserProjectTransaction> LogTransactionAsync(Guid userProjectId, Guid? userId, UserProjectTransactionVariant variant, CancellationToken token = default)
+    {
+        var result = await ctx.UserProjectTransactions.AddAsync(new ()
+        {
+            UserId = userId,
+            UserProjectId = userProjectId,
+            Type = variant
+        }, token);
+
+        await ctx.SaveChangesAsync(token);
+        return result.Entity;
+    }
 }

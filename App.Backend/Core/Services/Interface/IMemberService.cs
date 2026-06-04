@@ -5,8 +5,7 @@
 
 using System.Linq.Expressions;
 using App.Backend.Domain.Entities;
-using App.Backend.Domain.Entities.Projects;
-using App.Backend.Domain.Entities.Users;
+using App.Backend.Domain.Enums;
 
 // ============================================================================
 
@@ -15,57 +14,76 @@ namespace App.Backend.Core.Services.Interface;
 public interface IMemberService
 {
     /// <summary>
-    /// Invite a user to an existing project session. Adds a Pending member row.
+    /// Returns all membership rows for a given entity.
     /// </summary>
-    /// <param name="inviterId"></param>
-    /// <param name="inviteeId"></param>
-    /// <param name="userProjectId"></param>
-    /// <param name="token"></param>
-    /// <returns></returns>
-    Task<Member> InviteToProjectAsync(Guid inviterId, Guid inviteeId, Guid userProjectId, CancellationToken token);
-
-    // Add to IMemberService
-    Task<List<Member>> GetProjectMembersAsync(Guid userProjectId, CancellationToken token = default);
-
-    // EF-translatable expression used in GetAllAsync predicates — NOT async,
-    // returns an IQueryable-compatible bool expression
-    Expression<Func<UserProject, bool>> HasActiveMember(Guid userProjectId, Guid userId);
+    Task<List<Member>> GetAsync(MemberEntityType type, Guid entityId, CancellationToken ct = default);
 
     /// <summary>
-    /// Remove a user from an existing project session. Removes the pending member row.
+    /// EF-translatable predicate for filtering queries by active membership.
+    /// Use inside Where() clauses — not async.
     /// </summary>
-    /// <param name="inviterId"></param>
-    /// <param name="inviteeId"></param>
-    /// <param name="userProjectId"></param>
-    /// <param name="token"></param>
-    /// <returns></returns>
-    Task<Member> UninviteFromProjectAsync(Guid inviterId, Guid inviteeId, Guid userProjectId, CancellationToken token);
+    Expression<Func<Member, bool>> IsActiveMember(MemberEntityType type, Guid entityId, Guid userId);
+
+    /// <summary>
+    /// Invite a user to an entity. Adds a Pending member row.
+    /// Pass <paramref name="gitId"/> for entities that have a repository.
+    /// Pass <paramref name="maxMembers"/> to enforce a capacity cap.
+    /// </summary>
+    Task<Member> InviteAsync(
+        MemberEntityType type,
+        Guid entityId,
+        Guid inviterId,
+        Guid inviteeId,
+        Guid? gitId       = null,
+        int? maxMembers   = null,
+        CancellationToken token = default);
+
+    /// <summary>
+    /// Cancel a pending invite. Only the leader may uninvite; the invitee
+    /// must still be in Pending state.
+    /// </summary>
+    Task<Member> UninviteAsync(
+        MemberEntityType type,
+        Guid entityId,
+        Guid inviterId,
+        Guid inviteeId,
+        CancellationToken token = default);
 
     /// <summary>
     /// Accept a pending invite — flips Pending → Member.
     /// </summary>
-    Task<Member> AcceptInviteAsync(Guid userId, Guid userProjectId, CancellationToken token);
+    Task<Member> AcceptAsync(MemberEntityType type, Guid entityId, Guid userId, CancellationToken token = default);
 
     /// <summary>
-    /// Decline a pending invite — removes the pending member row.
+    /// Decline a pending invite — removes the Pending row.
     /// </summary>
-    Task DeclineInviteAsync(Guid userId, Guid userProjectId, CancellationToken token);
+    Task<Member> DeclineAsync(MemberEntityType type, Guid entityId, Guid userId, CancellationToken token = default);
 
     /// <summary>
-    /// Transfer leadership of a project session to another active member.
-    /// The current leader becomes a regular member.
+    /// Transfer leadership to another active, non-pending member.
+    /// The current leader is demoted to Member.
     /// </summary>
-    Task TransferLeadershipAsync(Guid currentLeaderId, Guid newLeaderId, Guid userProjectId, CancellationToken token);
+    Task TransferLeadershipAsync(
+        MemberEntityType type,
+        Guid entityId,
+        Guid currentLeaderId,
+        Guid newLeaderId,
+        CancellationToken token = default);
 
     /// <summary>
-    /// An accepted (non-leader) member voluntarily leaves a project session.
-    /// Sets LeftAt on their membership row rather than deleting it (preserves history).
+    /// An accepted non-leader member voluntarily leaves an entity.
+    /// Sets LeftAt rather than deleting the row so history is preserved.
     /// </summary>
-    Task LeaveProjectAsync(Guid userId, Guid userProjectId, CancellationToken token);
+    Task LeaveAsync(MemberEntityType type, Guid entityId, Guid userId, CancellationToken token = default);
 
     /// <summary>
-    /// Leader kicks an accepted member from the project session.
-    /// Sets LeftAt on the member and records a MemberKicked transaction.
+    /// Leader removes another member from an entity.
+    /// Pending members are deleted outright; active members get a LeftAt timestamp.
     /// </summary>
-    Task KickMemberAsync(Guid leaderId, Guid memberId, Guid userProjectId, CancellationToken token);
+    Task KickAsync(
+        MemberEntityType type,
+        Guid entityId,
+        Guid leaderId,
+        Guid memberId,
+        CancellationToken token = default);
 }

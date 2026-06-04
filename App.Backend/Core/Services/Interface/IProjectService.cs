@@ -5,7 +5,9 @@
 
 using App.Backend.Core.Query;
 using App.Backend.Domain.Entities;
+using App.Backend.Domain.Entities.Projects;
 using App.Backend.Domain.Entities.Users;
+using App.Backend.Domain.Enums;
 using App.Backend.Models;
 
 // ============================================================================

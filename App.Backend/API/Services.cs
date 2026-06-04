@@ -257,6 +257,7 @@ public static class Services
         builder.Services.AddScoped<IGitService, GitService>();
         builder.Services.AddScoped<INotificationService, NotificationService>();
         builder.Services.AddScoped<ISpotlightService, SpotlightService>();
+        builder.Services.AddScoped<IApplicationService, ApplicationService>();
         builder.Services.AddTransient<IResend, ResendClient>();
         builder.Services.AddSingleton<IBroadcastRegistry, MemoryBroadcastRegistry>();
 

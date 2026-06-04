@@ -12,5 +12,5 @@ namespace App.Backend.Core.Services.Interface;
 
 public interface IApplicationService : IDomainService<Application>
 {
-
+    public Task<string?> RotateClientSecretAsync(Guid id, CancellationToken token = default);
 }

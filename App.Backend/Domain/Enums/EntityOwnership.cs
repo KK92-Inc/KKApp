@@ -14,9 +14,15 @@ namespace App.Backend.Domain.Enums;
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum EntityOwnership
 {
+    /// <summary>
+    /// The entity is owned by a user.
+    /// </summary>
     [JsonPropertyName(nameof(User))]
     User,
 
+    /// <summary>
+    /// The entity is owned by an organization.
+    /// </summary>
     [JsonPropertyName(nameof(Organization))]
     Organization,
 }

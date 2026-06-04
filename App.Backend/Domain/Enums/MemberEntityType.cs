@@ -19,33 +19,15 @@ namespace App.Backend.Domain.Enums;
 public enum MemberEntityType
 {
     /// <summary>
-    /// The entity describes a rubric.
+    /// The entity describes a workspace.
     /// </summary>
-    [JsonPropertyName(nameof(Rubric))]
-    Rubric = 0,
+    [JsonPropertyName(nameof(Workspace))]
+    Workspace = 1,
 
     /// <summary>
-    /// The entity describes a project.
-    /// </summary>
-    [JsonPropertyName(nameof(Project))]
-    Project = 1,
-
-    /// <summary>
-    /// The entity describes a user's session in a project.
+    /// The entity describes a user's session in a workspace.
     /// </summary>
     [JsonPropertyName(nameof(UserProject))]
     UserProject = 2,
-
-    /// <summary>
-    /// The entity describes a goal, which is part of a cursus.
-    /// </summary>
-    [JsonPropertyName(nameof(Goal))]
-    Goal = 3,
-
-    /// <summary>
-    /// The entity describes a cursus, which is a collection of goals.
-    /// </summary>
-    [JsonPropertyName(nameof(Cursus))]
-    Cursus = 4
 }
 

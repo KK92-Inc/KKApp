@@ -23,6 +23,16 @@ public interface IUserProjectService : IDomainService<UserProject>
     /// <returns>The user project session if found, null otherwise.</returns>
     Task<UserProject?> FindByUserAndProjectAsync(Guid userId, Guid projectId, CancellationToken token = default);
 
+    /// <summary>
+    /// Logs a transaction for a user project session. This is used to track user activity within a project session, such as joining, leaving, or inviting members. The transactions are stored in the database and can be used for auditing, analytics, or triggering notifications.
+    /// </summary>
+    /// <param name="userProjectId"></param>
+    /// <param name="userId"></param>
+    /// <param name="variant"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    Task<UserProjectTransaction> LogTransactionAsync(Guid userProjectId, Guid? userId, UserProjectTransactionVariant variant, CancellationToken token = default);
+
     Task<PaginatedList<UserProjectTransaction>> GetTransactionsAsync(Guid Id, ISorting sorting, IPagination pagination, CancellationToken token = default);
 
     // Task<IEnumerable<UserProjectMember>> GetMembersAsync(Guid Id, CancellationToken token = default);

@@ -143,18 +143,22 @@ public class SubscriptionService(DatabaseContext context, IGitService git, TimeP
 
     public async Task<UserProject> SubscribeToProjectAsync(Guid userId, Guid projectId, CancellationToken token = default)
     {
+        var existing = await context.UserProjects.Where(
+            up => up.ProjectId == projectId &&
+            context.Members.Any(
+                m => m.EntityType == MemberEntityType.UserProject &&
+                m.EntityId == up.Id &&
+                m.UserId == userId &&
+                m.Role != MemberRole.Pending
+            )
+        ).FirstOrDefaultAsync(token);
+
+        if (existing?.State is EntityObjectState.Completed)
+            throw new ServiceException("Cannot resubscribe to a completed project.");
+
         return await context.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
         {
             await using var transaction = await context.Database.BeginTransactionAsync(ct);
-            var existing = await context.UserProjects.Where(
-                up => up.ProjectId == projectId &&
-                context.Members.Any(
-                    m => m.EntityType == MemberEntityType.UserProject &&
-                    m.EntityId == up.Id &&
-                    m.UserId == userId &&
-                    m.Role != MemberRole.Pending
-                )
-            ).FirstOrDefaultAsync(ct);
 
             if (existing is not null)
             {
@@ -211,8 +215,7 @@ public class SubscriptionService(DatabaseContext context, IGitService git, TimeP
                     Type = UserProjectTransactionVariant.StateChangedToActive,
                 }, ct);
 
-                // TODO: Unlock Git repository if needed
-                // await git.UnlockAsync(projectId.ToString(), existing.Id.ToString(), ct);
+                await git.UnlockAsync(projectId.ToString(), existing.Id.ToString(), ct);
                 await context.SaveChangesAsync(ct);
                 await transaction.CommitAsync(ct);
                 return existing;
@@ -265,21 +268,28 @@ public class SubscriptionService(DatabaseContext context, IGitService git, TimeP
 
     public async Task<UserProject> UnsubscribeFromProjectAsync(Guid userId, Guid projectId, CancellationToken token = default)
     {
+        var existing = await context.UserProjects.Where(
+            up => up.ProjectId == projectId &&
+            context.Members.Any(
+                m => m.EntityType == MemberEntityType.UserProject &&
+                m.EntityId == up.Id &&
+                m.UserId == userId &&
+                m.Role != MemberRole.Pending
+            )
+        ).FirstOrDefaultAsync(token);
+
+
+        if (existing is null || existing.State is EntityObjectState.Inactive)
+            throw new ServiceException("Not currently subscribed to this project.");
+        if (existing.State is EntityObjectState.Completed)
+            throw new ServiceException("Cannot unsubscribe from a completed project.");
+
         return await context.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
         {
             await using var transaction = await context.Database.BeginTransactionAsync(ct);
 
-            var existing = await context.UserProjects.Where(
-                up => up.ProjectId == projectId &&
-                context.Members.Any(m => m.EntityType == MemberEntityType.UserProject && m.EntityId == up.Id && m.UserId == userId && m.Role != MemberRole.Pending)
-            ).FirstOrDefaultAsync(ct);
-
-            if (existing is null || existing.State == EntityObjectState.Inactive)
-                throw new ServiceException("Not currently subscribed to this project.");
-
             existing.State = EntityObjectState.Inactive;
             existing.UnlocksAt = time.GetUtcNow().Add(_config.Cooldown);
-
             context.UserProjects.Update(existing);
 
             await context.UserProjectTransactions.AddAsync(new()
@@ -289,6 +299,7 @@ public class SubscriptionService(DatabaseContext context, IGitService git, TimeP
                 UserId = userId,
             }, ct);
 
+            await git.LockAsync(projectId.ToString(), existing.Id.ToString(), ct);
             await context.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
             return existing;

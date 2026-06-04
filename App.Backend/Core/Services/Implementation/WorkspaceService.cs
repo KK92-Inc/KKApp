@@ -23,11 +23,28 @@ using System.Net.Http;
 
 namespace App.Backend.Core.Services.Implementation;
 
-public class WorkspaceService(DatabaseContext ctx, IGitService git, IHttpClientFactory httpClientFactory) : BaseService<Workspace>(ctx), IWorkspaceService
+public class WorkspaceService(DatabaseContext ctx, IGitService git) : BaseService<Workspace>(ctx), IWorkspaceService
 {
     private readonly DatabaseContext _context = ctx;
 
-    private readonly HttpClient keycloak = httpClientFactory.CreateClient("kc_admin");
+    public async override Task<Workspace> CreateAsync(Workspace entity, CancellationToken token = default)
+    {
+        // TODO: Implement orgs and assign workspace to org when that is done
+        var result = await base.CreateAsync(entity, token);
+        if (result.Ownership is EntityOwnership.Organization)
+            throw new ServiceException(501, "Organization-owned workspaces are not yet supported");
+
+        _context.Members.Add(new()
+        {
+            EntityId = result.Id,
+            UserId = result.OwnerId ?? throw new ServiceException(500, "User-owned workspace must have an owner ID"),
+            EntityType = MemberEntityType.Workspace,
+            Role = MemberRole.Leader
+        });
+
+        await _context.SaveChangesAsync(token);
+        return result;
+    }
 
     public async Task<Workspace?> FindByUserId(Guid id, CancellationToken token = default)
     {
@@ -68,6 +85,14 @@ public class WorkspaceService(DatabaseContext ctx, IGitService git, IHttpClientF
                 project.GitId = repo.Entity.Id;
                 project.WorkspaceId = workspace.Id;
                 var output = await _context.Projects.AddAsync(project, ct);
+
+                // await _context.Members.AddAsync(new()
+                // {
+                //     UserId = workspace.OwnerId ?? Guid.Empty,
+                //     EntityId = output.Entity.Id,
+                //     EntityType = MemberEntityType.Project,
+                //     Role = MemberRole.Leader
+                // }, ct);
 
                 await _context.SaveChangesAsync(ct);
                 await transaction.CommitAsync(ct);
@@ -149,98 +174,6 @@ public class WorkspaceService(DatabaseContext ctx, IGitService git, IHttpClientF
                 await git.DeleteAsync(owner, rubric.Name, ct);
                 throw new ServiceException(500, $"Something went wrong: {e.Message}");
             }
-        }, token);
-    }
-
-    public async Task<Application> AddApplicationAsync(Guid workspaceId, CancellationToken token = default)
-    {
-        var workspace = await FindByIdAsync(workspaceId, token)
-            ?? throw new ServiceException(404, "Workspace not found");
-
-        var strategy = _context.Database.CreateExecutionStrategy();
-        return await strategy.ExecuteAsync(async (ct) =>
-        {
-            await using var transaction = await _context.Database.BeginTransactionAsync(ct);
-            var clientId = $"w2id-{Guid.CreateVersion7().ToString("N")[..12]}";
-
-            var app = new Application
-            {
-                ClientId = clientId,
-                Name = $"KKApp Integration {clientId}",
-                Description = "OAuth2.0 client application created by KKApp for integration purposes",
-                WorkspaceId = workspace.Id
-            };
-
-            var output = await _context.Applications.AddAsync(app, ct);
-            await _context.SaveChangesAsync(ct);
-
-            var response = await keycloak.PostAsJsonAsync("clients", new
-            {
-                name = output.Entity.Name,
-                clientId = output.Entity.ClientId,
-                description = output.Entity.Description,
-                enabled = true,
-                protocol = "openid-connect",
-                publicClient = false,
-                standardFlowEnabled = true,
-                consentRequired = true, // Critical for "Sign In With..." flows
-                serviceAccountsEnabled = true,
-                redirectUris = output.Entity.RedirectUris ?? [],
-                attributes = new Dictionary<string, string> {
-                { "pkce.code.challenge.method", "S256" }
-            }
-            }, token);
-
-            response.EnsureSuccessStatusCode();
-
-            // Keycloak exposes the path to the newly generated UUID in the Location header
-            var locationHeader = response.Headers.Location?.ToString();
-            var internalId = locationHeader!.Split('/').Last();
-
-            // Fetch the client secret auto-generated upon confidential creation
-            var secretResponse = await keycloak.GetFromJsonAsync<JsonElement>($"clients/{internalId}/client-secret", token);
-            var secretValue = secretResponse.GetProperty("value").GetString();
-
-            // TODO: Map the secretValue to a DTO and return it to your frontend so the user 
-            // can view it exactly once. 
-            await transaction.CommitAsync(ct);
-
-            return output.Entity;
-        }, token);
-    }
-
-    public async Task<Application> UpdateApplicationAsync(Guid workspaceId, Application updatedApp, CancellationToken token = default)
-    {
-        var app = await _context.Applications.FirstOrDefaultAsync(a => a.Id == updatedApp.Id, token)
-            ?? throw new ServiceException(404, "Application registration not found");
-
-        app.Name = updatedApp.Name;
-        app.Description = updatedApp.Description;
-        app.RedirectUris = updatedApp.RedirectUris;
-
-        var output = _context.Applications.Update(app);
-        await _context.SaveChangesAsync(token);
-        return output.Entity;
-    }
-
-    public async Task DeleteApplicationAsync(Guid workspaceId, Guid applicationId, CancellationToken token = default)
-    {
-        var app = await _context.Applications.FirstOrDefaultAsync(a => a.Id == applicationId, token)
-            ?? throw new ServiceException(404, "Application registration not found");
-
-        var strategy = _context.Database.CreateExecutionStrategy();
-        await strategy.ExecuteAsync(async (ct) =>
-        {
-            await using var transaction = await _context.Database.BeginTransactionAsync(ct);
-
-            _context.Applications.Remove(app);
-            await _context.SaveChangesAsync(ct);
-
-            // Cascade removal out to the Keycloak infrastructure realm
-            var response = await keycloak.DeleteAsync($"clients/{app.KeycloakId}", ct);
-            response.EnsureSuccessStatusCode();
-
-            await transaction.CommitAsync(ct);
         }, token);
     }
 }

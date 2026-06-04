@@ -69,6 +69,9 @@ public enum UserProjectTransactionVariant
     [JsonPropertyName(nameof(MemberInvited))]
     MemberInvited,
 
+    [JsonPropertyName(nameof(MemberUninvited))]
+    MemberUninvited,
+
     [JsonPropertyName(nameof(MemberAccepted))]
     MemberAccepted,
 

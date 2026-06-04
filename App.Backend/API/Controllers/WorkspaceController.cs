@@ -22,6 +22,10 @@ using App.Backend.Models.Responses.Entities.Reviews;
 using App.Backend.Models.Responses.Entities.Applications;
 using App.Backend.Models.Requests.Applications;
 using App.Backend.Domain.Entities;
+using App.Backend.Models.Requests.Application;
+using App.Backend.API.Controllers.Interfaces;
+using App.Backend.API.Notifications.Variants;
+using Wolverine;
 
 // ============================================================================
 
@@ -36,8 +40,10 @@ public class WorkspaceController(
     IProjectService projectService,
     IGoalService goalService,
     ICursusService cursusService,
-    IRubricService rubricService
-) : Controller
+    IRubricService rubricService,
+    IMemberService memberService,
+    IMessageBus bus
+) : Controller, IInviteController
 {
     [HttpGet("current")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -46,8 +52,17 @@ public class WorkspaceController(
     [EndpointDescription("Retrieves the workspace of the currently authenticated user")]
     public async Task<ActionResult<WorkspaceDO>> GetWorkspace(CancellationToken token)
     {
-        var space = await service.FindByUserId(User.GetSID());
-        if (space is null) return NotFound();
+        var space = await service.FindByUserId(User.GetSID(), token);
+        if (space is null)
+        {
+            // If it is a new user, we just create it for them.
+            var result = await service.CreateAsync(new Workspace() {
+                OwnerId = User.GetSID(),
+                Ownership = EntityOwnership.User
+            }, token);
+
+            return Ok(new WorkspaceDO(result));
+        }
         return Ok(new WorkspaceDO(space));
     }
 
@@ -201,36 +216,49 @@ public class WorkspaceController(
     }
 
     [HttpPost("{id:guid}/application")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
-    [ProtectedResource("workspaces", ["applications:write"])]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    // [ProtectedResource("workspaces", "applications:write")]
     [EndpointSummary("Create a new application")]
-    [EndpointDescription("Create a new application with an associated git repository")]
+    [EndpointDescription("Create a new application client linked to this workspace and fetch its initial credential secret.")]
     public async Task<IActionResult> AddApplication(Guid id, [FromBody] PostApplicationRequestDTO dto, CancellationToken token)
     {
         var space = await service.FindByIdAsync(id, token);
         if (space is null) return NotFound();
 
-        var clientId = $"w2id-{Guid.CreateVersion7().ToString("N")[..12]}";
+        // 1. Establish unique system client identifier standard
+        var uniqueId = Guid.CreateVersion7().ToString("N")[..12];
+        var slugifiedName = dto.Name.ToSlug();
+
         var app = await applicationService.CreateAsync(new Application
         {
             Name = dto.Name,
             Description = dto.Description,
-            ClientId = clientId,
+            Enabled = true,
+            ClientId = $"w2id-{slugifiedName}-{uniqueId}",
             WorkspaceId = space.Id,
-            RedirectUris = dto.RedirectUris,
+            RedirectUris = dto.RedirectUris ?? [],
         }, token);
 
-        return Ok(new ApplicationDO(app));
+        return Created(new Uri($"/workspace/{space.Id}/application/{app.Id}", UriKind.Relative), new ApplicationWithSecretDO(app, string.Empty));
+
+        // 2. Extract initial plaintext secret via the updated service layer
+        // var secret = await applicationService.GetClientSecretAsync(app.Id, token);
+
+        // // 3. Return the single-view secret mapping DTO
+        // return CreatedAtAction(
+        //     nameof(AddApplication),
+        //     new { id = space.Id },
+        //     new ApplicationWithSecretDO(app, secret ?? string.Empty)
+        // );
     }
 
     [HttpPatch("{id:guid}/application/{appId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
-    [ProtectedResource("workspaces", ["applications:write"])]
+    // [ProtectedResource("workspaces", "applications:write")]
     [EndpointSummary("Update an existing application")]
-    [EndpointDescription("Update an existing application and its associated client in Keycloak")]
+    [EndpointDescription("Update an existing application metadata configuration and synchronize changes out to Keycloak.")]
     public async Task<IActionResult> UpdateApplication(Guid id, Guid appId, [FromBody] PatchApplicationRequestDTO dto, CancellationToken token)
     {
         var space = await service.FindByIdAsync(id, token);
@@ -240,22 +268,21 @@ public class WorkspaceController(
         if (app is null || app.WorkspaceId != space.Id)
             return NotFound();
 
-        if (await applicationService.FindByIdAsync(appId, token) is Application existingApp && existingApp.Id != appId)
-            return Conflict();
-
+        // Apply fields safely via null-coalescing operations
         app.Name = dto.Name ?? app.Name;
         app.Description = dto.Description ?? app.Description;
         app.RedirectUris = dto.RedirectUris ?? app.RedirectUris;
+
         await applicationService.UpdateAsync(app, token);
         return Ok(new ApplicationDO(app));
     }
 
     [HttpDelete("{id:guid}/application/{appId:guid}")]
-    [ProtectedResource("workspaces", ["applications:delete"])]
+    // [ProtectedResource("workspaces", "applications:delete")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [EndpointSummary("Delete an existing application")]
-    [EndpointDescription("Delete an existing application and its associated client in Keycloak")]
+    [EndpointDescription("Permanently delete an application registration and dismantle its linked client in Keycloak.")]
     public async Task<IActionResult> DeleteApplication(Guid id, Guid appId, CancellationToken token)
     {
         var space = await service.FindByIdAsync(id, token);
@@ -266,6 +293,26 @@ public class WorkspaceController(
             return NotFound();
 
         await applicationService.DeleteAsync(app, token);
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/application/{appId:guid}/secret/rotate")]
+    // [ProtectedResource("workspaces", "applications:write")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [EndpointSummary("Rotate client secret (Step 1)")]
+    [EndpointDescription("Demotes the active secret to fallback 'rotated' status and issues a brand-new primary secret for zero-downtime migrations.")]
+    public async Task<IActionResult> RotateApplicationSecret(Guid id, Guid appId, CancellationToken token)
+    {
+        var space = await service.FindByIdAsync(id, token);
+        if (space is null) return NotFound();
+
+        var app = await applicationService.FindByIdAsync(appId, token);
+        if (app is null || app.WorkspaceId != space.Id)
+            return NotFound();
+
+        var secret = await applicationService.RotateClientSecretAsync(app.Id, token);
+        Response.Headers.TryAdd("X-Client-Secret", secret ?? "undefined");
         return NoContent();
     }
 
@@ -375,6 +422,180 @@ public class WorkspaceController(
         }
 
         return NoContent();
+    }
+
+    [HttpPost("{id:guid}/invite/{inviteeId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Invite a user to a project session")]
+    [EndpointDescription("The calling user (leader) invites another user to their active project session.")]
+    public async Task<ActionResult<MemberDO>> InviteAsync(Guid Id, Guid inviteeId, CancellationToken token)
+    {
+        var ws = await service.FindByIdAsync(Id, token);
+        if (ws is null) return NotFound();
+
+        // TODO: Ask keycloak if the target user has the staff role if ownerid null
+        // OwnerId null means it's a staff/system workspace, so only allow staff to invite
+        if (ws.OwnerId is null && !User.IsInRole("Staff"))
+            return Forbid();
+
+        var member = await memberService.InviteAsync(
+            MemberEntityType.Workspace,
+            Id,
+            User.GetSID(),
+            inviteeId,
+            null,
+            null,
+        token);
+
+        await bus.PublishAsync(new WorkspaceInviteNotification(inviteeId, User.GetSID(), ws.Id));
+        return Ok(new MemberDO(member));
+    }
+
+    [HttpDelete("{id:guid}/invite/{inviteeId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Cancel a pending invite")]
+    [EndpointDescription("The session leader cancels a pending invitation before it is accepted.")]
+    public async Task<ActionResult<MemberDO>> UninviteAsync(Guid Id, Guid inviteeId, CancellationToken token)
+    {
+        var ws = await service.FindByIdAsync(Id, token);
+        if (ws is null) return NotFound();
+        if (ws.OwnerId is null && !User.IsInRole("Staff"))
+            return Forbid();
+
+        var member = await memberService.UninviteAsync(
+            MemberEntityType.Workspace,
+            Id,
+            User.GetSID(),
+            inviteeId,
+            token
+        );
+
+        return Ok(new MemberDO(member));
+    }
+
+    [HttpPost("{id:guid}/invite/accept")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Accept a project invite")]
+    [EndpointDescription("The invited user accepts a pending invitation to join a project session.")]
+    public async Task<ActionResult<MemberDO>> AcceptAsync(Guid Id, CancellationToken token)
+    {
+        var ws = await service.FindByIdAsync(Id, token);
+        if (ws is null) return NotFound();
+        if (ws.OwnerId is null && !User.IsInRole("Staff"))
+            return Forbid();
+
+        var member = await memberService.AcceptAsync(
+            MemberEntityType.Workspace,
+            Id,
+            User.GetSID(),
+            token
+        );
+
+        return Ok(new MemberDO(member));
+    }
+
+    [HttpPost("{id:guid}/invite/decline")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Decline a project invite")]
+    [EndpointDescription("The invited user declines a pending invitation to join a project session.")]
+    public async Task<ActionResult<MemberDO>> DeclineAsync(Guid Id, CancellationToken token)
+    {
+        var ws = await service.FindByIdAsync(Id, token);
+        if (ws is null) return NotFound();
+        if (ws.OwnerId is null && !User.IsInRole("Staff"))
+            return Forbid();
+
+        var member = await memberService.DeclineAsync(
+            MemberEntityType.Workspace,
+            Id,
+            User.GetSID(),
+            token
+        );
+
+        return Ok(new MemberDO(member));
+    }
+
+    [HttpPost("{id:guid}/member/leave")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Leave a project")]
+    [EndpointDescription("The user leaves a project session.")]
+    public async Task<ActionResult> LeaveAsync(Guid Id, CancellationToken token)
+    {
+        var ws = await service.FindByIdAsync(Id, token);
+        if (ws is null) return NotFound();
+        if (ws.OwnerId == User.GetSID())
+            return UnprocessableEntity();
+        if (ws.OwnerId is null && !User.IsInRole("Staff"))
+            return Forbid();
+
+        await memberService.LeaveAsync(
+            MemberEntityType.Workspace,
+            Id,
+            User.GetSID(),
+            token
+        );
+
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/member/kick/{memberId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Kick a member from a project")]
+    [EndpointDescription("Remove a member from a project session.")]
+    public async Task<ActionResult> KickAsync(Guid Id, Guid memberId, CancellationToken token)
+    {
+        var ws = await service.FindByIdAsync(Id, token);
+        if (ws is null) return NotFound();
+        if (memberId == User.GetSID())
+            return UnprocessableEntity();
+        if (ws.OwnerId is null && !User.IsInRole("Staff"))
+            return Forbid();
+
+        await memberService.KickAsync(
+            MemberEntityType.Workspace,
+            Id,
+            User.GetSID(),
+            memberId,
+            token
+        );
+
+        return NoContent();
+    }
+
+    [Obsolete("Workspaces do not have a concept of session leadership like projects do")]
+    public Task<ActionResult> TransferLeadershipAsync(Guid entityId, Guid newLeaderId, CancellationToken token)
+    {
+        throw new NotImplementedException();
     }
 
     #endregion TransferEntities

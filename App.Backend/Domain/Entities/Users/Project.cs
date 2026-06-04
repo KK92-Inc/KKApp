@@ -27,9 +27,6 @@ public class UserProject : BaseEntity
         Project = null!;
         ProjectId = Guid.Empty;
 
-        GitInfo = null;
-        GitInfoId = null;
-
         Reviews = [];
         Transactions = [];
     }
@@ -48,12 +45,6 @@ public class UserProject : BaseEntity
     public DateTimeOffset? UnlocksAt { get; set; }
 
     /// <summary>
-    /// Limit the amount of users that can partake in this project session.
-    /// </summary>
-    [Column("max_members")]
-    public int MaxMembers { get; set; }
-
-    /// <summary>
     /// The project template this session is based on.
     /// </summary>
     [Column("project_id")]
@@ -62,14 +53,11 @@ public class UserProject : BaseEntity
     [ForeignKey(nameof(ProjectId))]
     public virtual Project Project { get; set; }
 
-    /// <summary>
-    /// Optional Git repository for this user project's work.
-    /// </summary>
     [Column("git_info_id")]
-    public Guid? GitInfoId { get; set; }
+    public Guid GitInfoId { get; set; }
 
     [ForeignKey(nameof(GitInfoId))]
-    public virtual Git? GitInfo { get; set; }
+    public virtual Git GitInfo { get; set; }
 
     /// <summary>
     /// Transactions related to user activities within this project.

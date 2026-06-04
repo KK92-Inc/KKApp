@@ -27,6 +27,9 @@ public class Application : BaseEntity
     [Column("description"), StringLength(2048)]
     public required string Description { get; set; }
 
+    [Column("enabled")]
+    public required bool Enabled { get; set; }
+
     [Column("redirect_uris")]
     public ICollection<string> RedirectUris { get; set; } = [];
 

@@ -22,14 +22,34 @@ const HEADER = `
 ░▀▀▀░▀▀▀░░▀░░▀▀▀░▀░▀░▀▀▀░▀▀▀░▀▀▀
 `;
 
+// Keep in sync with MemberEntityType in the backend.
+const ENTITY = { Workspace: 1, UserProject: 2 } as const;
+
+// ============================================================================
+
+type ParsedRepo = { owner: string; name: string };
+
+/*
+ * What the repo belongs to and whether it is publicly visible.
+ *
+ *   kind          → determines which membership table row to check
+ *   isPublic      → when true, read access is granted without a membership row
+ *   workspaceId   → for workspace-level membership checks
+ *   entityId      → the user_project id, when kind === "user_project"
+ */
+type RepoMeta =
+	| { kind: "project" | "rubric"; public: boolean; workspaceId: string }
+	| { kind: "user_project"; public: false; entityId: string }
+	| { kind: "unknown" };
+
 // ============================================================================
 
 /*
  * Strips a leading slash and optional ".git" suffix from the raw path the Git
- * client sends (e.g. "/owner/repo.git") and splits it into its owner / name
+ * client sends (e.g. "/owner/repo.git") and splits it into owner / name
  * components. Returns null when the path doesn't conform to that two-part shape.
  */
-function parse(repo: string): { owner: string; name: string } | null {
+function parse(repo: string): ParsedRepo | null {
 	let clean = repo.startsWith("/") ? repo.slice(1) : repo;
 	clean = clean.endsWith(".git") ? clean.slice(0, -4) : clean;
 	const [owner, name] = clean.split("/");
@@ -37,11 +57,128 @@ function parse(repo: string): { owner: string; name: string } | null {
 }
 
 /*
- * Checks whether the given login belongs to an active, non-pending member of
- * the repository. A single EXISTS query covers the join across users, git
- * records, and the membership table so we avoid multiple round-trips.
+ * Resolves what entity owns this git repo and whether it is publicly visible.
+ * A single query covers all three entity types so we avoid extra round-trips.
  */
-async function authorize(sql: SQL, login: string, repo: string): Promise<boolean> {
+async function resolveMeta(sql: SQL, owner: string, name: string): Promise<RepoMeta> {
+	const [row] = await sql<{
+		kind: "project" | "rubric" | "user_project" | null;
+		is_public: boolean | null;
+		workspace_id: string | null;
+		entity_id: string | null;
+	}[]>`
+		SELECT
+			CASE
+				WHEN p.id  IS NOT NULL THEN 'project'
+				WHEN r.id  IS NOT NULL THEN 'rubric'
+				WHEN up.id IS NOT NULL THEN 'user_project'
+			END                                         AS kind,
+			COALESCE(p.public, r.public)                AS is_public,
+			COALESCE(p.workspace_id, r.workspace_id)    AS workspace_id,
+			up.id::text                                 AS entity_id
+		FROM       tbl_git          g
+		LEFT JOIN  tbl_projects      p   ON  p.git_id       = g.id
+		LEFT JOIN  tbl_rubric       r   ON  r.git_info_id  = g.id
+		LEFT JOIN  tbl_user_project up  ON  up.git_info_id = g.id
+		WHERE  g.owner = ${owner}
+		  AND  g.name  = ${name}
+		LIMIT 1
+	`;
+
+	switch (row?.kind) {
+		case "project":
+		case "rubric":
+			return {
+				kind: row.kind,
+				public: row.is_public ?? false,
+				workspaceId: row.workspace_id!,
+			};
+		case "user_project":
+			return { kind: "user_project", public: false, entityId: row.entity_id! };
+		default:
+			return { kind: "unknown" };
+	}
+}
+
+/*
+ * Returns true when the user is a member of the global workspace
+ * (owner_id IS NULL), which is how staff status is modelled.
+ */
+// async function isStaff(sql: SQL, login: string): Promise<boolean> {
+// 	const [row] = await sql<{ ok: boolean }[]>`
+// 		SELECT EXISTS (
+// 			SELECT 1
+// 			FROM   tbl_user      u
+// 			JOIN   tbl_members   m  ON  m.user_id     = u.id
+// 			                       AND  m.entity_type  = ${ENTITY.Workspace}
+// 			                       AND  m.left_at      IS NULL
+// 			                       AND  m.role        != 0
+// 			JOIN   tbl_workspace w  ON  w.id           = m.entity_id
+// 			                       AND  w.owner_id     IS NULL
+// 			WHERE  u.login = ${login}
+// 		) AS ok
+// 	`;
+// 	return row?.ok ?? false;
+// }
+
+/*
+ * Returns true when the user is an active member of the given workspace.
+ * Workspace membership grants full read + write access to every entity
+ * (project, rubric, goal, cursus) that lives inside it.
+ */
+async function isWorkspaceMember(sql: SQL, login: string, workspaceId: string): Promise<boolean> {
+	const [row] = await sql<{ ok: boolean }[]>`
+		SELECT EXISTS (
+			SELECT 1
+			FROM   tbl_user    u
+			JOIN   tbl_members m  ON  m.user_id     = u.id
+			                     AND  m.entity_type  = ${ENTITY.Workspace}
+			                     AND  m.entity_id    = ${workspaceId}::uuid
+			                     AND  m.left_at      IS NULL
+			                     AND  m.role        != 0
+			WHERE  u.login = ${login}
+		) AS ok
+	`;
+	return row?.ok ?? false;
+}
+
+/*
+ * Returns true when the user is an active member of the given user_project.
+ */
+async function isUserProjectMember(sql: SQL, login: string, userProjectId: string): Promise<boolean> {
+	const [row] = await sql<{ ok: boolean }[]>`
+		SELECT EXISTS (
+			SELECT 1
+			FROM   tbl_user    u
+			JOIN   tbl_members m  ON  m.user_id     = u.id
+			                     AND  m.entity_type  = ${ENTITY.UserProject}
+			                     AND  m.entity_id    = ${userProjectId}::uuid
+			                     AND  m.left_at      IS NULL
+			                     AND  m.role        != 0
+			WHERE  u.login = ${login}
+		) AS ok
+	`;
+	return row?.ok ?? false;
+}
+
+/*
+ * Top-level access gate. Policy:
+ *
+ *   entity        │ read (clone/pull)          │ write (push)
+ *   ──────────────┼────────────────────────────┼──────────────────────
+ *   project       │ public (unless public=false)│ workspace member only
+ *   rubric        │ public (unless public=false)│ workspace member only
+ *   user_project  │ member only                │ member only
+ *
+ * Staff (global workspace member) bypass all checks.
+ * Workspace members get full access to everything inside that workspace.
+ */
+async function authorize(
+	sql: SQL,
+	login: string,
+	repo: string,
+	command: string,
+): Promise<boolean> {
 	const parsed = parse(repo);
 	if (!parsed) {
 		Log.error(`Invalid repository format: ${repo}`);
@@ -49,27 +186,31 @@ async function authorize(sql: SQL, login: string, repo: string): Promise<boolean
 	}
 
 	const { owner, name } = parsed;
-	const [row] = await sql<{ authorized: boolean }[]>`
-		SELECT EXISTS (
-			SELECT 1
-			FROM       tbl_user    u
-			JOIN       tbl_git     g  ON  g.owner = ${owner}
-			                         AND  g.name  = ${name}
-			JOIN       tbl_members m  ON  m.git_id  = g.id
-			                         AND  m.user_id  = u.id
-			                         AND  m.left_at  IS NULL
-			                         AND  m.role    != 0        -- exclude Pending
-			WHERE u.login = ${login}
-		) AS authorized
-	`;
+	const isPush = command === "git-receive-pack";
 
-	return row?.authorized ?? false;
+	// TODO: Query Keycloak instead
+	// if (await isStaff(sql, login)) return true;
+
+	const meta = await resolveMeta(sql, owner, name);
+	if (meta.kind === "unknown") return false;
+
+	if (meta.kind === "project" || meta.kind === "rubric") {
+		// Workspace members always have full access.
+		if (await isWorkspaceMember(sql, login, meta.workspaceId))
+			return true;
+
+		// Public entities are readable by any authenticated SSH user.
+		// Push always requires workspace membership (already checked above).
+		return !isPush && meta.public;
+	}
+
+	// user_project: membership is the only gate for both read and write.
+	return isUserProjectMember(sql, login, meta.entityId);
 }
 
 /*
- * Records a push event against the matching user_project row. This is
- * best-effort — a failure here must never roll back the push itself, since
- * the data has already been written to the bare repository on disk.
+ * Records a push event against the matching user_project row. Best-effort —
+ * a failure here must never roll back the push itself.
  */
 async function record(sql: SQL, login: string, repo: string): Promise<void> {
 	const parsed = parse(repo);
@@ -89,9 +230,9 @@ async function record(sql: SQL, login: string, repo: string): Promise<void> {
 			u.id,
 			${PUSH_VARIANT}
 		FROM       tbl_user         u
-		JOIN       tbl_git          g   ON  g.owner       = ${owner}
-		                                AND  g.name        = ${name}
-		JOIN       tbl_user_project up  ON  up.git_info_id = g.id
+		JOIN       tbl_git          g   ON  g.owner        = ${owner}
+		                                AND  g.name         = ${name}
+		JOIN       tbl_user_project up  ON  up.git_info_id  = g.id
 		WHERE u.login = ${login}
 	`;
 
@@ -104,8 +245,8 @@ async function record(sql: SQL, login: string, repo: string): Promise<void> {
 // Entry Point
 //
 // Validates the SSH_ORIGINAL_COMMAND forwarded by sshd, checks that the
-// requesting user is an authorised member of the target repository, then
-// proxies the raw Git protocol through the appropriate git-*-pack binary.
+// requesting user is authorized for the target repository, then proxies the
+// raw Git protocol through the appropriate git-*-pack binary.
 // A push transaction is recorded afterward on a clean exit.
 // ============================================================================
 
@@ -123,13 +264,13 @@ if (!original) {
 }
 
 const match = original.match(CMD_RGX);
-const [, git, path] = match ?? Log.die("Invalid command format!");
-if (!git || !path) {
+const [, command, path] = match ?? Log.die("Invalid command format!");
+if (!command || !path) {
 	Log.die("Unauthorized command.");
 	process.exit(1);
 }
 
-if (!(await authorize(sql, user, path))) {
+if (!(await authorize(sql, user, path, command))) {
 	await sql.close({ timeout: 0 });
 	Log.die("Unauthorized access to repository");
 }
@@ -140,15 +281,15 @@ if (!existsSync(fullpath)) {
 	Log.die("Repository not found");
 }
 
-const command = spawn([git, fullpath], {
+const child = spawn([command, fullpath], {
 	stdin: "inherit",
 	stdout: "inherit",
 	stderr: "inherit",
 });
 
-const exitCode = await command.exited;
+const exitCode = await child.exited;
 
-if (git === "git-receive-pack" && exitCode === 0) {
+if (command === "git-receive-pack" && exitCode === 0) {
 	try {
 		await record(sql, user, path);
 	} catch (err) {

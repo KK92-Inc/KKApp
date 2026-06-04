@@ -57,30 +57,4 @@ public interface IWorkspaceService : IDomainService<Workspace>, IUserQueryable<W
     /// <param name="token">The cancellation token.</param>
     /// <returns>The created rubric.</returns>
     public Task<Rubric> AddRubricAsync(Guid workspaceId, Rubric rubric, CancellationToken token = default);
-
-    /// <summary>
-    /// Creates a new OAuth2.0 developer application with an associated client in Keycloak into the specified workspace. 
-    /// </summary>
-    /// <param name="workspaceId"></param>
-    /// <param name="token"></param>
-    /// <returns></returns>
-    public Task<Application> AddApplicationAsync(Guid workspaceId, CancellationToken token = default);
-
-    /// <summary>
-    /// Updates an existing OAuth2.0 developer application and its associated client in Keycloak within the specified workspace.
-    /// </summary>
-    /// <param name="workspaceId"></param>
-    /// <param name="updatedApp"></param>
-    /// <param name="token"></param>
-    /// <returns></returns>
-    public Task<Application> UpdateApplicationAsync(Guid workspaceId, Application updatedApp, CancellationToken token = default);
-
-    /// <summary>
-    /// Deletes an existing OAuth2.0 developer application and its associated client in Keycloak within the specified workspace.
-    /// </summary>
-    /// <param name="workspaceId"></param>
-    /// <param name="applicationId"></param>
-    /// <param name="token"></param>
-    /// <returns></returns>
-    public Task DeleteApplicationAsync(Guid workspaceId, Guid applicationId, CancellationToken token = default);
 }

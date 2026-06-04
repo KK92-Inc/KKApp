@@ -46,6 +46,12 @@ public class Project : BaseEntity
     [Column("deprecated")]
     public bool Deprecated { get; set; }
 
+    /// <summary>
+    /// Limit the amount of users that can partake in this project session.
+    /// </summary>
+    [Column("max_members")]
+    public int MaxMembers { get; set; }
+
     [Column("git_id")]
     public Guid GitId { get; set; }
 

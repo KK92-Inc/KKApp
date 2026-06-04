@@ -3,23 +3,18 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using App.Backend.Domain.Entities;
 
 // ============================================================================
 
-namespace App.Backend.Models.Requests.Application;
+namespace App.Backend.Models.Responses.Entities.Applications;
 
-public class PostApplicationRequestDTO
+/// <summary>
+/// Data object returned strictly on initialization containing the plain text OIDC credential secret.
+/// </summary>
+public class ApplicationWithSecretDO(Application application, string clientSecret) : ApplicationDO(application)
 {
     [Required]
-    [StringLength(255)]
-    public required string Name { get; set; }
-
-    [Required]
-    [StringLength(2048)]
-    public required string Description { get; set; }
-
-    public ICollection<string> RedirectUris { get; set; } = [];
+    public string ClientSecret { get; set; } = clientSecret;
 }

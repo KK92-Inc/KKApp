@@ -29,6 +29,9 @@ public class ApplicationDO(Application application) : BaseEntityDO<Application>(
     [Required]
     public string Description { get; set; } = application.Description;
 
+    [Required]
+    public bool Enabled { get; set; } = application.Enabled;
+
     public ICollection<string> RedirectUris { get; set; } = application.RedirectUris;
 
     [Required]
