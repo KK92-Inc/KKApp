@@ -20,6 +20,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseSerilogRequestLogging();
 app.UseResponseCompression();
+app.MapDefaultEndpoints();
 
 // app.MapControllers().RequireAuthorization();
 app.MapControllers().RequireAuthorization();;

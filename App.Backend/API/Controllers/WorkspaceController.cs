@@ -236,7 +236,6 @@ public class WorkspaceController(
         var space = await service.FindByIdAsync(id, token);
         if (space is null) return NotFound();
 
-        // 1. Establish unique system client identifier standard
         var uniqueId = Guid.CreateVersion7().ToString("N")[..12];
         var app = await applicationService.CreateAsync(new Application
         {
@@ -248,17 +247,7 @@ public class WorkspaceController(
             RedirectUris = dto.RedirectUris ?? [],
         }, token);
 
-        return Created(new Uri($"/workspace/{space.Id}/application/{app.Id}", UriKind.Relative), new ApplicationWithSecretDO(app, string.Empty));
-
-        // 2. Extract initial plaintext secret via the updated service layer
-        // var secret = await applicationService.GetClientSecretAsync(app.Id, token);
-
-        // // 3. Return the single-view secret mapping DTO
-        // return CreatedAtAction(
-        //     nameof(AddApplication),
-        //     new { id = space.Id },
-        //     new ApplicationWithSecretDO(app, secret ?? string.Empty)
-        // );
+        return Created(new Uri($"/workspace/{space.Id}/application/{app.Id}", UriKind.Relative), new ApplicationDO(app));
     }
 
     [HttpPatch("{id:guid}/application/{appId:guid}")]

@@ -52,7 +52,7 @@ namespace App.Backend.API;
 public static class Services
 {
     public static WebApplicationBuilder Register(WebApplicationBuilder builder)
-    {
+    {        
         RegisterCore(builder);
         RegisterAuthentication(builder);
         RegisterOpenApi(builder);
@@ -71,6 +71,7 @@ public static class Services
 
     private static void RegisterCore(WebApplicationBuilder builder)
     {
+        builder.AddServiceDefaults();
         builder.Services.AddOptions();
         builder.Services.AddRazorTemplating();
         builder.Services.AddProblemDetails();

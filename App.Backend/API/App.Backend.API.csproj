@@ -52,6 +52,6 @@
     <ProjectReference Include="../../App.Migrations/Migrations.csproj" />
     <ProjectReference Include="../Core/App.Backend.Core.csproj" />
     <ProjectReference Include="../Models/App.Backend.Models.csproj" />
+    <ProjectReference Include="../../App.ServiceDefaults/App.ServiceDefaults.csproj" />
   </ItemGroup>
-
 </Project>

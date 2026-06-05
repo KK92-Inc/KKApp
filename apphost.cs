@@ -121,6 +121,7 @@ var realm = keycloak.AddRealm("student");
 // ============================================================================
 
 var backend = builder.AddProject<Projects.App_Backend_API>("backend")
+    .WithHttpHealthCheck("/health")
     .WithReference(database)
     .WithReference(cache)
     .WithReference(keycloak)
@@ -137,6 +138,7 @@ var backend = builder.AddProject<Projects.App_Backend_API>("backend")
 // ============================================================================
 
 var frontendBuilder = builder.AddViteApp("frontend", "./App.Frontend")
+    .WithHttpHealthCheck("/health")
     .WaitFor(cache)
     .WithReference(cache)
     .WaitFor(backend)
