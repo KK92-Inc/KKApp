@@ -172,8 +172,37 @@ const server = Bun.serve({
 					},
 				);
 			},
-		},
+			PUT: async (req) => {
+				const url = new URL(req.url);
+				const git = `${REPO}/${req.params.owner}/${req.params.name}`;
+				const prefix = `/repo/${req.params.owner}/${req.params.name}/blob/${req.params.branch}/`;
+				const filePath = url.pathname.startsWith(prefix)
+					? url.pathname.slice(prefix.length)
+					: "";
 
+				if (!existsSync(git)) return new Response(null, { status: 404 });
+				if (!filePath) return new Response(null, { status: 400 });
+
+				const body = await req.text();
+				const content = Buffer.from(body, "base64");
+
+				// Create a temporary file to hold the content
+				const tempPath = `${git}/.temp_blob`;
+				await Bun.write(tempPath, content);
+
+				try {
+					// Add the file to the index and commit
+					await $`git -C ${git} add ${filePath}`.quiet();
+					await $`git -C ${git} commit -m "Update ${filePath}"`.quiet();
+					return new Response(null, { status: 200 });
+				} catch (error) {
+					return new Response(null, { status: 500 });
+				} finally {
+					// Clean up the temporary file
+					await $`rm ${tempPath}`.quiet();
+				}
+			}
+		},
 		"/repo/:owner/:name/lock": {
 			POST: async (req) => {
 				const { owner, name } = req.params;

@@ -56,12 +56,6 @@ public class Rubric : BaseEntity
     public string Slug { get; set; }
 
     /// <summary>
-    /// The markdown content describing the evaluation criteria.
-    /// </summary>
-    [Column("markdown")]
-    public string Markdown { get; set; }
-
-    /// <summary>
     /// Whether this rubric is publicly visible.
     /// </summary>
     [Column("public")]

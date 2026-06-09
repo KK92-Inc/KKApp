@@ -26,6 +26,7 @@ using App.Backend.Models.Requests.Application;
 using App.Backend.API.Controllers.Interfaces;
 using App.Backend.API.Notifications.Variants;
 using Wolverine;
+using App.Backend.Domain.Entities.Reviews;
 
 // ============================================================================
 
@@ -39,6 +40,7 @@ public class WorkspaceController(
     IApplicationService applicationService,
     IProjectService projectService,
     IGoalService goalService,
+    IGitService gitService,
     ICursusService cursusService,
     IRubricService rubricService,
     IMemberService memberService,
@@ -202,7 +204,9 @@ public class WorkspaceController(
         var space = await service.FindByIdAsync(id, token);
         if (space is null)
             return NotFound();
-        if (space.Ownership is EntityOwnership.Organization && !User.IsInRole("Staff"))
+        
+        var isRoot = space.OwnerId is null;
+        if (isRoot && !User.IsInRole("Staff"))
             return Forbid();
 
         var userId = User.GetSID();
@@ -211,15 +215,28 @@ public class WorkspaceController(
         if (await rubricService.FindBySlugAsync(body.Name.ToSlug(), token) is not null)
             return Conflict();
 
+        // TODO: Inside this service or below we need to create the repo and add the row
         var rubric = await service.AddRubricAsync(space.Id, new()
         {
             Name = body.Name,
-            Markdown = body.Markdown ?? string.Empty,
             Slug = body.Name.ToSlug(),
             CreatorId = userId,
             Public = body.Public,
             Enabled = body.Enabled,
         }, token);
+
+        if (body.Variants is not null && body.Variants.Any())
+        {
+            rubric = await rubricService.SetVariantsAsync(
+                rubric.Id,
+                body.Variants.Select(v => new RubricVariant()
+                {
+                    Kind = v.Kind,
+                    Count = v.Required
+                }),
+                token
+            );
+        }
 
         return Ok(new RubricDO(rubric));
     }

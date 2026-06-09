@@ -43,20 +43,14 @@ public record PatchRubricEntityRequestDTO
     [Description("Indicates whether the rubric is enabled.")]
     public bool? Enabled { get; init; }
 
-    /// <summary>
-    /// Optional supported review kinds update.
-    /// </summary>
-    [Description("The supported review kinds for this rubric.")]
-    public ReviewKinds? SupportedReviewKinds { get; init; }
+    // /// <summary>
+    // /// Optional reviewer rules update.
+    // /// </summary>
+    // [Description("Optional reviewer rules/constraints for this rubric.")]
+    // public ICollection<Rule>? ReviewerRules { get; init; }
 
-    /// <summary>
-    /// Optional reviewer rules update.
-    /// </summary>
-    [Description("Optional reviewer rules/constraints for this rubric.")]
-    public ICollection<Rule>? ReviewerRules { get; init; }
-
-    /// <summary>
-    /// Optional reviewee rules update.
-    /// </summary>
-    public ICollection<Rule>? RevieweeRules { get; init; }
+    // /// <summary>
+    // /// Optional reviewee rules update.
+    // /// </summary>
+    // public ICollection<Rule>? RevieweeRules { get; init; }
 }

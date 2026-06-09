@@ -53,7 +53,7 @@ public class RubricService(DatabaseContext ctx, IGitService git) : BaseService<R
             .ToListAsync(token);
     }
 
-    public async Task<Rubric?> SetVariantsAsync(
+    public async Task<Rubric> SetVariantsAsync(
         Guid rubricId,
         IEnumerable<RubricVariant> variants,
         CancellationToken token = default)
@@ -61,7 +61,7 @@ public class RubricService(DatabaseContext ctx, IGitService git) : BaseService<R
         // 1. Fetch only the parent Rubric (No .Include() needed!)
         var rubric = await _context.Rubrics.FirstOrDefaultAsync(r => r.Id == rubricId, token);
         if (rubric is null)
-            return null;
+            throw new ServiceException(404, "Rubric not found");
 
         // Optional: Wrap in a transaction so Delete and Add succeed/fail together
         await using var transaction = await _context.Database.BeginTransactionAsync(token);

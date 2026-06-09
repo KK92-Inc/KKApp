@@ -174,4 +174,17 @@ public class GitService : IGitService
             _ => throw new ServiceException((int)response.StatusCode, $"Unexpected status {response.StatusCode} unlocking repo {owner}/{name}")
         };
     }
+
+    public async Task<bool> SetBlobAsync(string owner, string name, string branch, string path, string content, CancellationToken token = default)
+    {
+        var request = new StringContent(content);
+        var response = await _http.PutAsync($"repo/{owner}/{name}/blob/{branch}/{path}", request, token);
+
+        return response.StatusCode switch
+        {
+            HttpStatusCode.OK => true,
+            HttpStatusCode.NotFound => false,
+            _ => throw new ServiceException(500, $"Unexpected status {response.StatusCode} setting blob {owner}/{name}/{branch}/{path}")
+        };
+    }
 }

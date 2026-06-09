@@ -58,17 +58,47 @@ public interface IGitService
     /// <returns>True if deleted (204), false if not found (404).</returns>
     public Task<bool> DeleteBranchAsync(string owner, string name, string branch, CancellationToken token = default);
 
+
     /// <summary>
-    /// Gets the tree (ls-tree) listing for a given branch and path.
+    /// Gets the tree structure of a repository at a given branch/path.
+    /// 
+    /// Output matches that of the "git ls-tree" command, e.g.:
+    /// <c>
+    /// 100644 blob 3a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8	somefile.txt
+    /// 100644 blob 4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0	anotherfile.txt
+    /// 40000 tree 5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1	somedir
+    /// </c>
     /// </summary>
-    /// <returns>The raw git ls-tree output, or null if not found.</returns>
+    /// <param name="owner">The owner of the repository.</param>
+    /// <param name="name">The name of the repository.</param>
+    /// <param name="branch">The branch to update.</param>
+    /// <param name="path">The path of the tree to update.</param>
+    /// <param name="token">The cancellation token.</param>
+    /// <returns>The tree structure, or null if not found.</returns>
     public Task<string?> GetTreeAsync(string owner, string name, string branch, string path = "", CancellationToken token = default);
 
     /// <summary>
-    /// Gets the base64-encoded blob content of a file at a given branch/path.
+    /// Gets the content of a file (git blob) at a given branch/path.
     /// </summary>
-    /// <returns>The base64-encoded file content, or null if not found.</returns>
+    /// <param name="owner">The owner of the repository.</param>
+    /// <param name="name">The name of the repository.</param>
+    /// <param name="branch">The branch to update.</param>
+    /// <param name="path">The path of the file to update.</param>
+    /// <param name="token">The cancellation token.</param>
+    /// <returns>The file content, or null if not found.</returns>
     public Task<string?> GetBlobAsync(string owner, string name, string branch, string path, CancellationToken token = default);
+
+    /// <summary>
+    /// Sets the content of a file at a given branch/path, creating or updating as needed.
+    /// </summary>
+    /// <param name="owner">The owner of the repository.</param>
+    /// <param name="name">The name of the repository.</param>
+    /// <param name="branch">The branch to update.</param>
+    /// <param name="path">The path of the file to update.</param>
+    /// <param name="content">The base64-encoded new content for the file.</param>
+    /// <param name="token">The cancellation token.</param>
+    /// <returns>True if the blob was updated, false if not found.</returns>
+    public Task<bool> SetBlobAsync(string owner, string name, string branch, string path, string content, CancellationToken token = default);
 
     /// <summary>
     /// Gets the list of branches in the repository.
@@ -82,18 +112,18 @@ public interface IGitService
     /// <summary>
     /// Locks the repository by adding a pre-receive hook that rejects all pushes.
     /// </summary>
-    /// <param name="owner"></param>
-    /// <param name="name"></param>
-    /// <param name="token"></param>
-    /// <returns></returns>
+    /// <param name="owner">The owner of the repository.</param>
+    /// <param name="name">The name of the repository.</param>
+    /// <param name="token">The cancellation token.</param>
+    /// <returns>True if the repository was locked, false otherwise.</returns>
     public Task<bool> LockAsync(string owner, string name, CancellationToken token = default);
 
     /// <summary>
     /// Unlocks the repository by removing the pre-receive hook.
     /// </summary>
-    /// <param name="owner"></param>
-    /// <param name="name"></param>
-    /// <param name="token"></param>
-    /// <returns></returns>
+    /// <param name="owner">The owner of the repository.</param>
+    /// <param name="name">The name of the repository.</param>
+    /// <param name="token">The cancellation token.</param>
+    /// <returns>True if the repository was unlocked, false otherwise.</returns>
     public Task<bool> UnlockAsync(string owner, string name, CancellationToken token = default);
 }

@@ -20,7 +20,12 @@ namespace App.Backend.API.Controllers;
 [ApiController]
 [Route("rubrics")]
 [ProtectedResource("rubrics")]
-public class RubricController(ILogger<RubricController> log, IRubricService service) : Controller
+public class RubricController(
+    ILogger<RubricController> log,
+    IRubricService service,
+    IGitService gitService,
+    IProjectService projectService
+) : Controller
 {
     [HttpGet]
     [ProtectedResource("rubrics", "rubrics:read")]
@@ -86,11 +91,24 @@ public class RubricController(ILogger<RubricController> log, IRubricService serv
             return Forbid();
 
         rubric.Name = body.Name ?? rubric.Name;
-        rubric.Markdown = body.Markdown ?? rubric.Markdown;
+        // rubric.Markdown = body.Markdown ?? rubric.Markdown;
         rubric.Public = body.Public ?? rubric.Public;
         rubric.Enabled = body.Enabled ?? rubric.Enabled;
-        rubric.ReviewerRules = body.ReviewerRules ?? rubric.ReviewerRules;
-        rubric.RevieweeRules = body.RevieweeRules ?? rubric.RevieweeRules;
+        if (body.Markdown is not null)
+        {
+            await gitService.SetBlobAsync(
+                owner: rubric.WorkspaceId.ToString(),
+                name: rubric.Id.ToString(),
+                branch: "main",
+                path: "README.md",
+                content: body.Markdown,
+            token);
+        }
+
+
+        // TODO: Separate routes for updating rules to validate them properly
+        // rubric.ReviewerRules = body.ReviewerRules ?? rubric.ReviewerRules;
+        // rubric.RevieweeRules = body.RevieweeRules ?? rubric.RevieweeRules;
 
         await service.UpdateAsync(rubric, token);
         return Ok(new RubricDO(rubric));
@@ -116,7 +134,8 @@ public class RubricController(ILogger<RubricController> log, IRubricService serv
 
         rubric = await service.SetVariantsAsync(
             id,
-            body.Variants.Select(v => new RubricVariant() {
+            body.Variants.Select(v => new RubricVariant()
+            {
                 Kind = v.Kind,
                 Count = v.Required
             }),

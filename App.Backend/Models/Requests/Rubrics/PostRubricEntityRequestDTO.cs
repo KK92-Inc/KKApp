@@ -32,6 +32,10 @@ public record PostRubricEntityRequestDTO
 
     [Description("Indicates whether the rubric is enabled.")]
     public bool Enabled { get; init; } = false;
+
+    [Required, MinLength(1)]
+    [Description("The list of review variant requirements for this rubric.")]
+    public required IEnumerable<RubricVariantDTO> Variants { get; init; }
 }
 
 /// <summary>
