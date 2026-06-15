@@ -20,9 +20,6 @@ namespace App.Backend.Models.Responses.Entities;
 public class WorkspaceDO(Workspace workspace) : BaseEntityDO<Workspace>(workspace)
 {
     [Required]
-    public Guid Id { get; set; } = workspace.Id;
-
-    [Required]
     public UserLightDO? Owner { get; set; } = workspace.Owner;
 
     [Required]

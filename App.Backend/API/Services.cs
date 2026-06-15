@@ -52,7 +52,7 @@ namespace App.Backend.API;
 public static class Services
 {
     public static WebApplicationBuilder Register(WebApplicationBuilder builder)
-    {        
+    {
         RegisterCore(builder);
         RegisterAuthentication(builder);
         RegisterOpenApi(builder);
@@ -220,8 +220,12 @@ public static class Services
 
     private static void RegisterDatabase(WebApplicationBuilder builder)
     {
-        var cs = builder.Configuration.GetConnectionString("db");
+        // 1. If testing, bail out early. Let ApiFactory handle DbContext registration.
+        if (builder.Environment.IsEnvironment("Testing"))
+            return;
 
+        // 2. Production / Development (Aspire setup)
+        var cs = builder.Configuration.GetConnectionString("db");
         builder.AddNpgsqlDbContext<DatabaseContext>("db", null, options =>
         {
             options.UseNpgsql(cs);
@@ -243,9 +247,12 @@ public static class Services
 
         builder.Host.UseWolverine(opts =>
         {
-            opts.PersistMessagesWithPostgresql(cs!).EnableMessageTransport(o => o.AutoProvision());
-            opts.PublishAllMessages().ToPostgresqlQueue("outbound");
-            opts.ListenToPostgresqlQueue("outbound").MaximumMessagesToReceive(50);
+            if (!builder.Environment.IsEnvironment("Testing"))
+            {
+                opts.PersistMessagesWithPostgresql(cs!).EnableMessageTransport(o => o.AutoProvision());
+                opts.PublishAllMessages().ToPostgresqlQueue("outbound");
+                opts.ListenToPostgresqlQueue("outbound").MaximumMessagesToReceive(50);
+            }
         });
     }
 
