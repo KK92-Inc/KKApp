@@ -3,33 +3,29 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using System.Text.Json;
 using System.ComponentModel.DataAnnotations;
+using App.Backend.Domain.Values;
 using App.Backend.Domain.Entities.Reviews;
 
 // ============================================================================
 
 namespace App.Backend.Models.Responses.Entities.Reviews;
 
-/// <summary>
-/// Data object representing a rubric for reviews.
-/// </summary>
-public class RubricLightDO(Rubric rubric) : BaseEntityDO<Rubric>(rubric)
+public class AnnotationDO(Annotation review) : BaseEntityDO<Annotation>(review)
 {
     [Required]
-    public string Name { get; set; } = rubric.Name;
+    public string FilePath { get; set; } = review.FilePath;
 
     [Required]
-    public string Slug { get; set; } = rubric.Slug;
+    public AnnotationData? Data { get; set; } = JsonSerializer.Deserialize<AnnotationData>(review.Data);
 
     [Required]
-    public bool Public { get; set; } = rubric.Public;
+    public Guid ReviewId { get; set; } = review.ReviewId;
 
     [Required]
-    public bool Enabled { get; set; } = rubric.Enabled;
+    public UserLightDO Author { get; set; } = new (review.Author);
 
-    [Required]
-    public GitDO? GitInfo { get; set; } = rubric.GitInfo;
-
-    public static implicit operator RubricLightDO?(Rubric? rubric) =>
-        rubric is null ? null : new(rubric);
+    public static implicit operator AnnotationDO?(Annotation? annotation) =>
+        annotation is null ? null : new(annotation);
 }

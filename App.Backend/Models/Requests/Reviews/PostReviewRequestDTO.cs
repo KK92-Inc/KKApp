@@ -24,4 +24,11 @@ public record PostReviewRequestDTO
     [Required]
     [Description("The user project ID being reviewed.")]
     public required Guid UserProjectId { get; init; }
+
+    /// <summary>
+    /// The SHA of the commit that this review is associated with, if applicable.
+    /// </summary>
+    [Required]
+    [Description("The SHA of the commit that this review is associated with, if applicable.")]
+    public required string Ref { get; init; }
 }

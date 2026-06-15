@@ -87,6 +87,36 @@ public class ReviewController(
         return Ok(new ReviewDO(review));
     }
 
+    [HttpGet("{reviewId:guid}/{file}/annotations")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Get annotations for a specific file in a review")]
+    [EndpointDescription("Returns the review with full details including reviewer and rubric.")]
+    public async Task<ActionResult<IEnumerable<AnnotationDO>>> GetAnnotations(Guid reviewId, string file, CancellationToken token)
+    {
+        var review = await service.FindByIdAsync(reviewId, token);
+        if (review is null) return NotFound("Review not found");
+
+        var annotations = await service.GetAnnotationsAsync(reviewId, file, token);
+        return Ok(annotations.Select(a => new AnnotationDO(a)));
+    }
+
+    [HttpPut("{reviewId:guid}/{file}/annotations")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Get annotations for a specific file in a review")]
+    [EndpointDescription("Returns the review with full details including reviewer and rubric.")]
+    public async Task<ActionResult<IEnumerable<AnnotationDO>>> SetAnnotations(Guid reviewId, string file, CancellationToken token)
+    {
+        var review = await service.FindByIdAsync(reviewId, token);
+        if (review is null) return NotFound("Review not found");
+
+        var annotations = await service.SetAnnotationsAsync(reviewId, User.GetSID(), file, [], token);
+        return Ok(annotations.Select(a => new AnnotationDO(a)));
+    }
+
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -100,6 +130,7 @@ public class ReviewController(
         var reviews = await service.RequestReviewAsync(
             dto.UserProjectId,
             requester,
+            dto.Ref,
             token
         );
 

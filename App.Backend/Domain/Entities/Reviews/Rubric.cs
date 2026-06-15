@@ -25,7 +25,6 @@ public class Rubric : BaseEntity
     {
         Name = string.Empty;
         Slug = string.Empty;
-        Markdown = string.Empty;
         Public = false;
         Enabled = false;
         Deprecated = false;

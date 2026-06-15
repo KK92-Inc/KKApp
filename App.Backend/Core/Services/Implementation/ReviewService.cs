@@ -21,7 +21,7 @@ public class ReviewService(DatabaseContext context, IRuleService rules) : BaseSe
     // Public API (Core Actions)
     // ============================================================================
 
-    public async Task<IEnumerable<Review>> RequestReviewAsync(Guid userProjectId, Guid initiatorId, CancellationToken token = default)
+    public async Task<IEnumerable<Review>> RequestReviewAsync(Guid userProjectId, Guid initiatorId, string @ref, CancellationToken token = default)
     {
         return await context.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
         {
@@ -37,7 +37,7 @@ public class ReviewService(DatabaseContext context, IRuleService rules) : BaseSe
 
             if (userProject.State is EntityObjectState.Awaiting or EntityObjectState.Inactive)
                 throw new ServiceException(422, $"Project is currently {userProject.State.ToString().ToLower()} and cannot be reviewed.");
-            
+
             if (userProject.State is EntityObjectState.Active)
                 userProject.State = EntityObjectState.Awaiting;
 
@@ -83,7 +83,7 @@ public class ReviewService(DatabaseContext context, IRuleService rules) : BaseSe
                     Kind = variant.Kind,
                     State = ReviewState.Pending,
                     UserProjectId = userProjectId,
-                    RubricRef = "master", // TODO: Query the submitted branch
+                    Ref = @ref,
                     ReviewerId = variant.Kind is ReviewKinds.Self ? initiatorId : null,
                 }))
                 .ToList();
@@ -217,5 +217,30 @@ public class ReviewService(DatabaseContext context, IRuleService rules) : BaseSe
             .Include(r => r.Rubric)
             .Include(r => r.UserProject)
             .ToListAsync(token);
+    }
+
+    public async Task<IEnumerable<Annotation>> GetAnnotationsAsync(Guid reviewId, string filePath, CancellationToken token = default)
+    {
+        return await context.Annotations
+            .AsNoTracking()
+            .Where(a => a.ReviewId == reviewId && a.FilePath == filePath)
+            .ToListAsync(token);
+    }
+
+    public async Task<IEnumerable<Annotation>> SetAnnotationsAsync(Guid reviewId, Guid authorId, string filePath, IEnumerable<Annotation> annotations, CancellationToken token = default)
+    {
+        return await context.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
+        {
+            await using var transaction = await context.Database.BeginTransactionAsync(ct);
+            await context.Annotations
+                // .AsNoTracking()
+                .Where(a => a.ReviewId == reviewId && a.FilePath == filePath)
+                .ExecuteDeleteAsync(ct);
+
+            context.Annotations.AddRange(annotations);
+            await context.SaveChangesAsync(token);
+            await transaction.CommitAsync(token);
+            return annotations;
+        }, token);
     }
 }

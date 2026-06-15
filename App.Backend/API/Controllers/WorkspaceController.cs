@@ -215,7 +215,6 @@ public class WorkspaceController(
         if (await rubricService.FindBySlugAsync(body.Name.ToSlug(), token) is not null)
             return Conflict();
 
-        // TODO: Inside this service or below we need to create the repo and add the row
         var rubric = await service.AddRubricAsync(space.Id, new()
         {
             Name = body.Name,

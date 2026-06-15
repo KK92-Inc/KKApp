@@ -31,6 +31,7 @@ public interface IReviewService : IDomainService<Review>
     public Task<IEnumerable<Review>> RequestReviewAsync(
         Guid userProjectId,
         Guid initiatorId,
+        string @ref,
         CancellationToken token = default
     );
 
@@ -87,4 +88,32 @@ public interface IReviewService : IDomainService<Review>
     /// <param name="token">Cancellation token.</param>
     /// <returns>List of reviews assigned to the reviewer.</returns>
     public Task<IEnumerable<Review>> GetReviewerAssignmentsAsync(Guid reviewerId, CancellationToken token = default);
+
+    /// <summary>
+    /// Gets all annotations for a specific file in a review.
+    /// </summary>
+    /// <param name="reviewId">The review ID.</param>
+    /// <param name="ref">The git ref.</param>
+    /// <param name="filePath">The file path.</param>
+    /// <param name="token">Cancellation token.</param>
+    /// <returns>List of annotations.</returns>
+    public Task<IEnumerable<Annotation>> GetAnnotationsAsync(Guid reviewId, string filePath, CancellationToken token = default);
+
+    /// <summary>
+    /// Sets all annotations for a specific file in a review.
+    /// </summary>
+    /// <param name="reviewId">The review ID.</param>
+    /// <param name="authorId">The author of the annotations.</param>
+    /// <param name="ref">The git ref.</param>
+    /// <param name="filePath">The file path.</param>
+    /// <param name="annotations">The annotations to set.</param>
+    /// <param name="token">Cancellation token.</param>
+    /// <returns>List of annotations.</returns>
+    public Task<IEnumerable<Annotation>> SetAnnotationsAsync(
+        Guid reviewId,
+        Guid authorId,
+        string filePath,
+        IEnumerable<Annotation> annotations,
+        CancellationToken token = default
+    );
 }

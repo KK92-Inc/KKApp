@@ -22,9 +22,6 @@ public class RubricDO(Rubric rubric) : BaseEntityDO<Rubric>(rubric)
     public string Slug { get; set; } = rubric.Slug;
 
     [Required]
-    public string Markdown { get; set; } = rubric.Markdown;
-
-    [Required]
     public bool Public { get; set; } = rubric.Public;
 
     [Required]

@@ -47,6 +47,7 @@ public class DatabaseContext(DbContextOptions<DatabaseContext> options) : DbCont
     public DbSet<Rubric> Rubrics { get; set; }
     public DbSet<RubricVariant> RubricsVariants { get; set; }
     public DbSet<Review> Reviews { get; set; }
+    public DbSet<Annotation> Annotations { get; set; }
     public DbSet<Git> GitInfo { get; set; }
     public DbSet<Notification> Notifications { get; set; }
     public DbSet<Spotlight> Spotlights { get; set; }

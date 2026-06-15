@@ -33,6 +33,7 @@ public class Review : BaseEntity
         Rubric = null!;
 
         Comments = [];
+        Annotations = [];
     }
 
     // Columns //
@@ -70,8 +71,8 @@ public class Review : BaseEntity
     /// <summary>
     /// The SHA of the commit that this review is associated with, if applicable.
     /// </summary>
-    [Column("rubric_ref")]
-    public string RubricRef { get; set; }
+    [Column("ref")]
+    public string Ref { get; set; }
 
     // Relations //
 
@@ -88,4 +89,9 @@ public class Review : BaseEntity
     /// Reviews are made up of multiple feedback entries/comments.
     /// </summary>
     public virtual Collection<Comment> Comments { get; set; }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    public virtual Collection<Annotation> Annotations { get; set; }
 }
