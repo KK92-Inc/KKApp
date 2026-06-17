@@ -101,14 +101,7 @@ public class UserCursusController(
         var cursus = await cursusService.FindByIdAsync(uc.CursusId, token);
         if (cursus is null) return NotFound();
 
-        // Load the user's frozen snapshot (what the track looked like at enrollment)
-        var snapshot = await userCursusService.GetSnapshotAsync(id, token);
-        if (snapshot.Count == 0) return NotFound();
-
-        // Fetch current goal states for only the goals in this snapshot
-        var userStates = await userCursusService.GetSnapshotStatesAsync(
-            uc.UserId, snapshot.Select(n => n.GoalId), token);
-
-        return Ok(UserCursusTrackDO.From(cursus, snapshot, userStates));
+        var (snapshot, states) = await userCursusService.GetTrackAsync(id, uc.UserId, token);
+        return Ok(userCursusService.AssembleTrack(cursus, snapshot, states));
     }
 }

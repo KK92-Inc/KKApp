@@ -1,15 +1,30 @@
+// ============================================================================
+// Copyright (c) 2026 - W2Inc, All Rights Reserved.
+// See README.md in the project root for license information.
+// ============================================================================
+
 using System.Diagnostics;
 using App.Backend.Core.Services.Interface;
 using App.Backend.Database;
 using App.Backend.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
+// ============================================================================
+
 namespace App.Backend.Tests.Integration;
 
-public class LocalProcessGitService(DatabaseContext db) : IGitService
+/// <summary>
+/// A local variant of App.Repository meant for temporary testing.
+/// Usually App.Repository is a separate internal service to manage git repos
+/// via an API Interface.
+/// 
+/// However in testing this is redundant as that Project is tested separately
+/// and we just need something *that works*.
+/// </summary>
+/// <param name="db"></param>
+public class LocalGitService(DatabaseContext db) : IGitService
 {
     private readonly string _baseRepoPath = Path.Combine(Path.GetTempPath(), "repos");
-    
 
     private string GetRepoPath(string owner, string name) => 
         Path.Combine(_baseRepoPath, owner, name);
@@ -27,6 +42,7 @@ public class LocalProcessGitService(DatabaseContext db) : IGitService
 
     public async Task<bool> CreateAsync(string owner, string name, CancellationToken token = default)
     {
+        Console.WriteLine(_baseRepoPath);
         var repoPath = GetRepoPath(owner, name);
         if (Directory.Exists(repoPath)) return false; // 409 Conflict
 

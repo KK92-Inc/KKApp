@@ -14,96 +14,140 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using App.Backend.Core.Query;
 using System.Linq.Expressions;
+using App.Backend.Models.Responses.Entities.Cursus;
+using App.Backend.Models.Responses.Entities.Goals;
 
 // ============================================================================
 
 namespace App.Backend.Core.Services.Implementation;
 
-public class CursusService(DatabaseContext ctx, ILogger<CursusService> log) : BaseService<Cursus>(ctx), ICursusService, ISlugQueryable<Cursus>
+public class CursusService(DatabaseContext ctx, IGoalService goalService, ILogger<CursusService> log) : BaseService<Cursus>(ctx), ICursusService, ISlugQueryable<Cursus>
 {
-    private readonly DatabaseContext context = ctx;
-
-    public override Task<PaginatedList<Cursus>> GetAllAsync(ISorting sorting, IPagination pagination, CancellationToken token = default, params Expression<Func<Cursus, bool>>?[] filters)
+    public async Task<string?> ValidateTrackAsync(
+        IReadOnlyList<(Guid GoalId, Guid? ParentId, Guid? Group)> nodes,
+        CancellationToken token = default)
     {
-        return base.GetAllAsync(sorting, pagination, token, [..filters, c => c.Public]);
+        var allIds = nodes.Select(n => n.GoalId).ToList();
+        var distinctIds = allIds.Distinct().ToList();
+
+        if (distinctIds.Count != allIds.Count)
+            return "Duplicate goals are not allowed in a track";
+
+        if (!await goalService.ExistsAsync(distinctIds, token))
+            return "One or more goal IDs are invalid";
+
+        var parentLookup = nodes.ToDictionary(n => n.GoalId, n => n.ParentId);
+        var validated = new HashSet<Guid>();
+
+        foreach (var (GoalId, ParentId, Group) in nodes)
+        {
+            var current = GoalId;
+            var path = new HashSet<Guid>();
+            while (parentLookup.TryGetValue(current, out var parentId) && parentId.HasValue)
+            {
+                if (!parentLookup.ContainsKey(parentId.Value))
+                    return $"Parent goal {parentId.Value} is not part of this track";
+
+                if (validated.Contains(current))
+                    break;
+
+                if (!path.Add(current))
+                    return $"Cyclic dependency detected involving goal {current}";
+
+                current = parentId.Value;
+            }
+
+            validated.UnionWith(path);
+        }
+
+        var invalidGroup = nodes
+            .Where(n => n.Group.HasValue)
+            .GroupBy(n => n.Group!.Value)
+            .FirstOrDefault(g => g.Select(n => n.ParentId).Distinct().Count() > 1);
+
+        if (invalidGroup is not null)
+            return $"All goals in choice group {invalidGroup.Key} must share the same parent";
+
+        return null;
     }
 
-    public override Task DeleteAsync(Cursus entity, CancellationToken token = default)
+    public CursusTrackDO AssembleTrack(Cursus cursus, IReadOnlyList<CursusGoal> goals)
     {
-        entity.Deprecated = true;
-        return UpdateAsync(entity, token);
+        var entries = goals.Select(g => (
+            Node: new CursusTrackNodeDO { Goal = new GoalLightDO(g.Goal), ChoiceGroup = g.ChoiceGroup },
+            g.GoalId,
+            g.ParentGoalId
+        )).ToList();
+
+        var byId = entries.ToDictionary(e => e.GoalId, e => e.Node);
+        var roots = new List<CursusTrackNodeDO>();
+
+        foreach (var (node, _, parentId) in entries)
+        {
+            if (parentId is not null && byId.TryGetValue(parentId.Value, out var parent))
+                parent.Children.Add(node);
+            else
+                roots.Add(node);
+        }
+
+        return new CursusTrackDO
+        {
+            CursusId = cursus.Id,
+            Variant = cursus.Variant,
+            CompletionMode = cursus.CompletionMode,
+            Nodes = roots
+        };
     }
 
-    /// <inheritdoc />
-    public async Task<IEnumerable<CursusGoal>> SetTrackAsync(
+    public async Task<IReadOnlyList<CursusGoal>> ReplaceTrackAsync(
         Guid cursusId,
         IEnumerable<CursusGoal> nodes,
         CancellationToken token = default)
     {
-        var strategy = context.Database.CreateExecutionStrategy();
+        var strategy = ctx.Database.CreateExecutionStrategy();
+
         return await strategy.ExecuteAsync(async (ct) =>
         {
-            await using var transaction = await context.Database.BeginTransactionAsync(ct);
+            await using var transaction = await ctx.Database.BeginTransactionAsync(ct);
 
             var cursus = await FindByIdAsync(cursusId, ct)
                 ?? throw new ServiceException(404, "Cursus not found");
 
             if (cursus.Variant != CursusVariant.Static)
-                throw new ServiceException(400, "Track can only be set on Fixed cursus types");
+                throw new ServiceException(400, "Track can only be replaced on static cursus types");
 
-            // Remove all existing track nodes
-            var existing = await context.CursusGoal
+            var existing = await ctx.CursusGoal
                 .Where(cg => cg.CursusId == cursusId)
                 .ToListAsync(ct);
 
             if (existing.Count > 0)
-                context.CursusGoal.RemoveRange(existing);
+                ctx.CursusGoal.RemoveRange(existing);
 
-            // Add the new track nodes
-            var nodeList = nodes.ToList();
-            foreach (var node in nodeList)
-                node.CursusId = cursusId;
-
-            await context.CursusGoal.AddRangeAsync(nodeList, ct);
-            await context.SaveChangesAsync(ct);
+            var nodeList = nodes.Select(n => { n.CursusId = cursusId; return n; }).ToList();
+            await ctx.CursusGoal.AddRangeAsync(nodeList, ct);
+            await ctx.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
 
-            log.LogInformation("Set track for cursus {CursusId} with {Count} nodes", cursusId, nodeList.Count);
-            return (IEnumerable<CursusGoal>)nodeList;
+            log.LogInformation("Replaced track for cursus {CursusId} with {Count} nodes", cursusId, nodeList.Count);
+
+            // Reload with navigation properties so the caller doesn't need a second round-trip
+            return await ctx.CursusGoal
+                .Where(cg => cg.CursusId == cursusId)
+                .Include(cg => cg.Goal)
+                .ToListAsync(ct);
         }, token);
     }
 
-    /// <inheritdoc />
-    public async Task<IEnumerable<CursusGoal>> GetTrackAsync(Guid cursusId, CancellationToken token = default)
+    public async Task<IReadOnlyList<CursusGoal>> GetTrackAsync(Guid cursusId, CancellationToken token = default)
     {
-        return await context.CursusGoal
+        return await ctx.CursusGoal
             .Where(cg => cg.CursusId == cursusId)
             .Include(cg => cg.Goal)
             .ToListAsync(token);
     }
 
-    /// <inheritdoc />
-    public async Task<IReadOnlyDictionary<Guid, EntityObjectState>> GetTrackForUserAsync(
-        Guid cursusId,
-        Guid userId,
-        CancellationToken token = default)
-    {
-        // Get all goal IDs in this cursus track
-        var trackGoalIds = await context.CursusGoal
-            .Where(cg => cg.CursusId == cursusId)
-            .Select(cg => cg.GoalId)
-            .ToListAsync(token);
-
-        // Join with user goals to get the state for each
-        var states = await context.UserGoals
-            .Where(ug => ug.UserId == userId && trackGoalIds.Contains(ug.GoalId))
-            .ToDictionaryAsync(ug => ug.GoalId, ug => ug.State, token);
-
-        return states;
-    }
-
     public async Task<Cursus?> FindBySlugAsync(string slug, CancellationToken token = default)
     {
-        return await context.Cursi.FirstOrDefaultAsync(g => g.Slug == slug);
+        return await ctx.Cursi.FirstOrDefaultAsync(g => g.Slug == slug, token);
     }
 }

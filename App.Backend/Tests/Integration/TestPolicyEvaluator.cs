@@ -1,4 +1,7 @@
-// Tests/Integration/Infrastructure/FakePolicyEvaluator.cs
+// ============================================================================
+// Copyright (c) 2026 - W2Inc, All Rights Reserved.
+// See README.md in the project root for license information.
+// ============================================================================
 
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
@@ -6,9 +9,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Policy;
 using Microsoft.AspNetCore.Http;
 
+// ============================================================================
+
 namespace App.Backend.Tests.Integration;
 
-public class FakePolicyEvaluator : IPolicyEvaluator
+/// <summary>
+/// A policy to circumnavigate the Keycloak authentication for local testing.
+/// </summary>
+public class TestPolicyEvaluator : IPolicyEvaluator
 {
     public async Task<AuthenticateResult> AuthenticateAsync(AuthorizationPolicy policy, HttpContext context)
     {

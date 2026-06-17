@@ -1,11 +1,20 @@
+// ============================================================================
+// Copyright (c) 2026 - W2Inc, All Rights Reserved.
+// See README.md in the project root for license information.
+// ============================================================================
 
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 
-namespace App.Backend.Tests.Integration.Entities;
+// ============================================================================
 
-public static class DOJsonOptions
+namespace App.Backend.Tests.Integration;
+
+/// <summary>
+/// Modified JSON Options to account for primary constructor requiring a object
+/// </summary>
+public static class JsonOptions
 {
     public static readonly JsonSerializerOptions Default = new(JsonSerializerDefaults.Web)
     {

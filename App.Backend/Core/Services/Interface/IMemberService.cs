@@ -14,76 +14,73 @@ namespace App.Backend.Core.Services.Interface;
 public interface IMemberService
 {
     /// <summary>
-    /// Returns all membership rows for a given entity.
+    /// Find a member ship of a specific user on a specific entity.
+    /// If null then user is not a member of this entity.
     /// </summary>
-    Task<List<Member>> GetAsync(MemberEntityType type, Guid entityId, CancellationToken ct = default);
+    /// <param name="EntityId"></param>
+    /// <param name="userId"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    public Task<Member?> FindByEntityAndUserId(Guid entityId, Guid userId, CancellationToken token = default);
 
     /// <summary>
-    /// EF-translatable predicate for filtering queries by active membership.
-    /// Use inside Where() clauses — not async.
+    /// Invite a user to a certain entity to become a member.
     /// </summary>
-    Expression<Func<Member, bool>> IsActiveMember(MemberEntityType type, Guid entityId, Guid userId);
+    /// <param name="entityId">The entity in question</param>
+    /// <param name="userId">The user to invite</param>
+    /// <param name="gitId">When provided, grants access to the following git repository</param>
+    /// <param name="max">When provided, reject the invite attempt if member count exceeds max.</param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    public Task<Member> InviteAsync(Guid entityId, Guid userId, Guid? gitId, int? max, CancellationToken token = default);
 
     /// <summary>
-    /// Invite a user to an entity. Adds a Pending member row.
-    /// Pass <paramref name="gitId"/> for entities that have a repository.
-    /// Pass <paramref name="maxMembers"/> to enforce a capacity cap.
+    /// Revoke any invite the specified user may have had on this entity.
     /// </summary>
-    Task<Member> InviteAsync(
-        MemberEntityType type,
-        Guid entityId,
-        Guid inviterId,
-        Guid inviteeId,
-        Guid? gitId       = null,
-        int? maxMembers   = null,
-        CancellationToken token = default);
+    /// <param name="entityId"></param>
+    /// <param name="userId"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    public Task<Member> UnInviteAsync(Guid entityId, Guid userId, CancellationToken token = default);
 
     /// <summary>
-    /// Cancel a pending invite. Only the leader may uninvite; the invitee
-    /// must still be in Pending state.
+    /// Sets the role of a member, if set to leader it will transfer the leadership.
     /// </summary>
-    Task<Member> UninviteAsync(
-        MemberEntityType type,
-        Guid entityId,
-        Guid inviterId,
-        Guid inviteeId,
-        CancellationToken token = default);
+    /// <param name="memberId">The member to </param>
+    /// <param name="role"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    public Task<Member> SetRoleAsync(Guid memberId, MemberRole role, CancellationToken token = default);
 
     /// <summary>
-    /// Accept a pending invite — flips Pending → Member.
+    /// Accept the pending invite for a member.
     /// </summary>
-    Task<Member> AcceptAsync(MemberEntityType type, Guid entityId, Guid userId, CancellationToken token = default);
+    /// <param name="memberId"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    public Task<Member> AcceptAsync(Guid memberId, CancellationToken token = default);
 
     /// <summary>
-    /// Decline a pending invite — removes the Pending row.
+    /// Decline a pending invite for a member.
     /// </summary>
-    Task<Member> DeclineAsync(MemberEntityType type, Guid entityId, Guid userId, CancellationToken token = default);
+    /// <param name="memberId"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    public Task<Member> DeclineAsync(Guid memberId, CancellationToken token = default);
 
     /// <summary>
-    /// Transfer leadership to another active, non-pending member.
-    /// The current leader is demoted to Member.
+    /// Leave the membership.
     /// </summary>
-    Task TransferLeadershipAsync(
-        MemberEntityType type,
-        Guid entityId,
-        Guid currentLeaderId,
-        Guid newLeaderId,
-        CancellationToken token = default);
+    /// <param name="memberId"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    public Task<Member> LeaveAsync(Guid memberId, CancellationToken token = default);
 
     /// <summary>
-    /// An accepted non-leader member voluntarily leaves an entity.
-    /// Sets LeftAt rather than deleting the row so history is preserved.
+    /// Kick a user out of the membership.
     /// </summary>
-    Task LeaveAsync(MemberEntityType type, Guid entityId, Guid userId, CancellationToken token = default);
-
-    /// <summary>
-    /// Leader removes another member from an entity.
-    /// Pending members are deleted outright; active members get a LeftAt timestamp.
-    /// </summary>
-    Task KickAsync(
-        MemberEntityType type,
-        Guid entityId,
-        Guid leaderId,
-        Guid memberId,
-        CancellationToken token = default);
+    /// <param name="memberId"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    public Task<Member> KickAsync(Guid memberId, CancellationToken token = default);
 }

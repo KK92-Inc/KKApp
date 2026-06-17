@@ -27,6 +27,7 @@ using App.Backend.API.Controllers.Interfaces;
 using App.Backend.API.Notifications.Variants;
 using Wolverine;
 using App.Backend.Domain.Entities.Reviews;
+using Keycloak.AuthServices.Sdk.Admin;
 
 // ============================================================================
 
@@ -41,6 +42,7 @@ public class WorkspaceController(
     IProjectService projectService,
     IGoalService goalService,
     IGitService gitService,
+    IUserService userService,
     ICursusService cursusService,
     IRubricService rubricService,
     IMemberService memberService,
@@ -204,7 +206,7 @@ public class WorkspaceController(
         var space = await service.FindByIdAsync(id, token);
         if (space is null)
             return NotFound();
-        
+
         var isRoot = space.OwnerId is null;
         if (isRoot && !User.IsInRole("Staff"))
             return Forbid();
@@ -443,7 +445,7 @@ public class WorkspaceController(
         return NoContent();
     }
 
-    [HttpPost("{id:guid}/invite/{inviteeId:guid}")]
+    [HttpPost("{id:guid}/invite/{userId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -454,30 +456,30 @@ public class WorkspaceController(
     [ProtectedResource("workspaces", "workspaces:write")]
     [EndpointSummary("Invite a user to a workspace")]
     [EndpointDescription("Invites another user to the workspace, granting them access to its projects and resources upon acceptance.")]
-    public async Task<ActionResult<MemberDO>> InviteAsync(Guid Id, Guid inviteeId, CancellationToken token)
+    public async Task<ActionResult<MemberDO>> InviteAsync(Guid Id, Guid userId, CancellationToken token)
     {
         var ws = await service.FindByIdAsync(Id, token);
         if (ws is null) return NotFound();
 
-        // TODO: Ask keycloak if the target user has the staff role if ownerid null
-        // OwnerId null means it's a staff/system workspace, so only allow staff to invite
-        if (ws.OwnerId is null && !User.IsInRole("Staff"))
+        // Workspace with Null as owner is the root workspace for admin/staff/global entities.
+        // NOTE(W2): Ensure that JWT carries the correct claim in the JWT for the role to work.
+        if (ws.OwnerId is null && !User.IsInRole("staff"))
+            return Forbid();
+        if (!await userService.ExistsAsync([userId], token))
+            return NotFound();
+
+        // Verify that requester is the leader.
+        var actor = await memberService.FindByEntityAndUserId(Id, User.GetSID(), token);
+        if (actor is null || actor.Role is not MemberRole.Leader)
             return Forbid();
 
-        var member = await memberService.InviteAsync(
-            MemberEntityType.Workspace,
-            Id,
-            User.GetSID(),
-            inviteeId,
-            null,
-            null,
-        token);
-
-        await bus.PublishAsync(new WorkspaceInviteNotification(inviteeId, User.GetSID(), ws.Id));
+        // Notify invite.
+        var member = await memberService.InviteAsync(Id, userId, null, null, token);
+        await bus.PublishAsync(new WorkspaceInviteNotification(userId, User.GetSID(), ws.Id));
         return Ok(new MemberDO(member));
     }
 
-    [HttpDelete("{id:guid}/invite/{inviteeId:guid}")]
+    [HttpDelete("{id:guid}/invite/{userId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -487,21 +489,23 @@ public class WorkspaceController(
     [ProtectedResource("workspaces", "workspaces:write")]
     [EndpointSummary("Cancel a pending invite")]
     [EndpointDescription("The session leader cancels a pending invitation before it is accepted.")]
-    public async Task<ActionResult<MemberDO>> UninviteAsync(Guid Id, Guid inviteeId, CancellationToken token)
+    public async Task<ActionResult<MemberDO>> UninviteAsync(Guid Id, Guid userId, CancellationToken token)
     {
         var ws = await service.FindByIdAsync(Id, token);
         if (ws is null) return NotFound();
-        if (ws.OwnerId is null && !User.IsInRole("Staff"))
+        if (ws.OwnerId is null && !User.IsInRole("staff"))
             return Forbid();
+        if (!await userService.ExistsAsync([ userId ], token))
+            return NotFound();
 
-        var member = await memberService.UninviteAsync(
-            MemberEntityType.Workspace,
-            Id,
-            User.GetSID(),
-            inviteeId,
-            token
-        );
+        // Verify that requester is the leader.
+        var actor = await memberService.FindByEntityAndUserId(Id, User.GetSID(), token);
+        if (actor is null || actor.Role is not MemberRole.Leader)
+            return Forbid();
+        if (actor.Id == userId)
+            return UnprocessableEntity();
 
+        var member = await memberService.UnInviteAsync(Id, userId, token);
         return Ok(new MemberDO(member));
     }
 
@@ -516,17 +520,13 @@ public class WorkspaceController(
     {
         var ws = await service.FindByIdAsync(Id, token);
         if (ws is null) return NotFound();
-        if (ws.OwnerId is null && !User.IsInRole("Staff"))
+        if (ws.OwnerId is null && !User.IsInRole("staff"))
             return Forbid();
 
-        var member = await memberService.AcceptAsync(
-            MemberEntityType.Workspace,
-            Id,
-            User.GetSID(),
-            token
-        );
+        var member = await memberService.FindByEntityAndUserId(Id, User.GetSID(), token);
+        if (member is null) return NotFound();
 
-        return Ok(new MemberDO(member));
+        return Ok(new MemberDO(await memberService.AcceptAsync(member.Id, token)));
     }
 
     [HttpPost("{id:guid}/invite/decline")]
@@ -540,17 +540,13 @@ public class WorkspaceController(
     {
         var ws = await service.FindByIdAsync(Id, token);
         if (ws is null) return NotFound();
-        if (ws.OwnerId is null && !User.IsInRole("Staff"))
+        if (ws.OwnerId is null && !User.IsInRole("staff"))
             return Forbid();
 
-        var member = await memberService.DeclineAsync(
-            MemberEntityType.Workspace,
-            Id,
-            User.GetSID(),
-            token
-        );
+        var member = await memberService.FindByEntityAndUserId(Id, User.GetSID(), token);
+        if (member is null) return NotFound();
 
-        return Ok(new MemberDO(member));
+        return Ok(new MemberDO(await memberService.DeclineAsync(member.Id, token)));
     }
 
     [HttpPost("{id:guid}/member/leave")]
@@ -566,24 +562,17 @@ public class WorkspaceController(
     {
         var ws = await service.FindByIdAsync(Id, token);
         if (ws is null) return NotFound();
-        if (ws.OwnerId == User.GetSID())
-            return UnprocessableEntity();
-        if (ws.OwnerId is null && !User.IsInRole("Staff"))
+        if (ws.OwnerId is null && !User.IsInRole("staff"))
             return Forbid();
 
-        await memberService.LeaveAsync(
-            MemberEntityType.Workspace,
-            Id,
-            User.GetSID(),
-            token
-        );
+        var member = await memberService.FindByEntityAndUserId(Id, User.GetSID(), token);
+        if (member is null) return NotFound();
 
-        return NoContent();
+        return Ok(new MemberDO(await memberService.LeaveAsync(member.Id, token)));
     }
 
     [HttpPost("{id:guid}/member/kick/{memberId:guid}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
@@ -595,20 +584,16 @@ public class WorkspaceController(
     {
         var ws = await service.FindByIdAsync(Id, token);
         if (ws is null) return NotFound();
-        if (memberId == User.GetSID())
-            return UnprocessableEntity();
-        if (ws.OwnerId is null && !User.IsInRole("Staff"))
+        if (ws.OwnerId is null && !User.IsInRole("staff"))
             return Forbid();
 
-        await memberService.KickAsync(
-            MemberEntityType.Workspace,
-            Id,
-            User.GetSID(),
-            memberId,
-            token
-        );
+        // Verify that requester is the leader.
+        var actor = await memberService.FindByEntityAndUserId(Id, User.GetSID(), token);
+        if (actor is null || actor.Role is not MemberRole.Leader)
+            return Forbid();
 
-        return NoContent();
+        var member = await memberService.KickAsync(memberId, token);
+        return Ok(new MemberDO(member));
     }
 
     [Obsolete("Workspaces do not have a concept of session leadership like projects do")]

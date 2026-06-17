@@ -1,4 +1,7 @@
-// App.Backend.Tests/Integration/ApiFactory.cs
+// ============================================================================
+// Copyright (c) 2026 - W2Inc, All Rights Reserved.
+// See README.md in the project root for license information.
+// ============================================================================
 
 using Microsoft.AspNetCore.Authorization.Policy;
 using Microsoft.AspNetCore.Hosting;
@@ -9,11 +12,14 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using App.Backend.Database;
 using App.Backend.Database.Interceptors;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using App.Backend.Core.Services.Interface; // Ensure interceptors are imported
+using App.Backend.Core.Services.Interface;
+using Serilog;
+
+// ============================================================================
 
 namespace App.Backend.Tests.Integration;
 
-public class ApiFactory : WebApplicationFactory<Program>
+public class WebAppTestFactory : WebApplicationFactory<Program>
 {
     private readonly string _dbName = $"TestDb_{Guid.NewGuid()}";
 
@@ -26,6 +32,7 @@ public class ApiFactory : WebApplicationFactory<Program>
             client.DefaultRequestHeaders.Add("X-Test-Roles", string.Join(",", roles));
         return client;
     }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -45,12 +52,12 @@ public class ApiFactory : WebApplicationFactory<Program>
 
             // Bypass Keycloak auth/authorization entirely
             services.RemoveAll<IPolicyEvaluator>();
-            services.AddSingleton<IPolicyEvaluator, FakePolicyEvaluator>();
+            services.AddSingleton<IPolicyEvaluator, TestPolicyEvaluator>();
 
             // Remove as it requires external service.
             // Instead run git commands locally in a tmp directory.
             services.RemoveAll<IGitService>();
-            services.AddSingleton<IGitService, LocalProcessGitService>();
+            services.AddSingleton<IGitService, LocalGitService>();
         });
     }
 

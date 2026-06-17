@@ -140,7 +140,7 @@ public class UserProjectController(
         return Ok(page.Items.Select(t => new UserProjectTransactionDO(t)));
     }
 
-    [HttpPost("/user-projects/{id:guid}/invite/{inviteeId:guid}")]
+    [HttpPost("/user-projects/{id:guid}/invite/{userId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -149,7 +149,7 @@ public class UserProjectController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Invite a user to a project session")]
     [EndpointDescription("The calling user (leader) invites another user to their active project session.")]
-    public async Task<ActionResult<MemberDO>> InviteAsync(Guid Id, Guid inviteeId, CancellationToken token)
+    public async Task<ActionResult<MemberDO>> InviteAsync(Guid Id, Guid userId, CancellationToken token)
     {
         var up = await service.FindByIdAsync(Id, token);
         if (up is null) return NotFound();
@@ -157,10 +157,8 @@ public class UserProjectController(
             return UnprocessableEntity();
 
         var member = await memberService.InviteAsync(
-            MemberEntityType.UserProject,
-            Id,
-            User.GetSID(),
-            inviteeId,
+            up.Id,
+            userId,
             up.GitInfoId,
             up.Project.MaxMembers,
         token);
@@ -171,11 +169,11 @@ public class UserProjectController(
             UserProjectTransactionVariant.MemberInvited,
         token);
 
-        await bus.PublishAsync(new ProjectInviteNotification(inviteeId, User.GetSID(), up.Id));
+        await bus.PublishAsync(new ProjectInviteNotification(userId, User.GetSID(), up.Id));
         return Ok(new MemberDO(member));
     }
 
-    [HttpDelete("/user-projects/{id:guid}/invite/{inviteeId:guid}")]
+    [HttpDelete("/user-projects/{id:guid}/invite/{userId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -184,21 +182,14 @@ public class UserProjectController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Cancel a pending invite")]
     [EndpointDescription("The session leader cancels a pending invitation before it is accepted.")]
-    public async Task<ActionResult<MemberDO>> UninviteAsync(Guid Id, Guid inviteeId, CancellationToken token)
+    public async Task<ActionResult<MemberDO>> UninviteAsync(Guid Id, Guid userId, CancellationToken token)
     {
         var up = await service.FindByIdAsync(Id, token);
         if (up is null) return NotFound();
         if (up.State is not EntityObjectState.Active)
             return UnprocessableEntity();
 
-        var member = await memberService.UninviteAsync(
-            MemberEntityType.UserProject,
-            Id,
-            User.GetSID(),
-            inviteeId,
-            token
-        );
-
+        var member = await memberService.UnInviteAsync(Id, userId, token);
         await service.LogTransactionAsync(
             up.Id,
             User.GetSID(),
@@ -225,13 +216,11 @@ public class UserProjectController(
         if (up.State is not EntityObjectState.Active)
             return UnprocessableEntity();
 
-        var member = await memberService.AcceptAsync(
-            MemberEntityType.UserProject,
-            Id,
-            User.GetSID(),
-            token
-        );
+        var member = await memberService.FindByEntityAndUserId(Id, User.GetSID(), token);
+        if (member is null) return NotFound();
 
+
+        member = await memberService.AcceptAsync(member.Id, token);
         await service.LogTransactionAsync(
             up.Id,
             User.GetSID(),
@@ -258,17 +247,15 @@ public class UserProjectController(
         if (up.State is not EntityObjectState.Active)
             return UnprocessableEntity();
 
-        var member = await memberService.DeclineAsync(
-            MemberEntityType.UserProject,
-            Id,
-            User.GetSID(),
-            token
-        );
+        var member = await memberService.FindByEntityAndUserId(Id, User.GetSID(), token);
+        if (member is null) return NotFound();
 
+
+        member = await memberService.DeclineAsync(member.Id, token);
         await service.LogTransactionAsync(
             up.Id,
             User.GetSID(),
-            UserProjectTransactionVariant.MemberDeclined,
+            UserProjectTransactionVariant.MemberAccepted,
             token
         );
 
@@ -291,13 +278,13 @@ public class UserProjectController(
         if (up.State is not EntityObjectState.Active)
             return UnprocessableEntity();
 
-        await memberService.TransferLeadershipAsync(
-            MemberEntityType.UserProject,
-            Id,
-            User.GetSID(),
-            newLeaderId,
-            token
-        );
+        // await memberService.SetRoleAsync(
+        //     MemberEntityType.UserProject,
+        //     Id,
+        //     User.GetSID(),
+        //     newLeaderId,
+        //     token
+        // );
 
         await service.LogTransactionAsync(
             up.Id,
@@ -325,12 +312,12 @@ public class UserProjectController(
         if (up.State is not EntityObjectState.Active)
             return UnprocessableEntity();
 
-        await memberService.LeaveAsync(
-            MemberEntityType.UserProject,
-            Id,
-            User.GetSID(),
-            token
-        );
+        // await memberService.LeaveAsync(
+        //     MemberEntityType.UserProject,
+        //     Id,
+        //     User.GetSID(),
+        //     token
+        // );
 
         await service.LogTransactionAsync(
             up.Id,
@@ -358,13 +345,13 @@ public class UserProjectController(
         if (up.State is not EntityObjectState.Active)
             return UnprocessableEntity();
 
-        await memberService.KickAsync(
-            MemberEntityType.UserProject,
-            Id,
-            User.GetSID(),
-            memberId,
-            token
-        );
+        // await memberService.KickAsync(
+        //     MemberEntityType.UserProject,
+        //     Id,
+        //     User.GetSID(),
+        //     memberId,
+        //     token
+        // );
 
         await service.LogTransactionAsync(
             up.Id,

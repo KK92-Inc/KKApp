@@ -11,28 +11,18 @@ using App.Backend.Domain.Enums;
 
 namespace App.Backend.Models.Responses.Entities.Cursus;
 
-/// <summary>
-/// Data object representing a user's cursus enrollment.
-/// </summary>
 public class UserCursusDO(UserCursus userCursus) : BaseEntityDO<UserCursus>(userCursus)
 {
     [Required]
     public EntityObjectState State { get; set; } = userCursus.State;
-
+    
     [Required]
     public Guid UserId { get; set; } = userCursus.UserId;
-
+    
     [Required]
     public Guid CursusId { get; set; } = userCursus.CursusId;
 
-    /// <summary>
-    /// The cursus the user is enrolled in.
-    /// </summary>
     public CursusDO Cursus { get; set; } = userCursus.Cursus;
-
-    /// <summary>
-    /// The enrolled user.
-    /// </summary>
     public UserLightDO? User { get; set; } = userCursus.User;
 
     public static implicit operator UserCursusDO?(UserCursus? userCursus) =>

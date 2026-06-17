@@ -8,6 +8,7 @@ using App.Backend.Domain.Entities.Users;
 using App.Backend.Domain.Enums;
 using App.Backend.Domain.Relations;
 using App.Backend.Models;
+using App.Backend.Models.Responses.Entities.Cursus;
 
 // ============================================================================
 
@@ -16,28 +17,29 @@ namespace App.Backend.Core.Services.Interface;
 public interface ICursusService : IDomainService<Cursus>, ISlugQueryable<Cursus>
 {
     /// <summary>
-    /// Set or replace the track (hierarchy of goals) for a fixed cursus.
-    /// This is a full replacement: all existing track nodes are removed first.
+    /// Validates the structural integrity of a track payload.
+    /// Returns an error message on failure, null on success.
     /// </summary>
-    /// <param name="cursusId">The cursus ID.</param>
-    /// <param name="nodes">The flat list of nodes forming the track tree.</param>
-    /// <param name="token">Cancellation token.</param>
-    /// <returns>The list of created CursusGoal entries.</returns>
-    public Task<IEnumerable<CursusGoal>> SetTrackAsync(Guid cursusId, IEnumerable<CursusGoal> nodes, CancellationToken token = default);
+    Task<string?> ValidateTrackAsync(
+        IReadOnlyList<(Guid GoalId, Guid? ParentId, Guid? Group)> nodes,
+        CancellationToken token = default);
 
     /// <summary>
-    /// Get the track (hierarchy of goals) for a cursus.
+    /// Fully replaces the track for a static cursus, removing all existing nodes first.
+    /// Returns the persisted nodes with Goal navigation properties loaded.
     /// </summary>
-    /// <param name="cursusId">The cursus ID.</param>
-    /// <param name="token">Cancellation token.</param>
-    /// <returns>The list of CursusGoal entries with loaded Goal navigation properties.</returns>
-    public Task<IEnumerable<CursusGoal>> GetTrackAsync(Guid cursusId, CancellationToken token = default);
+    Task<IReadOnlyList<CursusGoal>> ReplaceTrackAsync(
+        Guid cursusId,
+        IEnumerable<CursusGoal> nodes,
+        CancellationToken token = default);
 
     /// <summary>
-    /// Compute the cursus track for a user
+    /// Returns all track nodes for a cursus with Goal navigation properties loaded.
     /// </summary>
-    /// <param name="cursusId">The cursus ID.</param>
-    /// <param name="userId">The user ID.</param>
-    /// <param name="token">Cancellation token.</param>
-    public Task<IReadOnlyDictionary<Guid, EntityObjectState>> GetTrackForUserAsync(Guid cursusId, Guid userId, CancellationToken token = default);
+    Task<IReadOnlyList<CursusGoal>> GetTrackAsync(Guid cursusId, CancellationToken token = default);
+
+    /// <summary>
+    /// Assembles the track response DO from a cursus and its loaded goal relations.
+    /// </summary>
+    CursusTrackDO AssembleTrack(Cursus cursus, IReadOnlyList<CursusGoal> goals);
 }
