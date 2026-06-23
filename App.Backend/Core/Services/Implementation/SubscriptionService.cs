@@ -16,7 +16,7 @@ using App.Backend.Domain.Entities.Projects;
 
 namespace App.Backend.Core.Services.Implementation;
 
-public class SubscriptionService(DatabaseContext context, IGitService git, TimeProvider time, IOptions<SubscriptionOptions> options) : ISubscriptionService
+public class SubscriptionService(DatabaseContext context, IGitService git, TimeProvider time, IUserCursusService userCursusService, IOptions<SubscriptionOptions> options) : ISubscriptionService
 {
     private readonly SubscriptionOptions _config = options.Value;
 
@@ -57,6 +57,23 @@ public class SubscriptionService(DatabaseContext context, IGitService git, TimeP
             UserId = userId
         }, token);
 
+        // 1. Fetch the global track blueprint for this cursus
+        var globalTrackNodes = await context.CursusGoal
+            .Where(cg => cg.CursusId == cursusId)
+            .ToListAsync(token);
+
+        // 2. Map the blueprint directly to the user's personal immutable snapshot
+        var userTrackSnapshots = globalTrackNodes.Select(cg => new UserCursusGoal
+        {
+            UserCursusId = result.Entity.Id,
+            GoalId = cg.GoalId,
+            ParentGoalId = cg.ParentGoalId,
+            ChoiceGroup = cg.ChoiceGroup
+        }).ToList();
+
+        // 3. Persist the snapshot alongside the user cursus entity
+        await context.UserCursusGoal.AddRangeAsync(userTrackSnapshots, token);
+
         await context.SaveChangesAsync(token);
         return result.Entity;
     }
@@ -88,14 +105,41 @@ public class SubscriptionService(DatabaseContext context, IGitService git, TimeP
 
                 if (await cursiWithGoal.AnyAsync(ct))
                 {
-                    bool subscribed = await context.UserCursi.AnyAsync(
-                        uc => uc.UserId == userId &&
-                        uc.State != EntityObjectState.Inactive &&
-                        cursiWithGoal.Contains(uc.CursusId),
-                    ct);
+                    // Fetch all active cursus subscriptions for this user that contain this goal
+                    var activeUserCursi = await (from uc in context.UserCursi
+                                                 join c in context.Cursi on uc.CursusId equals c.Id
+                                                 where uc.UserId == userId &&
+                                                       uc.State != EntityObjectState.Inactive &&
+                                                       cursiWithGoal.Contains(uc.CursusId)
+                                                 select new { UserCursus = uc, Cursus = c })
+                                                .ToListAsync(ct);
 
-                    if (!subscribed)
+                    if (activeUserCursi.Count == 0)
+                    {
                         throw new ServiceException("This goal is not a standalone goal. Subscribe to a cursus that contains this goal to access it.");
+                    }
+
+                    // Check if the goal is unlocked in at least one of the active tracks
+                    bool isUnlockedInAnyCursus = false;
+
+                    foreach (var item in activeUserCursi)
+                    {
+                        // Leverage existing UserCursusService calculations
+                        var (snapshot, states) = await userCursusService.GetTrackAsync(item.UserCursus.Id, userId, ct);
+                        var track = userCursusService.AssembleTrack(item.Cursus, snapshot, states);
+
+                        var trackNode = track.Nodes.FirstOrDefault(n => n.GoalId == goalId);
+                        if (trackNode is not null && trackNode.IsUnlocked)
+                        {
+                            isUnlockedInAnyCursus = true;
+                            break; // Goal is accessible; no need to check other cursuses
+                        }
+                    }
+
+                    if (!isUnlockedInAnyCursus)
+                    {
+                        throw new ServiceException("This goal is currently locked. Complete its prerequisites within your cursus to unlock it.");
+                    }
                 }
             }
 
@@ -105,7 +149,6 @@ public class SubscriptionService(DatabaseContext context, IGitService git, TimeP
                 existing.UnlocksAt = null;
 
                 context.UserGoals.Update(existing);
-
                 await CascadeActivateProjectsAsync(userId, [goalId], ct);
 
                 await context.SaveChangesAsync(ct);

@@ -25,9 +25,9 @@ public record PostProjectRequestDTO
     /// <summary>
     /// Optional description of the project.
     /// </summary>
-    [StringLength(2048, MinimumLength = 1)]
+    [Required, StringLength(2048, MinimumLength = 1)]
     [Description("Optional description of the project.")]
-    public string? Description { get; init; }
+    public required string Description { get; init; }
 
     /// <summary>
     /// Whether the project is active.

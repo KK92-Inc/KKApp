@@ -99,6 +99,10 @@ public class CursusService(DatabaseContext ctx, IGoalService goalService, ILogge
         };
     }
 
+    // ============================================================================
+    // CursusService.cs (Modified ReplaceTrackAsync & Helper)
+    // ============================================================================
+
     public async Task<IReadOnlyList<CursusGoal>> ReplaceTrackAsync(
         Guid cursusId,
         IEnumerable<CursusGoal> nodes,
@@ -126,16 +130,88 @@ public class CursusService(DatabaseContext ctx, IGoalService goalService, ILogge
             var nodeList = nodes.Select(n => { n.CursusId = cursusId; return n; }).ToList();
             await ctx.CursusGoal.AddRangeAsync(nodeList, ct);
             await ctx.SaveChangesAsync(ct);
+
+            // --- PROPAGATE CHANGES TO USER SNAPSHOTS IN A FRONTIER FASHION ---
+            await PropagateTrackChangesToUsersAsync(cursusId, nodeList, ct);
+
+            await ctx.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
 
-            log.LogInformation("Replaced track for cursus {CursusId} with {Count} nodes", cursusId, nodeList.Count);
+            log.LogInformation("Replaced track for cursus {CursusId} and updated user frontiers", cursusId);
 
-            // Reload with navigation properties so the caller doesn't need a second round-trip
             return await ctx.CursusGoal
                 .Where(cg => cg.CursusId == cursusId)
                 .Include(cg => cg.Goal)
                 .ToListAsync(ct);
         }, token);
+    }
+
+    /// <summary>
+    /// Merges global track changes into active user snapshots while protecting their frontier.
+    /// </summary>
+    private async Task PropagateTrackChangesToUsersAsync(Guid cursusId, List<CursusGoal> newGlobalGoals, CancellationToken ct)
+    {
+        var activeUserCursuses = await ctx.UserCursi
+            .Where(uc => uc.CursusId == cursusId)
+            .ToListAsync(ct);
+
+        var newGlobalGoalIds = newGlobalGoals.Select(g => g.GoalId).ToHashSet();
+
+        foreach (var uc in activeUserCursuses)
+        {
+            // 1. Get the current user snapshot
+            var userSnapshot = await ctx.UserCursusGoal
+                .Where(ucg => ucg.UserCursusId == uc.Id)
+                .ToListAsync(ct);
+
+            // 2. Fetch user's actual goal records to check progression states
+            var userGoalStates = await ctx.UserGoals
+                .Where(ug => ug.UserId == uc.UserId)
+                .ToDictionaryAsync(ug => ug.GoalId, ug => ug.State, ct);
+
+            // Define the active frontier: Goals that are actively being worked on or already completed
+            var lockedInGoalIds = userGoalStates
+                .Where(kvp => kvp.Value == EntityObjectState.Active || kvp.Value == EntityObjectState.Completed)
+                .Select(kvp => kvp.Key)
+                .ToHashSet();
+
+            // 3. Purge obsolete track nodes that the user hasn't explicitly interacted with yet
+            var nodesToRemove = userSnapshot
+                .Where(ucg => !lockedInGoalIds.Contains(ucg.GoalId) && !newGlobalGoalIds.Contains(ucg.GoalId))
+                .ToList();
+
+            if (nodesToRemove.Count > 0)
+                ctx.UserCursusGoal.RemoveRange(nodesToRemove);
+
+            // 4. Upsert upcoming changes or additions
+            foreach (var globalGoal in newGlobalGoals)
+            {
+                var userNode = userSnapshot.FirstOrDefault(ucg => ucg.GoalId == globalGoal.GoalId);
+
+                if (userNode is not null)
+                {
+                    // CRITICAL: If the user is currently working on this goal, preserve their tree path exactly
+                    if (lockedInGoalIds.Contains(globalGoal.GoalId))
+                        continue;
+
+                    // If they haven't started it, safely align it to the updated curriculum track schema
+                    userNode.ParentGoalId = globalGoal.ParentGoalId;
+                    userNode.ChoiceGroup = globalGoal.ChoiceGroup;
+                    ctx.UserCursusGoal.Update(userNode);
+                }
+                else
+                {
+                    // Add completely new items that were just added to the curriculum
+                    await ctx.UserCursusGoal.AddAsync(new UserCursusGoal
+                    {
+                        UserCursusId = uc.Id,
+                        GoalId = globalGoal.GoalId,
+                        ParentGoalId = globalGoal.ParentGoalId,
+                        ChoiceGroup = globalGoal.ChoiceGroup
+                    }, ct);
+                }
+            }
+        }
     }
 
     public async Task<IReadOnlyList<CursusGoal>> GetTrackAsync(Guid cursusId, CancellationToken token = default)

@@ -101,7 +101,7 @@ public class WorkspaceController(
         {
             Name = dto.Name,
             WorkspaceId = workspace,
-            Description = dto.Description ?? string.Empty,
+            Description = dto.Description,
             Slug = dto.Name.ToSlug(),
             Variant = dto.Variant,
             CompletionMode = dto.CompletionMode,
@@ -143,7 +143,7 @@ public class WorkspaceController(
         {
             Name = dto.Name,
             WorkspaceId = workspace,
-            Description = dto.Description ?? string.Empty,
+            Description = dto.Description,
             Slug = dto.Name.ToSlug(),
             Active = dto.Active,
             Public = dto.Public,
@@ -183,10 +183,11 @@ public class WorkspaceController(
         {
             Name = dto.Name,
             WorkspaceId = workspace,
-            Description = dto.Description ?? string.Empty,
+            Description = dto.Description,
             Slug = dto.Name.ToSlug(),
             Active = dto.Active,
-            Public = dto.Public
+            Public = dto.Public,
+            MaxMembers = dto.MaxMembers
         }, token);
 
         return Ok(new ProjectDO(project));
@@ -314,12 +315,11 @@ public class WorkspaceController(
     }
 
     [HttpPost("{id:guid}/application/{appId:guid}/secret/rotate")]
-    // [ProtectedResource("workspaces", "applications:write")]
     [ProtectedResource("applications", "applications:write")]
     [ProtectedResource("workspaces", "workspaces:write")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [EndpointSummary("Rotate client secret (Step 1)")]
+    [EndpointSummary("Rotate client secret")]
     [EndpointDescription("Demotes the active secret to fallback 'rotated' status and issues a brand-new primary secret for zero-downtime migrations.")]
     public async Task<IActionResult> RotateApplicationSecret(Guid id, Guid appId, CancellationToken token)
     {

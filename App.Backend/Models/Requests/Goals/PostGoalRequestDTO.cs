@@ -32,9 +32,9 @@ public record PostGoalRequestDTO
     /// <summary>
     /// Optional description of the goal.
     /// </summary>
-    [StringLength(16384)]
+    [Required, StringLength(16384)]
     [Description("Optional description of the goal.")]
-    public string? Description { get; init; }
+    public required string Description { get; init; }
 
     /// <summary>
     /// Whether the goal is active.

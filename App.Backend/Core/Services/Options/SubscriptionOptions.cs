@@ -18,7 +18,7 @@ public class SubscriptionOptions
     /// The subscription enforcement mode.
     /// Defaults to <see cref="ProgressionMode.Free"/>.
     /// </summary>
-    public ProgressionMode Mode { get; init; } = ProgressionMode.Free;
+    public ProgressionMode Mode { get; init; } = ProgressionMode.Restricted;
 
     /// <summary>
     /// Cooldown period for subscribing/unsubscribing to the same entity.

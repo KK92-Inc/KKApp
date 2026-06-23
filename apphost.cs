@@ -3,7 +3,7 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-#:sdk Aspire.AppHost.Sdk@13.3.5
+#:sdk Aspire.AppHost.Sdk@13.4.6
 #:package Scalar.Aspire@0.8.45
 #:package Aspire.Npgsql@13.3.5
 #:package Aspire.Hosting.JavaScript@13.3.5
