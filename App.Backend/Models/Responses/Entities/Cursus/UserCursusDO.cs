@@ -17,12 +17,12 @@ public class UserCursusDO(UserCursus userCursus) : BaseEntityDO<UserCursus>(user
     public EntityObjectState State { get; set; } = userCursus.State;
     
     [Required]
-    public Guid UserId { get; set; } = userCursus.UserId;
+    public DateTimeOffset? UnlocksAt { get; set; } = userCursus.UnlocksAt;
     
     [Required]
-    public Guid CursusId { get; set; } = userCursus.CursusId;
-
     public CursusDO Cursus { get; set; } = userCursus.Cursus;
+
+    [Required]
     public UserLightDO? User { get; set; } = userCursus.User;
 
     public static implicit operator UserCursusDO?(UserCursus? userCursus) =>

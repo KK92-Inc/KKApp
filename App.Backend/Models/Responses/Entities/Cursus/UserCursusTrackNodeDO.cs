@@ -24,11 +24,21 @@ public class UserCursusTrackNodeDO
     [Required]
     public string Slug { get; set; } = string.Empty;
     
+    /// <summary>
+    /// Is the goal currently subscribable at all ?
+    /// </summary>
     [Required]
     public bool IsUnlocked { get; set; }
 
+    /// <summary>
+    /// The goal's parent / predecessor
+    /// </summary>
     public Guid? ParentGoalId { get; set; }
     
+    /// <summary>
+    /// A UUID that if 2 nodes share means it's a choice between this goal and others that share the id.
+    /// Only 1 goal can be selected the way this get's rendered on the UI is a single circle with sub-circles attached to it.
+    /// </summary>
     public Guid? ChoiceGroup { get; set; }
 
     /// <summary>

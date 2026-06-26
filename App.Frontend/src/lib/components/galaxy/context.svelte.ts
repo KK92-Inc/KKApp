@@ -5,27 +5,8 @@
 
 import * as d3 from 'd3';
 import { createContext } from 'svelte';
-import type { components } from '$lib/api/api';
 import type { Attachment } from 'svelte/attachments';
-import config from "./config.json" with { type: 'json' };
-import data from './data.json' with { type: 'json' };
-
-// ============================================================================
-
-/**
- * Root: The top-level node of the hierarchy.
- * Node: An internal node with children and some goals.
- * Leafe: A leaf node without children, navigates to more children.
- */
-type NodeType = 'root' | 'node' | 'leaf';
-type NodeState = components['schemas']['TaskState'];
-interface NodeDatum extends d3.SimulationNodeDatum {
-	name: string; // Name based on the goals
-	goals: components['schemas']['TrackGoalDTO'][];
-	children?: NodeDatum[];
-	type: NodeType;
-	state: NodeState;
-}
+import { transformApiToD3Hierarchy, type D3NodeDatum, type UserCursusTrackDO } from './index';
 
 // ============================================================================
 
@@ -33,240 +14,207 @@ export default class Galaxy {
 	public svg = $state<SVGElement>();
 	public width: number = $state(800);
 	public height: number = $state(600);
-	public tree = $state<NodeDatum>(data);
+	public tree = $state<D3NodeDatum>();
 
-	/** Construct a new galaxy state */
-	constructor(kek: components['schemas']['CursusTrackDO']) {
-		// TODO: Build the tree
-		this.tree = data;
+	constructor(data: UserCursusTrackDO) {
+		// Transform the flat API payload on instantiation
+		this.tree = transformApiToD3Hierarchy(data);
 	}
 
-	/**
-	 * Attachment to be used on an SVG element.
-	 * @example
-	 * <svg {@attach ctx.attachment()}></svg>
-	 * @returns The attachment function.
-	 */
 	public attachment(): Attachment<SVGElement> {
 		const controller = new AbortController();
 
 		return (element) => {
 			this.svg = element;
-			this.width = window.innerWidth;
-			this.height = window.innerHeight;
-			document.body.style.overflow = 'hidden';
+			this.width = element.parentElement?.clientWidth || window.innerWidth;
+			this.height = element.parentElement?.clientHeight || window.innerHeight;
 
 			this.render();
-			window.addEventListener('keydown', this.onKey, {
-				signal: controller.signal
-			});
 
-			window.addEventListener('resize', this.onResize, {
-				signal: controller.signal
-			});
+			const handleResize = () => {
+				this.width = this.svg?.parentElement?.clientWidth || window.innerWidth;
+				this.height = this.svg?.parentElement?.clientHeight || window.innerHeight;
+				this.svg?.setAttribute('viewBox', `0 0 ${this.width} ${this.height}`);
+			};
+
+			window.addEventListener('resize', handleResize, { signal: controller.signal });
 
 			return () => {
-				document.body.style.overflow = '';
 				controller.abort();
 			};
 		};
 	}
 
-	// ==========================================================================
-
-	private onKey(event: KeyboardEvent) {
-		// Handle key events
-	}
-
-	private onResize(event: UIEvent) {
-		this.width = window.innerWidth;
-		this.height = window.innerHeight;
-		this.render();
-	}
-
-	// ==========================================================================
-
 	private render() {
-		if (!this.svg) return;
+		if (!this.svg || !this.tree) return;
 		const svg = d3.select(this.svg);
 		svg.selectAll('*').remove();
 
-		const drag = (simulation: d3.Simulation<d3.HierarchyNode<NodeDatum>, undefined>) => {
-			function dragstarted(event, d) {
-				if (!event.active) simulation.alphaTarget(0.3).restart();
-				d.fx = d.x;
-				d.fy = d.y;
-			}
+		// Set dimensions
+		svg.attr('width', '100%')
+			.attr('height', '100%')
+			.attr('viewBox', `0 0 ${this.width} ${this.height}`);
 
-			function dragged(event, d) {
-				d.fx = event.x;
-				d.fy = event.y;
-			}
+		// 1. Setup Pan and Zoom
+		const mainG = svg.append('g');
+		const zoom = d3.zoom<SVGElement, unknown>()
+			.scaleExtent([0.1, 4])
+			.on('zoom', (event) => mainG.attr('transform', event.transform));
 
-			function dragended(event, d) {
-				if (!event.active) simulation.alphaTarget(0);
-				d.fx = null;
-				d.fy = null;
-			}
+		svg.call(zoom);
+		svg.call(zoom.transform, d3.zoomIdentity.translate(this.width / 2, this.height / 2).scale(0.85));
 
-			return d3.drag().on('start', dragstarted).on('drag', dragged).on('end', dragended);
-		};
-
-		svg
-			.attr('width', this.width)
-			.attr('height', this.height)
-			.attr('viewBox', [-this.width / 2, -this.height / 2, this.width, this.height])
-			.attr('style', 'max-width: 100%; height: auto;');
-
-		const hierarchy = d3.hierarchy(this.tree, (d) => d.children);
+		// 2. Setup Hierarchy & Forces
+		const hierarchy = d3.hierarchy(this.tree);
 		const links = hierarchy.links();
 		const nodes = hierarchy.descendants();
-		const simulation = d3
-			.forceSimulation(nodes)
-			.force(
-				'link',
-				d3
-					.forceLink(links)
-					.distance(config.link.distance)
-					.strength(config.link.strength)
-					.iterations(config.link.iterations)
-			)
-			.force('charge', d3.forceManyBody().strength(-1000).distanceMax(1000)) // Stronger repulsion for better spacing
+
+		const simulation = d3.forceSimulation(nodes as d3.SimulationNodeDatum[])
+			.force('link', d3.forceLink(links).distance(150).strength(1))
+			.force('charge', d3.forceManyBody().strength(-900))
+			.force('collide', d3.forceCollide().radius(70).iterations(2))
 			.force('center', d3.forceCenter(0, 0));
 
-		const mainG = svg.append('g');
+		// Helper function to dynamically theme elements based on granular progression states
+		const getStateTheme = (goal: any) => {
+			if (!goal || !goal.isUnlocked || goal.state === 'Inactive') {
+				return { bg: '#27272a', stroke: '#454545', text: '#71717a', accent: '#52525b' }; // Locked / Grey
+			}
+			switch (goal.state) {
+				case 'Completed':
+					return { bg: '#22c55e', stroke: '#16a34a', text: '#ffffff', accent: '#4ade80' }; // Emerald Green
+				case 'Active':
+					return { bg: '#3b82f6', stroke: '#2563eb', text: '#ffffff', accent: '#60a5fa' }; // Electric Blue
+				case 'Awaiting':
+				case null:
+				case undefined:
+					return { bg: '#f59e0b', stroke: '#d97706', text: '#1e293b', accent: '#fbbf24' }; // Amber Gold (Subscribable)
+				default:
+					return { bg: '#27272a', stroke: '#3f3f46', text: '#a1a1aa', accent: '#52525b' };
+			}
+		};
 
-		const link = mainG
-			.append('g')
-			.attr('stroke', '#999')
-			.attr('stroke-opacity', 0.6)
+		// 3. Draw Links (Edges)
+		const link = mainG.append('g')
+			.attr('stroke', '#3f3f46')
+			.attr('stroke-width', 2)
 			.selectAll('line')
 			.data(links)
 			.join('line');
 
-		// Create the node elements
-		const node = mainG
-			.selectAll('.node')
+		// 4. Draw Nodes (Vertices)
+		const node = mainG.append('g')
+			.selectAll('g')
 			.data(nodes)
-			.enter()
-			.append('g')
-			.attr('class', 'node')
-			//.on("click", (event, d) => handleNodeClick(event, d)) // You can add your click handler here
-			.call(drag(simulation));
+			.join('g')
+			.call(this.drag(simulation));
 
-		// Add background circle (group boundary)
-		node
-			.append('circle')
-			.attr('class', 'node-boundary')
-			.attr('r', (d) => {
-				if (d.data.type === 'node') return 30; // Larger route nodes
-				if (d.data.type === 'root') return 60; // Much larger root node
-				return 45; // Larger regular nodes
+		// -- Background Outer Ring (Choice Groups only; Forced off for Root) --
+		node.append('circle')
+			.filter((d: any) => d.data.type !== 'root' && d.data.goals.length > 1)
+			.attr('r', 48)
+			.attr('fill', '#1e1e24')
+			.attr('stroke', '#3f3f46')
+			.attr('stroke-width', 2);
+
+		// -- Center Core Circle --
+		node.append('circle')
+			.attr('r', (d: any) => d.data.type === 'root' ? 55 : 35)
+			.attr('fill', (d: any) => {
+				// Rule: Root or Singletons adopt their explicit state color directly
+				if (d.data.type === 'root' || d.data.goals.length === 1) {
+					return getStateTheme(d.data.goals[0]).bg;
+				}
+				// Choice groups maintain a neutral hollow core layout
+				return '#111115';
 			})
-			.attr('stroke', (d) => (d.data.type === 'root' ? 'var(--primary)' : '#ddd'))
-			.attr('stroke-width', (d) => (d.data.type === 'root' ? 3 : 1))
-			.attr('stroke-dasharray', (d) => (d.data.type === 'node' ? '3,3' : 'none'))
-			.attr('opacity', 0.7);
-
-		// Add main central node circle
-		node
-			.append('circle')
-			.attr('class', 'node-center')
-			.attr('r', (d) => {
-				if (d.data.type === 'node') return 25; // Larger route nodes
-				if (d.data.type === 'root') return 40; // Much larger root node
-				return 30; // Larger regular nodes
+			.attr('stroke', (d: any) => {
+				if (d.data.type === 'root') return '#ffffff'; // Make root completely distinct
+				if (d.data.goals.length === 1) return getStateTheme(d.data.goals[0]).stroke;
+				return '#52525b';
 			})
-			.attr('fill', (d) => {
-				if (d.data.type === 'node') return 'var(--primary)';
-				if (d.data.type === 'root') return 'var(--primary)';
-				return d.data.state === 'Active' ? '#4CAF50' : '#ccc'; // Assuming 'Active' state maps to state 1
-			})
-			.attr('stroke', 'var(--border)')
-			.attr('stroke-width', 1.5);
+			.attr('stroke-width', (d: any) => d.data.type === 'root' ? 4 : 2)
+			.style('box-shadow', '0 4px 6px -1px rgb(0 0 0 / 0.5)');
 
-		// Add individual goal circles around main node
-		node.each(function (d) {
-			const isRoot = d.data.type === 'root';
-			const isRouteNode = d.data.type === 'node';
-			if (isRouteNode || !d.data.goals.length) return; // Skip route nodes or nodes with no goals
+		// -- Goal Sub-Circles (Choice Groups only; Handled outward on the perimeter) --
+		node.each(function (d: any) {
+			// Skip completely for Singletons or the designated Root node
+			if (d.data.type === 'root' || d.data.goals.length <= 1) return;
 
-			const numGoals = d.data.goals.length;
-			if (numGoals <= 1) return; // Skip nodes with only one goal
+			const group = d3.select(this);
+			const goals = d.data.goals;
+			const radius = 48; // Snaps exactly to the outer ring geometry
+			const subCircleRadius = 11;
 
-			// Larger goal circles and positioning
-			const goalRadius = isRoot ? 15 : 12;
-			const circleRadius = isRoot ? 45 : 35; // Placement circle radius
+			goals.forEach((goal: any, i: number) => {
+				const angle = (2 * Math.PI * i) / goals.length - (Math.PI / 2);
+				const cx = Math.cos(angle) * radius;
+				const cy = Math.sin(angle) * radius;
 
-			const goalGroup = d3
-				.select(this)
-				.append('g')
-				.attr('class', 'goal-group')
-				.attr('pointer-events', 'none'); // Let events pass through to parent
+				const theme = getStateTheme(goal);
 
-			// Draw individual goals as circles around the node
-			d.data.goals.forEach((goal, i) => {
-				const angle = (2 * Math.PI * i) / numGoals;
-				const x = circleRadius * Math.cos(angle);
-				const y = circleRadius * Math.sin(angle);
+				group.append('circle')
+					.attr('cx', cx)
+					.attr('cy', cy)
+					.attr('r', subCircleRadius)
+					.attr('fill', theme.bg)
+					.attr('stroke', '#111115')
+					.attr('stroke-width', 2);
 
-				// Goal circle
-				goalGroup
-					.append('circle')
-					.attr('cx', x)
-					.attr('cy', y)
-					.attr('r', goalRadius)
-					.attr('fill', goal.state === 'Active' ? '#4CAF50' : '#ccc')
-					.attr('stroke', 'var(--muted)')
-					.attr('stroke-width', 1.5);
-
-				// Optional: Goal number/index inside circles
-				goalGroup
-					.append('text')
-					.attr('x', x)
-					.attr('y', y)
+				group.append('text')
+					.attr('x', cx)
+					.attr('y', cy)
 					.attr('text-anchor', 'middle')
-					.attr('stroke', 'var(--text-foreground)')
 					.attr('dominant-baseline', 'central')
-					.attr('font-size', isRoot ? '10px' : '9px')
+					.attr('fill', theme.text)
+					.attr('font-size', '10px')
 					.attr('font-weight', 'bold')
 					.text(i + 1);
 			});
 		});
 
-		// Add text labels to nodes (centered inside now)
-		node
-			.append('text')
+		// -- Main Internal Node Text Label --
+		node.append('text')
 			.attr('text-anchor', 'middle')
-			.attr('dominant-baseline', 'central') // Center vertically
-			.text((d) => {
-				const isRoot = d.data.type === 'root';
-				const isRouteNode = d.data.type === 'node';
-				// Truncate text if too long based on node size
-				const maxLength = isRoot ? 12 : isRouteNode ? 8 : 10;
-				return d.data.name.length > maxLength
-					? d.data.name.substring(0, maxLength) + '...'
-					: d.data.name;
+			.attr('dominant-baseline', 'central')
+			.attr('fill', (d: any) => {
+				if (d.data.type === 'root' || d.data.goals.length === 1) {
+					return getStateTheme(d.data.goals[0]).text;
+				}
+				return '#ffffff';
 			})
-			.attr('font-size', (d) =>
-				d.data.type === 'root' ? '14px' : d.data.type === 'node' ? '12px' : '12px'
-			)
-			.attr('font-weight', (d) => (d.data.type === 'root' ? 'bold' : 'normal'))
-			.attr('fill', (d) => (d.data.type === 'node' || d.data.type === 'root' ? '#fff' : '#333')); // Light text on dark backgrounds
+			.attr('font-size', (d: any) => d.data.type === 'root' ? '14px' : '11px')
+			.attr('font-weight', 'bold')
+			.text((d: any) => d.data.name.length > 12 ? d.data.name.substring(0, 11) + '…' : d.data.name);
 
+		// 5. Dynamic edge and node repositioning on clock tick
 		simulation.on('tick', () => {
-			node.attr('transform', (d) => `translate(${d.x}, ${d.y})`);
-			link
-				.attr('x1', (d) => d.source.x ?? 0)
-				.attr('y1', (d) => d.source.y ?? 0)
-				.attr('x2', (d) => d.target.x ?? 0)
-				.attr('y2', (d) => d.target.y ?? 0);
+			link.attr('x1', (d: any) => d.source.x)
+				.attr('y1', (d: any) => d.source.y)
+				.attr('x2', (d: any) => d.target.x)
+				.attr('y2', (d: any) => d.target.y);
+
+			node.attr('transform', (d: any) => `translate(${d.x},${d.y})`);
 		});
+	}
+
+	private drag(simulation: d3.Simulation<any, any>) {
+		return d3.drag<SVGGElement, any>()
+			.on('start', (event, d) => {
+				if (!event.active) simulation.alphaTarget(0.3).restart();
+				d.fx = d.x;
+				d.fy = d.y;
+			})
+			.on('drag', (event, d) => {
+				d.fx = event.x;
+				d.fy = event.y;
+			})
+			.on('end', (event, d) => {
+				if (!event.active) simulation.alphaTarget(0);
+				d.fx = null;
+				d.fy = null;
+			});
 	}
 }
 
-// ============================================================================
-
 export const [get, init] = createContext<Galaxy>();
-
-// ============================================================================

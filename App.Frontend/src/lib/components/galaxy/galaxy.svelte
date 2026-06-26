@@ -1,17 +1,15 @@
 <script lang="ts">
-	import type { components } from "$lib/api/api";
 	import Galaxy, { init } from "./context.svelte";
+	import { generateMockCursusData } from "./index";
 
-	interface Props {
-		data: components["schemas"]["CursusTrackDO"];
-	}
+	// Generate ~1000 nodes using our 4-child/depth-5 rule
+	const mockData = generateMockCursusData();
 
-	const { data }: Props = $props();
-	const ctx = init(new Galaxy(data));
+	const ctx = init(new Galaxy(mockData));
 </script>
 
-<div class="flex h-screen w-full flex-col bg-gradient-to-tr to-blue-950/10">
-	<div class="relative flex-grow">
-		<svg {@attach ctx.attachment()} class="h-full w-full"></svg>
+<div class="flex h-screen w-full flex-col bg-slate-900">
+    <div class="relative flex-grow overflow-hidden">
+		<svg {@attach ctx.attachment()} class="h-full w-full cursor-grab active:cursor-grabbing"></svg>
 	</div>
 </div>
