@@ -678,66 +678,7 @@ export interface paths {
         };
         put?: never;
         post?: never;
-        /**
-         * Delete a cursus
-         * @description Delete a cursus and its user instances
-         */
-        delete: {
-            parameters: {
-                query?: {
-                    id?: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ProblemDetails"];
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "text/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ProblemDetails"];
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "text/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -816,7 +757,66 @@ export interface paths {
         };
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete a cursus
+         * @description Delete a cursus and its user instances
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         options?: never;
         head?: never;
         patch?: never;
@@ -831,7 +831,7 @@ export interface paths {
         };
         /**
          * Get cursus track
-         * @description Retrieve the hierarchical track (goal tree) of a fixed cursus
+         * @description Retrieve the hierarchical goal tree of a static cursus.
          */
         get: {
             parameters: {
@@ -891,8 +891,8 @@ export interface paths {
         };
         put?: never;
         /**
-         * Set cursus track
-         * @description Set or replace the hierarchical track (goal tree) for a fixed cursus. This is a full replacement of the existing track.
+         * Replace cursus track
+         * @description Fully replaces the hierarchical goal track for a static cursus.
          */
         post: {
             parameters: {
@@ -922,17 +922,6 @@ export interface paths {
                         "text/json": components["schemas"]["CursusTrackDO"];
                     };
                 };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ProblemDetails"];
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "text/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
                 /** @description Unauthorized */
                 401: {
                     headers: {
@@ -949,6 +938,17 @@ export interface paths {
                 };
                 /** @description Not Found */
                 404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1875,66 +1875,7 @@ export interface paths {
         };
         put?: never;
         post?: never;
-        /**
-         * Delete a goal
-         * @description Delete a goal and its associations
-         */
-        delete: {
-            parameters: {
-                query?: {
-                    id?: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ProblemDetails"];
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "text/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ProblemDetails"];
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "text/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -2013,7 +1954,66 @@ export interface paths {
         };
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete a goal
+         * @description Delete a goal and its associations
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         options?: never;
         head?: never;
         /**
@@ -2318,66 +2318,7 @@ export interface paths {
         };
         put?: never;
         post?: never;
-        /**
-         * Delete a project
-         * @description Delete a project and its user instances
-         */
-        delete: {
-            parameters: {
-                query?: {
-                    id?: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ProblemDetails"];
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "text/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ProblemDetails"];
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "text/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -2456,7 +2397,66 @@ export interface paths {
         };
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete a project
+         * @description Delete a project and its user instances
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         options?: never;
         head?: never;
         /**
@@ -2923,6 +2923,142 @@ export interface paths {
                 };
             };
         };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reviews/{reviewId}/{file}/annotations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get annotations for a specific file in a review
+         * @description Returns the review with full details including reviewer and rubric.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    reviewId: string;
+                    file: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["AnnotationDO"][];
+                        "application/json": components["schemas"]["AnnotationDO"][];
+                        "text/json": components["schemas"]["AnnotationDO"][];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        /**
+         * Get annotations for a specific file in a review
+         * @description Returns the review with full details including reviewer and rubric.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    reviewId: string;
+                    file: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["AnnotationDO"][];
+                        "application/json": components["schemas"]["AnnotationDO"][];
+                        "text/json": components["schemas"]["AnnotationDO"][];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -5161,7 +5297,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/user-projects/{id}/invite/{inviteeId}": {
+    "/user-projects/{id}/invite/{userId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -5180,7 +5316,7 @@ export interface paths {
                 header?: never;
                 path: {
                     Id: string;
-                    inviteeId: string;
+                    userId: string;
                 };
                 cookie?: never;
             };
@@ -5267,7 +5403,7 @@ export interface paths {
                 header?: never;
                 path: {
                     Id: string;
-                    inviteeId: string;
+                    userId: string;
                 };
                 cookie?: never;
             };
@@ -6518,7 +6654,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Rotate client secret (Step 1)
+         * Rotate client secret
          * @description Demotes the active secret to fallback 'rotated' status and issues a brand-new primary secret for zero-downtime migrations.
          */
         post: {
@@ -6847,7 +6983,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/workspace/{id}/invite/{inviteeId}": {
+    "/workspace/{id}/invite/{userId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -6866,7 +7002,7 @@ export interface paths {
                 header?: never;
                 path: {
                     Id: string;
-                    inviteeId: string;
+                    userId: string;
                 };
                 cookie?: never;
             };
@@ -6964,7 +7100,7 @@ export interface paths {
                 header?: never;
                 path: {
                     Id: string;
-                    inviteeId: string;
+                    userId: string;
                 };
                 cookie?: never;
             };
@@ -7315,23 +7451,12 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description No Content */
-                204: {
+                /** @description OK */
+                200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ProblemDetails"];
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "text/json": components["schemas"]["ProblemDetails"];
-                    };
                 };
                 /** @description Unauthorized */
                 401: {
@@ -7392,6 +7517,38 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AnnotationData: components["schemas"]["AnnotationDataTextAnnotationData"] | components["schemas"]["AnnotationDataDrawingAnnotationData"] | components["schemas"]["AnnotationDataSuggestionAnnotationData"];
+        AnnotationDataDrawingAnnotationData: {
+            /** @enum {string} */
+            kind?: "Drawing";
+            color: string;
+            points: components["schemas"]["Point2D"][];
+        };
+        AnnotationDataSuggestionAnnotationData: {
+            /** @enum {string} */
+            kind?: "Suggestion";
+            replacement: string;
+            textRange: components["schemas"]["TextRange"];
+        };
+        AnnotationDataTextAnnotationData: {
+            /** @enum {string} */
+            kind?: "Text";
+            comment: string;
+            range: components["schemas"]["TextRange"];
+        };
+        AnnotationDO: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            filePath: string;
+            data: null | components["schemas"]["AnnotationData"];
+            /** Format: uuid */
+            reviewId: string;
+            author: components["schemas"]["UserLightDO"];
+        };
         /** @enum {unknown} */
         CompletionMode: "Ring" | "FreeStyle";
         CursusDO: {
@@ -7578,10 +7735,6 @@ export interface components {
             public?: null | boolean;
             /** @description Indicates whether the rubric is enabled. */
             enabled?: null | boolean;
-            supportedReviewKinds?: null | components["schemas"]["ReviewKinds"];
-            /** @description Optional reviewer rules/constraints for this rubric. */
-            reviewerRules?: null | components["schemas"]["Rule"][];
-            revieweeRules?: null | components["schemas"]["Rule"][];
         };
         PatchUserDetailsRequestDTO: {
             /** @description Optional markdown biography or about text. */
@@ -7622,9 +7775,17 @@ export interface components {
             avatarUrl?: null | string;
             details?: null | components["schemas"]["PatchUserDetailsRequestDTO"];
         };
+        Point2D: {
+            /** Format: double */
+            x: number | string;
+            /** Format: double */
+            y: number | string;
+        };
         PostApplicationRequestDTO: {
             /** @description The name of the application. */
             name: string;
+            /** @description Whether the application is enabled. */
+            enabled: boolean;
             /** @description A description of the application. */
             description: string;
             /** @description List of allowed redirect URIs after authentication. */
@@ -7633,7 +7794,7 @@ export interface components {
         PostCursusRequestDTO: {
             name: string;
             /** @description Optional description of the cursus. */
-            description?: null | string;
+            description: string;
             /** @description Indicates whether the cursus is currently active. */
             active?: boolean;
             /** @description Indicates whether the cursus is publicly visible. */
@@ -7650,7 +7811,7 @@ export interface components {
         PostGoalRequestDTO: {
             name: string;
             /** @description Optional description of the goal. */
-            description?: null | string;
+            description: string;
             /** @description Indicates whether the goal is currently active. */
             active?: boolean;
             /** @description Indicates whether the goal is publicly visible. */
@@ -7660,7 +7821,7 @@ export interface components {
             /** @description The name of the project. */
             name: string;
             /** @description Optional description of the project. */
-            description?: null | string;
+            description: string;
             /** @description Indicates whether the project is currently active. */
             active?: boolean;
             /** @description Indicates whether the project is currently public. */
@@ -7677,6 +7838,8 @@ export interface components {
              * @description The user project ID being reviewed.
              */
             userProjectId: string;
+            /** @description The SHA of the commit that this review is associated with, if applicable. */
+            ref: string;
         };
         PostRubricEntityRequestDTO: {
             /** @description The name of the rubric. */
@@ -7692,6 +7855,8 @@ export interface components {
             projectId?: null | string;
             /** @description Indicates whether the rubric is enabled. */
             enabled?: boolean;
+            /** @description The list of review variant requirements for this rubric. */
+            variants: components["schemas"]["RubricVariantDTO"][];
         };
         PostSshKeyRequestDTO: {
             /** @description A user-friendly name for the SSH key (e.g., 'Work Laptop'). */
@@ -7707,6 +7872,35 @@ export interface components {
             instance?: null | string;
         };
         ProjectDO: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** @description The associated Git repository information for this project. */
+            gitInfo: components["schemas"]["GitDO"];
+            /** @description The workspace to which this project belongs. */
+            workspace: components["schemas"]["WorkspaceDO"];
+            /** @description The display name of the project. */
+            name: string;
+            /** @description A detailed description of the project's purpose or contents. */
+            description: string;
+            /** @description The URL-friendly slug identifier for the project. */
+            slug: string;
+            /** @description Indicates whether the project is currently active. */
+            active: boolean;
+            /** @description Indicates whether the project is publicly visible. */
+            public: boolean;
+            /** @description Indicates whether the project has been deprecated. */
+            deprecated: boolean;
+            /**
+             * Format: int32
+             * @description Indicates whether the project has been deprecated.
+             */
+            maxMembers: number | string;
+        };
+        ProjectLightDO: {
             /** Format: uuid */
             id: string;
             /** Format: date-time */
@@ -7730,10 +7924,6 @@ export interface components {
              * @description Indicates whether the project has been deprecated.
              */
             maxMembers: number | string;
-            /** @description The associated Git repository information for this project. */
-            gitInfo: components["schemas"]["GitDO"];
-            /** @description The workspace to which this project belongs. */
-            workspace: components["schemas"]["WorkspaceDO"];
         };
         PutRubricVariantsRequestDTO: {
             /** @description The list of review variant requirements for this rubric. */
@@ -7778,7 +7968,6 @@ export interface components {
             updatedAt: string;
             name: string;
             slug: string;
-            markdown: string;
             public: boolean;
             enabled: boolean;
             variants: components["schemas"]["RubricVariantDO"][];
@@ -7796,7 +7985,6 @@ export interface components {
             updatedAt: string;
             name: string;
             slug: string;
-            markdown: string;
             public: boolean;
             enabled: boolean;
             gitInfo: null | components["schemas"]["GitDO"];
@@ -7818,70 +8006,6 @@ export interface components {
              * @description The number of reviews of this kind required (0-100).
              */
             required: number | string;
-        };
-        Rule: components["schemas"]["RuleAllOfRule"] | components["schemas"]["RuleAnyOfRule"] | components["schemas"]["RuleNotRule"] | components["schemas"]["RuleHasCursusRule"] | components["schemas"]["RuleHasProjectRule"] | components["schemas"]["RuleIsMemberRule"] | components["schemas"]["RuleMinDaysRegisteredRule"] | components["schemas"]["RuleMinProjectsCompletedRule"] | components["schemas"]["RuleMinReviewsCompletedRule"] | components["schemas"]["RuleSameTimezoneRule"];
-        RuleAllOfRule: {
-            /** @enum {string} */
-            $type: "all_of";
-            rules: components["schemas"]["Rule"][];
-            description?: null | string;
-        };
-        RuleAnyOfRule: {
-            /** @enum {string} */
-            $type: "any_of";
-            rules: components["schemas"]["Rule"][];
-            description?: null | string;
-        };
-        RuleHasCursusRule: {
-            /** @enum {string} */
-            $type: "has_cursus";
-            /** Format: uuid */
-            cursusId: string;
-            description?: null | string;
-        };
-        RuleHasProjectRule: {
-            /** @enum {string} */
-            $type: "has_project";
-            /** Format: uuid */
-            projectId: string;
-            description?: null | string;
-        };
-        RuleIsMemberRule: {
-            /** @enum {string} */
-            $type: "is_member";
-            description?: null | string;
-        };
-        RuleMinDaysRegisteredRule: {
-            /** @enum {string} */
-            $type: "min_days_registered";
-            /** Format: int32 */
-            days: number | string;
-            description?: null | string;
-        };
-        RuleMinProjectsCompletedRule: {
-            /** @enum {string} */
-            $type: "min_projects_completed";
-            /** Format: int32 */
-            count: number | string;
-            description?: null | string;
-        };
-        RuleMinReviewsCompletedRule: {
-            /** @enum {string} */
-            $type: "min_reviews_completed";
-            /** Format: int32 */
-            count: number | string;
-            description?: null | string;
-        };
-        RuleNotRule: {
-            /** @enum {string} */
-            $type: "not";
-            rule: components["schemas"]["Rule"];
-            description?: null | string;
-        };
-        RuleSameTimezoneRule: {
-            /** @enum {string} */
-            $type: "same_timezone";
-            description?: null | string;
         };
         SpotlightNotificationDO: {
             /** Format: uuid */
@@ -7907,6 +8031,16 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
         };
+        TextRange: {
+            /** Format: int32 */
+            startLine: number | string;
+            /** Format: int32 */
+            startColumn: number | string;
+            /** Format: int32 */
+            endLine: number | string;
+            /** Format: int32 */
+            endColumn: number | string;
+        };
         UserCursusDO: {
             /** Format: uuid */
             id: string;
@@ -7915,31 +8049,29 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
             state: components["schemas"]["EntityObjectState"];
-            /** Format: uuid */
-            userId: string;
-            /** Format: uuid */
-            cursusId: string;
-            cursus?: components["schemas"]["CursusDO"];
-            user?: null | components["schemas"]["UserLightDO"];
+            /** Format: date-time */
+            unlocksAt: null | string;
+            cursus: components["schemas"]["CursusDO"];
+            user: null | components["schemas"]["UserLightDO"];
         };
         UserCursusTrackDO: {
             /** Format: uuid */
             cursusId: string;
             name: string;
             completionMode: components["schemas"]["CompletionMode"];
-            nodes: components["schemas"]["UserCursusTrackNodeDO"][];
+            nodes?: components["schemas"]["UserCursusTrackNodeDO"][];
         };
         UserCursusTrackNodeDO: {
             /** Format: uuid */
             goalId: string;
             name: string;
             slug: string;
-            /** Format: uuid */
-            parentGoalId: null | string;
-            /** Format: uuid */
-            choiceGroup: null | string;
-            state: null | components["schemas"]["EntityObjectState"];
             isUnlocked: boolean;
+            /** Format: uuid */
+            parentGoalId?: null | string;
+            /** Format: uuid */
+            choiceGroup?: null | string;
+            state?: null | components["schemas"]["EntityObjectState"];
         };
         UserDetailsDO: {
             /** Format: uuid */
@@ -8005,7 +8137,7 @@ export interface components {
             /** @description The current state of the object. */
             state: components["schemas"]["EntityObjectState"];
             /** @description The project template this instance is based on. */
-            project: components["schemas"]["ProjectDO"];
+            project: components["schemas"]["ProjectLightDO"];
             gitInfo: null | components["schemas"]["GitDO"];
         };
         UserProjectTransactionDO: {
@@ -8025,12 +8157,12 @@ export interface components {
         /** @enum {unknown} */
         UserProjectTransactionVariant: "Started" | "MemberJoined" | "MemberLeft" | "GitCommit" | "StateChangedToInActive" | "StateChangedToActive" | "StateChangedToCompleted" | "StateChangedToAwaiting" | "MemberInvited" | "MemberUninvited" | "MemberAccepted" | "MemberDeclined" | "MemberKicked" | "LeadershipTransferred";
         WorkspaceDO: {
+            /** Format: uuid */
+            id: string;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
-            /** Format: uuid */
-            id: string;
             owner: null | components["schemas"]["UserLightDO"];
             ownership: components["schemas"]["EntityOwnership"];
         };

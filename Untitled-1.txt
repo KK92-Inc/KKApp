@@ -1,0 +1,308 @@
+-- ============================================================
+-- CONSISTENCY vs. DROPOUT ANALYSIS
+-- ============================================================
+-- Core question:
+--   Do students who spread their hours across more days/week
+--   drop out less than students who cram the same hours into
+--   fewer, longer sessions?  Does hours/day even matter once
+--   you account for days/week?
+--
+-- Key design decisions:
+--   • Dropout signal  → current_status = 'dropout'
+--                        (blackholed_at on *ongoing* students is a future
+--                         deadline, not a historical dropout marker)
+--   • Freeze handling → 'regular' and 'bonus' freezes are real absences
+--                        and are subtracted from the denominator so bursty
+--                        students aren't unfairly penalised for time they
+--                        were legitimately away.
+--                        'compensation' freezes (hackathons, events) are
+--                        NOT subtracted — the student was active.
+--   • Duration unit   → analytic.daily_logtime.duration is in seconds.
+--   • Minimum session → days with < 15 min (900 s) are ignored (login
+--                         noise / accidental taps).
+--   • PG note         → date - date returns INTEGER in PostgreSQL, so no
+--                         EXTRACT() needed — plain integer arithmetic used.
+--
+-- HOW TO USE IN METABASE:
+--   Uncomment exactly one of the four final SELECT blocks.
+--     • Bar chart  → x = days_per_week_bucket,  y = dropout_rate_pct
+--     • Heatmap    → x = days_per_week_bucket,  y = hours_per_day_bucket,
+--                    colour = dropout_rate_pct
+--     • Bar chart  → x = consistency_bucket,    y = dropout_rate_pct
+-- ============================================================
+
+WITH user_overview AS {{#326-user-overview-no-staff-logtime}},
+
+-- -------------------------------------------------------
+-- 1. USER STATUS
+--    effective_end_date drives the "weeks enrolled"
+--    denominator for each student.
+-- -------------------------------------------------------
+user_status AS (
+    SELECT
+        id                                                      AS user_id,
+        login,
+        begin_at::date                                          AS begin_date,
+        current_status,
+        CASE WHEN current_status = 'dropout' THEN 1 ELSE 0 END AS is_dropout,
+        CASE
+            WHEN current_status = 'dropout'  THEN blackholed_at::date
+            WHEN current_status = 'finished' THEN finished_at::date
+            ELSE CURRENT_DATE
+        END                                                     AS effective_end_date
+    FROM user_overview
+    WHERE begin_at IS NOT NULL
+),
+
+-- -------------------------------------------------------
+-- 2. ABSENCE FREEZE PERIODS
+--    'regular' and 'bonus' = real absences → subtract from denominator.
+--    'compensation' (hackathons, events) = keep in denominator.
+-- -------------------------------------------------------
+absence_freezes AS (
+    SELECT
+        user_id,
+        begin_date::date                                        AS freeze_start,
+        COALESCE(effective_end_date::date, expected_end_date::date) AS freeze_end
+    FROM streak.freezev3
+    WHERE category IN ('regular', 'compensation')
+),
+
+-- -------------------------------------------------------
+-- 3. FREEZE WEEKS SUBTRACTED per user
+--    Clamp freeze window to [begin_date, effective_end_date]
+--    before summing so partial overlaps are counted correctly.
+--    date - date = integer in PG → no EXTRACT needed.
+-- -------------------------------------------------------
+freeze_weeks_per_user AS (
+    SELECT
+        us.user_id,
+        COALESCE(
+            SUM(
+                GREATEST(0,
+                    (LEAST(af.freeze_end,   us.effective_end_date)
+                   - GREATEST(af.freeze_start, us.begin_date))
+                    + 1      -- inclusive day count
+                )
+            ) / 7.0,
+        0)                                                      AS freeze_weeks
+    FROM user_status us
+    LEFT JOIN absence_freezes af
+           ON af.user_id     = us.user_id
+          AND af.freeze_start <= us.effective_end_date
+          AND af.freeze_end   >= us.begin_date
+    GROUP BY us.user_id
+),
+
+-- -------------------------------------------------------
+-- 4. ACTIVE LOG DAYS
+--    Strip sessions under 15 min and freeze days.
+-- -------------------------------------------------------
+active_log_days AS (
+    SELECT
+        dl.user_id,
+        dl.date::date                                           AS log_date,
+        dl.duration / 3600.0                                    AS hours_logged
+    FROM analytic.daily_logtime dl
+    WHERE dl.duration > 900
+      AND NOT EXISTS (
+          SELECT 1
+          FROM absence_freezes af
+          WHERE af.user_id    = dl.user_id
+            AND dl.date::date BETWEEN af.freeze_start AND af.freeze_end
+      )
+),
+
+-- -------------------------------------------------------
+-- 5. PER-USER TOTALS WITHIN ENROLLMENT WINDOW
+-- -------------------------------------------------------
+user_totals AS (
+    SELECT
+        us.user_id,
+        us.is_dropout,
+        us.current_status,
+
+        -- Enrolled weeks (calendar weeks minus freeze weeks, floor at 1)
+        -- date - date = integer → divide directly, no EXTRACT needed
+        GREATEST(1.0,
+            (us.effective_end_date - us.begin_date) / 7.0
+            - fw.freeze_weeks
+        )                                                       AS enrolled_weeks,
+
+        COUNT(DISTINCT ald.log_date)                            AS total_days_logged,
+        SUM(ald.hours_logged)                                   AS total_hours_logged,
+
+        CASE
+            WHEN COUNT(DISTINCT ald.log_date) = 0 THEN 0
+            ELSE SUM(ald.hours_logged) / COUNT(DISTINCT ald.log_date)
+        END                                                     AS avg_hours_per_active_day
+
+    FROM user_status us
+    JOIN freeze_weeks_per_user fw ON fw.user_id = us.user_id
+    LEFT JOIN active_log_days ald
+           ON ald.user_id  = us.user_id
+          AND ald.log_date >= us.begin_date
+          AND ald.log_date <= us.effective_end_date
+    GROUP BY
+        us.user_id, us.is_dropout, us.current_status,
+        us.begin_date, us.effective_end_date, fw.freeze_weeks
+),
+
+-- -------------------------------------------------------
+-- 6. WEEKLY VARIANCE (consistency metric)
+--    CV = stddev / mean of days-per-active-week.
+--    Lower CV = more consistent attendance rhythm.
+--    Note: only computed over weeks the student DID show up.
+--    avg_days_per_week in the next CTE captures zero-weeks too.
+-- -------------------------------------------------------
+weekly_days AS (
+    SELECT
+        ald.user_id,
+        DATE_TRUNC('week', ald.log_date)                        AS week_start,
+        COUNT(DISTINCT ald.log_date)                            AS days_this_week
+    FROM active_log_days ald
+    JOIN user_status us ON us.user_id = ald.user_id
+    WHERE ald.log_date BETWEEN us.begin_date AND us.effective_end_date
+    GROUP BY ald.user_id, DATE_TRUNC('week', ald.log_date)
+),
+
+weekly_consistency AS (
+    SELECT
+        user_id,
+        AVG(days_this_week)    AS avg_days_active_weeks,
+        STDDEV(days_this_week) AS stddev_days_per_week
+    FROM weekly_days
+    GROUP BY user_id
+),
+
+-- -------------------------------------------------------
+-- 7. FULL USER PROFILE with bucketed dimensions
+-- -------------------------------------------------------
+user_profile AS (
+    SELECT
+        ut.user_id,
+        ut.is_dropout,
+        ut.current_status,
+        ut.enrolled_weeks,
+        ut.total_days_logged,
+        ut.total_hours_logged,
+        ut.avg_hours_per_active_day,
+
+        -- Primary metric: avg days/week over the FULL enrollment window.
+        -- Includes zero-weeks, so a student who binges 5 days then disappears
+        -- for 3 weeks shows ~1.25 days/wk, not 5.
+        ut.total_days_logged / ut.enrolled_weeks                AS avg_days_per_week,
+
+        -- Consistency: CV of weekly day count (over weeks they showed up)
+        CASE
+            WHEN wc.avg_days_active_weeks IS NULL
+              OR wc.avg_days_active_weeks = 0 THEN NULL
+            ELSE wc.stddev_days_per_week / wc.avg_days_active_weeks
+        END                                                     AS days_cv,
+
+        -- ── BUCKET: days per week (full-enrollment denominator) ──────────
+        CASE
+            WHEN ut.total_days_logged / ut.enrolled_weeks < 1 THEN '1 — <1 day/wk'
+            WHEN ut.total_days_logged / ut.enrolled_weeks < 2 THEN '2 — 1-2 days/wk'
+            WHEN ut.total_days_logged / ut.enrolled_weeks < 3 THEN '3 — 2-3 days/wk'
+            WHEN ut.total_days_logged / ut.enrolled_weeks < 4 THEN '4 — 3-4 days/wk'
+            ELSE                                                    '5 — 4+ days/wk'
+        END                                                     AS days_per_week_bucket,
+
+        -- ── BUCKET: avg hours on days they showed up ─────────────────────
+        CASE
+            WHEN ut.avg_hours_per_active_day < 2 THEN 'A — <2h/day'
+            WHEN ut.avg_hours_per_active_day < 4 THEN 'B — 2-4h/day'
+            WHEN ut.avg_hours_per_active_day < 6 THEN 'C — 4-6h/day'
+            WHEN ut.avg_hours_per_active_day < 8 THEN 'D — 6-8h/day'
+            ELSE                                      'E — 8+h/day'
+        END                                                     AS hours_per_day_bucket,
+
+        -- ── BUCKET: attendance consistency (CV) ──────────────────────────
+        CASE
+            WHEN wc.avg_days_active_weeks IS NULL
+              OR wc.avg_days_active_weeks = 0         THEN 'U — no data'
+            WHEN wc.stddev_days_per_week
+               / wc.avg_days_active_weeks < 0.25      THEN 'A — very consistent   (CV <0.25)'
+            WHEN wc.stddev_days_per_week
+               / wc.avg_days_active_weeks < 0.55      THEN 'B — fairly consistent  (CV 0.25-0.55)'
+            WHEN wc.stddev_days_per_week
+               / wc.avg_days_active_weeks < 0.90      THEN 'C — irregular           (CV 0.55-0.90)'
+            ELSE                                           'D — very bursty          (CV >0.90)'
+        END                                                     AS consistency_bucket
+
+    FROM user_totals ut
+    LEFT JOIN weekly_consistency wc ON wc.user_id = ut.user_id
+    WHERE ut.enrolled_weeks >= 4   -- need at least 4 weeks to measure patterns
+)
+
+-- ============================================================
+-- ► UNCOMMENT EXACTLY ONE QUERY BELOW
+-- ============================================================
+
+-- ── QUERY A: Cross-tab  days/week × hours/day  (heatmap) ────────────────
+-- Best for: does hours/day add anything on top of days/week?
+-- If dropout_rate_pct varies strongly across rows but not across columns
+-- → days/week is the only driver; hours/day targets won't help.
+SELECT
+    days_per_week_bucket,
+    hours_per_day_bucket,
+    COUNT(*)                                                    AS students,
+    SUM(is_dropout)                                             AS dropouts,
+    ROUND(100.0 * SUM(is_dropout) / NULLIF(COUNT(*), 0), 1)    AS dropout_rate_pct,
+    ROUND(AVG(avg_days_per_week)::numeric,        2)            AS avg_days_per_week,
+    ROUND(AVG(avg_hours_per_active_day)::numeric, 2)            AS avg_hours_per_day,
+    ROUND(AVG(enrolled_weeks)::numeric,           1)            AS avg_enrolled_weeks
+FROM user_profile
+GROUP BY days_per_week_bucket, hours_per_day_bucket
+ORDER BY days_per_week_bucket, hours_per_day_bucket;
+
+
+-- ── QUERY B: Days-per-week only  (bar chart) ────────────────────────────
+-- Best for: clean bar chart answer to "does attending more days/week
+-- reduce dropout, regardless of session length?"
+-- SELECT
+--     days_per_week_bucket,
+--     COUNT(*)                                                    AS students,
+--     SUM(is_dropout)                                             AS dropouts,
+--     ROUND(100.0 * SUM(is_dropout) / NULLIF(COUNT(*), 0), 1)    AS dropout_rate_pct,
+--     ROUND(AVG(avg_days_per_week)::numeric,        2)            AS avg_days_per_week,
+--     ROUND(AVG(avg_hours_per_active_day)::numeric, 2)            AS avg_hours_per_day
+-- FROM user_profile
+-- GROUP BY days_per_week_bucket
+-- ORDER BY days_per_week_bucket;
+
+
+-- ── QUERY C: Consistency bucket only  (bar chart) ───────────────────────
+-- Best for: does attendance regularity predict dropout independently
+-- of how many days/week on average?
+-- SELECT
+--     consistency_bucket,
+--     COUNT(*)                                                    AS students,
+--     SUM(is_dropout)                                             AS dropouts,
+--     ROUND(100.0 * SUM(is_dropout) / NULLIF(COUNT(*), 0), 1)    AS dropout_rate_pct,
+--     ROUND(AVG(avg_days_per_week)::numeric,        2)            AS avg_days_per_week,
+--     ROUND(AVG(avg_hours_per_active_day)::numeric, 2)            AS avg_hours_per_day,
+--     ROUND(AVG(days_cv)::numeric,                  3)            AS avg_cv
+-- FROM user_profile
+-- WHERE consistency_bucket <> 'U — no data'
+-- GROUP BY consistency_bucket
+-- ORDER BY consistency_bucket;
+
+
+-- ── RAW USER ROWS  (scatter plot or export) ──────────────────────────────
+-- SELECT
+--     user_id,
+--     current_status,
+--     is_dropout,
+--     enrolled_weeks,
+--     total_days_logged,
+--     total_hours_logged,
+--     ROUND(avg_days_per_week::numeric,         2)  AS avg_days_per_week,
+--     ROUND(avg_hours_per_active_day::numeric,  2)  AS avg_hours_per_active_day,
+--     ROUND(days_cv::numeric,                   3)  AS days_cv,
+--     days_per_week_bucket,
+--     hours_per_day_bucket,
+--     consistency_bucket
+-- FROM user_profile
+-- ORDER BY avg_days_per_week DESC;

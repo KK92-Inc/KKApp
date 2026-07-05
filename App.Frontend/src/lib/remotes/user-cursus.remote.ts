@@ -25,6 +25,8 @@ export const getPage = Remote.GET('/users/{userId}/cursus')
 		}
 	})).paginated().declare();
 
+export const getTrack = Remote.GET('/user-cursus/{id}/track').declare();
+
 
 // /** Find a user's specific cursus enrollment by user and cursus ID. */
 // export const getByCursus = Remote.GET('/users/{userId}/cursus/{cursusId}').declare();

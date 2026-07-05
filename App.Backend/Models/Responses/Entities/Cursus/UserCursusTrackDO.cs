@@ -23,5 +23,6 @@ public class UserCursusTrackDO
     [Required]
     public CompletionMode CompletionMode { get; set; }
 
+    [Required]
     public IList<UserCursusTrackNodeDO> Nodes { get; set; } = [];
 }
