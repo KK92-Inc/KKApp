@@ -1,47 +1,44 @@
 import type * as d3 from 'd3';
-import type { GoalState } from './config';
-import type { components } from '$lib/api/api';
 
-export type NodeType = 'root' | 'goal';
-export type GoalState = components['schemas']['EntityObjectState'] | null;
-
-/** A single goal as returned in the API's flat node list. */
-// export interface TrackNode {
-// 	goalId: string;
-// 	name: string;
-// 	slug: string;
-// 	isUnlocked: boolean;
-// 	parentGoalId: string | null;
-// 	/**
-// 	 * Goals sharing the same choiceGroup UUID are mutually exclusive alternatives.
-// 	 * They collapse into one visual node with sub-circles. Goals with null are standalone.
-// 	 */
-// 	choiceGroup: string | null;
-// 	state: GoalState;
-// }
-
-// export interface Track {
-// 	cursusId: string;
-// 	name: string;
-// 	completionMode: string;
-// 	nodes: TrackNode[];
-// }
-
-export type Track = components['schemas']['UserCursusTrackDO'];
-export type TrackNode = components['schemas']['UserCursusTrackNodeDO'];
-
-/** A node in the assembled D3 hierarchy. */
-export interface NodeDatum {
+/**
+ * A single visual "dot" — either a node's own content (when it's the only
+ * item) or one alternative within a cluster of mutually exclusive choices
+ * rendered as satellites around a shared circle.
+ *
+ * `TMeta` is opaque to the renderer: it's whatever payload the adapter that
+ * built the tree wants echoed back through click/focus events.
+ */
+export interface GalaxyItem<TMeta = unknown> {
 	id: string;
-	name: string;
-	/**
-	 * - length > 1 → choice group; sub-circles rendered per entry.
-	 * - length = 1 → standalone goal.
-	 */
-	choices: TrackNode[];
-	children?: NodeDatum[];
-	type: NodeType;
+	label: string;
+	/** Resolved CSS color for the dot/core fill. */
+	color: string;
+	/** Resolved CSS color for the label text. */
+	textColor: string;
+	meta: TMeta;
 }
 
-export type SimNode = d3.HierarchyNode<NodeDatum> & d3.SimulationNodeDatum;
-export type SimLink = d3.SimulationLinkDatum<SimNode>;
+/**
+ * A node in the assembled D3 hierarchy. Fully self-describing: colors,
+ * labels, and clustering are already resolved by whoever built the tree, so
+ * the renderer never has to know about domain concepts like "state" or
+ * "unlocked".
+ */
+export interface GalaxyNode<TMeta = unknown> {
+	id: string;
+	/** Line(s) of text drawn inside the core circle. */
+	label: string[];
+	/** Resolved CSS color for the core circle. */
+	color: string;
+	/** Resolved CSS color for the core label text. */
+	textColor: string;
+	/**
+	 * 1 item = standalone node (no satellite dots).
+	 * >1 items = a cluster of alternatives, rendered as small orbiting dots.
+	 */
+	items: GalaxyItem<TMeta>[];
+	children?: GalaxyNode<TMeta>[];
+}
+
+export type SimNode<TMeta = unknown> = d3.HierarchyNode<GalaxyNode<TMeta>> & d3.SimulationNodeDatum;
+export type SimLink<TMeta = unknown> = d3.SimulationLinkDatum<SimNode<TMeta>>;

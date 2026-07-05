@@ -1,220 +1,272 @@
 <script lang="ts">
-	import * as InputGroup from '$lib/components/input-group';
-	import { LoaderCircle, Search, Sparkles } from '@lucide/svelte';
-	import type { PageProps } from './$types';
-	import * as Select from '$lib/components/select';
-	import * as Page from './context.svelte';
-	import { getTree, getGoals } from '$lib/components/galaxy/tree';
-	import type { components } from '$lib/api/api';
-	import config from '$lib/components/galaxy/config';
-	import * as Empty from '$lib/components/empty';
-	import { Button } from '$lib/components/button';
+  import { LoaderCircle, Sparkles, CheckIcon, ChevronsUpDownIcon, X as XIcon } from '@lucide/svelte';
+  import { tick } from 'svelte';
+  import { cn } from '$lib/utils.js';
+  import type { PageProps } from './$types';
+  import type { components } from '$lib/api/api';
 
-	let { params }: PageProps = $props();
-	let userCursusId = $state<string>();
-	const ctx = Page.setContext(
-		new Page.Context(
-			() => params.userId,
-			() => userCursusId
-		)
-	);
+  import config from '$lib/components/galaxy/config';
+  import { Adapter, type Track, type TrackNode } from '$lib/components/galaxy/adapters/user-cursus';
+  import * as Page from './context.svelte';
 
-	let cursi = $state<components['schemas']['UserCursusDO'][]>([]);
-	let track = $state<components['schemas']['UserCursusTrackDO'] | null>(null);
-	// 1. Add state to hold the actively selected items
-	let selectedGoal = $state<any>(null);
-	let selectedGroup = $state<any[] | null>(null);
+  // Components
+  import { Button } from '$lib/components/button';
+  import * as Select from '$lib/components/select';
+  import * as Empty from '$lib/components/empty';
+  import * as Command from '$lib/components/command';
+  import * as Popover from '$lib/components/popover';
 
-	// 2. Listen to the new D3 renderer events
-	ctx.renderer.onSingleClick((goal) => {
-		selectedGroup = null; // Clear group if a single goal is clicked
-		selectedGoal = goal;
-	});
+  let { params }: PageProps = $props();
 
-	ctx.renderer.onGroupClick((goals) => {
-		selectedGoal = null; // Clear single goal if a group is clicked
-		selectedGroup = goals;
-	});
+  // --- Context & Core State ---
+  let activeCursusId = $state<string>();
+  const ctx = Page.setContext(
+    new Page.Context(
+      () => params.userId,
+      () => activeCursusId
+    )
+  );
 
-	$effect(() => {
-		ctx.cursi.then((res) => (cursi = res.data));
-	});
+  let activeTrack = $state<Track | null>(null);
+  let userCursusList = $state<components['schemas']['UserCursusDO'][]>([]);
 
-	$effect(() => {
-		if (userCursusId) {
-			ctx.track.then((res) => (track = res));
-		} else {
-			track = null;
-		}
-	});
+  // --- Search Combobox State ---
+  let isSearchOpen = $state(false);
+  let searchGoalId = $state('');
+  let searchTriggerRef = $state<HTMLButtonElement>(null!);
 
-	const options = $derived(cursi.map((c) => ({ value: c.id, label: c.cursus.name })));
-	const trigger = $derived(options.find((c) => c.value === userCursusId)?.label ?? 'Select a cursus');
-	const available = $derived(options.length > 0);
+  // --- Selection State (Right Panel) ---
+  let selectedGoal = $state<TrackNode | null>(null);
+  let selectedGroup = $state<TrackNode[] | null>(null);
 
-	let tree = $derived(track ? getTree(track) : null);
-	let goals = $derived(tree ? getGoals(tree) : []);
+  // --- Effects ---
+  $effect(() => {
+    ctx.cursi.then((res) => (userCursusList = res.data));
+  });
+
+  $effect(() => {
+    if (activeCursusId) {
+      ctx.track.then((res) => (activeTrack = res));
+    } else {
+      activeTrack = null;
+    }
+  });
+
+  // --- Derived: Cursus Data ---
+  const cursusOptions = $derived(userCursusList.map((c) => ({ value: c.id, label: c.cursus.name })));
+  const selectedCursusLabel = $derived(
+    cursusOptions.find((c) => c.value === activeCursusId)?.label ?? 'Select a cursus'
+  );
+  const hasCursus = $derived(cursusOptions.length > 0);
+
+  // --- Derived: Tree & Goals ---
+  const tree = $derived(activeTrack ? Adapter.construct(activeTrack) : null);
+  const flattenedGoals = $derived(tree ? Adapter.flatten(tree) : []);
+
+  // --- Derived: Search Options ---
+  const searchGoalOptions = $derived(flattenedGoals.map((g) => ({ value: g.goalId, label: g.name })));
+  const searchGoalLabel = $derived(searchGoalOptions.find((f) => f.value === searchGoalId)?.label);
+
+  // --- Event Listeners ---
+  ctx.renderer.onSingleClick((node) => {
+    selectedGroup = null;
+    selectedGoal = node;
+  });
+
+  ctx.renderer.onGroupClick((nodes) => {
+    selectedGoal = null;
+    selectedGroup = nodes;
+  });
+
+  // --- Handlers ---
+  function closeSearchAndFocusTrigger() {
+    isSearchOpen = false;
+    tick().then(() => {
+      searchTriggerRef.focus();
+    });
+  }
+
+  function clearSelection() {
+    selectedGoal = null;
+    selectedGroup = null;
+  }
 </script>
 
 <svelte:boundary>
-	{#snippet pending()}
-		<div class="flex h-max w-full flex-1 flex-col items-center justify-center gap-5">
-			<div class="relative flex items-center justify-center">
-				<div
-					class="absolute h-24 w-24 animate-[spin_3s_linear_infinite] rounded-full border-t-2 border-r-2 border-primary/40"
-				></div>
-				<div
-					class="absolute h-16 w-16 animate-[spin_2s_linear_infinite_reverse] rounded-full border-b-2 border-l-2 border-primary/60"
-				></div>
-				<LoaderCircle class="h-8 w-8 animate-spin text-primary" width="1" />
-			</div>
-			<p class="mt-8 animate-pulse text-sm font-medium tracking-widest text-muted-foreground uppercase">
-				Mapping the galaxy...
-			</p>
-		</div>
-	{/snippet}
+  {#snippet pending()}
+    <div class="flex h-max w-full flex-1 flex-col items-center justify-center gap-5">
+      <div class="relative flex items-center justify-center">
+        <div class="absolute h-24 w-24 animate-[spin_3s_linear_infinite] rounded-full border-t-2 border-r-2 border-primary/40"></div>
+        <div class="absolute h-16 w-16 animate-[spin_2s_linear_infinite_reverse] rounded-full border-b-2 border-l-2 border-primary/60"></div>
+        <LoaderCircle class="h-8 w-8 animate-spin text-primary" width="1" />
+      </div>
+      <p class="mt-8 animate-pulse text-sm font-medium tracking-widest text-muted-foreground uppercase">
+        Mapping the galaxy...
+      </p>
+    </div>
+  {/snippet}
 
-	{#if selectedGoal || selectedGroup}
-		<div
-			class="fixed top-4 right-4 z-50 w-80 animate-in rounded-xl border bg-card/80 p-5 shadow-2xl backdrop-blur-xl fade-in slide-in-from-top-4"
-		>
-			<div class="mb-3 flex items-start justify-between">
-				<h3 class="text-lg font-semibold tracking-tight">
-					{selectedGoal ? 'Goal Details' : 'Choice Group'}
-				</h3>
-				<button
-					class="text-muted-foreground transition-colors hover:text-foreground"
-					onclick={() => {
-						selectedGoal = null;
-						selectedGroup = null;
-					}}
-					aria-label="Close details"
-				>
-					✕
-				</button>
-			</div>
+  {#if selectedGoal || selectedGroup}
+    <div class="fixed mt-4 right-4 z-20 w-80 animate-in fade-in slide-in-from-right-4 rounded-xl border bg-card/90 p-5 shadow-2xl backdrop-blur-xl">
+      <div class="mb-4 flex items-start justify-between">
+        <div class="flex flex-col space-y-1.5">
+          <h3 class="font-semibold leading-none tracking-tight">
+            {#if selectedGoal}
+              {selectedGoal.name}
+            {:else if selectedGroup}
+              Choice Group
+            {/if}
+          </h3>
+          <p class="text-sm text-muted-foreground">
+            {#if selectedGoal}
+              {selectedGoal.description || 'No description available for this goal.'}
+            {:else if selectedGroup}
+              This node contains multiple pathways. Select a specific choice below to view details:
+            {/if}
+          </p>
+        </div>
+        <!-- Close Button -->
+        <button
+          class="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          onclick={clearSelection}
+          aria-label="Close details"
+        >
+          <XIcon class="h-4 w-4" />
+        </button>
+      </div>
 
-			{#if selectedGoal}
-				<div class="flex flex-col gap-2">
-					<h4 class="text-md font-medium text-primary">{selectedGoal.name}</h4>
-					<p class="text-sm leading-relaxed text-muted-foreground">
-						{selectedGoal.description || 'No description available for this goal.'}
-					</p>
-					<div
-						class="mt-2 flex w-max items-center rounded-full border bg-muted/50 px-3 py-1 text-xs font-semibold tracking-wider uppercase"
-					>
-						{selectedGoal.state || 'Locked'}
-					</div>
-				</div>
-			{:else if selectedGroup}
-				<div class="flex flex-col gap-3">
-					<p class="text-sm text-muted-foreground">
-						This node contains multiple pathways. Select a specific choice below:
-					</p>
-					<ul class="flex flex-col gap-2">
-						{#each selectedGroup as choice}
-							<li
-								class="flex cursor-pointer items-center justify-between rounded-lg border bg-background/50 p-3 text-sm transition-colors hover:bg-muted"
-								onclick={() => {
-									selectedGroup = null;
-									selectedGoal = choice;
-								}}
-							>
-								<span class="font-medium">{choice.name}</span>
-								<span class="rounded-full bg-secondary/50 px-2.5 py-0.5 text-[10px] font-bold uppercase">
-									{choice.state || 'Locked'}
-								</span>
-							</li>
-						{/each}
-					</ul>
-				</div>
-			{/if}
-		</div>
-	{/if}
+      <div class="flex flex-col gap-2">
+        {#if selectedGoal}
+          <div class="mt-1">
+            <span class="inline-flex items-center rounded-full border bg-muted/50 px-3 py-1 text-xs font-semibold tracking-wider uppercase">
+              {selectedGoal.state || 'Locked'}
+            </span>
+          </div>
+        {:else if selectedGroup}
+          <ul class="flex flex-col gap-2">
+            {#each selectedGroup as choice (choice.goalId)}
+              <li>
+                <button
+                  class="flex w-full items-center justify-between rounded-lg border bg-background/50 p-3 text-sm transition-colors hover:bg-muted text-left"
+                  onclick={() => {
+                    selectedGroup = null;
+                    selectedGoal = choice;
+                  }}
+                >
+                  <span class="font-medium">{choice.name}</span>
+                  <span class="rounded-full bg-secondary/50 px-2.5 py-0.5 text-[10px] font-bold uppercase">
+                    {choice.state || 'Locked'}
+                  </span>
+                </button>
+              </li>
+            {/each}
+          </ul>
+        {/if}
+      </div>
+    </div>
+  {/if}
 
-	<datalist id="goals">
-		{#each goals as goal (goal.goalId)}
-			<option value={goal.goalId}>{goal.name}</option>
-		{/each}
-	</datalist>
+  <!-- Top-Left UI Overlay -->
+  <div class="fixed z-10 overflow-auto">
+    <div class="flex flex-col gap-2 rounded-br-lg border-r border-b bg-card/50 p-3 backdrop-blur-lg">
+      <div class="flex items-center gap-2">
+        <!-- Cursus Selector -->
+        <Select.Root type="single" bind:value={activeCursusId} disabled={!hasCursus}>
+          <Select.Trigger class="h-max w-40 truncate">{selectedCursusLabel}</Select.Trigger>
+          <Select.Content class="max-h-75">
+            <Select.Group>
+              <Select.Label>Cursus</Select.Label>
+              {#each cursusOptions as entry (entry.value)}
+                <Select.Item value={entry.value}>{entry.label}</Select.Item>
+              {/each}
+            </Select.Group>
+          </Select.Content>
+        </Select.Root>
 
-	<div class="fixed z-10 overflow-auto">
-		<div class="flex flex-col gap-2 rounded-br-lg border-r border-b bg-card/50 p-3 backdrop-blur-lg">
-			<div class="flex items-center gap-2">
-				<InputGroup.Root class="h-max w-50">
-					<InputGroup.Input
-						list="goals"
-						disabled={!goals.length}
-						oninput={(e) => ctx.focus(e.currentTarget.value)}
-						placeholder="Search..."
-					/>
+        <!-- Search Combobox -->
+        <Popover.Root bind:open={isSearchOpen}>
+          <Popover.Trigger bind:ref={searchTriggerRef}>
+            {#snippet child({ props })}
+              <Button
+                {...props}
+                variant="outline"
+                class="w-50 justify-between"
+                role="combobox"
+                aria-expanded={isSearchOpen}
+                disabled={searchGoalOptions.length === 0}
+              >
+                <span class="truncate">{searchGoalLabel || 'Search for goal...'}</span>
+                <ChevronsUpDownIcon class="opacity-50 shrink-0 ml-2" />
+              </Button>
+            {/snippet}
+          </Popover.Trigger>
+          <Popover.Content class="w-50 p-0">
+            <Command.Root>
+              <Command.Input placeholder="Search goals..." />
+              <Command.List>
+                <Command.Empty>No goal found.</Command.Empty>
+                <Command.Group value="goals">
+                  {#each searchGoalOptions as goal (goal.value)}
+                    <Command.Item
+                      value={goal.value}
+                      onSelect={() => {
+                        searchGoalId = goal.value;
+                        closeSearchAndFocusTrigger();
+                        ctx.focus(searchGoalId);
+                      }}
+                    >
+                      <CheckIcon class={cn(searchGoalId !== goal.value && 'text-transparent')} />
+                      {goal.label}
+                    </Command.Item>
+                  {/each}
+                </Command.Group>
+              </Command.List>
+            </Command.Root>
+          </Popover.Content>
+        </Popover.Root>
+      </div>
 
-					<InputGroup.Addon>
-						<Search />
-					</InputGroup.Addon>
-					<InputGroup.Addon align="inline-end">{goals.length} items</InputGroup.Addon>
-				</InputGroup.Root>
+      <!-- Legend -->
+      <div class="flex flex-wrap items-center gap-3 text-[10px]">
+        {#each Object.entries(config.colors) as [legend, color] (legend)}
+          <div class="flex items-center gap-1.5">
+            <span class="h-3 w-3 rounded-full border border-muted/90" style="background-color: {color};"></span>
+            <span class="text-muted-foreground">{legend}</span>
+          </div>
+        {/each}
+      </div>
+    </div>
+  </div>
 
-				<Select.Root type="single" bind:value={userCursusId} disabled={!available}>
-					<Select.Trigger class="h-max w-40" style="height: max-content;">{trigger}</Select.Trigger>
-					<Select.Content class="max-h-75">
-						<Select.Group>
-							<Select.Label>Cursus</Select.Label>
-							{#each options as entry (entry.value)}
-								<Select.Item value={entry.value}>{entry.label}</Select.Item>
-							{/each}
-						</Select.Group>
-					</Select.Content>
-				</Select.Root>
-			</div>
-
-			<!-- 3. Legend container sits natively below the inputs now -->
-			<div class="flex flex-wrap items-center gap-3 text-[10px]">
-				{#each Object.entries(config.colors) as [legend, color] (legend)}
-					<div class="flex items-center gap-1.5">
-						<span class="h-3 w-3 rounded-full border border-muted/90" style="background-color: {color};"
-						></span>
-						<span class="text-muted-foreground">{legend}</span>
-					</div>
-				{/each}
-			</div>
-		</div>
-	</div>
-
-	{#if tree}
-		<svg {@attach ctx.attachment(tree)} class="h-full w-full cursor-grab active:cursor-grabbing"></svg>
-	{:else}
-		<Empty.Root class="flex h-full w-full flex-1 items-center justify-center">
-			<Empty.Header>
-				<Empty.Media variant="icon">
-					<Sparkles />
-				</Empty.Media>
-				<Empty.Title>
-					{#if !available}
-						No Cursus Available
-					{:else}
-						No Cursus Selected
-					{/if}
-				</Empty.Title>
-				<Empty.Description>
-					{#if !available}
-						You haven't subscribed any cursus yet. Get started by subscribing your first cursus.
-					{:else}
-						You haven't selected a cursus yet. Select one from the menu on the top left corner.
-					{/if}
-				</Empty.Description>
-			</Empty.Header>
-			<Empty.Content>
-				<div class="flex gap-2">
-					<Button href="/users/{params.userId}/cursus">Discover Cursus</Button>
-					<!-- <Button variant="outline">Import Project</Button> -->
-				</div>
-			</Empty.Content>
-			<!-- <Button variant="link" class="text-muted-foreground" size="sm">
-				<a href="#/">
-					Learn More <ArrowUpRightIcon class="inline" />
-				</a>
-			</Button> -->
-		</Empty.Root>
-	{/if}
+  <!-- Main Graph Render -->
+  {#if tree}
+    <svg {@attach ctx.attachment(tree)} class="h-full w-full cursor-grab active:cursor-grabbing"></svg>
+  {:else}
+    <Empty.Root class="flex h-full w-full flex-1 items-center justify-center">
+      <Empty.Header>
+        <Empty.Media variant="icon">
+          <Sparkles />
+        </Empty.Media>
+        <Empty.Title>
+          {#if !hasCursus}
+            No Cursus Available
+          {:else}
+            No Cursus Selected
+          {/if}
+        </Empty.Title>
+        <Empty.Description>
+          {#if !hasCursus}
+            You haven't subscribed to any cursus yet. Get started by subscribing to your first cursus.
+          {:else}
+            You haven't selected a cursus yet. Select one from the menu on the top left corner.
+          {/if}
+        </Empty.Description>
+      </Empty.Header>
+      <Empty.Content>
+        <div class="flex gap-2">
+          <Button href="/users/{params.userId}/cursus">Discover Cursus</Button>
+        </div>
+      </Empty.Content>
+    </Empty.Root>
+  {/if}
 </svelte:boundary>

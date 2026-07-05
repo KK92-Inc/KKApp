@@ -1,6 +1,13 @@
+// ============================================================================
+// W2Inc, 2025, All Rights Reserved.
+// See README in the root project for more information.
+// ============================================================================
+/* eslint-disable @typescript-eslint/no-this-alias */
+// ============================================================================
+
 import * as d3 from 'd3';
 import config from './config';
-import type { NodeDatum, SimLink, SimNode, GoalState } from './types';
+import type { GalaxyNode, SimLink, SimNode } from './types';
 
 // ============================================================================
 // Sizing
@@ -9,7 +16,7 @@ import type { NodeDatum, SimLink, SimNode, GoalState } from './types';
 const RADII = {
 	root: { outer: 58, inner: 40 },
 	parent: { outer: 38, inner: 26 },
-	group: { outer: 50, inner: 26 }, // orbit + dot = 44 ≤ outer = 50
+	group: { outer: 50, inner: 26 },
 	lone: { outer: 32, inner: 22 },
 } as const;
 
@@ -17,73 +24,53 @@ const CHOICE_DOT = 10;
 const CHOICE_ORBIT = 30;
 type SizeKey = keyof typeof RADII;
 
-function sizeKey(d: d3.HierarchyNode<NodeDatum>): SizeKey {
-	if (d.data.type === 'root') return 'root';
+function sizeKey<TMeta>(d: d3.HierarchyNode<GalaxyNode<TMeta>>): SizeKey {
+	if (d.depth === 0) return 'root';
 	if (d.children) return 'parent';
-	if (d.data.choices.length > 1) return 'group';
+	if (d.data.items.length > 1) return 'group';
 	return 'lone';
 }
 
 // ============================================================================
-// Colours & labels
-// ============================================================================
-
-/** White on coloured fills; muted theme text on empty (locked) fills. */
-function stateTextColor(state: GoalState, isUnlocked: boolean): string {
-	return state === null && !isUnlocked ? 'var(--muted-foreground)' : '#fff';
-}
-
-/** Highest-priority state across a choice group's members. */
-function groupState(choices: NodeDatum['choices']): { state: GoalState; isUnlocked: boolean } {
-	const order: Partial<Record<string, number>> = { Completed: 4, Active: 3, Awaiting: 2, Inactive: 1 };
-	const best = choices.reduce((a, b) =>
-		(order[b.state ?? ''] ?? 0) > (order[a.state ?? ''] ?? 0) ? b : a
-	);
-	return { state: best.state, isUnlocked: choices.some((c) => c.isUnlocked) };
-}
-
-/**
- * Lines to display inside a node:
- * - Standalone goal            → its name
- * - Choice group, one chosen   → that choice's name only
- * - Choice group, none chosen  → all choice names (multi-line)
- */
-function getLabel(d: NodeDatum): string[] {
-	if (d.type === 'root' || d.choices.length <= 1) {
-		return [d.choices[0]?.name ?? d.name];
-	}
-	const chosen = d.choices.find((c) => c.state !== null);
-	return chosen ? [chosen.name] : d.choices.map((c) => c.name);
-}
-
-// ============================================================================
-// GalaxyRenderer — imperative D3 engine, framework-agnostic
+// GalaxyRenderer — imperative D3 engine, framework-agnostic AND data-agnostic
 // ============================================================================
 
 /**
  * Owns the D3 force-graph rendering pipeline for a single `<svg>` element.
- * Has no Svelte dependency: it's plain state + DOM manipulation, so it's
- * usable and testable independently of any component.
+ * Knows nothing about goals, cursi, or state — it only understands
+ * `GalaxyNode`/`GalaxyItem`. Any domain data gets adapted into that shape
+ * before it reaches here (see `./adapters`).
  */
-export class GalaxyRenderer {
+export class GalaxyRenderer<TMeta = unknown> {
 	private element?: SVGElement;
 	private zoomBehavior?: d3.ZoomBehavior<SVGElement, unknown>;
-	private simNodes: SimNode[] = [];
-	private nodeG?: d3.Selection<SVGGElement, SimNode, SVGGElement, unknown>;
+	private simNodes: SimNode<TMeta>[] = [];
+	private nodeG?: d3.Selection<SVGGElement, SimNode<TMeta>, SVGGElement, unknown>;
 	private width = 0;
 	private height = 0;
+
+	private singleClickHandler?: (meta: TMeta) => void;
+	private groupClickHandler?: (metas: TMeta[]) => void;
+
+	public onSingleClick(callback: (meta: TMeta) => void) {
+		this.singleClickHandler = callback;
+	}
+
+	public onGroupClick(callback: (metas: TMeta[]) => void) {
+		this.groupClickHandler = callback;
+	}
 
 	/**
 	 * Mounts the renderer onto an SVG element for the given tree.
 	 * Returns a cleanup function (for use inside a Svelte {@attach}).
 	 */
-	mount(element: SVGElement, tree: NodeDatum): () => void {
+	mount(element: SVGElement, tree: GalaxyNode<TMeta>): () => void {
 		const controller = new AbortController();
 		const style = getComputedStyle(document.documentElement);
 		const header = parseFloat(style.getPropertyValue('--header-height'));
 
 		this.width = window.innerWidth;
-		this.height = window.innerHeight - 1 - header; // +1 for border
+		this.height = window.innerHeight - 1 - header;
 		document.body.style.overflow = 'hidden';
 		this.render(element, tree);
 
@@ -103,22 +90,11 @@ export class GalaxyRenderer {
 		};
 	}
 
-	private singleClickHandler?: (goal: any) => void;
-	private groupClickHandler?: (goals: any[]) => void;
-
-	public onSingleClick(callback: (goal: any) => void) {
-		this.singleClickHandler = callback;
-	}
-
-	public onGroupClick(callback: (goals: any[]) => void) {
-		this.groupClickHandler = callback;
-	}
-
 	// =========================================================================
 	// Render pipeline
 	// =========================================================================
 
-	private render(element: SVGElement, tree: NodeDatum): void {
+	private render(element: SVGElement, tree: GalaxyNode<TMeta>): void {
 		this.element = element;
 		const svg = d3.select<SVGElement, unknown>(element);
 		svg.selectAll('*').remove();
@@ -136,9 +112,9 @@ export class GalaxyRenderer {
 
 		svg.call(this.zoomBehavior);
 
-		const root = d3.hierarchy<NodeDatum>(tree, (d) => d.children);
-		this.simNodes = root.descendants() as unknown as SimNode[];
-		const links = root.links() as unknown as SimLink[];
+		const root = d3.hierarchy<GalaxyNode<TMeta>>(tree, (d) => d.children);
+		this.simNodes = root.descendants() as unknown as SimNode<TMeta>[];
+		const links = root.links() as unknown as SimLink<TMeta>[];
 
 		const simulation = this.buildSimulation(this.simNodes, links);
 		const linkSel = this.renderLinks(canvas, links);
@@ -146,47 +122,47 @@ export class GalaxyRenderer {
 
 		simulation.on('tick', () => {
 			linkSel
-				.attr('x1', (d) => (d.source as SimNode).x ?? 0)
-				.attr('y1', (d) => (d.source as SimNode).y ?? 0)
-				.attr('x2', (d) => (d.target as SimNode).x ?? 0)
-				.attr('y2', (d) => (d.target as SimNode).y ?? 0);
+				.attr('x1', (d) => (d.source as SimNode<TMeta>).x ?? 0)
+				.attr('y1', (d) => (d.source as SimNode<TMeta>).y ?? 0)
+				.attr('x2', (d) => (d.target as SimNode<TMeta>).x ?? 0)
+				.attr('y2', (d) => (d.target as SimNode<TMeta>).y ?? 0);
 
-			this.nodeG!.attr('transform', (d: SimNode) => `translate(${d.x ?? 0},${d.y ?? 0})`);
+			this.nodeG!.attr('transform', (d: SimNode<TMeta>) => `translate(${d.x ?? 0},${d.y ?? 0})`);
 		});
 	}
 
-	private buildSimulation(nodes: SimNode[], links: SimLink[]) {
+	private buildSimulation(nodes: SimNode<TMeta>[], links: SimLink<TMeta>[]) {
 		return d3
-			.forceSimulation<SimNode>(nodes)
-			.force('link', d3.forceLink<SimNode, SimLink>(links).distance(config.link.distance).strength(config.link.strength).iterations(config.link.iterations))
-			.force('charge', d3.forceManyBody<SimNode>().strength(config.charge.strength).distanceMax(config.charge.distanceMax))
-			.force('center', d3.forceCenter<SimNode>(0, 0))
-			.force('collide', d3.forceCollide<SimNode>((d) => RADII[sizeKey(d)].outer + config.collision.padding).strength(config.collision.strength))
+			.forceSimulation<SimNode<TMeta>>(nodes)
+			.force('link', d3.forceLink<SimNode<TMeta>, SimLink<TMeta>>(links).distance(config.link.distance).strength(config.link.strength).iterations(config.link.iterations))
+			.force('charge', d3.forceManyBody<SimNode<TMeta>>().strength(config.charge.strength).distanceMax(config.charge.distanceMax))
+			.force('center', d3.forceCenter<SimNode<TMeta>>(0, 0))
+			.force('collide', d3.forceCollide<SimNode<TMeta>>((d) => RADII[sizeKey(d)].outer + config.collision.padding).strength(config.collision.strength))
 			.alphaMin(config.simulation.alphaMin)
 			.alphaDecay(config.simulation.alphaDecay)
 			.velocityDecay(config.simulation.velocityDecay);
 	}
 
-	private renderLinks(canvas: d3.Selection<SVGGElement, unknown, null, undefined>, links: SimLink[]) {
+	private renderLinks(canvas: d3.Selection<SVGGElement, unknown, null, undefined>, links: SimLink<TMeta>[]) {
 		return canvas
 			.append('g')
 			.attr('fill', 'none')
 			.attr('stroke', 'var(--border)')
 			.attr('stroke-opacity', 0.8)
 			.attr('stroke-width', 1.5)
-			.selectAll<SVGLineElement, SimLink>('line')
+			.selectAll<SVGLineElement, SimLink<TMeta>>('line')
 			.data(links)
 			.join('line');
 	}
 
 	private renderNodes(
 		canvas: d3.Selection<SVGGElement, unknown, null, undefined>,
-		nodes: SimNode[],
-		simulation: d3.Simulation<SimNode, SimLink>
+		nodes: SimNode<TMeta>[],
+		simulation: d3.Simulation<SimNode<TMeta>, SimLink<TMeta>>
 	) {
 		const nodeG = canvas
 			.append('g')
-			.selectAll<SVGGElement, SimNode>('g')
+			.selectAll<SVGGElement, SimNode<TMeta>>('g')
 			.data(nodes)
 			.join('g')
 			.attr('cursor', 'pointer')
@@ -202,41 +178,48 @@ export class GalaxyRenderer {
 	}
 
 	// =========================================================================
-	// Node visual layers
+	// Node visual layers — everything here reads pre-resolved data only
 	// =========================================================================
 
-	private appendRings(sel: d3.Selection<SVGGElement, SimNode, SVGGElement, unknown>) {
+	private appendRings(sel: d3.Selection<SVGGElement, SimNode<TMeta>, SVGGElement, unknown>) {
 		sel.append('circle')
 			.attr('r', (d) => RADII[sizeKey(d)].outer)
 			.attr('fill', 'none')
 			.attr('stroke', (d) => (sizeKey(d) === 'group' ? 'var(--border)' : 'none'))
-			.attr('stroke-width', (d) => (d.data.type === 'root' ? 2.5 : 1))
+			.attr('stroke-width', (d) => (d.depth === 0 ? 2.5 : 1))
 			.attr('stroke-opacity', 0.8);
 	}
 
-	private appendCores(sel: d3.Selection<SVGGElement, SimNode, SVGGElement, unknown>) {
+	private appendCores(sel: d3.Selection<SVGGElement, SimNode<TMeta>, SVGGElement, unknown>) {
 		sel.append('circle')
 			.attr('class', 'core')
 			.attr('r', (d) => RADII[sizeKey(d)].inner)
-			.attr('fill', (d) => {
-				const { state, isUnlocked } =
-					d.data.choices.length > 1
-						? groupState(d.data.choices)
-						: { state: d.data.choices[0]?.state ?? null, isUnlocked: d.data.choices[0]?.isUnlocked ?? false };
-				return config.colors[state] ?? (isUnlocked ? 'var(--primary)' : 'var(--card)')
-			})
+			.attr('fill', (d) => d.data.color)
 			.attr('stroke', 'var(--border)')
-			.attr('stroke-width', 1.5);
+			.attr('stroke-width', 1.5)
+			.on('mouseenter', function () {
+				d3.select(this)
+					.transition().duration(120)
+					.attr('stroke', 'var(--ring)')
+					.attr('stroke-width', 2.5);
+			})
+			.on('mouseleave', function () {
+				d3.select(this)
+					.transition().duration(150)
+					.attr('stroke', 'var(--border)')
+					.attr('stroke-width', 1.5);
+			});
 	}
 
-	private appendChoiceDots(sel: d3.Selection<SVGGElement, SimNode, SVGGElement, unknown>) {
+	private appendChoiceDots(sel: d3.Selection<SVGGElement, SimNode<TMeta>, SVGGElement, unknown>) {
+		const self = this;
 		sel.each(function (d) {
-			if (d.data.choices.length <= 1) return;
+			if (d.data.items.length <= 1) return;
 
-			const g = d3.select<SVGGElement, SimNode>(this).append('g').attr('class', 'choices');
-			const n = d.data.choices.length;
+			const g = d3.select<SVGGElement, SimNode<TMeta>>(this).append('g').attr('class', 'items');
+			const n = d.data.items.length;
 
-			d.data.choices.forEach((choice, i) => {
+			d.data.items.forEach((item, i) => {
 				const angle = (2 * Math.PI * i) / n - Math.PI / 2;
 				const cx = CHOICE_ORBIT * Math.cos(angle);
 				const cy = CHOICE_ORBIT * Math.sin(angle);
@@ -244,20 +227,35 @@ export class GalaxyRenderer {
 				g.append('circle')
 					.attr('cx', cx).attr('cy', cy)
 					.attr('r', CHOICE_DOT)
-					.attr('fill', config.colors[choice.state] ?? (choice.isUnlocked ? 'var(--primary)' : 'var(--card)'))
+					.attr('fill', item.color)
 					.attr('stroke', 'var(--border)')
 					.attr('stroke-width', 1)
 					.attr('cursor', 'pointer')
-					// .on('click', (event) => {
-					// 	event.stopPropagation();
-					// 	console.log(`[Choice] ${choice.name}`);
-					// });
+					.on('mouseenter', function () {
+						d3.select(this)
+							.transition().duration(120)
+							.attr('r', CHOICE_DOT * 1.15)
+							.attr('stroke', 'var(--ring)')
+							.attr('stroke-width', 1.5);
+					})
+					.on('mouseleave', function () {
+						d3.select(this)
+							.transition().duration(150)
+							.attr('r', CHOICE_DOT)
+							.attr('stroke', 'var(--border)')
+							.attr('stroke-width', 1);
+					})
+					.on('click', function (event) {
+						event.stopPropagation();
+						self.pulse(d3.select<SVGCircleElement, unknown>(this), 1);
+						self.singleClickHandler?.(item.meta);
+					});
 
 				g.append('text')
 					.attr('x', cx).attr('y', cy)
 					.attr('text-anchor', 'middle')
 					.attr('dominant-baseline', 'central')
-					.attr('fill', stateTextColor(choice.state, choice.isUnlocked))
+					.attr('fill', item.textColor)
 					.attr('font-size', '8px')
 					.attr('font-weight', 'bold')
 					.attr('pointer-events', 'none')
@@ -266,43 +264,30 @@ export class GalaxyRenderer {
 		});
 	}
 
-	private appendLabels(sel: d3.Selection<SVGGElement, SimNode, SVGGElement, unknown>) {
-		// eslint-disable-next-line @typescript-eslint/no-this-alias
+	private appendLabels(sel: d3.Selection<SVGGElement, SimNode<TMeta>, SVGGElement, unknown>) {
 		const self = this;
 
 		sel.append('text')
 			.attr('text-anchor', 'middle')
-			.attr('font-weight', (d) => (d.data.type === 'root' || d.children ? 'bold' : 'normal'))
+			.attr('font-weight', (d) => (d.depth === 0 || d.children ? 'bold' : 'normal'))
 			.attr('pointer-events', 'none')
+			.attr('fill', (d) => d.data.textColor)
 			.each(function (d) {
 				const el = this as SVGTextElement;
-				const lines = getLabel(d.data);
+				const lines = d.data.label;
 				const inner = RADII[sizeKey(d)].inner;
-				const base = d.data.type === 'root' ? 13 : 10;
+				const base = d.depth === 0 ? 13 : 10;
 
 				el.setAttribute('font-size', `${base}px`);
+				el.setAttribute('dominant-baseline', 'central');
 
 				if (lines.length === 1) {
-					el.setAttribute('dominant-baseline', 'central');
 					el.textContent = lines[0];
 				} else {
-					lines.forEach((line, i) => {
-						const ts = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
-						ts.setAttribute('x', '0');
-						ts.setAttribute('dy', i === 0 ? `${-((lines.length - 1) * 0.55)}em` : '1.1em');
-						ts.textContent = line;
-						el.appendChild(ts);
-					});
+					el.textContent = "Multiple";
 				}
 
 				self.fitTextToCircle(el, inner);
-
-				const { state, isUnlocked } =
-					d.data.choices.length > 1
-						? groupState(d.data.choices)
-						: { state: d.data.choices[0]?.state ?? null, isUnlocked: d.data.choices[0]?.isUnlocked ?? false };
-
-				el.setAttribute('fill', d.data.type === 'root' ? '#fff' : stateTextColor(state, isUnlocked));
 			});
 	}
 
@@ -326,73 +311,62 @@ export class GalaxyRenderer {
 	// Interactivity / Focus
 	// =========================================================================
 
-	private attachNodeClick(sel: d3.Selection<SVGGElement, SimNode, SVGGElement, unknown>) {
-		sel.on('click', function (event: PointerEvent, d: SimNode) {
-			console.log(d.data)
-			// if (d.data.choices.length > 1) {
-			// 	console.log('[Choice group]', d.data.choices.map((c) => c.name));
-			// } else {
-			// 	const lel = d.data.children
-			// 	console.log('[Goal]', d.data.choices[0]?.name ?? d.data.name);
-			// }
+	/**
+	 * Flashes a circle's stroke to `var(--ring)` then fades back to the
+	 * border color/width it should rest at. Used for both node cores and
+	 * choice dots — pass the resting stroke width for whichever you're
+	 * pulsing (1.5 for cores, 1 for dots).
+	 */
+	private pulse(circle: d3.Selection<SVGCircleElement, any, any, any>, restStrokeWidth = 1.5) {
+		circle
+			.transition().duration(80)
+			.attr('stroke', 'var(--ring)')
+			.attr('stroke-width', restStrokeWidth + 1.5)
+			.transition().duration(350)
+			.attr('stroke', 'var(--border)')
+			.attr('stroke-width', restStrokeWidth);
+	}
 
-			d3.select<SVGGElement, SimNode>(this)
-				.select<SVGCircleElement>('circle.core')
-				.transition().duration(80)
-				.attr('stroke', 'var(--ring)')
-				.attr('stroke-width', 3)
-				.transition().duration(350)
-				.attr('stroke', 'var(--border)')
-				.attr('stroke-width', 1.5);
+	private attachNodeClick(sel: d3.Selection<SVGGElement, SimNode<TMeta>, SVGGElement, unknown>) {
+		const self = this;
+		sel.on('click', function (event: PointerEvent, d: SimNode<TMeta>) {
+			self.pulse(d3.select<SVGGElement, SimNode<TMeta>>(this).select<SVGCircleElement>('circle.core'));
+
+			const items = d.data.items;
+			if (items.length > 1) {
+				self.groupClickHandler?.(items.map((i) => i.meta));
+			} else if (items.length === 1) {
+				self.singleClickHandler?.(items[0].meta);
+			}
 		});
 	}
 
-	focus(goalId: string): void {
+	/** Zooms to and pulses the node containing the item with the given id. */
+	focus(itemId: string): void {
 		if (!this.element || !this.zoomBehavior || !this.simNodes.length || !this.nodeG) {
 			console.warn('Galaxy is not fully rendered yet.');
 			return;
 		}
 
-		const targetNode = this.simNodes.find((n) => n.data.choices.some((c) => c.goalId === goalId));
-
+		const targetNode = this.simNodes.find((n) => n.data.items.some((i) => i.id === itemId));
 		if (!targetNode) {
-			console.warn(`Goal ID ${goalId} not found in the current tree.`);
+			console.warn(`Item "${itemId}" not found in the current tree.`);
 			return;
 		}
 
 		const svg = d3.select(this.element);
 		const scale = 1.8;
-
-		const transform = d3.zoomIdentity
-			.scale(scale)
-			.translate(-(targetNode.x ?? 0), -(targetNode.y ?? 0));
-
+		const transform = d3.zoomIdentity.scale(scale).translate(-(targetNode.x ?? 0), -(targetNode.y ?? 0));
 		svg.transition().duration(750).call(this.zoomBehavior.transform, transform);
 
 		const nodeElement = this.nodeG.filter((d) => d === targetNode).node();
-
 		if (nodeElement) {
-			d3.select<SVGGElement, SimNode>(nodeElement)
-				.select<SVGCircleElement>('circle.core')
-				.transition().duration(80)
-				.attr('stroke', 'var(--ring)')
-				.attr('stroke-width', 3)
-				.transition().duration(350)
-				.attr('stroke', 'var(--border)')
-				.attr('stroke-width', 1.5);
-
-			const specificChoice = targetNode.data.choices.find((c) => c.goalId === goalId);
-			if (targetNode.data.choices.length > 1) {
-				console.log('[Focused Choice group]', targetNode.data.choices.map((c) => c.name));
-				console.log(`[Focused Specific Target] ${specificChoice?.name}`);
-			} else {
-				console.log('[Focused Goal]', targetNode.data.choices[0]?.name ?? targetNode.data.name);
-			}
+			this.pulse(d3.select<SVGGElement, SimNode<TMeta>>(nodeElement).select<SVGCircleElement>('circle.core'));
 		}
 	}
 
-	private buildDrag(simulation: d3.Simulation<SimNode, SimLink>) {
-		return d3.drag<SVGGElement, SimNode>()
+	private buildDrag(simulation: d3.Simulation<SimNode<TMeta>, SimLink<TMeta>>) {
+		return d3.drag<SVGGElement, SimNode<TMeta>>()
 			.on('start', (event, d) => {
 				if (!event.active) simulation.alphaTarget(config.drag.startAlphaTarget).restart();
 				d.fx = d.x;
