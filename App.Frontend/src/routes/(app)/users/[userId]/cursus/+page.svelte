@@ -7,8 +7,8 @@
 	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
 	import { Badge } from '$lib/components/badge';
 	import { Search, GraduationCap, ChevronRight } from '@lucide/svelte';
-	import { getCursi } from '$lib/remotes/cursus.remote';
-	import { getUserCursusList } from '$lib/remotes/user-cursus.remote';
+	import * as Cursus from '$lib/remotes/cursus.remote';
+	import * as UserCursus from '$lib/remotes/user-cursus.remote';
 	import useSearchParams from '$lib/hooks/url.svelte';
 	import useDebounce from '$lib/hooks/debounce.svelte';
 	import * as v from 'valibot';
@@ -133,7 +133,7 @@
 					{/snippet}
 
 					{#if effectiveTab === 'available'}
-						{@const result = await getCursi({
+						{@const result = await Cursus.getPage({
 							page: activePage.value,
 							name: search.value || undefined
 						})}
@@ -190,7 +190,7 @@
 								<div class="mt-6 flex justify-center">
 									<Paginate
 										count={result.count}
-										perPage={result.perPage}
+										perPage={result.pages / result.size}
 										page={activePage.value}
 										onPageChange={(p) => (activePage.value = p)}
 									/>
@@ -199,7 +199,7 @@
 						{/if}
 
 					{:else}
-						{@const result = await getUserCursusList({
+						{@const result = await UserCursus.getPage({
 							userId: params.userId,
 							page: activePage.value,
 							state: stateFilter.value || undefined
@@ -260,7 +260,7 @@
 								<div class="mt-6 flex justify-center">
 									<Paginate
 										count={result.count}
-										perPage={result.perPage}
+										perPage={result.pages / result.size}
 										page={activePage.value}
 										onPageChange={(p) => (activePage.value = p)}
 									/>

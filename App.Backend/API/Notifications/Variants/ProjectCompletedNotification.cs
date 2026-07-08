@@ -36,7 +36,7 @@ public sealed record ProjectCompletedNotification(
     public Guid? ResourceId => UserProjectId;
 
     public Guid NotifiableId => UserId;
-    public NotificationMeta Meta => NotificationMeta.User | NotificationMeta.Feed | NotificationMeta.Project;
+    public NotificationMeta Meta => NotificationMeta.User | NotificationMeta.Feed | NotificationMeta.Project | NotificationMeta.Completed;
 
     public NotificationData ToDatabase() => new MessageDO(
         $"# Congratulations, {UserLogin}!\nYour project '{ProjectName}' has been completed."

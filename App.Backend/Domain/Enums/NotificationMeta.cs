@@ -69,4 +69,11 @@ public enum NotificationMeta
 	/// </summary>
 	[JsonPropertyName(nameof(Feed))]
 	Feed = 1 << 10,
+
+	/// <summary>
+	/// Show the notification as a feed notification
+    /// I.e: Show up on the homepage feed
+	/// </summary>
+	[JsonPropertyName(nameof(Completed))]
+	Completed = 1 << 11,
 }

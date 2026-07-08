@@ -34,7 +34,7 @@ public sealed record GoalCompletedNotification(
 {
     public Guid? ResourceId => UserGoalId;
     public Guid NotifiableId => UserId;
-    public NotificationMeta Meta => NotificationMeta.User | NotificationMeta.Feed | NotificationMeta.Goal;
+    public NotificationMeta Meta => NotificationMeta.User | NotificationMeta.Feed | NotificationMeta.Goal | NotificationMeta.Completed;
 
     public NotificationData ToDatabase() => new MessageDO(
         $"# Congratulations, {UserLogin}!\nYour goal '{GoalName}' has been completed."

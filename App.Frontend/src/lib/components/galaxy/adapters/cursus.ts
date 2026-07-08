@@ -23,8 +23,8 @@ function cluster(clusterId: string, members: TrackNode[]): GalaxyNode<TrackNode>
 			return {
 				id: node.goal.id,
 				label: node.goal.name,
-				color: node.goal.active ? 'var(--primary)' : 'var(--card)',
-				textColor: node.goal.active ? '#fff' : 'var(--muted-foreground)',
+				color: 'var(--card)',
+				textColor: 'var(--muted-foreground)',
 				meta: node,
 			}
 		}),
@@ -48,8 +48,8 @@ function build(node: TrackNode): GalaxyNode<TrackNode> {
 	const item = {
 		id: node.goal.id,
 		label: node.goal.name,
-		color: node.goal.active ? 'var(--primary)' : 'var(--card)',
-		textColor: node.goal.active ? '#fff' : 'var(--muted-foreground)',
+		color: 'var(--card)',
+		textColor: 'var(--muted-foreground)',
 		meta: node,
 	};
 
@@ -85,5 +85,19 @@ export const Adapter = {
 			items: [{ id: track.cursusId, label: '', color: 'var(--card)', textColor: 'var(--muted-foreground)', meta: roots[0] }],
 			children: roots.map(build),
 		};
+	},
+
+	/** Flattens an assembled tree back into its underlying track nodes.
+	 * @param tree The constructed Galaxy tree
+	 * @returns A flat array of TrackNodes
+	 */
+	flatten(tree: GalaxyNode<TrackNode>): TrackNode[] {
+		const out: TrackNode[] = [];
+		const visit = (node: GalaxyNode<TrackNode>) => {
+			node.items.forEach((i) => out.push(i.meta));
+			node.children?.forEach(visit);
+		};
+		visit(tree);
+		return out;
 	}
 }

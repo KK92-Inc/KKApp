@@ -10,7 +10,7 @@ import type { GalaxyNode } from '$lib/components/galaxy/types';
 // Flip this off (or delete the block) once you're done poking at it.
 // ============================================================================
 
-const USE_FAKE_TRACK = true;
+const USE_FAKE_TRACK = false;
 
 function n(node: TrackNode): TrackNode {
 	return node;
@@ -53,7 +53,7 @@ function buildFakeTrack(): Track {
 		n({ goalId: 'get-next-line', name: 'get_next_line', slug: 'gnl', isUnlocked: true, parentGoalId: 'rank02-exam', state: 'Awaiting' }),
 
 		// --- far, fully locked frontier straight off root ----------------------
-		n({ goalId: 'exam-rank-06', name: 'Exam Rank 06', slug: 'exam-rank-06', isUnlocked: false, parentGoalId: 'root', state: null }),
+		n({ goalId: 'exam-rank-06', name: 'Exam Rank 06', slug: 'exam-rank-06', isUnlocked: true, parentGoalId: 'root', state: null }),
 	];
 
 	return {

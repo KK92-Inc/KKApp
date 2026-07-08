@@ -50,17 +50,15 @@
 
 <div class={cn('mt-6 flex w-full items-center justify-between', className)}>
 	<!-- Previous -->
-	{#if prevSnippet}
-		{@render prevSnippet()}
-	{:else}
-		<Button
-			variant="outline"
-			onclick={() => ctx.prev()}
-			disabled={ctx.isFirst || loading}
-		>
-			<ChevronLeft class="mr-1 h-4 w-4" />
-			{prevLabel}
-		</Button>
+	{#if !ctx.isFirst}
+		{#if prevSnippet}
+			{@render prevSnippet()}
+		{:else}
+			<Button variant="outline" onclick={() => ctx.prev()} disabled={ctx.isFirst || loading}>
+				<ChevronLeft class="mr-1 h-4 w-4" />
+				{prevLabel}
+			</Button>
+		{/if}
 	{/if}
 
 	<!-- Centre slot -->

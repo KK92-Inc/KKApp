@@ -4,7 +4,7 @@
 	import * as Tooltip from '$lib/components/tooltip';
 	import FeedWelcome from './feed-welcome.svelte';
 	import FeedProjectInvite from './feed-project-invite.svelte';
-	import FeedReview from './feed-review.svelte';
+	import FeedCompleted from './feed-entity-complete.svelte';
 	import type { components } from '$lib/api/api';
 
 	interface Props {
@@ -20,6 +20,8 @@
 	<FeedWelcome notification={{ ...notification, data: notification.data }} />
 {:else if flags(1 << 5, notification.descriptor) && notification.data.type === 'ProjectInvite'}
 	<FeedProjectInvite notification={{ ...notification, data: notification.data }} />
+{:else if flags((1 << 6 | 1 << 7 | 1 << 5 | 1 << 9), notification.descriptor) && notification.data.type === 'Message'}
+	<FeedCompleted notification={{ ...notification, data: notification.data }} />
 {:else}
 	<div class="mb-3 rounded-lg border bg-card p-4 transition-colors hover:bg-accent/50">
 		<div class="flex items-start gap-3">
@@ -40,7 +42,9 @@
 						</Tooltip.Content>
 					</Tooltip.Root>
 				</div>
-				<p class="mt-2 text-sm text-card-foreground">You have a new notification.</p>
+				<p class="mt-2 text-sm text-card-foreground">
+					{notification.data.markdown}
+				</p>
 			</div>
 		</div>
 	</div>

@@ -25,11 +25,7 @@
 		class: className = ''
 	}: Props = $props();
 
-	const ctx = Stepper.setContext(new Stepper.Context(step, {
-		editable,
-		vertical,
-		altLabels
-	}));
+	Stepper.setContext(new Stepper.Context(step));
 
 	// // Propagate external prop changes → internal state
 	// $effect(() => {

@@ -15,8 +15,9 @@
 	--card-foreground: oklch(0.145 0 0);
 	--popover: oklch(1 0 0);
 	--popover-foreground: oklch(0.145 0 0);
-	--primary: oklch(57.682% 0.13155 42.281);
-	--primary-foreground: oklch(0.205 0 0);
+	--primary: oklch(0.65 0.22 37.07);
+	--primary-foreground: oklch(0.985 0 0);
+	/* --primary-foreground: oklch(0.205 0 0); */
 	--secondary: oklch(0.97 0 0);
 	--secondary-foreground: oklch(0.205 0 0);
 	--muted: oklch(0.97 0 0);
@@ -49,7 +50,7 @@
 	--card-foreground: oklch(0.985 0 0);
 	--popover: oklch(0.205 0 0);
 	--popover-foreground: oklch(0.985 0 0);
-	--primary: oklch(63.62% 0.15126 54.29);
+	--primary: oklch(0.65 0.22 37.07);
 	--primary-foreground: oklch(0.985 0 0);
 	--secondary: oklch(0.269 0 0);
 	--secondary-foreground: oklch(0.985 0 0);
@@ -129,6 +130,44 @@
 	.h-page {
 		@apply h-[calc(100svh-var(--header-height))]!;
 	}
+
+		  .pierre-theme-wrapper .pierre-file-tree,
+  .pierre-theme-wrapper .file-tree {
+    background-color: transparent !important;
+    color: hsl(var(--foreground)) !important;
+    font-family: inherit !important;
+  }
+
+  .pierre-theme-wrapper .tree-node,
+  .pierre-theme-wrapper .tree-item {
+    border-radius: var(--radius) !important;
+    padding: 0.25rem 0.5rem !important;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+
+  .pierre-theme-wrapper .tree-node:hover,
+  .pierre-theme-wrapper .tree-item:hover {
+    background-color: hsl(var(--muted)) !important;
+  }
+
+  .pierre-theme-wrapper .tree-node.selected,
+  .pierre-theme-wrapper .tree-item.selected {
+    background-color: hsl(var(--accent)) !important;
+    color: hsl(var(--accent-foreground)) !important;
+  }
+
+  .pierre-theme-wrapper svg {
+    stroke: hsl(var(--muted-foreground)) !important;
+  }
+
+  /* Overrides for their search input if search: true is enabled */
+  .pierre-theme-wrapper input[type="text"] {
+    background-color: hsl(var(--background)) !important;
+    color: hsl(var(--foreground)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: var(--radius) !important;
+  }
 }
 
 .markdown {

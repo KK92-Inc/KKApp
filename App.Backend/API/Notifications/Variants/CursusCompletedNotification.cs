@@ -36,7 +36,7 @@ public sealed record CursusCompletedNotification(
     public Guid? ResourceId => UserCursusId;
 
     public Guid NotifiableId => UserId;
-    public NotificationMeta Meta => NotificationMeta.User | NotificationMeta.Feed | NotificationMeta.Cursus;
+    public NotificationMeta Meta => NotificationMeta.User | NotificationMeta.Feed | NotificationMeta.Cursus | NotificationMeta.Completed;
 
     public NotificationData ToDatabase() => new MessageDO(
         $"# Congratulations, {UserLogin}!\nYour cursus '{CursusName}' has been completed."

@@ -20,6 +20,7 @@ using App.Backend.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using App.Backend.Models.Responses.Entities.Goals;
 using App.Backend.Domain.Entities;
+using Wolverine;
 
 // ============================================================================
 
@@ -31,7 +32,8 @@ public class CursusController(
     ILogger<CursusController> log,
     ICursusService cursusService,
     IGoalService goalService,
-    IWorkspaceService workspace
+    IWorkspaceService workspace,
+    IMessageBus bus
 ) : Controller
 {
     [HttpGet]
