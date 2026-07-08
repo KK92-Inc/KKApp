@@ -41,9 +41,7 @@ public record PatchGoalRequestDTO
     [Description("Indicates whether the goal is publicly visible.")]
     public bool? Public { get; init; }
 
-    /// <summary>
-    /// Optional deprecated status update.
-    /// </summary>
-    [Description("Indicates whether the goal is deprecated.")]
-    public bool? Deprecated { get; init; }
+    [Required, MinLength(1)]
+    [Description("The list of project IDs to initalize this goal with.")]
+    public required IEnumerable<Guid> Projects { get; init; }
 }

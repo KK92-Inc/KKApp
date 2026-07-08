@@ -3,67 +3,61 @@
 	import * as Field from '$lib/components/field';
 	import * as Select from '$lib/components/select';
 	import * as Alert from '$lib/components/alert';
-	import * as Tooltip from "$lib/components/tooltip";
+	import * as Tooltip from '$lib/components/tooltip';
 	import { Input } from '$lib/components/input';
 	import { Textarea } from '$lib/components/textarea';
 	import { Switch } from '$lib/components/switch';
 	import Thumbnail from '$lib/components/thumbnail.svelte';
 	import { page } from '$app/state';
-	import { BadgeQuestionMark, CircleQuestionMark, Globe, Info, Lock, Unlock, Zap } from '@lucide/svelte';
+	import { CircleQuestionMark, Lock, Unlock, Zap } from '@lucide/svelte';
 	import * as Tabs from '$lib/components//tabs';
-	import { Button } from '$lib/components/button';
 	import Separator from '$lib/components/separator/separator.svelte';
+	import { Slider } from '$lib/components/slider';
 
 	const context = Page.getContext();
 </script>
 
-<svelte:boundary>
-	{#snippet pending()}
-		Loading...
-	{/snippet}
+<Field.Set>
+	<Field.Legend>Creating a Project</Field.Legend>
+	<Field.Description>To create your own project you need to define some basics first.</Field.Description>
 
-	<Field.Set>
-		<Field.Legend>Creating a Project</Field.Legend>
-		<Field.Description>To create your own project you need to define some basics first.</Field.Description>
+	<Field.Group class="grid grid-cols-1 items-start gap-0 md:grid-cols-[15rem_1fr]">
+		<Field.Field class="md:row-span-2">
+			<Field.Label for="project-thumbnail">Thumbnail</Field.Label>
+			<Thumbnail src="https://placehold.co/96x96?text=Thumbnail" />
+		</Field.Field>
 
 		<Field.Group class="grid grid-cols-1 items-start gap-0 md:grid-cols-[15rem_1fr]">
-			<Field.Field class="md:row-span-2">
-				<Field.Label for="project-thumbnail">Thumbnail</Field.Label>
-				<Thumbnail src="https://placehold.co/96x96?text=Thumbnail" />
+			<Field.Field>
+				<Field.Label for="project-name">Name*</Field.Label>
+				<Input id="project-name" placeholder="e.g., Libft" bind:value={context.project.name} />
+				<Field.Description>Displayed prominently on the project page.</Field.Description>
 			</Field.Field>
 
-			<Field.Group class="grid grid-cols-1 items-start gap-0 md:grid-cols-[15rem_1fr]">
-				<Field.Field>
-					<Field.Label for="project-name">Name</Field.Label>
-					<Input id="project-name" placeholder="e.g., Libft" bind:value={context.project.name} />
-					<Field.Description>Displayed prominently on the project page.</Field.Description>
-				</Field.Field>
+			<Field.Field>
+				<Field.Label for="project-name">
+					<Tooltip.Root disableCloseOnTriggerClick>
+						<Tooltip.Trigger class="inline-flex items-center gap-1 underline">
+							Workspace <CircleQuestionMark size={16} />
+						</Tooltip.Trigger>
+						<Tooltip.Content>
+							<p>Workspaces are where created user content lives.</p>
+						</Tooltip.Content>
+					</Tooltip.Root>
+				</Field.Label>
+				<Tabs.Root bind:value={context.workspace}>
+					<Tabs.List class="w-auto">
+						<Tabs.Trigger value="personal">Personal</Tabs.Trigger>
+						{#if !page.data.session.roles.includes('staff')}
+							<Tabs.Trigger value="system">System</Tabs.Trigger>
+						{/if}
+					</Tabs.List>
+				</Tabs.Root>
+				<Field.Description>Which workspace this project should be placed in.</Field.Description>
+			</Field.Field>
+		</Field.Group>
 
-				<Field.Field>
-					<Field.Label for="project-name">
-						<Tooltip.Root disableCloseOnTriggerClick>
-							<Tooltip.Trigger class="underline inline-flex items-center gap-1">
-								Workspace <CircleQuestionMark size={16}/>
-							</Tooltip.Trigger>
-							<Tooltip.Content>
-								<p>Workspaces are where created user content lives.</p>
-							</Tooltip.Content>
-						</Tooltip.Root>
-					</Field.Label>
-					<Tabs.Root bind:value={context.workspace}>
-						<Tabs.List class="w-auto">
-							<Tabs.Trigger value="personal">Personal</Tabs.Trigger>
-							{#if !page.data.session.roles.includes('staff')}
-								<Tabs.Trigger value="system">System</Tabs.Trigger>
-							{/if}
-						</Tabs.List>
-					</Tabs.Root>
-					<Field.Description>
-						Which workspace this project should be placed in.
-					</Field.Description>
-				</Field.Field>
-			</Field.Group>
-
+		<Field.Group class="flex">
 			<Field.Field>
 				<Field.Label for="project-description">Description</Field.Label>
 				<Textarea
@@ -75,11 +69,25 @@
 				/>
 				<Field.Description>Shown on the project page and in listings.</Field.Description>
 			</Field.Field>
+
+			<Field.Field>
+				<Field.Label for="project-members">Max Members ({context.project.maxMembers})</Field.Label>
+				<Slider
+					id="project-members"
+					type="single"
+					bind:value={context.project.maxMembers}
+					min={1}
+					max={10}
+					step={1}
+				/>
+				<Field.Description>The amount of members that can do the project together.</Field.Description>
+			</Field.Field>
 		</Field.Group>
-	</Field.Set>
-	<Separator />
-	<Field.Set>
-	<Field.Legend>Visibility & status</Field.Legend>
+	</Field.Group>
+</Field.Set>
+<Separator />
+<Field.Set>
+	<Field.Legend>Visibility & Status</Field.Legend>
 	<Field.Description>
 		Control who can find and use this rubric. You can change these at any time.
 	</Field.Description>
@@ -119,4 +127,3 @@
 		</Field.Field>
 	</Field.Group>
 </Field.Set>
-</svelte:boundary>

@@ -7708,8 +7708,8 @@ export interface components {
             active?: null | boolean;
             /** @description Indicates whether the goal is publicly visible. */
             public?: null | boolean;
-            /** @description Indicates whether the goal is deprecated. */
-            deprecated?: null | boolean;
+            /** @description The list of project IDs to initalize this goal with. */
+            projects: string[];
         };
         PatchProjectRequestDTO: {
             /** @description The name of the project. */
@@ -7816,6 +7816,8 @@ export interface components {
             active?: boolean;
             /** @description Indicates whether the goal is publicly visible. */
             public?: boolean;
+            /** @description The list of project IDs to initalize this goal with. */
+            projects: string[];
         };
         PostProjectRequestDTO: {
             /** @description The name of the project. */
@@ -7823,14 +7825,16 @@ export interface components {
             /** @description Optional description of the project. */
             description: string;
             /** @description Indicates whether the project is currently active. */
-            active?: boolean;
+            active: boolean;
             /** @description Indicates whether the project is currently public. */
-            public?: boolean;
+            public: boolean;
             /**
              * Format: int32
              * @description The maximum number of members allowed in the project.
              */
-            maxMembers?: number | string;
+            maxMembers: number | string;
+            /** @description The list of files to initialize the project repository with. */
+            files: components["schemas"]["ProjectInitialFilesRequestDTO"][];
         };
         PostReviewRequestDTO: {
             /**
@@ -7899,6 +7903,12 @@ export interface components {
              * @description Indicates whether the project has been deprecated.
              */
             maxMembers: number | string;
+        };
+        ProjectInitialFilesRequestDTO: {
+            /** @description The path of the file */
+            path: string;
+            /** @description The content of the file */
+            content: string;
         };
         ProjectLightDO: {
             /** Format: uuid */
@@ -8059,7 +8069,7 @@ export interface components {
             cursusId: string;
             name: string;
             completionMode: components["schemas"]["CompletionMode"];
-            nodes?: components["schemas"]["UserCursusTrackNodeDO"][];
+            nodes: components["schemas"]["UserCursusTrackNodeDO"][];
         };
         UserCursusTrackNodeDO: {
             /** Format: uuid */

@@ -21,14 +21,6 @@ public record PostGoalRequestDTO
     [Required, StringLength(256, MinimumLength = 1)]
     public required string Name { get; init; }
 
-    // /// <summary>
-    // /// The unique slug for the goal.
-    // /// </summary>
-    // [Required, StringLength(256, MinimumLength = 1)]
-    // [RegularExpression(@"^[a-z0-9]+(?:-[a-z0-9]+)*$",
-    //     ErrorMessage = "Slug must be lowercase alphanumeric with hyphens only")]
-    // public required string Slug { get; init; }
-
     /// <summary>
     /// Optional description of the goal.
     /// </summary>
@@ -47,4 +39,8 @@ public record PostGoalRequestDTO
     /// </summary>
     [Description("Indicates whether the goal is publicly visible.")]
     public bool Public { get; init; } = false;
+
+    [Required, MinLength(1)]
+    [Description("The list of project IDs to initalize this goal with.")]
+    public required IEnumerable<Guid> Projects { get; init; }
 }

@@ -10,10 +10,21 @@ namespace App.Backend.Models.Requests.Projects;
 
 // ============================================================================
 
+public class ProjectInitialFilesRequestDTO
+{
+    [Required, StringLength(256, MinimumLength = 1)]
+    [Description("The path of the file")]
+    public required string Path { get; init; }
+
+    [Required, StringLength(256, MinimumLength = 1)]
+    [Description("The content of the file")]
+    public required string Content { get; init; }
+}
+
 /// <summary>
 /// Request DTO for creating a new project.
 /// </summary>
-public record PostProjectRequestDTO
+public class PostProjectRequestDTO : RequestDTO
 {
     /// <summary>
     /// The name of the project.
@@ -32,19 +43,23 @@ public record PostProjectRequestDTO
     /// <summary>
     /// Whether the project is active.
     /// </summary>
-    [Description("Indicates whether the project is currently active.")]
-    public bool Active { get; init; } = true;
+    [Required, Description("Indicates whether the project is currently active.")]
+    public bool Active { get; init; }
 
     /// <summary>
     /// Whether the project is public.
     /// </summary>
-    [Description("Indicates whether the project is currently public.")]
-    public bool Public { get; init; } = false;
+    [Required, Description("Indicates whether the project is currently public.")]
+    public bool Public { get; init; }
 
     /// <summary>
     /// The maximum number of members allowed in the project.
     /// </summary>
-    [Range(1, 10)]
+    [Required, Range(1, 10)]
     [Description("The maximum number of members allowed in the project.")]
-    public int MaxMembers { get; init; } = 1;
+    public int MaxMembers { get; init; }
+
+    [Required, MinLength(1)]
+    [Description("The list of files to initialize the project repository with.")]
+    public required IEnumerable<ProjectInitialFilesRequestDTO> Files { get; init; }
 }

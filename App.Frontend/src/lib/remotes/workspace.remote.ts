@@ -12,6 +12,22 @@ import { Remote } from './index.svelte.js';
 export const get = Remote.GET('/workspace/current').declare();
 
 // ============================================================================
+// Create Operations
+// ============================================================================
+
+export const createProject = Remote.POST('/workspace/{workspace}/project')
+	.extend(v.object({
+		name: v.string(),
+		description: v.string(),
+		active: v.boolean(),
+		public: v.boolean(),
+		maxMembers: v.number(),
+		files: v.array(v.object({ path: v.string(), content: v.string() }))
+	}), (data) => ({ body: data }))
+	.declare();
+
+
+// ============================================================================
 // Transfer Operations
 // ============================================================================
 

@@ -10,34 +10,37 @@ import type { components } from "$lib/api/api";
 // ============================================================================
 
 export class Context {
-	constructor() {}
-	public markdown = $state("");
-	public workspace = $state<string>("personal");
+	constructor() { }
+	public workspace = $state<"personal" | "internal">("personal");
 	public project = $state<components['schemas']['PostProjectRequestDTO']>({
 		name: "",
 		description: "",
 		active: false,
 		public: false,
+		maxMembers: 0,
+		files: [
+			{
+				path: "README.md",
+				content: "# Project Initialization\n\nDefine your project structure here."
+			}
+		],
 	});
 
 	get workspaces() {
-		return Workspace.get({ });
+		return Workspace.get({});
 	}
 
-	// get track() {
-	// 	if (USE_FAKE_TRACK) return Promise.resolve(buildFakeTrack());
+	public async submit() {
+		if (this.workspace === "internal") {
+			throw new Error("TODO")
+		}
 
-	// 	const id = this.userCursusId();
-	// 	return id ? UserCursus.getTrack({ id }) : Promise.resolve(null);
-	// }
-
-	// attachment(tree: GalaxyNode<TrackNode>): Attachment<SVGElement> {
-	// 	return (element) => this.renderer.mount(element, tree);
-	// }
-
-	// focus(itemId: string): void {
-	// 	this.renderer.focus(itemId);
-	// }
+		const myspace = await this.workspaces;
+		return await Workspace.createProject({
+			workspace: myspace.id,
+			...this.project,
+		});
+	}
 }
 
 export const [getContext, setContext] = createContext<Context>();
