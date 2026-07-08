@@ -27,6 +27,16 @@ export const createProject = Remote.POST('/workspace/{workspace}/project')
 	.declare();
 
 
+export const createGoal = Remote.POST('/workspace/{workspace}/goal')
+	.extend(v.object({
+		name: v.string(),
+		description: v.string(),
+		active: v.optional(v.boolean()),
+		public: v.optional(v.boolean()),
+		projects: v.array(v.string())
+	}), (data) => ({ body: data }))
+	.declare();
+
 // ============================================================================
 // Transfer Operations
 // ============================================================================

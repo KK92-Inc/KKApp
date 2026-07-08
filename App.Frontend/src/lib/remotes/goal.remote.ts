@@ -66,16 +66,22 @@ export const remove = Remote.DELETE('/goals')
 // Update Goal
 // ============================================================================
 
-const updateGoalSchema = v.object({
-	name: v.optional(v.string()),
-	description: v.optional(v.string()),
-	active: v.optional(v.boolean()),
-	public: v.optional(v.boolean()),
-	deprecated: v.optional(v.boolean())
-});
-
 export const update = Remote.PATCH('/goals/{id}')
-	.extend(updateGoalSchema, data => ({ body: data }))
+	.extend(v.object({
+		name: v.optional(v.string()),
+		description: v.optional(v.string()),
+		active: v.optional(v.boolean()),
+		public: v.optional(v.boolean()),
+		projects: v.array(v.string())
+	}), (data) => ({
+		body: {
+			name: data.name,
+			description: data.description,
+			active: data.active,
+			public: data.public,
+			projects: data.projects
+		}
+	}))
 	.declare();
 
 // ============================================================================

@@ -3,8 +3,8 @@
 	import * as Project from '$lib/remotes/project.remote';
 	import * as Stepper from '$lib/components/stepper/index.svelte';
 	import Separator from '$lib/components/separator/separator.svelte';
-	import PageStepOverview from './page-step-overview.svelte';
-	import PageSetupStructure from './page-setup-structure.svelte';
+	import PageStepOverview from './page-overview.svelte';
+	import PageSetupStructure from './page-setup.svelte';
 	import Button from '$lib/components/button/button.svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';

@@ -11,7 +11,7 @@
 
 	let tree: FileTree | undefined;
 	let { selected = $bindable() }: Props = $props();
-	const paths = $derived(context.project.files.map((v) => v.path));
+	const paths = $derived(context.files.map((v) => v.path));
 
 	$effect(() => {
 		if (!tree) return;
@@ -40,7 +40,7 @@
 					canRename: () => true,
 					onRename: ({ sourcePath, destinationPath }) => {
 						if (destinationPath === sourcePath) return;
-						const file = context.project.files.find((f) => f.path === sourcePath);
+						const file = context.files.find((f) => f.path === sourcePath);
 						if (file) file.path = destinationPath;
 					}
 				}
@@ -60,8 +60,8 @@
 		const path = paths[selected];
 		if (path === undefined) return;
 
-		context.project.files = context.project.files.filter((_, i) => i !== selected);
-		selected = Math.min(selected, context.project.files.length - 1);
+		context.files = context.files.filter((_, i) => i !== selected);
+		selected = Math.min(selected, context.files.length - 1);
 	}
 
 	export function rename() {

@@ -34,27 +34,29 @@
 				<Field.Description>Displayed prominently on the project page.</Field.Description>
 			</Field.Field>
 
-			<Field.Field>
-				<Field.Label for="project-name">
-					<Tooltip.Root disableCloseOnTriggerClick>
-						<Tooltip.Trigger class="inline-flex items-center gap-1 underline">
-							Workspace <CircleQuestionMark size={16} />
-						</Tooltip.Trigger>
-						<Tooltip.Content>
-							<p>Workspaces are where created user content lives.</p>
-						</Tooltip.Content>
-					</Tooltip.Root>
-				</Field.Label>
-				<Tabs.Root bind:value={context.workspace}>
-					<Tabs.List class="w-auto">
-						<Tabs.Trigger value="personal">Personal</Tabs.Trigger>
-						{#if !page.data.session.roles.includes('staff')}
-							<Tabs.Trigger value="system">System</Tabs.Trigger>
-						{/if}
-					</Tabs.List>
-				</Tabs.Root>
-				<Field.Description>Which workspace this project should be placed in.</Field.Description>
-			</Field.Field>
+			{#if context.mode === 'create'}
+				<Field.Field>
+					<Field.Label for="project-name">
+						<Tooltip.Root disableCloseOnTriggerClick>
+							<Tooltip.Trigger class="inline-flex items-center gap-1 underline">
+								Workspace <CircleQuestionMark size={16} />
+							</Tooltip.Trigger>
+							<Tooltip.Content>
+								<p>Workspaces are where created user content lives.</p>
+							</Tooltip.Content>
+						</Tooltip.Root>
+					</Field.Label>
+					<Tabs.Root bind:value={context.workspace}>
+						<Tabs.List class="w-auto">
+							<Tabs.Trigger value="personal">Personal</Tabs.Trigger>
+							{#if !page.data.session.roles.includes('staff')}
+								<Tabs.Trigger value="system">System</Tabs.Trigger>
+							{/if}
+						</Tabs.List>
+					</Tabs.Root>
+					<Field.Description>Which workspace this project should be placed in.</Field.Description>
+				</Field.Field>
+			{/if}
 		</Field.Group>
 
 		<Field.Group class="flex">

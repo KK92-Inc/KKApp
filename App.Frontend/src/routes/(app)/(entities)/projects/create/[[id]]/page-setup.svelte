@@ -121,7 +121,7 @@
 								</Button>
 							</ButtonGroup.Root>
 							<Separator class="flex-1" />
-							<Badge variant="secondary" class="font-mono">{context.project.files.length}/{10} files</Badge>
+							<Badge variant="secondary" class="font-mono">{context.files.length}/{10} files</Badge>
 						</div>
 						<Separator />
 						<PageProjectFiles bind:selected bind:this={tree} />
@@ -130,7 +130,7 @@
 					<Resizable.Pane defaultSize={60} minSize={30}>
 						{#if selected !== undefined}
 							<div class="flex items-center gap-2 pl-2">
-								<Badge variant="outline" class="rounded-sm">{context.project.files[selected].path}</Badge>
+								<Badge variant="outline" class="rounded-sm">{context.files[selected].path}</Badge>
 								<Separator class="flex-1" />
 								<ButtonGroup.Root>
 									<Button variant="ghost" size="icon-sm" onclick={() => tree.rename()}>
@@ -147,7 +147,7 @@
 
 							<Separator />
 							<InputGroup.Textarea
-								bind:value={context.project.files[selected].content}
+								bind:value={context.files[selected].content}
 								placeholder="console.log('Hello, world!');"
 								class="min-h-72 bg-background/50 font-mono text-sm"
 							/>
