@@ -1,26 +1,10 @@
 // ============================================================================
 // W2Inc, 2025, All Rights Reserved.
 // See README in the root project for more information.
-//
-// This module provides small API helper utilities used by route handlers.
-// It includes:
-// - pagination constants used across the UI
-// - a `ProblemDetails` type that represents RFC 7807 style problem payloads
-// - `KestrelValidationError` and `ProblemError` helpers to represent server
-//   validation errors and generic problem responses
-// - a small `resolve` helper that normalizes `openapi-fetch` responses for
-//   route handlers (returns data or error wrappers)
-//
-// It is intentionally small and focused on shaping API responses into values
-// the SvelteKit form helpers can work with (see `invalid(...)` usage in
-// `demo`/`demo2` below). The code also documents how server-side validation
-// `errors` maps into `StandardSchemaV1.Issue[]` so those issues can be passed
-// directly into the `issue` helper inside a form handler.
 // ============================================================================
 
 import * as v from 'valibot';
-import { error, invalid, isHttpError } from '@sveltejs/kit';
-// import { Log } from './log';
+import { error, isHttpError } from '@sveltejs/kit';
 
 // ============================================================================
 
@@ -102,6 +86,11 @@ export function paginate<T>(data: Array<T> | undefined, r: Response): Paginated<
  * defines page/size validators and sensible defaults.
  */
 const id = v.pipe(v.string(), v.uuid());
+export const Order = v.picklist(['Ascending', 'Descending']);
+export const EntityObjectState = v.picklist(['Inactive', 'Active', 'Awaiting', 'Completed']);
+export const ReviewState = v.picklist(['Pending', 'InProgress', 'Finished', 'Cancelled']);
+export const CursusVariant = v.picklist(['Dynamic', 'Static', 'Partial']);
+export const CompletionMode = v.picklist(['Ring', 'FreeStyle']);
 export const Filters = {
 	id,
 	base: {

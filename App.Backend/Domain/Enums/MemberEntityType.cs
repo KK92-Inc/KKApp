@@ -25,7 +25,7 @@ public enum MemberEntityType
     Workspace = 1,
 
     /// <summary>
-    /// The entity describes a user's session in a workspace.
+    /// The entity describes a user's session in a user project
     /// </summary>
     [JsonPropertyName(nameof(UserProject))]
     UserProject = 2,

@@ -2,7 +2,7 @@
 	import * as Page from './context.svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import * as Project from '$lib/remotes/project.remote';
+	import * as Project from "$lib/remotes/projects.remote";
 	import {
 		Plus,
 		X,
@@ -113,13 +113,14 @@
 						<Field.Description>A visual thumbnail for the goal.</Field.Description>
 					</Field.Field> -->
 
+					<!-- Name -->
 					<Field.Field data-invalid={!!context.errors.name}>
 						<Field.Label for="name">Name</Field.Label>
 						<Input id="name" maxlength={255} bind:value={context.fields.name} />
 						<Field.Error errors={context.errors.name} />
 					</Field.Field>
-
-					<Field.Field>
+					<!-- Workspace -->
+					<Field.Field data-invalid={!!context.errors.workspace}>
 						<Field.Label for="workspace">Workspace</Field.Label>
 						<Tabs.Root id="workspace" bind:value={context.workspace}>
 							<Tabs.List class="w-auto">
@@ -130,7 +131,9 @@
 							</Tabs.List>
 						</Tabs.Root>
 						<Field.Description>Workspaces are where created content lives.</Field.Description>
+						<Field.Error errors={context.errors.workspace} />
 					</Field.Field>
+					<!-- Description -->
 					<Field.Field data-invalid={!!context.errors.description?.length}>
 						<Field.Label for="description">Description</Field.Label>
 						<Textarea
@@ -145,7 +148,7 @@
 				</Field.Group>
 				<Separator />
 				<Field.Group>
-					<Field.Field orientation="horizontal" class="items-center">
+					<Field.Field data-invalid={!!context.errors.public} orientation="horizontal" class="items-center">
 						<Field.Content>
 							<Field.Label for="project-public" class="flex items-center gap-2">
 								{#if context.fields.public}
@@ -160,11 +163,12 @@
 									? 'Visible to all users on the platform.'
 									: 'Only you and staff can see this project.'}
 							</Field.Description>
+							<Field.Error errors={context.errors.public} />
 						</Field.Content>
 						<Switch id="project-public" bind:checked={context.fields.public} />
 					</Field.Field>
 
-					<Field.Field orientation="horizontal" class="items-center">
+					<Field.Field data-invalid={!!context.errors.active} orientation="horizontal" class="items-center">
 						<Field.Content>
 							<Field.Label for="project-enabled" class="flex items-center gap-2">
 								<Zap class="h-4 w-4 {context.fields.active ? 'text-amber-500' : 'text-muted-foreground'}" />
@@ -175,6 +179,7 @@
 									? 'Other users can subscribe to this goal'
 									: 'Other users cannot subscribe to this goal'}
 							</Field.Description>
+							<Field.Error errors={context.errors.active} />
 						</Field.Content>
 						<Switch id="project-enabled" bind:checked={context.fields.active} />
 					</Field.Field>
@@ -183,6 +188,13 @@
 
 			<!-- RIGHT -->
 			<div class="flex flex-col gap-4 md:col-span-8">
+									<Alert.Root variant="default">
+						<CircleAlert />
+						<Alert.Title>Your goal has reached the max limit of projects.</Alert.Title>
+						<Alert.Description>
+							<p>A goal may only contain up to 4 projects.</p>
+						</Alert.Description>
+					</Alert.Root>
 				{#each context.projects as project, i (project.id)}
 					<Item.Root variant="outline" class="h-min">
 						<Item.Content>

@@ -29,7 +29,7 @@ namespace App.Backend.API.Controllers;
 [ProtectedResource("projects"), Authorize]
 public class ProjectController(
     ILogger<ProjectController> log,
-    IProjectService projectService,
+    IProjectService service,
     IRubricService rubricService
 ) : Controller
 {
@@ -49,7 +49,7 @@ public class ProjectController(
         CancellationToken token
     )
     {
-        var page = await projectService.GetAllAsync(sorting, pagination, token,
+        var page = await service.GetAllAsync(sorting, pagination, token,
             id is null ? null : n => n.Id == id,
             string.IsNullOrWhiteSpace(name) ? null : n => EF.Functions.ILike(n.Name, $"%{name}%"),
             string.IsNullOrWhiteSpace(slug) ? null : n => n.Slug == slug
@@ -94,11 +94,11 @@ public class ProjectController(
     [EndpointDescription("Delete a project and its user instances")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var project = await projectService.FindByIdAsync(id);
+        var project = await service.FindByIdAsync(id);
         if (project is null)
             return NotFound();
 
-        await projectService.DeleteAsync(project);
+        await service.DeleteAsync(project);
         return NoContent();
     }
 
@@ -112,35 +112,38 @@ public class ProjectController(
     [EndpointDescription("Retrieve a specific project by ID")]
     public async Task<ActionResult<ProjectDO>> GetById(Guid id)
     {
-        var project = await projectService.FindByIdAsync(id);
+        var project = await service.FindByIdAsync(id);
         return project is null ? NotFound() : Ok(new ProjectDO(project));
     }
 
-    [HttpGet("{id:guid}/rubrics")]
+    [HttpGet("{id:guid}/rubric")]
     [ProtectedResource("projects", "projects:read")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [EndpointSummary("Get rubrics for a project")]
-    [EndpointDescription("Retrieve all rubrics associated with any user project session of the given project.")]
-    public async Task<ActionResult<IEnumerable<RubricDO>>> GetRubricsForProject(
-        Guid id,
-        [FromQuery] Sorting sorting,
-        [FromQuery] Pagination pagination,
-        CancellationToken token
-    )
+    [EndpointSummary("Get the rubric for this project")]
+    [EndpointDescription("A project may be targeted by a rurbic. This can be either the wildcard or a specific one.")]
+    public async Task<ActionResult<RubricDO>> GetRubric(Guid id, CancellationToken token)
     {
-        var project = await projectService.FindByIdAsync(id);
+        var project = await service.FindByIdAsync(id, token);
         if (project is null)
             return NotFound();
 
-        var page = await rubricService.GetAllAsync(sorting, pagination, token,
-            r => r.UserProjects.Any(up => up.ProjectId == id)
+        var sorting = new Sorting()
+        {
+            OrderBy = "ProjectId",
+            Order = Order.Ascending
+        };
+
+        var page = await rubricService.GetAllAsync(sorting, new Pagination(), token,
+            r => r.ProjectId == id || r.ProjectId == null
         );
 
-        page.AppendHeaders(Response.Headers);
-        return Ok(page.Items.Select(r => new RubricDO(r)));
+        var rubric = page.Items.FirstOrDefault();
+        if (rubric is null)
+            return NotFound();
+        return Ok(new RubricDO(rubric));
     }
 
     [HttpPatch("{id:guid}")]
@@ -154,7 +157,7 @@ public class ProjectController(
     [EndpointDescription("Update project information")]
     public async Task<ActionResult<ProjectDO>> Update(Guid id, [FromBody] PatchProjectRequestDTO request)
     {
-        var project = await projectService.FindByIdAsync(id);
+        var project = await service.FindByIdAsync(id);
         if (project is null)
             return NotFound();
 
@@ -163,7 +166,7 @@ public class ProjectController(
         project.Active = request.Active ?? project.Active;
         project.Public = request.Public ?? project.Public;
         project.MaxMembers = request.MaxMembers ?? project.MaxMembers;
-        await projectService.UpdateAsync(project);
+        await service.UpdateAsync(project);
         return Ok(new ProjectDO(project));
     }
 }

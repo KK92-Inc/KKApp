@@ -5,6 +5,8 @@
 
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 
 namespace App.Backend.Models.Requests.Projects;
 

@@ -12,6 +12,8 @@ using App.Backend.Domain.Enums;
 using App.Backend.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
+using App.Backend.Core.Query;
+using System.Linq.Expressions;
 
 namespace App.Backend.Core.Services.Implementation;
 
@@ -20,6 +22,20 @@ public class ReviewService(DatabaseContext context, IRuleService rules) : BaseSe
     // ============================================================================
     // Public API (Core Actions)
     // ============================================================================
+
+    public override async Task<PaginatedList<Review>> GetAllAsync(ISorting sorting, IPagination pagination, CancellationToken token = default, params Expression<Func<Review, bool>>?[] filters)
+    {
+        return await filters
+            .Where(f => f is not null)
+            .Aggregate(_dbSet.AsQueryable(), (c, filter) => c.Where(filter!))
+            .Sort(sorting)
+            .Include(r => r.Rubric)
+            .Include(r => r.UserProject)
+            .ThenInclude(up => up.GitInfo)
+            .ThenInclude(up => up.Projects)
+            .Include(r => r.Reviewer)
+            .PaginateAsync(pagination, token);
+    }
 
     public async Task<IEnumerable<Review>> RequestReviewAsync(Guid userProjectId, Guid initiatorId, string @ref, CancellationToken token = default)
     {

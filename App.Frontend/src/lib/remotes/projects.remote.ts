@@ -10,41 +10,26 @@ import { Filters, paginate, Problem } from '$lib/api';
 // ============================================================================
 
 const PageSchema = v.object({
-	id: v.optional(Filters.id),
-	name: v.optional(v.string()),
-	slug: v.optional(v.string()),
+	...Filters.pagination,
 	...Filters.sort,
-	...Filters.pagination
+	...Filters.base,
+	name: v.optional(v.string()),
 });
 
-const NodeSchema = v.object({
-	goalId: Filters.id,
-	parentId: v.optional(v.nullable(Filters.id)),
-	group: v.optional(v.nullable(Filters.id))
-});
-
-const SetTrackSchema = v.object({
+const UpdateSchema = v.object({
 	id: Filters.id,
-	nodes: v.pipe(v.array(NodeSchema), v.minLength(1))
+	name: v.string(),
+	description: v.string(),
+	active: v.optional(v.boolean()),
+	public: v.optional(v.boolean()),
 });
 
 // ============================================================================
 
-/** Get a single cursus */
-export const get = query(Filters.id, async (id) => {
-	const { locals } = getRequestEvent();
-	const { error, data } = await locals.api.GET('/cursus/{id}', {
-		params: { path: { id } }
-	});
-
-	if (error || !data) Problem.throw(error);
-	return data;
-});
-
-/** Paginated response for all cursus */
+/** Paginated response for all projects */
 export const getPage = query(PageSchema, async (params) => {
 	const { locals } = getRequestEvent();
-	const { response, data, error } = await locals.api.GET('/cursus', {
+	const { response, data, error } = await locals.api.GET('/projects', {
 		params: {
 			query: {
 				'filter[id]': params.id,
@@ -62,10 +47,10 @@ export const getPage = query(PageSchema, async (params) => {
 	return paginate(data, response);
 });
 
-/** Get the track (goal hierarchy) for a cursus */
-export const getTrack = query(Filters.id, async (id) => {
+/** Get a single project */
+export const get = query(Filters.id, async (id) => {
 	const { locals } = getRequestEvent();
-	const { error, data } = await locals.api.GET('/cursus/{id}/track', {
+	const { error, data } = await locals.api.GET('/projects/{id}', {
 		params: { path: { id } }
 	});
 
@@ -74,12 +59,23 @@ export const getTrack = query(Filters.id, async (id) => {
 });
 
 
-/** Replace the track (goal hierarchy) for a cursus */
-export const setTrack = command(SetTrackSchema, async ({ id, nodes }) => {
+/** Update a project */
+export const update = command(UpdateSchema, async ({ id, ...rest }) => {
 	const { locals } = getRequestEvent();
-	const { error, data } = await locals.api.POST('/cursus/{id}/track', {
+	const { error, data } = await locals.api.PATCH('/projects/{id}', {
 		params: { path: { id } },
-		body: { nodes }
+		body: rest
+	});
+
+	if (error || !data) Problem.throw(error);
+	return data;
+});
+
+/** Paginated response for the rubrics attached to a project */
+export const getRubric = query(Filters.id, async (id) => {
+	const { locals } = getRequestEvent();
+	const { error, data } = await locals.api.GET('/projects/{id}/rubric', {
+		params: { path: { id } }
 	});
 
 	if (error || !data) Problem.throw(error);

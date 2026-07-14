@@ -14,7 +14,7 @@ namespace App.Backend.API.Controllers;
 
 [ApiController]
 [Route("git")]
-public class GitController(ILogger<GitController> log, IGitService git, IUserProjectService userProject) : Controller
+public class GitController(ILogger<GitController> log, IGitService git) : Controller
 {
     [HttpGet("{id:guid}/branches")]
     [EndpointSummary("List repository branches")]
@@ -36,31 +36,14 @@ public class GitController(ILogger<GitController> log, IGitService git, IUserPro
 
     [HttpGet("{id:guid}/tree/{branch}")]
     [HttpGet("{id:guid}/tree/{branch}/{*path}")]
-    [HttpGet("/users/{id:guid}/projects/{projectId:guid}/tree/{branch}")]
-    [HttpGet("/users/{id:guid}/projects/{projectId:guid}/tree/{branch}/{*path}")]
     [EndpointSummary("Get file tree from repository")]
     [EndpointDescription("Retrieves the file tree at the given branch and path in the git repository associated with this entity.")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<string>> GetTree(
-        Guid id, Guid? projectId, string branch, string? path, CancellationToken token)
+        Guid id,  string branch, string? path, CancellationToken token)
     {
-        Git? entity;
-
-        if (projectId.HasValue)
-        {
-            // Route: /users/{id}/projects/{projectId}/tree/...
-            var up = await userProject.FindByUserAndProjectAsync(id, projectId.Value, token);
-            if (up is null) return NotFound();
-            entity = up.GitInfo;
-        }
-        else
-        {
-            // Route: {id}/tree/...
-            entity = await git.FindByIdAsync(id, token);
-        }
-
-        log.LogDebug("Git Entity: {git}", entity);
+        var entity = await git.FindByIdAsync(id, token);
         if (entity is null) return NotFound();
 
         var tree = await git.GetTreeAsync(entity.Owner, entity.Name, branch, path ?? string.Empty, token);
@@ -70,29 +53,15 @@ public class GitController(ILogger<GitController> log, IGitService git, IUserPro
     }
 
     [HttpGet("{id:guid}/blob/{branch}/{*path}")]
-    [HttpGet("/users/{id:guid}/projects/{projectId:guid}/blob/{branch}/{*path}")]
     [EndpointSummary("Get file content from repository")]
     [EndpointDescription("Retrieves the content of a file in the git repository associated with this entity.")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<string>> GetBlob(
-        Guid id, Guid? projectId, string branch, string path, CancellationToken token)
+        Guid id, string branch, string path, CancellationToken token)
     {
-        Git? entity;
-        if (projectId.HasValue)
-        {
-            // Route: /users/{id}/projects/{projectId}/blob/...
-            var up = await userProject.FindByUserAndProjectAsync(id, projectId.Value, token);
-            if (up is null) return NotFound();
-            entity = up.GitInfo;
-        }
-        else
-        {
-            // Route: {id}/blob/...
-            entity = await git.FindByIdAsync(id, token);
-        }
 
-        log.LogDebug("Git Entity: {git}", entity);
+        var entity = await git.FindByIdAsync(id, token);
         if (entity is null) return NotFound();
 
         var text = await git.GetBlobAsync(entity.Owner, entity.Name, branch, path, token);

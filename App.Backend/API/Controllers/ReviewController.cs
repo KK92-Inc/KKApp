@@ -18,6 +18,8 @@ using App.Backend.Domain.Entities.Reviews;
 using App.Backend.API.Bus.Messages;
 using App.Backend.Core;
 using Wolverine;
+using System.ComponentModel;
+using System.Linq.Expressions;
 
 // ============================================================================
 
@@ -39,10 +41,6 @@ public class ReviewController(
     DatabaseContext ctx
 ) : Controller
 {
-    // GET /reviews
-    // GET /reviews/{reviewId}
-    // GET /reviews/user/{userId}/project/{projectId}
-
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -51,7 +49,8 @@ public class ReviewController(
     [EndpointDescription("Returns a paginated list of reviews")]
     public async Task<ActionResult<IEnumerable<ReviewDO>>> GetReviews(
         [FromQuery(Name = "filter[user_project_id]")] Guid? userProjectId,
-        [FromQuery(Name = "filter[reviewer_id]")] Guid? reviewerId,
+        [FromQuery(Name = "filter[reviewer_id]"), Description("User conducting a review")] Guid? reviewerId,
+        [FromQuery(Name = "filter[reviewee_id]"), Description("User receiving a review")] Guid? revieweeId,
         [FromQuery(Name = "filter[rubric_id]")] Guid? rubricId,
         [FromQuery(Name = "filter[kind]")] ReviewKinds? kind,
         [FromQuery(Name = "filter[status]")] ReviewState? status,
@@ -65,9 +64,16 @@ public class ReviewController(
             r => !reviewerId.HasValue || r.ReviewerId == reviewerId.Value,
             r => !rubricId.HasValue || r.RubricId == rubricId.Value,
             r => !kind.HasValue || r.Kind == kind.Value,
-            r => !status.HasValue || r.State == status.Value
+            r => !status.HasValue || r.State == status.Value,
+            // NOTE(W2):TODO: In the future we might migrate this to a package.
+            // For now this works as a nice but disgustingly leaky escape hatch.
+            revieweeId.HasValue ? r => ctx.Members.Any(m =>
+                  m.EntityType == MemberEntityType.UserProject &&
+                  m.EntityId == r.UserProjectId &&
+                  m.UserId == revieweeId.Value &&
+                  m.LeftAt == null
+            ) : null
         );
-
         page.AppendHeaders(Response.Headers);
         return Ok(page.Items.Select(r => new ReviewDO(r)));
     }

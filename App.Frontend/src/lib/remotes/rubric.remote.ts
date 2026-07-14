@@ -4,86 +4,98 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import { Filters } from '$lib/api';
-import { Remote } from './index.svelte';
+import { query, command, getRequestEvent } from '$app/server';
+import { Filters, Problem } from '$lib/api';
 
 // ============================================================================
-// Create
-// ============================================================================
 
-export const create = Remote.POST('/workspace/{workspace}/rubric')
-	.extend(v.object({
-		name: v.string(),
-		markdown: v.optional(v.string()),
-		public: v.optional(v.boolean(), false),
-		enabled: v.optional(v.boolean(), false),
-		supportedReviewKinds: v.optional(v.string()),
-		reviewerRules: v.optional(v.array(v.any())),
-		revieweeRules: v.optional(v.array(v.any()))
-	}), (data) => ({ body: data }))
-	.required(false)
-	.declare();
+const PageSchema = v.object({
+	id: v.optional(Filters.id),
+	name: v.optional(v.string()),
+	slug: v.optional(v.string()),
+	enabled: v.optional(v.boolean()),
+	public: v.optional(v.boolean()),
+	creatorId: v.optional(Filters.id),
+	kind: v.optional(v.number()),
+	...Filters.pagination,
+	...Filters.sort,
+});
 
-// ============================================================================
-// Get
-// ============================================================================
-
-export const get = Remote.GET('/rubrics/{id}').declare();
-export const getPage = Remote.GET('/rubrics')
-	.extend(v.object({
-		...Filters.base,
-		...Filters.pagination,
-		...Filters.sort,
-		name: v.optional(v.string()),
-		enabled: v.optional(v.boolean()),
-		public: v.optional(v.boolean()),
-		creatorId: v.optional(v.string())
-	}), data => ({
-		query: {
-			'filter[name]': data.name,
-			'filter[slug]': data.slug,
-			'filter[enabled]': data.enabled,
-			'filter[public]': data.public,
-			'filter[creator_id]': data.creatorId,
-			'page[index]': data.page,
-			'page[size]': data.size,
-			'sort[by]': data.sortBy,
-			'sort[order]': data.sort
-		}
-	}))
-	.paginated()
-	.declare();
-
-// ============================================================================
-// Delete
-// ============================================================================
-
-export const remove = Remote.DELETE('/rubrics')
-	.extend(v.object({ id: Filters.id }), data => ({ query: { id: data.id } }))
-	.required(false)
-	.declare();
-
-// ============================================================================
-// Update
-// ============================================================================
-
-const updateSchema = v.object({
+const UpdateSchema = v.object({
 	id: Filters.id,
 	name: v.optional(v.string()),
 	markdown: v.optional(v.string()),
 	public: v.optional(v.boolean()),
-	enabled: v.optional(v.boolean()),
-	supportedReviewKinds: v.optional(v.string()),
-	reviewerRules: v.optional(v.array(v.any())),
-	revieweeRules: v.optional(v.array(v.any()))
+	enabled: v.optional(v.boolean())
 });
 
-export const update = Remote.PATCH('/rubrics/{id}')
-	.extend(updateSchema, data => ({ body: data }))
-	.declare();
+const VariantSchema = v.object({
+	kind: v.number(), // Flag
+	required: v.pipe(v.number(), v.minValue(0), v.maxValue(100))
+});
+
+const SetVariantsSchema = v.object({
+	id: Filters.id,
+	variants: v.pipe(v.array(VariantSchema), v.minLength(1))
+});
 
 // ============================================================================
-// Has Markdown
-// ============================================================================
 
-export const hasMarkdown = Remote.GET('/rubrics/{id}/has-markdown').declare();
+/** Get a single rubric */
+export const get = query(Filters.id, async (id) => {
+	const { locals } = getRequestEvent();
+	const { error, data } = await locals.api.GET('/rubrics/{id}', {
+		params: { path: { id } }
+	});
+
+	if (error || !data) Problem.throw(error);
+	return data;
+});
+
+/** Paginated response for all rubrics */
+export const getPage = query(PageSchema, async (params) => {
+	const { locals } = getRequestEvent();
+	const { error, data } = await locals.api.GET('/rubrics', {
+		params: {
+			query: {
+				'filter[id]': params.id,
+				'filter[name]': params.name,
+				'filter[slug]': params.slug,
+				'filter[enabled]': params.enabled,
+				'filter[public]': params.public,
+				'filter[creator_id]': params.creatorId,
+				'sort[by]': params.sortBy,
+				'sort[order]': params.sort,
+				'page[index]': params.page,
+				'page[size]': params.size
+			}
+		}
+	});
+
+	if (error || !data) Problem.throw(error);
+	return data;
+});
+
+/** Update a rubric's own fields (use setVariants to change its variants) */
+export const update = command(UpdateSchema, async ({ id, ...rest }) => {
+	const { locals } = getRequestEvent();
+	const { error, data } = await locals.api.PATCH('/rubrics/{id}', {
+		params: { path: { id } },
+		body: rest
+	});
+
+	if (error || !data) Problem.throw(error);
+	return data;
+});
+
+/** Replace the review variant requirements for a rubric */
+export const setVariants = command(SetVariantsSchema, async ({ id, variants }) => {
+	const { locals } = getRequestEvent();
+	const { error, data } = await locals.api.PUT('/rubrics/{id}/variants', {
+		params: { path: { id } },
+		body: { variants }
+	});
+
+	if (error || !data) Problem.throw(error);
+	return data;
+});

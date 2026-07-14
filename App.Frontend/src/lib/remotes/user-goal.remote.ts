@@ -17,14 +17,14 @@ const PageByUserSchema = v.object({
 	...Filters.pagination
 });
 
-const ByUserSchema = v.object({ userId: Filters.id, cursusId: Filters.id });
+const ByUserSchema = v.object({ userId: Filters.id, goalId: Filters.id });
 
 // ============================================================================
 
-/** Get a single user-cursus subscription directly by its own ID */
+/** Get a single user-goal subscription directly by its own ID */
 export const get = query(Filters.id, async (id) => {
 	const { locals } = getRequestEvent();
-	const { error, data } = await locals.api.GET('/user-cursus/{id}', {
+	const { error, data } = await locals.api.GET('/user-goals/{id}', {
 		params: { path: { id } }
 	});
 
@@ -32,10 +32,10 @@ export const get = query(Filters.id, async (id) => {
 	return data;
 });
 
-/** Paginated response for a user's cursus subscriptions */
+/** Paginated response for a user's goal subscriptions */
 export const getPageByUser = query(PageByUserSchema, async ({ userId, ...params }) => {
 	const { locals } = getRequestEvent();
-	const { error, data } = await locals.api.GET('/users/{userId}/cursus', {
+	const { error, data } = await locals.api.GET('/users/{userId}/goals', {
 		params: {
 			path: { userId },
 			query: {
@@ -53,25 +53,13 @@ export const getPageByUser = query(PageByUserSchema, async ({ userId, ...params 
 	return data;
 });
 
-/** Get a user's subscription to a specific cursus */
-export const getByUserAndCursus = query(ByUserSchema, async ({ userId, cursusId }) => {
+/** Get a user's subscription to a specific goal */
+export const getByUser = query(ByUserSchema, async ({ userId, goalId }) => {
 	const { locals } = getRequestEvent();
-	const { error, data } = await locals.api.GET('/users/{userId}/cursus/{cursusId}', {
-		params: { path: { userId, cursusId } }
+	const { error, data } = await locals.api.GET('/users/{userId}/goals/{goalId}', {
+		params: { path: { userId, goalId } }
 	});
 
-	// NOTE(W2): No Data ? That's fine means there is no instance *yet*.
 	if (error) Problem.throw(error);
-	return data;
-});
-
-/** Get the track progress for a user-cursus subscription */
-export const getTrack = query(Filters.id, async (id) => {
-	const { locals } = getRequestEvent();
-	const { error, data } = await locals.api.GET('/user-cursus/{id}/track', {
-		params: { path: { id } }
-	});
-
-	if (error || !data) Problem.throw(error);
 	return data;
 });

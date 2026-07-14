@@ -2,12 +2,12 @@
 	import { Button } from '$lib/components/button';
 	import * as Card from '$lib/components/card';
 	import { Skeleton } from '$lib/components/skeleton';
-	import * as Spotlight from '$lib/remotes/spotlight.remote';
+	import * as Account from '$lib/remotes/account.remote';
 	import { X } from '@lucide/svelte';
 </script>
 
 <svelte:boundary>
-	{@const spotlights = await Spotlight.get({})}
+	{@const spotlights = await Account.getSpotlights()}
 	{#snippet pending()}
 		<Card.Root class="w-full overflow-hidden bg-background pt-0">
 			<Skeleton class="h-48 w-full rounded-none" />
@@ -20,6 +20,7 @@
 			</Card.Footer>
 		</Card.Root>
 	{/snippet}
+
 	{#each spotlights as spotlight (spotlight.id)}
 		<Card.Root id={spotlight.id} class="relative w-full overflow-hidden bg-background pt-0 pb-6">
 			<img
@@ -31,8 +32,8 @@
 				type="submit"
 				variant="outline"
 				size="icon"
-				class="absolute top-1 right-1 size-6 dark:backdrop-blur-xs"
-				onclick={() => Spotlight.dismiss({ id: spotlight.id })}
+				class="absolute top-1 right-1 size-6 dark:backdrop-blur-xs bg-muted"
+				onclick={() => Account.dismissSpotlight(spotlight.id)}
 			>
 				<X size={8} />
 			</Button>

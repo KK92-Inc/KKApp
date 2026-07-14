@@ -1201,161 +1201,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/users/{id}/projects/{projectId}/tree/{branch}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get file tree from repository
-         * @description Retrieves the file tree at the given branch and path in the git repository associated with this entity.
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                    projectId: string;
-                    branch: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": string;
-                        "application/json": string;
-                        "text/json": string;
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ProblemDetails"];
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "text/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/users/{id}/projects/{projectId}/tree/{branch}/{path}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get file tree from repository
-         * @description Retrieves the file tree at the given branch and path in the git repository associated with this entity.
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                    projectId: string;
-                    branch: string;
-                    path: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": string;
-                        "application/json": string;
-                        "text/json": string;
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ProblemDetails"];
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "text/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/git/{id}/blob/{branch}/{path}": {
         parameters: {
             query?: never;
@@ -1373,84 +1218,6 @@ export interface paths {
                 header?: never;
                 path: {
                     id: string;
-                    branch: string;
-                    path: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": string;
-                        "application/json": string;
-                        "text/json": string;
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ProblemDetails"];
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "text/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/users/{id}/projects/{projectId}/blob/{branch}/{path}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get file content from repository
-         * @description Retrieves the content of a file in the git repository associated with this entity.
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                    projectId: string;
                     branch: string;
                     path: string;
                 };
@@ -2542,7 +2309,7 @@ export interface paths {
         };
         trace?: never;
     };
-    "/projects/{id}/rubrics": {
+    "/projects/{id}/rubric": {
         parameters: {
             query?: never;
             header?: never;
@@ -2550,21 +2317,12 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get rubrics for a project
-         * @description Retrieve all rubrics associated with any user project session of the given project.
+         * Get the rubric for this project
+         * @description A project may be targeted by a rurbic. This can be either the wildcard or a specific one.
          */
         get: {
             parameters: {
-                query?: {
-                    /** @description The name of the property to use for sorting. */
-                    "sort[by]"?: string;
-                    /** @description The sort direction. */
-                    "sort[order]"?: components["schemas"]["Order"];
-                    /** @description The page number/index */
-                    "page[index]"?: number | string;
-                    /** @description The amount of results per page */
-                    "page[size]"?: number | string;
-                };
+                query?: never;
                 header?: never;
                 path: {
                     id: string;
@@ -2579,9 +2337,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["RubricDO"][];
-                        "application/json": components["schemas"]["RubricDO"][];
-                        "text/json": components["schemas"]["RubricDO"][];
+                        "text/plain": components["schemas"]["RubricDO"];
+                        "application/json": components["schemas"]["RubricDO"];
+                        "text/json": components["schemas"]["RubricDO"];
                     };
                 };
                 /** @description Unauthorized */
@@ -8018,12 +7776,11 @@ export interface components {
             updatedAt: string;
             kind: components["schemas"]["ReviewKinds"];
             state: components["schemas"]["ReviewState"];
-            /** Format: uuid */
-            userProjectId: string;
+            userProject: components["schemas"]["UserProjectDO"];
             reviewer: null | components["schemas"]["UserLightDO"];
             rubric: components["schemas"]["RubricLightDO"];
         };
-        ReviewKinds: string;
+        ReviewKinds: number;
         ReviewProgressDO: {
             rubric: components["schemas"]["RubricLightDO"];
             variants: components["schemas"]["ReviewVariantProgressDO"][];

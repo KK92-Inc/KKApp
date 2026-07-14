@@ -6,20 +6,30 @@
 	import { Feed } from '$lib/components/feed';
 
 	// Remotes
-	import * as Feeds from '$lib/remotes/feed.remote';
+	import * as Account from '$lib/remotes/account.remote';
 	import Reviews from './reviews.svelte';
 	import { page } from '$app/state';
+	import Separator from '$lib/components/separator/separator.svelte';
+
+	function feed(page: number) {
+		return Account.getNotificationPage({
+			page,
+			sort: 'Ascending',
+			size: 20,
+			variant: 1024
+		});
+	}
 </script>
 
-<div class="container mx-auto flex gap-6 px-6 py-4">
-	<div class="flex flex-auto flex-col gap-6">
+<div class="container mx-auto grid grid-cols-1 gap-6 px-6 py-4 md:grid-cols-[1fr_20rem]">
+	<div class="flex flex-col gap-6">
 		<Button
 			href="/users/{page.data.session.userId}/galaxy"
 			variant="outline"
-			class="group h-80 w-full shrink-0 bg-[url('/graph.png')] bg-cover p-0"
+			class="group h-80 bg-[url('/graph.png')] bg-cover p-0"
 		>
 			<section
-				class=" relative flex h-full w-full flex-col justify-end rounded-[inherit] bg-linear-to-t from-black via-black/80 to-transparent p-6 text-left backdrop-blur-xs transition duration-300"
+				class="relative flex h-full w-full flex-col justify-end rounded-[inherit] bg-linear-to-t from-black via-black/80 to-transparent p-6 text-left backdrop-blur-xs transition duration-300"
 			>
 				<h3 class="flex items-center gap-2 text-3xl font-bold text-white drop-shadow-md">
 					<Sparkles class="size-6" />
@@ -28,14 +38,20 @@
 				<p class="text-sm text-muted-foreground">Explore your personal data universe &rarr;</p>
 			</section>
 		</Button>
-		<Scroller load={async (page) => Feeds.getPage({ page, sort: "Ascending", size: 20 })}>
+
+		<!-- <span class="flex items-center gap-3">
+			<p class="font-bold whitespace-nowrap">My Feed</p>
+			<Separator orientation="horizontal" class="flex-1" />
+		</span> -->
+
+		<Scroller load={async (page) => feed(page)}>
 			{#snippet item(item)}
 				<Feed notification={item} />
 			{/snippet}
 		</Scroller>
 	</div>
 
-	<aside class="w-80 shrink-0 flex flex-col gap-4 max-md:hidden h-fit sticky top-[calc(var(--header-height)+1rem)]">
+	<aside class="sticky top-[calc(var(--header-height)+1rem)] flex h-fit flex-col gap-4 max-md:hidden">
 		<Spotlight />
 		<Reviews />
 	</aside>

@@ -6,6 +6,7 @@
 using System.ComponentModel.DataAnnotations;
 using App.Backend.Domain.Entities.Reviews;
 using App.Backend.Domain.Enums;
+using App.Backend.Models.Responses.Entities.Projects;
 
 // ============================================================================
 
@@ -23,7 +24,7 @@ public class ReviewDO(Review review) : BaseEntityDO<Review>(review)
     public ReviewState State { get; set; } = review.State;
 
     [Required]
-    public Guid UserProjectId { get; set; } = review.UserProjectId;
+    public UserProjectDO UserProject { get; set; } = review.UserProject;
 
     /// <summary>
     /// The user performing the review, if assigned.
