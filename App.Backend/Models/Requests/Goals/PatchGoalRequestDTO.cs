@@ -18,14 +18,14 @@ public record PatchGoalRequestDTO
     /// <summary>
     /// Optional name update.
     /// </summary>
-    [StringLength(256, MinimumLength = 1)]
+    [StringLength(256, MinimumLength = 2)]
     [Description("The name of the goal.")]
     public string? Name { get; init; }
 
     /// <summary>
     /// Optional description update.
     /// </summary>
-    [StringLength(16384)]
+    [StringLength(2000)]
     [Description("Optional description of the goal.")]
     public string? Description { get; init; }
 
@@ -41,7 +41,7 @@ public record PatchGoalRequestDTO
     [Description("Indicates whether the goal is publicly visible.")]
     public bool? Public { get; init; }
 
-    [Required, MinLength(1)]
+    [Required, MinLength(1), MaxLength(4)]
     [Description("The list of project IDs to initalize this goal with.")]
     public required IEnumerable<Guid> Projects { get; init; }
 }

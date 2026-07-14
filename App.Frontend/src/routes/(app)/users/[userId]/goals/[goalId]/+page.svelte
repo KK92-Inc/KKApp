@@ -6,7 +6,7 @@
 	import { Button } from '$lib/components/button';
 	import { Badge } from '$lib/components/badge';
 	import { subscribeGoal, unsubscribeGoal } from '$lib/remotes/subscribe.remote';
-	import { getGoalProjects } from '$lib/remotes/goal.remote';
+	import { projects } from '$lib/remotes/goal.remote';
 	import { History, Trophy, ChevronRight, Archive } from '@lucide/svelte';
 	import type { PageProps } from './$types';
 
@@ -163,7 +163,7 @@
 							</div>
 						{/snippet}
 
-						{@const projects = await getGoalProjects(goal.id)}
+						{@const projects = await projects(goal.id)}
 
 						{#if projects.length === 0}
 							<div class="flex flex-col items-center justify-center py-12 text-center">

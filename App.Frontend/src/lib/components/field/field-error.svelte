@@ -2,6 +2,7 @@
 	import { cn } from "$lib/utils.js";
 	import type { HTMLAttributes } from "svelte/elements";
 	import type { Snippet } from "svelte";
+	import { TriangleAlert } from "@lucide/svelte";
 
 	let {
 		class: className,
@@ -30,7 +31,10 @@
 		{#if children}
 			{@render children()}
 		{:else if messages.length === 1}
-			{messages[0]}
+			<span class="flex gap-2 items-center animate-pulse">
+				<TriangleAlert size={16}/>
+				{messages[0]}
+			</span>
 		{:else}
 			<ul class="ml-4 flex list-disc flex-col gap-0.5 text-xs">
 				{#each messages as msg (msg)}

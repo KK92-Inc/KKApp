@@ -6,107 +6,103 @@
 import { createContext } from "svelte";
 import * as Workspace from "$lib/remotes/workspace.remote";
 import * as Goal from "$lib/remotes/goal.remote";
+import * as Action from "./action.remote"
+
 import type { components } from "$lib/api/api";
+import { toast } from "svelte-sonner";
+import { Problem, type ValidationErrors } from "$lib/api";
 
 // ============================================================================
 
-/** The fields shared by both goal creation and goal updates. */
-type GoalFields = Omit<components['schemas']['PostGoalRequestDTO'], 'projects'>;
-
-/** Just enough of a project to render it in the picker/grid without a second fetch. */
-type ProjectRef = Pick<components['schemas']['ProjectDO'], 'id' | 'name' | 'slug'>;
-
-/** Both PostGoalRequestDTO and PatchGoalRequestDTO cap this — Bad Request otherwise. */
-export const MAX_PROJECTS = 4;
+type Fields = Omit<components['schemas']['PostGoalRequestDTO'], 'projects'>;
+type ProjectRef = Pick<components['schemas']['ProjectDO'], 'id' | 'name' | 'description'>;
 
 // ============================================================================
 
 export class Context {
-	/** The goal id we're editing, or undefined when creating a new one. */
-	public readonly id: string | undefined;
+	constructor(public readonly goalId: () => string | undefined) { }
 
-	constructor(id?: string) {
-		this.id = id;
-	}
-
-	get mode(): 'create' | 'edit' {
-		return this.id ? 'edit' : 'create';
-	}
-
-	public workspace = $state<"personal" | "internal">("personal");
-
-	public data = $state<GoalFields>({
+	public errors = $state<ValidationErrors>();
+	public workspace = $state<"user" | "root">("user");
+	public projects = $state<ProjectRef[]>([]);
+	public fields = $state<Fields>({
 		name: "",
 		description: "",
 		active: false,
 		public: false,
 	});
 
-	/**
-	 * Selected projects, as full refs — not just ids — so the grid can show
-	 * a name/slug immediately, whether they came from search results or
-	 * from hydrating an existing goal. Only the ids are sent on submit.
-	 */
-	public projects = $state<ProjectRef[]>([]);
-
-	get workspaces() {
-		return Workspace.get({});
-	}
-
-	get isFull() {
-		return this.projects.length >= MAX_PROJECTS;
-	}
-
-	public addProject(project: ProjectRef) {
-		if (this.isFull || this.projects.some((p) => p.id === project.id)) return;
-		this.projects.push(project);
-	}
-
-	public removeProject(index: number) {
-		this.projects.splice(index, 1);
-	}
-
-	/**
-	 * Hydrate `data` + `projects` from the server when editing an existing
-	 * goal. Resolves immediately (no request) in "create" mode.
-	 */
-	public async load() {
-		if (this.mode !== "edit") return;
+	public async hydrate() {
+		const id = this.goalId();
+		if (!id) return;
 
 		const [goal, projects] = await Promise.all([
-			Goal.get({ id: this.id! }),
-			Goal.projects({ id: this.id! })
+			Goal.get({ id }),
+			Goal.projects({ id })
 		]);
 
-		this.data = {
+		this.fields = {
 			name: goal.name,
 			description: goal.description,
 			active: goal.active,
 			public: goal.public,
 		};
-		this.projects = projects.map((p) => ({ id: p.id, name: p.name, slug: p.slug }));
+
+		this.projects = projects.map((p) => ({
+			id: p.id,
+			name: p.name,
+			description: p.description
+		}));
+	}
+
+	public async deprecate() {
+		const id = this.goalId();
+		if (!id) {
+			toast.error("Unable to deprecate non-existent goal");
+			return;
+		}
+
+		try {
+			await Action.deprecate(id);
+			toast.success("Goal has been deprecated.");
+		} catch (e) {
+			const resolved = Problem.resolve(e);
+			toast.error(resolved.kind === 'service' ? resolved.message : 'Could not deprecate this goal.');
+		}
 	}
 
 	public async submit() {
-		// PatchGoalRequestDTO/PostGoalRequestDTO both require the *full*
-		// current selection, not a diff — the endpoint replaces, not merges.
-		const projects = this.projects.map((p) => p.id);
+		this.errors = {};
 
-		if (this.mode === "edit") {
-			return await Goal.update({ id: this.id!, ...this.data, projects });
+		try {
+			const id = this.goalId();
+			const projects = this.projects.map((p) => p.id);
+
+			if (id) {
+				return await Action.update({ id, projects, ...this.fields });
+			}
+
+			const target = this.workspace === "root"
+				? await Workspace.root({})
+				: await Workspace.user({});
+
+			return await Action.create({
+				workspace: target.id,
+				...this.fields,
+				projects
+			});
+		} catch (e) {
+			const resolved = Problem.resolve(e);
+			if (resolved.kind === 'validation') {
+				this.errors = resolved.fields;
+			} else {
+				toast.error(resolved.message);
+			}
+			return undefined;
 		}
-
-		if (this.workspace === "internal") {
-			throw new Error("TODO");
-		}
-
-		const myspace = await this.workspaces;
-		return await Workspace.createGoal({
-			workspace: myspace.id,
-			...this.data,
-			projects
-		});
 	}
 }
+
+// ============================================================================
 
 export const [getContext, setContext] = createContext<Context>();

@@ -19,7 +19,7 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import { error, invalid } from '@sveltejs/kit';
+import { error, invalid, isHttpError } from '@sveltejs/kit';
 // import { Log } from './log';
 
 // ============================================================================
@@ -120,6 +120,13 @@ export const Filters = {
 
 // ============================================================================
 
+export type ValidationErrors = Record<string, { message: string }[]>;
+
+export type Resolved =
+	| { kind: 'validation'; fields: ValidationErrors }
+	| { kind: 'service'; message: string }
+	| { kind: 'unknown'; message: string };
+
 /**
  * Wrapper for non-validation problem details returned by the server.
  *
@@ -128,81 +135,34 @@ export const Filters = {
  * rethrow/convert the problem into a SvelteKit HTTP error.
  */
 export class Problem {
-	/**
-	 * Check for bad requests / validation issues.
-	 * @param problem The problem
-	 */
-	public static validate(problem?: ProblemDetails) {
-		if (problem && problem.status === 400) {
-			const toCamel = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
-			const issues = Object.entries(problem.errors ?? {}).flatMap(([field, messages]) => {
-				const msgs = Array.isArray(messages) ? messages : [messages];
-				return msgs.map((message) => ({
-					message: String(message),
-					path: [toCamel(field)]
-				}));
-			});
-
-			invalid(...issues);
-		}
+	/** Server: forward a ProblemDetails payload as a structured HTTP error.
+	 *  Works for 400 validation AND 422/500 service errors — the client
+	 *  decides how to render it based on `status`. */
+	public static throw(problem?: ProblemDetails): never {
+		const status = Number(problem?.status ?? 500);
+		error(status, {
+			message: problem?.detail ?? problem?.title ?? 'Something went wrong...',
+			status,
+			errors: problem?.errors as Record<string, string[]> | undefined
+		});
 	}
 
-	/**
-	 * Throw an error
-	 * @param problem The problem
-	 * @param except Filter out issues
-	 * @returns
-	 */
-	public static throw(problem?: ProblemDetails): never {
-		// Log.dbg(JSON.stringify(problem, null, 2), '\n', new Error('Request failed').stack);
-		error(Number(problem?.status ?? 500), problem?.detail ?? problem?.title ?? 'Something went wrong...');
+	/** Client: turn a caught command/form error into something renderable. */
+	public static resolve(e: unknown): Resolved {
+		if (isHttpError(e)) {
+			if (e.status === 400 && e.body.errors) {
+				const fields: ValidationErrors = {};
+				for (const [field, messages] of Object.entries(e.body.errors)) {
+					const key = field.charAt(0).toLowerCase() + field.slice(1);
+					fields[key] = messages.map((message) => ({ message }));
+				}
+				return { kind: 'validation', fields };
+			}
+			return { kind: 'service', message: e.body.message };
+		}
+		return { kind: 'unknown', message: 'Something went wrong. Please try again.' };
 	}
 }
 
-// Demo
-// ============================================================================
 
-/**
- * Example query helper used by routes to fetch the current account.
- *
- * Demonstrates how to use `resolve(...)` and handle the two error shapes:
- * - `KestrelValidationError` -> call `invalid(...issues)` to mark form fields
- *   as invalid programmatically.
- * - `ProblemError` -> convert to a SvelteKit HTTP error (unless 404 which the
- *   caller might want to handle specially).
- */
-// export const demo = query(async () => {
-// 	const { locals } = getRequestEvent();
-// 	const output = await locals.api.GET('/account');
-// 	if (output.error) {
-// 		Problem.validate(output.error);
-// 		Problem.throw(output.error, 404);
-// 	}
-// 	if (!output.data) {
-// 		Problem.throw({ status: 500 });
-// 	}
 
-// 	return output.data;
-// });
-
-/**
- * Example form handler demonstrating programmatic validation mapping.
- *
- * - `schema` is a valibot schema used for declarative validation.
- * - After declarative validation passes the handler calls an API to persist
- *   data. If the backend returns a `ProblemDetails` with `errors`, the
- *   `KestrelValidationError` wrapper contains `issues` that are compatible
- *   with SvelteKit's `issue` helper. Use `invalid(...)` to attach those
- *   issues to the form response.
- *
- * This is the recommended pattern when backend validation is required to
- * enforce business rules that cannot be determined client-side.
- */
-// const schema = v.object({ publicKey: Filters.id, title: Filters.id });
-// export const demo2 = form(schema, async (body) => {
-// 	const { locals } = getRequestEvent();
-// 	const output = await locals.api.POST('/account/ssh-keys', { body });
-// 	if (output.error) Problem.throw(output.error, 404);
-// 	if (!output.data) Problem.throw({ status: 500 });
-
-// });

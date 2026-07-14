@@ -67,6 +67,28 @@ public class WorkspaceController(
         }, token)));
     }
 
+    [HttpGet("root")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProtectedResource("workspaces", "workspaces:read")]
+    [EndpointSummary("Get the workspace of the root")]
+    [EndpointDescription(
+@"The root workspace is a staff managed workspace that contains the campus's curated entities
+such as official cursi, projects or rubrics.
+    ")]
+    public async Task<ActionResult<WorkspaceDO>> GetSystemWorkspace(CancellationToken token)
+    {
+        var space = await service.GetRootWorkspace(token);
+        if (space is not null) return Ok(new WorkspaceDO(space));
+
+        // TODO: Make a migration for this as well
+        // In case it's just not there e.g: Missing migration ?
+        return Ok(new WorkspaceDO(await service.CreateAsync(new()
+        {
+            OwnerId = null,
+            Ownership = EntityOwnership.Organization
+        }, token)));
+    }
+
     [HttpPost("{workspace:guid}/cursus")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
