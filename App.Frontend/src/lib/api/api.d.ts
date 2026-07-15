@@ -7937,8 +7937,8 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
             login: string;
-            displayName?: null | string;
-            avatarUrl?: null | string;
+            displayName: null | string;
+            avatarUrl: null | string;
             details?: null | components["schemas"]["UserDetailsDO"];
         };
         UserGoalDO: {

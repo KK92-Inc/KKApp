@@ -29,8 +29,10 @@ public class UserDO : BaseEntityDO<User>
     [Required]
     public string Login { get; set; } = default!;
 
+    [Required]
     public string? DisplayName { get; set; }
 
+    [Required]
     public string? AvatarUrl { get; set; }
 
     public UserDetailsDO? Details { get; set; }

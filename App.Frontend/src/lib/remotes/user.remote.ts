@@ -4,8 +4,11 @@
 // ============================================================================
 
 import * as v from 'valibot';
+import { S3Client } from "bun";
 import { query, command, getRequestEvent } from '$app/server';
 import { Filters, paginate, Problem } from '$lib/api';
+import { avatars } from '$lib/s3';
+import { S3_ENDPOINT } from '$env/static/private';
 
 // ============================================================================
 
@@ -56,18 +59,47 @@ const DetailsSchema = v.object({
 	redditUrl: v.optional(v.nullable(v.pipe(v.string(), v.url()))),
 	websiteUrl: v.optional(v.nullable(v.pipe(v.string(), v.url())))
 });
+
+const AvatarInput = v.union([
+	v.pipe(
+		v.instance(File),
+		v.minSize(1, 'File is empty'),
+		v.maxSize(5 * 1024 * 1024, 'File too large'),
+		v.mimeType(['image/png', 'image/jpeg', 'image/gif'], 'Invalid file type')
+	),
+	v.pipe(v.string(), v.url()) // unchanged — existing avatar URL passed back as-is
+]);
+
 const UpdateSchema = v.object({
 	userId: Filters.id,
 	displayName: v.optional(v.nullable(v.pipe(v.string(), v.minLength(1), v.maxLength(100)))),
-	avatarUrl: v.optional(v.nullable(v.pipe(v.string(), v.url()))),
+	avatarUrl: v.optional(v.nullable(AvatarInput)),
 	details: v.optional(v.nullable(DetailsSchema))
 });
+
 /** Update a user's profile */
-export const update = command(UpdateSchema, async ({ userId, ...rest }) => {
+export const update = command(UpdateSchema, async (params) => {
 	const { locals } = getRequestEvent();
+	const { avatarUrl, userId, ...rest } = params;
+
+	let avatar: string | null | undefined = undefined;
+
+	if (avatarUrl instanceof File) {
+		await avatars.write(userId, avatarUrl);
+		avatar = `${S3_ENDPOINT}/avatars/${userId}`; // stable, no expiry
+	} else if (typeof avatarUrl === 'string') {
+		avatar = avatarUrl;
+	} else if (avatarUrl === null) {
+		avatar = null;
+		await avatars.delete(userId).catch(() => {});
+	}
+
 	const { error, data } = await locals.api.PATCH('/users/{userId}', {
 		params: { path: { userId } },
-		body: rest
+		body: {
+			...(avatar !== undefined ? { avatarUrl: avatar } : {}),
+			...rest
+		}
 	});
 
 	if (error || !data) Problem.throw(error);

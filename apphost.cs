@@ -65,6 +65,24 @@ var cache = builder.AddValkey("valkey")
 
 var database = postgres.AddDatabase("db");
 
+var rustfs = builder.AddContainer("rustfs", "rustfs/rustfs", "latest")
+    .WithArgs("/data")
+    .WithVolume("rustfs-volume", "/data")
+    .WithEnvironment("RUSTFS_ACCESS_KEY", s3Key)
+    .WithEnvironment("RUSTFS_SECRET_KEY", s3Password)
+    .WithEnvironment("RUSTFS_CONSOLE_ENABLE", "true")
+    .WithHttpEndpoint(targetPort: 9000, name: "s3")
+    .WithHttpEndpoint(targetPort: 9001, name: "console")
+    .WithHttpHealthCheck("/health", endpointName: "s3")
+    .WithLifetime(ContainerLifetime.Persistent);
+
+if (!isPublish)
+{
+    // Pin to consistent host ports for `mc`/S3 clients to avoid reconfiguration
+    rustfs.WithEndpoint("s3", e => e.Port = 9000);
+    rustfs.WithEndpoint("console", e => e.Port = 9001);
+}
+
 // Migration
 // ============================================================================
 
@@ -145,12 +163,14 @@ var frontendBuilder = builder.AddViteApp("frontend", "./App.Frontend")
     .WithReference(backend)
     .WaitFor(keycloak)
     .WithReference(realm)
+    .WithReference(rustfs.GetEndpoint("s3"))
     .WithEnvironment("KC_ID", kcId)
     .WithEnvironment("KC_REALM", kcRealm)
     .WithEnvironment("KC_SECRET", kcSecret)
     .WithEnvironment("KC_COOKIE", kcCookie)
     .WithEnvironment("S3_ACCESS_KEY_ID", s3Key)
     .WithEnvironment("S3_SECRET_ACCESS_KEY", s3Password)
+    .WithEnvironment("S3_ENDPOINT", rustfs.GetEndpoint("s3"))
     //TODO: Remove on Aspire 13.2: https://github.com/dotnet/aspire/issues/13686
     .WithAnnotation(new JavaScriptPackageManagerAnnotation("bun", runScriptCommand: "run", cacheMount: "/root/.bun")
     {

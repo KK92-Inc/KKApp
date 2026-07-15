@@ -1,191 +1,175 @@
 <script lang="ts">
-	import { page } from '$app/state';
-	import { Button } from '$lib/components/button';
+	import * as User from '$lib/remotes/user.remote';
+	import * as Account from '$lib/remotes/account.remote';
 	import * as Field from '$lib/components/field';
-	import { Input } from '$lib/components/input';
-	import Thumbnail from '$lib/components/thumbnail.svelte';
-	import { Save, Trash2 } from '@lucide/svelte';
 	import * as InputGroup from '$lib/components/input-group';
 	import * as Tooltip from '$lib/components/tooltip';
-	import { fade } from 'svelte/transition';
+	import * as ButtonGroup from '$lib/components/button-group';
+	import { Input } from '$lib/components/input';
+	import * as Select from '$lib/components/select';
+	import { Textarea } from '$lib/components/textarea';
+	import { Checkbox } from '$lib/components/checkbox';
+	import { Button } from '$lib/components/button';
 	import { useDialog } from '$lib/components/dialog';
-	import MarkdownTextarea from '$lib/components/markdown/markdown-textarea.svelte';
 	import { Separator } from '$lib/components/separator';
-	import { updateUser } from '$lib/remotes/account.remote';
-	import { getUser } from '$lib/remotes/user.remote';
+	import { CircleAlert, House, Save, Trash2 } from '@lucide/svelte';
+	import Thumbnail from '$lib/components/thumbnail.svelte';
+	import MarkdownTextarea from '$lib/components/markdown/markdown-textarea.svelte';
+	import { page } from '$app/state';
+	import * as Alert from '$lib/components/alert';
+	import type { ValidationErrors } from '$lib/api';
 
 	const dialog = useDialog();
-	const user = $derived(await getUser(page.data.session.userId));
-	$effect(() => {
-		updateUser.fields.set({
-			avatarUrl: user.avatarUrl,
-			displayName: user.displayName,
-			details: {
-				firstName: user.details?.firstName,
-				lastName: user.details?.lastName,
-				websiteUrl: user.details?.websiteUrl,
-				githubUrl: user.details?.githubUrl,
-				linkedinUrl: user.details?.linkedinUrl,
-				redditUrl: user.details?.redditUrl
-			}
+	const user = await Account.get();
+
+	const errors = $state<ValidationErrors>({});
+	let avatar = $state<File | string | null>(user.avatarUrl);
+	async function clearCache() {
+		const confirm = await dialog.confirm(
+			'Clear cache ?',
+			'This action is non-destructive and clears local storage only.'
+		);
+
+		if (confirm) localStorage.clear();
+	}
+
+	async function submit() {
+		User.update({
+			userId: user.id,
+			avatarUrl: avatar
 		});
-	});
+	}
 </script>
 
-{#each updateUser.fields.allIssues() as issue}
-	<p>{issue.message}</p>
-{/each}
-
-<svelte:boundary>
-	{#snippet pending()}
-		Please wait...
-	{/snippet}
-	<form {...updateUser} enctype="multipart/form-data">
-		<div class="flex items-center justify-between gap-1 pb-2">
-			<h1 class="text-xl font-bold">Account Settings</h1>
-			<Separator class="w-min flex-1" />
-			<Button
-				type="button"
-				variant="outline"
-				onclick={async () =>
-					await dialog
-						.confirm('Clear Cache ?', 'Clearing your cache removes the local browsing history')
-						.ok(() => localStorage.clear())}
-			>
+<!-- Header settings -->
+<div class="flex items-center justify-between gap-4 pb-2">
+	<h1 class="text-xl font-bold">Account Settings</h1>
+	<Separator class="flex-1" />
+	<ButtonGroup.Root class="items-center">
+		<ButtonGroup.Root>
+			<Button size="sm" variant="outline" aria-label="Go to Profile">
+				Go to my Profile
+				<House />
+			</Button>
+		</ButtonGroup.Root>
+		<Separator class="h-4!" orientation="vertical" />
+		<ButtonGroup.Root>
+			<Button size="sm" variant="secondary" aria-label="Delete Localstorage" onclick={clearCache}>
 				Clear Cache
 				<Trash2 />
 			</Button>
-			<Button type="submit" variant="outline" class="w-min">
-				Update Profile
+			<Button size="sm" variant="default" aria-label="Update Profile" onclick={submit}>
+				Update
 				<Save />
 			</Button>
+		</ButtonGroup.Root>
+	</ButtonGroup.Root>
+</div>
+
+<Field.Set>
+	<Field.Group class="grid grid-cols-[auto_1fr] gap-2">
+		<Field.Field>
+			<Field.Label>Thumbnail</Field.Label>
+			<Thumbnail class="min-w-52" bind:value={avatar} />
+			<Field.Description>Your profile picture</Field.Description>
+			<Field.Error />
+		</Field.Field>
+
+		<Field.Group class="grid grid-cols-2 grid-rows-[min-content_min-content] pl-2">
+			<Field.Field class="col-span-2">
+				<Field.Label for="id">User ID</Field.Label>
+				<InputGroup.Root>
+					<InputGroup.Input id="id" autocomplete="off" autocorrect="off" readonly disabled value={user.id} />
+					<InputGroup.Addon align="inline-end">
+						<InputGroup.Copy value={user.id} />
+					</InputGroup.Addon>
+				</InputGroup.Root>
+				<Field.Description class="text-xs">Your unique, non-editable identifier</Field.Description>
+			</Field.Field>
+
+			<Field.Field>
+				<Field.Label>Login</Field.Label>
+				<Input value={user.login} />
+				<Field.Description>Your Permanent login handle</Field.Description>
+				<Field.Error />
+			</Field.Field>
+
+			<Field.Field>
+				<Field.Label>Display</Field.Label>
+				<Input value={user.displayName} />
+				<Field.Description>Used to publicly display a alternative name</Field.Description>
+				<Field.Error />
+			</Field.Field>
+
+			<Field.Field>
+				<Field.Label>First Name</Field.Label>
+				<Input value={user.login} />
+				<Field.Description>Display your first name</Field.Description>
+				<Field.Error />
+			</Field.Field>
+
+			<Field.Field>
+				<Field.Label>Last Name</Field.Label>
+				<Input value={user.displayName} />
+				<Field.Description>Display your last name</Field.Description>
+				<Field.Error />
+			</Field.Field>
+		</Field.Group>
+
+		<div class="col-span-full flex items-center justify-between gap-4 pb-2">
+			<h2 class="text-md font-bold">Social Settings</h2>
+			<Separator class="flex-1" />
 		</div>
 
-		<Field.Set class="grid grid-cols-1 gap-6 rounded bg-card p-6 md:grid-cols-4">
-			<Field.Group>
-				<Field.Field>
-					<Field.Label>Avatar</Field.Label>
-					<Field.Description>Upload a profile image.</Field.Description>
-					<Thumbnail src="https://github.com/w2wizard.png" {...updateUser.fields.avatarUrl.as('url')} />
-				</Field.Field>
+		<Field.Group class="col-span-full grid grid-cols-1 gap-4 sm:grid-cols-2">
+			<Field.Field>
+				<Field.Label for="website">Website</Field.Label>
+				<Input id="website" placeholder="https://example.com" autocomplete="off" autocorrect="off" />
+				<Field.Description class="text-xs">Personal or project website URL</Field.Description>
+			</Field.Field>
 
-				<Field.Separator />
+			<Field.Field>
+				<Field.Label for="github">GitHub</Field.Label>
+				<Input id="github" placeholder="https://github.com/username" autocomplete="off" autocorrect="off" />
+				<Field.Description class="text-xs">Link to your GitHub profile</Field.Description>
+			</Field.Field>
 
-				<Field.Field>
-					<Field.Label for="id">User ID</Field.Label>
-					<InputGroup.Root>
-						<InputGroup.Input id="id" autocomplete="off" autocorrect="off" readonly value={user.id} />
-						<InputGroup.Addon align="inline-end">
-							<InputGroup.Copy value={user.id} />
-						</InputGroup.Addon>
-					</InputGroup.Root>
-					<Field.Description class="text-xs">Your unique, non-editable identifier</Field.Description>
-				</Field.Field>
+			<Field.Field>
+				<Field.Label for="linkedin">LinkedIn</Field.Label>
+				<Input
+					id="linkedin"
+					placeholder="https://linkedin.com/in/username"
+					autocomplete="off"
+					autocorrect="off"
+				/>
+				<Field.Description class="text-xs">Link to your LinkedIn profile</Field.Description>
+			</Field.Field>
 
-				<Field.Field>
-					<Field.Label for="login">Login</Field.Label>
-					<Input id="login" type="text" name="login" disabled readonly value={user.login} />
-					<Field.Description class="text-xs">Your login handle</Field.Description>
-				</Field.Field>
-			</Field.Group>
+			<Field.Field>
+				<Field.Label for="reddit">Reddit</Field.Label>
+				<Input
+					id="reddit"
+					placeholder="https://reddit.com/user/username"
+					autocomplete="off"
+					autocorrect="off"
+				/>
+				<Field.Description class="text-xs">Link to your Reddit profile or user page</Field.Description>
+			</Field.Field>
+		</Field.Group>
 
-			<Field.Group class="md:col-span-3">
-				<Field.Field>
-					<Field.Label for="displayName">Display name</Field.Label>
-					<Field.Description class="text-xs">This name appears publicly</Field.Description>
-					<Input
-						id="displayName"
-						placeholder="x_johnny_silverhand_x"
-						autocorrect="off"
-						{...updateUser.fields.displayName.as('text')}
-					/>
-				</Field.Field>
-
-				<Field.Group class="grid grid-cols-2 gap-4">
-					<Field.Field>
-						<Field.Label for="firstName">First name</Field.Label>
-						<Input
-							id="firstName"
-							placeholder="John"
-							autocomplete="given-name"
-							autocorrect="off"
-							{...updateUser.fields.details.firstName.as('text')}
-						/>
-					</Field.Field>
-					<Field.Field>
-						<Field.Label for="lastName">Last name</Field.Label>
-						<Input
-							id="lastName"
-							placeholder="Doe"
-							autocomplete="family-name"
-							autocorrect="off"
-							{...updateUser.fields.details.lastName.as('text')}
-						/>
-					</Field.Field>
-				</Field.Group>
-
-				<Field.Separator />
-
-				<Field.Group class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-					<Field.Field>
-						<Field.Label for="website">Website</Field.Label>
-						<Field.Description class="text-xs">Personal or project website URL</Field.Description>
-						<Input
-							id="website"
-							placeholder="https://example.com"
-							autocomplete="off"
-							autocorrect="off"
-							{...updateUser.fields.details.websiteUrl.as('text')}
-						/>
-					</Field.Field>
-
-					<Field.Field>
-						<Field.Label for="github">GitHub</Field.Label>
-						<Field.Description class="text-xs">Link to your GitHub profile</Field.Description>
-						<Input
-							id="github"
-							placeholder="https://github.com/username"
-							autocomplete="off"
-							autocorrect="off"
-							{...updateUser.fields.details.githubUrl.as('text')}
-						/>
-					</Field.Field>
-
-					<Field.Field>
-						<Field.Label for="linkedin">LinkedIn</Field.Label>
-						<Field.Description class="text-xs">Link to your LinkedIn profile</Field.Description>
-						<Input
-							id="linkedin"
-							placeholder="https://linkedin.com/in/username"
-							autocomplete="off"
-							autocorrect="off"
-							{...updateUser.fields.details.linkedinUrl.as('text')}
-						/>
-					</Field.Field>
-
-					<Field.Field>
-						<Field.Label for="reddit">Reddit</Field.Label>
-						<Field.Description class="text-xs">Link to your Reddit profile or user page</Field.Description>
-						<Input
-							id="reddit"
-							placeholder="https://reddit.com/user/username"
-							autocomplete="off"
-							autocorrect="off"
-							{...updateUser.fields.details.redditUrl.as('text')}
-						/>
-					</Field.Field>
-				</Field.Group>
-
-				<Field.Separator />
-
-				<Field.Field>
-					<Field.Label for="login">Biography</Field.Label>
-					<Field.Description class="text-xs"
-						>You can write a small biography about yourself.</Field.Description
-					>
-					<MarkdownTextarea {...updateUser.fields.details.markdown.as('text')} />
-				</Field.Field>
-			</Field.Group>
-		</Field.Set>
-	</form>
-</svelte:boundary>
+		<Field.Separator class="col-span-full" />
+		<Field.Field class="col-span-full">
+			<Field.Label for="login">Biography</Field.Label>
+			<Field.Description class="text-xs">You can write a small biography about yourself.</Field.Description>
+			<MarkdownTextarea value={user.details?.markdown ?? ''} />
+		</Field.Field>
+	</Field.Group>
+</Field.Set>
+<Separator class="my-2" />
+<Alert.Root variant="default">
+	<CircleAlert />
+	<Alert.Title>Permeating changes</Alert.Title>
+	<Alert.Description>
+		<p>Some fields may require you to logout and login again when changing them.</p>
+	</Alert.Description>
+</Alert.Root>

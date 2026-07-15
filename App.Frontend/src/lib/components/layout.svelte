@@ -22,6 +22,7 @@
 		left: Snippet;
 		right: Snippet;
 
+		class?: string;
 		/** Classes to apply to the left container */
 		classL?: string;
 		/** Classes to apply to the right container */
@@ -42,7 +43,7 @@
 		cover?: boolean;
 	}
 
-	const { left, right, reverse = false, cover = false, variant = 'navbar', classL, classR }: Props = $props();
+	const { left, right, reverse = false, cover = false, variant = 'navbar', classL, classR, class: klass }: Props = $props();
 
 	// PaneForge decides its layout axis in JS before it ever mounts, so unlike the rest of this
 	// component that can't be expressed in pure CSS — `splitpane` is the one variant that needs a
@@ -67,7 +68,7 @@
 
 {#if variant === 'splitpane' && isDesktop.current}
 	<!-- Desktop only (gated by isDesktop above) — plain classes, no lg: needed here. -->
-	<Resizable.PaneGroup direction="horizontal" class="h-[calc(100svh-var(--header-height)-1px)] w-full">
+	<Resizable.PaneGroup direction="horizontal" class={cn("h-[calc(100svh-var(--header-height)-1px)] w-full", klass)}>
 		{#if reverse}
 			<Resizable.Pane defaultSize={80} class={cn('overflow-y-auto', classR)}>
 				{@render right()}
@@ -92,13 +93,14 @@
 		class={cn(
 			!cover && variant !== 'splitpane' && 'container mx-auto',
 			'flex w-full flex-1 flex-col',
-			variant === 'center' && 'lg:my-4'
+			variant === 'center' && 'lg:my-4',
 		)}
 	>
 		<div
 			class={cn(
 				'group/sidebar-wrapper 3xl:fixed:container 3xl:fixed:px-3 flex w-full flex-1 items-start gap-4 [--sidebar-width:24rem] has-data-[variant=inset]:bg-sidebar',
-				flexDirection
+				flexDirection,
+				klass
 			)}
 		>
 			<div

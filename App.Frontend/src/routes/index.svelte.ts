@@ -5,6 +5,7 @@
 
 import {
 	Archive,
+	Bot,
 	FlaskConical,
 	GraduationCap,
 	HeartHandshake,
@@ -44,6 +45,11 @@ const meta: Partial<Record<RouteId, MetaEntry>> = {
 	'/(app)/settings/profile': {
 		icon: UserPen,
 		label: 'Profile',
+		scopes: ['user:settings:read']
+	},
+	'/(app)/settings/apps': {
+		icon: Bot,
+		label: 'Applications',
 		scopes: ['user:settings:read']
 	},
 	'/(app)/settings/features': {
