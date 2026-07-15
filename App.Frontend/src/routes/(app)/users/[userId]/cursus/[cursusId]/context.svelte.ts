@@ -17,11 +17,11 @@ export class Context {
 	) {}
 
 	get userCursus() {
-		return UserCursus.getPage({ userId: this.userId(), size: 100 });
+		return UserCursus.getPageByUser({ userId: this.userId(), size: 100 });
 	}
 
 	get track() {
-		return Cursus.getTrack({ id: this.cursusId() })
+		return Cursus.getTrack(this.cursusId())
 	}
 
 	attachment(tree: GalaxyNode<TrackNode>): Attachment<SVGElement> {

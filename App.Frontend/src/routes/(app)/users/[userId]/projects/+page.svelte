@@ -1,157 +1,223 @@
 <script lang="ts">
-	import * as Item from '$lib/components/item';
-	import * as Empty from '$lib/components/empty';
-	import * as InputGroup from '$lib/components/input-group';
-	import * as Tabs from '$lib/components/tabs';
-	import * as Avatar from '$lib/components/avatar';
 	import Layout from '$lib/components/layout.svelte';
-	import { Badge } from '$lib/components/badge';
-	import { Search, Archive, FolderOpenIcon, Globe, Lock, Trash2, CalendarCheck } from '@lucide/svelte';
-	import * as Projects from '$lib/remotes/project.remote';
+	import * as v from 'valibot';
+	import * as InputGroup from '$lib/components/input-group';
+	import * as Field from '$lib/components/field';
+	import * as Tabs from '$lib/components/tabs';
+	import * as Select from '$lib/components/select';
+	import * as Empty from '$lib/components/empty';
+	import * as Item from '$lib/components/item';
+	import * as Projects from '$lib/remotes/projects.remote';
 	import * as UserProjects from '$lib/remotes/user-project.remote';
+	import { Archive, FolderCode, Search } from '@lucide/svelte';
 	import useDebounce from '$lib/hooks/debounce.svelte';
-	import type { PageProps } from './$types';
+	import useSearchParams from '$lib/hooks/url.svelte';
 	import { page } from '$app/state';
+	import type { PageProps } from './$types';
+	import { EntityObjectState } from '$lib/api';
+	import { Separator } from '$lib/components/separator';
+	import Paginate from '$lib/components/paginate.svelte';
+	import teleport from '$lib/hooks/teleport.svelte';
+	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
 
-	const { data, params }: PageProps = $props();
-	const isOwner = $derived(data.session.userId === params.userId);
-	const formatter = new Intl.DateTimeFormat(page.data.locale, {
-		year: 'numeric',
-		month: 'short',
-		day: 'numeric'
+	const { params }: PageProps = $props();
+	const states = ['Any', ...EntityObjectState.options];
+	const belongs = $derived(page.data.session.userId === params.userId);
+
+	const url = useSearchParams({
+		index: v.fallback(
+			v.pipe(
+				v.string(),
+				v.transform(Number),
+				v.check((n) => !isNaN(n) && n > 0)
+			),
+			1
+		),
+		search: v.fallback(v.string(), ''),
+		status: v.fallback(v.picklist(states), 'Any'),
+		tab: v.fallback(v.picklist(['subscribed', 'available']), 'subscribed')
 	});
 
-	let search = $state('');
-	let pageNum = $state(1);
-	let tab = $derived<'available' | 'subscribed'>(isOwner ? 'available' : 'subscribed');
-	const debounce = useDebounce((val: string) => {
-		search = val;
-	}, 400);
+	const tab = url.query('tab');
+	const search = url.query('search');
+	const status = url.query('status');
+	const index = url.query('index');
 
-	const result = $derived(
-		tab === 'available'
-			? await Projects.getPage({
-					name: search,
-					page: pageNum,
-					sortBy: 'deprecated',
-					sort: 'Ascending'
-				})
-			: await UserProjects.getByUserPage({
-					userId: params.userId,
-					name: search,
-					page: pageNum
-				})
-	);
+	const debounced = useDebounce((query: string) => {
+		if (query.length <= 0) search.clear();
+		else search.value = query;
+	});
 </script>
 
-<Layout cover variant="navbar">
+{#snippet tile(name: string, description: string, id: string)}
+	<Item.Root variant="outline" class="min-h-40">
+		{#snippet child({ props })}
+			<a href="/users/{params.userId}/projects/{id}" {...props}>
+				<Item.Header class="flex-col">
+					<Archive />
+				</Item.Header>
+				<Item.Content>
+					<Item.Title>{name}</Item.Title>
+					<Item.Description>{description}</Item.Description>
+				</Item.Content>
+			</a>
+		{/snippet}
+	</Item.Root>
+{/snippet}
+
+{#snippet loader()}
+	<div class="grid grid-cols-2 gap-4 p-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+		<Skeleton class="h-40" />
+		<Skeleton class="h-40" />
+		<Skeleton class="h-40" />
+		<Skeleton class="h-40" />
+		<Skeleton class="h-40" />
+	</div>
+{/snippet}
+
+{#snippet empty()}
+	<Empty.Root class="col-span-full">
+		<Empty.Header>
+			<Empty.Media variant="icon">
+				<FolderCode />
+			</Empty.Media>
+			<Empty.Title>Nothing here</Empty.Title>
+			<Empty.Description>
+				Nothing matched your criteria, thus we have nothing to show for you.
+			</Empty.Description>
+		</Empty.Header>
+	</Empty.Root>
+{/snippet}
+
+<Layout cover>
 	{#snippet left()}
-		<aside class="flex h-full flex-col gap-4 border-r bg-card p-4">
-			<div class="flex items-center gap-2">
-				<Archive class="size-4 text-muted-foreground" />
-				<h2 class="text-sm font-semibold">Projects</h2>
-			</div>
+		<Field.Set class="h-full border-r border-b bg-card p-4">
+			<Field.Group class="gap-2">
+				<Field.Field>
+					<InputGroup.Root>
+						<InputGroup.Input
+							placeholder="Search..."
+							value={search.value}
+							oninput={(e) => debounced.fn(e.currentTarget.value)}
+						/>
+						<InputGroup.Addon>
+							<Search />
+						</InputGroup.Addon>
+					</InputGroup.Root>
+				</Field.Field>
 
-			<InputGroup.Root>
-				<InputGroup.Input
-					placeholder="Search..."
-					value={search}
-					oninput={(e) => debounce.fn(e.currentTarget.value)}
-				/>
-				<InputGroup.Addon>
-					<Search class="size-4" />
-				</InputGroup.Addon>
-			</InputGroup.Root>
+				<Field.Field>
+					<Tabs.Root
+						bind:value={tab.value}
+						onValueChange={() => {
+							debounced.destroy();
+							search.clear();
+							status.clear();
+							index.clear();
+						}}
+					>
+						<Tabs.List class="w-full">
+							{#if belongs}
+								<Tabs.Trigger value="available" class="flex-1">Available</Tabs.Trigger>
+							{/if}
+							<Tabs.Trigger value="subscribed" class="flex-1">Subscribed</Tabs.Trigger>
+						</Tabs.List>
+					</Tabs.Root>
+				</Field.Field>
 
-			<Tabs.Root
-				bind:value={tab}
-				onValueChange={() => {
-					search = '';
-					pageNum = 1;
-				}}
-			>
-				<Tabs.List class="w-full">
-					<Tabs.Trigger value="available" class="flex-1">Available</Tabs.Trigger>
-					<Tabs.Trigger value="subscribed" class="flex-1">Subscribed</Tabs.Trigger>
-				</Tabs.List>
-			</Tabs.Root>
-		</aside>
+				{#if belongs && tab.value === 'subscribed'}
+					<Field.Separator />
+					<Field.Field>
+						<Field.Label for="cursus-state">Cursus State</Field.Label>
+						<Select.Root type="single" name="cursus-state" bind:value={status.value}>
+							<Select.Trigger>
+								{status.value}
+							</Select.Trigger>
+							<Select.Content>
+								<Select.Group>
+									<Select.Label>States</Select.Label>
+									{#each states as state (state)}
+										<Select.Item value={state} label={state}>
+											{state}
+										</Select.Item>
+									{/each}
+								</Select.Group>
+							</Select.Content>
+						</Select.Root>
+					</Field.Field>
+				{/if}
+			</Field.Group>
+		</Field.Set>
 	{/snippet}
 
 	{#snippet right()}
-		<Item.Group class="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
-			{#each result.data as entity (entity.id)}
-				{@const isUserProject = 'project' in entity}
-				{@const project = isUserProject ? entity.project : entity}
-				{@const state = isUserProject ? entity.state : null}
+		<span class="flex items-center gap-3 py-2">
+			<p class="font-bold whitespace-nowrap">Projects</p>
+			<Separator orientation="horizontal" class="flex-1" />
+			<span id="pagination"></span>
+		</span>
 
-				<Item.Root variant="outline">
-					{#snippet child({ props })}
-						<a href="/users/{params.userId}/projects/{project.id}" {...props}>
-							<Item.Media>
-								<Avatar.Root class="rounded-xs border">
-									<Avatar.Fallback class="rounded-xs">
-										{project.name ? project.name.charAt(0).toUpperCase() : '?'}
-									</Avatar.Fallback>
-								</Avatar.Root>
-							</Item.Media>
-							<Item.Content>
-								<Item.Title>{project.name}</Item.Title>
-								<Item.Description>{project.description}</Item.Description>
-							</Item.Content>
-							<Item.Actions />
-							<Item.Footer class="justify-start">
-								{#if project.public}
-									<Badge variant="outline">
-										<Globe class="size-3" />
-										Public
-									</Badge>
-								{:else}
-									<Badge variant="secondary">
-										<Lock class="size-3" />
-										Private
-									</Badge>
-								{/if}
-								{#if project.deprecated}
-									<Badge variant="destructive">
-										<Trash2 class="size-3" />
-										Deprecated
-									</Badge>
-								{/if}
-								{#if state}
-									<Badge variant="secondary">
-										{state}
-									</Badge>
-								{/if}
-								{#if isUserProject}
-									<Badge variant="secondary">
-										<CalendarCheck class="size-3" />
-										{formatter.format(new Date(entity.createdAt))}
-									</Badge>
-								{/if}
-							</Item.Footer>
-						</a>
-					{/snippet}
-				</Item.Root>
-			{:else}
-				<div class="col-span-1 sm:col-span-2 lg:col-span-3">
-					<Empty.Root
-						class="flex h-full flex-col items-center justify-center rounded-lg border border-dashed bg-muted/20 p-12 text-center"
-					>
-						<Empty.Header class="flex flex-col items-center gap-3">
-							<Empty.Media variant="icon" class="rounded-full bg-muted p-4">
-								<FolderOpenIcon class="h-8 w-8 text-muted-foreground" />
-							</Empty.Media>
-							<Empty.Title class="text-lg font-semibold">No Projects Found</Empty.Title>
-							<Empty.Description class="max-w-sm text-sm text-muted-foreground">
-								{search
-									? 'No projects match your search criteria.'
-									: "You don't have any projects assigned yet. When you do, they will appear here."}
-							</Empty.Description>
-						</Empty.Header>
-					</Empty.Root>
+		{#if belongs && tab.value === 'subscribed'}
+			<svelte:boundary>
+				{@const page = await UserProjects.getPageByUser({
+					page: index.value,
+					userId: params.userId,
+					name: search.value,
+					//@ts-expect-error Trust me bro
+					state: status.value === 'Any' ? undefined : status.value
+				})}
+
+				<span {@attach teleport('pagination')} class="pr-4">
+					<Paginate
+						page={index.value}
+						onPageChange={(p) => (index.value = p)}
+						perPage={page.perPage}
+						count={page.count}
+					/>
+				</span>
+
+				{#snippet pending()}
+					{@render loader()}
+				{/snippet}
+
+				<div class="grid grid-cols-2 gap-4 p-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+					{#each page.data as session (session.id)}
+						{@const project = session.project}
+						{@render tile(project.name, project.description, project.id)}
+					{:else}
+						{@render empty()}
+					{/each}
 				</div>
-			{/each}
-		</Item.Group>
+			</svelte:boundary>
+		{:else}
+			<svelte:boundary>
+				{@const page = await Projects.getPage({
+					page: index.value,
+					size: 1,
+					name: search.value
+				})}
+
+				{#snippet pending()}
+					{@render loader()}
+				{/snippet}
+
+				<span {@attach teleport('pagination')} class="pr-4">
+					<Paginate
+						page={index.value}
+						onPageChange={(p) => (index.value = p)}
+						perPage={page.perPage}
+						count={page.count}
+					/>
+				</span>
+
+				<div class="grid grid-cols-2 gap-4 p-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+					{#each page.data as project (project.id)}
+						{@render tile(project.name, project.description, project.id)}
+					{:else}
+						{@render empty()}
+					{/each}
+				</div>
+			</svelte:boundary>
+		{/if}
 	{/snippet}
 </Layout>

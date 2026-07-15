@@ -70,11 +70,19 @@
 					</Item.Media>
 
 					<Item.Content class="min-w-0 flex-1">
-						<Item.Title class="gap-1 truncate text-sm font-normal">
-							{#if item.reviewer}
+						<Item.Title class="gap-1 truncate text-xs font-normal">
+							{#if item.state === 'Cancelled'}
+								<span class="font-bold text-destructive">Cancelled</span>
+								<span class="text-muted-foreground/40 select-none">•</span>
+								<span class="text-muted-foreground line-through">{item.userProject.project.name}</span>
+							{:else if item.state === 'Pending'}
+								<span class="animate-pulse font-bold text-amber-600 dark:text-amber-500">Seeking Review</span>
+								<span class="text-muted-foreground/40 select-none">•</span>
+								<span>{item.userProject.project.name}</span>
+							{:else}
 								{#if (item.kind & ReviewKind.Self) !== 0}
 									<span class="font-bold">You</span>
-								{:else}
+								{:else if item.reviewer}
 									<HoverCard.Root>
 										<HoverCard.Trigger
 											href="/users/{item.reviewer.id}"
@@ -84,32 +92,52 @@
 										>
 											@{item.reviewer.displayName}
 										</HoverCard.Trigger>
-										<HoverCard.Content class="w-80">
-											<div class="flex space-x-4">
-												<Avatar.Root>
-													<Avatar.Image src={item.reviewer.avatarUrl} />
-													<Avatar.Fallback>{item.reviewer.login.slice(0, 2)}</Avatar.Fallback>
+										<HoverCard.Content class="text-left">
+											<div class="flex gap-3">
+												<!-- Avatar -->
+												<Avatar.Root class="size-12 shrink-0 rounded-sm border">
+													<Avatar.Image
+														class="rounded-sm"
+														src={item.reviewer.avatarUrl ?? 'https://placehold.co/400'}
+													/>
+													<Avatar.Fallback class="rounded-sm">
+														{item.reviewer.login.slice(0, 2).toUpperCase()}
+													</Avatar.Fallback>
 												</Avatar.Root>
-												<div class="space-y-1">
-													<h4 class="text-sm font-semibold">@{item.reviewer.displayName}</h4>
-													<p class="text-sm">Your evaluator for {item.userProject.project.name}</p>
-													<div class="flex items-center pt-2">
-														<CalendarDaysIcon class="me-2 size-4 opacity-70" />
-														<span class="text-xs text-muted-foreground">
-															Joined {reviewerFormatter.format(new Date(item.reviewer.createdAt))}
-														</span>
-													</div>
+
+												<div class="flex-1 space-y-3">
+														<h4 class="text-sm leading-none font-bold">
+															{item.reviewer.displayName}
+															<span class="ml-1 text-xs font-normal text-muted-foreground">
+																@{item.reviewer.login}
+															</span>
+														</h4>
+														<div class="flex items-center text-xs text-muted-foreground">
+															<CalendarDaysIcon class="me-1.5 size-3.5 opacity-70" />
+															<span>Joined {reviewerFormatter.format(new Date(item.reviewer.createdAt))}</span>
+														</div>
 												</div>
 											</div>
 										</HoverCard.Content>
 									</HoverCard.Root>
+								{:else}
+									<span class="font-bold">Someone</span>
 								{/if}
-								<span>reviewed</span>
+
+								{#if item.state === 'InProgress'}
+									<span class="text-muted-foreground">
+										{(item.kind & ReviewKind.Self) !== 0 ? 'are' : 'is'} reviewing
+									</span>
+								{:else}
+									<span class="text-muted-foreground">reviewed</span>
+								{/if}
+
+								<span class="font-medium">{item.userProject.project.name}</span>
 							{/if}
-							{item.userProject.project.name}
 						</Item.Title>
-						<Item.Description class="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
-							<Badge variant="outline" class="rounded-sm">
+
+						<Item.Description class="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+							<Badge variant="outline" class="rounded-sm font-normal">
 								{#if (item.kind & ReviewKind.Self) !== 0}
 									Self
 								{:else if (item.kind & ReviewKind.Peer) !== 0}

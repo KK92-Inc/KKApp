@@ -20,6 +20,7 @@ export default function useDebounce<Args extends unknown[]>(
 	return {
 		get fn() {
 			return debounced;
-		}
+		},
+		destroy: () => debounced.destroy()
 	};
 }

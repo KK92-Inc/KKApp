@@ -5,7 +5,7 @@
 
 import * as v from 'valibot';
 import { query, getRequestEvent } from '$app/server';
-import { EntityObjectState, Filters, Problem } from '$lib/api';
+import { EntityObjectState, Filters, paginate, Problem } from '$lib/api';
 
 // ============================================================================
 
@@ -35,7 +35,7 @@ export const get = query(Filters.id, async (id) => {
 /** Paginated response for a user's cursus subscriptions */
 export const getPageByUser = query(PageByUserSchema, async ({ userId, ...params }) => {
 	const { locals } = getRequestEvent();
-	const { error, data } = await locals.api.GET('/users/{userId}/cursus', {
+	const { response, error, data } = await locals.api.GET('/users/{userId}/cursus', {
 		params: {
 			path: { userId },
 			query: {
@@ -50,7 +50,7 @@ export const getPageByUser = query(PageByUserSchema, async ({ userId, ...params 
 	});
 
 	if (error || !data) Problem.throw(error);
-	return data;
+	return paginate(data, response);
 });
 
 /** Get a user's subscription to a specific cursus */

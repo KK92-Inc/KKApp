@@ -2403,7 +2403,10 @@ export interface paths {
             parameters: {
                 query?: {
                     "filter[user_project_id]"?: string;
+                    /** @description User conducting a review */
                     "filter[reviewer_id]"?: string;
+                    /** @description User receiving a review */
+                    "filter[reviewee_id]"?: string;
                     "filter[rubric_id]"?: string;
                     "filter[kind]"?: components["schemas"]["ReviewKinds"];
                     "filter[status]"?: components["schemas"]["ReviewState"];
@@ -7950,8 +7953,8 @@ export interface components {
             /** Format: uuid */
             goalId: string;
             state: components["schemas"]["EntityObjectState"];
-            goal?: components["schemas"]["GoalDO"];
-            user?: null | components["schemas"]["UserLightDO"];
+            goal: components["schemas"]["GoalDO"];
+            user: components["schemas"]["UserLightDO"];
         };
         UserLightDO: {
             /** Format: uuid */

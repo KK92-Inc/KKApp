@@ -6,6 +6,7 @@
 import * as v from 'valibot';
 import { query, command, getRequestEvent } from '$app/server';
 import { EntityObjectState, Filters, Problem } from '$lib/api';
+import { paginate } from '../api';
 
 // ============================================================================
 
@@ -46,7 +47,7 @@ export const get = query(Filters.id, async (id) => {
 /** Paginated response for a user's project memberships */
 export const getPageByUser = query(PageByUserSchema, async ({ userId, ...params }) => {
 	const { locals } = getRequestEvent();
-	const { error, data } = await locals.api.GET('/users/{userId}/projects', {
+	const { response, error, data } = await locals.api.GET('/users/{userId}/projects', {
 		params: {
 			path: { userId },
 			query: {
@@ -62,7 +63,7 @@ export const getPageByUser = query(PageByUserSchema, async ({ userId, ...params 
 	});
 
 	if (error || !data) Problem.throw(error);
-	return data;
+	return paginate(data, response);
 });
 
 /** Get a user's membership on a specific project */

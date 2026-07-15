@@ -9,7 +9,6 @@
 	import * as Account from '$lib/remotes/account.remote';
 	import Reviews from './reviews.svelte';
 	import { page } from '$app/state';
-	import Separator from '$lib/components/separator/separator.svelte';
 
 	function feed(page: number) {
 		return Account.getNotificationPage({

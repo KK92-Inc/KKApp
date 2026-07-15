@@ -1,179 +1,228 @@
 <script lang="ts">
-	import Layout from '$lib/components/layout.svelte';
-	import * as Item from '$lib/components/item';
-	import * as Avatar from '$lib/components/avatar';
-	import * as Card from '$lib/components/card';
+	import * as v from 'valibot';
+	import * as InputGroup from '$lib/components/input-group';
 	import * as Empty from '$lib/components/empty';
-	import * as Pagination from '$lib/components/pagination';
-	import { Button } from '$lib/components/button';
-	import { FolderOpen, FolderCode, Users } from '@lucide/svelte';
-	import { goto } from '$app/navigation';
+	import * as Item from '$lib/components/item';
+	import * as Users from '$lib/remotes/user.remote';
+	import {
+		Archive,
+		ArrowDownWideNarrow,
+		ArrowUpNarrowWide,
+		CalendarDays,
+		FolderCode,
+		Search,
+	} from '@lucide/svelte';
+	import useDebounce from '$lib/hooks/debounce.svelte';
+	import useSearchParams from '$lib/hooks/url.svelte';
 	import { page } from '$app/state';
-	import { getUsers } from '$lib/remotes/user.remote';
+	import { Order } from '$lib/api';
+	import { Separator } from '$lib/components/separator';
+	import Paginate from '$lib/components/paginate.svelte';
+	import teleport from '$lib/hooks/teleport.svelte';
+	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
+	import type { components } from '$lib/api/api';
+	import { Button } from '$lib/components/button';
+	import * as Avatar from '$lib/components/avatar';
+	import { DateFormatter } from '@internationalized/date';
+	import Checkbox from '$lib/components/checkbox/checkbox.svelte';
+	import * as Tooltip from '$lib/components/tooltip';
+	import Label from '$lib/components/label/label.svelte';
+	import { Toggle } from '$lib/components/toggle';
+	import * as Select from '$lib/components/select';
 
-	const currentPage = $derived(Number(page.url.searchParams.get('page') ?? 1));
-	const users = $derived(await getUsers({ page: currentPage }));
+	const orderByOptions = v.picklist(["CreatedAt", "UpdatedAt"]);
+	const url = useSearchParams({
+		index: v.fallback(
+			v.pipe(
+				v.string(),
+				v.transform(Number),
+				v.check((n) => !isNaN(n) && n > 0)
+			),
+			1
+		),
+		search: v.fallback(v.string(), ''),
+		order: v.fallback(Order, 'Ascending'),
+		orderBy: v.fallback(orderByOptions, 'CreatedAt'),
+		login: v.fallback(v.boolean(), false)
+	});
 
-	function getInitials(user: typeof users.data[number]): string {
-		const first = user.details?.firstName?.[0] ?? '';
-		const last = user.details?.lastName?.[0] ?? '';
-		return (first + last).toUpperCase() || user.login[0].toUpperCase();
-	}
+	const login = url.query('login');
+	const search = url.query('search');
+	const index = url.query('index');
+	const order = url.query('order');
+	const orderBy = url.query('orderBy');
 
-	function getDisplayName(user: typeof users.data[number]): string {
-		const { details } = user;
-		if (details?.firstName || details?.lastName) {
-			return [details.firstName, details.lastName].filter(Boolean).join(' ');
-		}
-		return user.displayName ?? user.login;
-	}
+	const debounced = useDebounce((query: string) => {
+		if (query.length <= 0) search.clear();
+		else search.value = query;
+	});
 
-	function buildPageUrl(p: number): string {
-		const params = new URLSearchParams(page.url.searchParams);
-		params.set('page', String(p));
-		return `?${params}`;
-	}
+	const formatter = new DateFormatter(page.data.locale, {
+		day: 'numeric',
+		month: 'long',
+		year: 'numeric'
+	});
 </script>
 
-<svelte:boundary>
-	<Layout>
-		{#snippet left()}
-			<div class="my-4 grid gap-2">
-				<Card.Root class="py-0 shadow-none">
-					<Card.Content class="flex items-center gap-3 p-3">
-						<div class="bg-muted flex size-10 shrink-0 items-center justify-center rounded-md">
-							<Users class="text-muted-foreground size-5" />
-						</div>
-						<div class="min-w-0 flex-1">
-							<h1 class="text-sm font-semibold leading-tight">Users</h1>
-							<p class="text-muted-foreground text-xs">
-								{users.count} user{users.count === 1 ? '' : 's'} total
-							</p>
-						</div>
-					</Card.Content>
-				</Card.Root>
+{#snippet tile(user: components['schemas']['UserDO'])}
+	<Item.Root variant="outline">
+		{#snippet child({ props })}
+			<a href="/users/{user.id}" {...props} class="grid rounded border">
+				<Avatar.Root class="h-40 w-full rounded-none border-b">
+					<Avatar.Image src={user.avatarUrl} alt={user.login} class="object-cover" />
+					<Avatar.Fallback class="rounded-none text-xl font-medium">
+						{user.displayName?.slice(0, 2)}
+					</Avatar.Fallback>
+				</Avatar.Root>
 
-				{#if users.pages > 1}
-					<Card.Root class="py-0 shadow-none">
-						<Card.Content class="p-3">
-							<p class="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
-								Page
-							</p>
-							<p class="text-sm">{currentPage} of {users.pages}</p>
-						</Card.Content>
-					</Card.Root>
-				{/if}
-			</div>
+				<Item.Content class="border-b p-2">
+					<Item.Title class="text-md items-center font-semibold">
+						{user.displayName} <span class="text-xs text-muted-foreground">@{user.login}</span>
+					</Item.Title>
+					<Item.Description class="text-xs">
+						<div class="flex items-center text-xs text-muted-foreground">
+							<CalendarDays class="me-1.5 size-3.5 opacity-70" />
+							<span>Joined {formatter.format(new Date(user.createdAt))}</span>
+						</div>
+					</Item.Description>
+				</Item.Content>
+
+				<Item.Actions class="p-2" onclick={(e) => e.stopPropagation()}>
+					<Button href="/users/{user.id}/projects" variant="outline" size="icon-sm">
+						<Archive class="size-3" />
+					</Button>
+				</Item.Actions>
+			</a>
+		{/snippet}
+	</Item.Root>
+{/snippet}
+
+{#snippet loader()}
+	<div class="grid grid-cols-2 gap-4 p-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+		<Skeleton class="h-60" />
+		<Skeleton class="h-60" />
+		<Skeleton class="h-60" />
+		<Skeleton class="h-60" />
+		<Skeleton class="h-60" />
+	</div>
+{/snippet}
+
+{#snippet empty()}
+	<Empty.Root class="col-span-full">
+		<Empty.Header>
+			<Empty.Media variant="icon">
+				<FolderCode />
+			</Empty.Media>
+			<Empty.Title>Nothing here</Empty.Title>
+			<Empty.Description>
+				Nothing matched your criteria, thus we have nothing to show for you.
+			</Empty.Description>
+		</Empty.Header>
+	</Empty.Root>
+{/snippet}
+
+<div class="container mx-auto px-4">
+	<span class="flex items-center gap-2 py-2">
+		<p class="pr-4 font-bold whitespace-nowrap">Users</p>
+		<InputGroup.Root class="w-auto">
+			<InputGroup.Input
+				placeholder="Search by {login.value ? 'login' : 'display name'}..."
+				value={search.value}
+				oninput={(e) => debounced.fn(e.currentTarget.value)}
+			/>
+			<InputGroup.Addon>
+				<Search />
+			</InputGroup.Addon>
+			<InputGroup.Addon align="inline-end" class="text-xs">
+				<Tooltip.Root delayDuration={100}>
+					<Tooltip.Trigger>
+						{#snippet child({ props })}
+							<span {...props} class="flex items-center gap-1">
+								<Label class="text-xs" for="filter-login">Login</Label>
+								<Checkbox
+									id="filter-login"
+									checked={login.value}
+									onCheckedChange={(v) => {
+										if (v) login.value = v;
+										else login.clear();
+									}}
+								/>
+							</span>
+						{/snippet}
+					</Tooltip.Trigger>
+					<Tooltip.Content>
+						<p>Search user's by their login handle instead</p>
+					</Tooltip.Content>
+				</Tooltip.Root>
+			</InputGroup.Addon>
+		</InputGroup.Root>
+
+		<Separator orientation="vertical" class="h-5!" />
+
+		<Toggle
+			aria-label="Toggle bookmark"
+			size="sm"
+			variant="outline"
+			onclick={() => {
+				order.value = order.value === 'Ascending' ? 'Descending' : 'Ascending';
+			}}
+		>
+			{#if order.value === 'Ascending'}
+				<ArrowUpNarrowWide />
+			{:else}
+				<ArrowDownWideNarrow />
+			{/if}
+		</Toggle>
+
+		<Select.Root type="single" name="favoriteFruit" bind:value={orderBy.value}>
+			<Select.Trigger class="w-45">
+				{orderBy.value}
+			</Select.Trigger>
+			<Select.Content>
+				<Select.Group>
+					<Select.Label>Fields</Select.Label>
+					{#each orderByOptions.options as order (order)}
+						<Select.Item value={order} label={order}>
+							{order}
+						</Select.Item>
+					{/each}
+				</Select.Group>
+			</Select.Content>
+		</Select.Root>
+
+		<Separator orientation="horizontal" class="flex-1" />
+		<span id="pagination"></span>
+	</span>
+
+	<svelte:boundary>
+		{@const page = await Users.getPage({
+			size: 100,
+			page: index.value,
+			display: login.value ? undefined : search.value,
+			login: login.value ? search.value : undefined,
+			sort: order.value,
+			sortBy: orderBy.value
+		})}
+
+		<span {@attach teleport('pagination')} class="pr-4">
+			<Paginate
+				page={index.value}
+				onPageChange={(p) => (index.value = p)}
+				perPage={page.perPage}
+				count={page.count}
+			/>
+		</span>
+
+		{#snippet pending()}
+			{@render loader()}
 		{/snippet}
 
-		{#snippet right()}
-			<div class="my-4 grid gap-2">
-				<Card.Root class="py-0 shadow-none">
-					<Card.Content class="p-0">
-						{#if users.data.length > 0}
-							<Item.Group>
-								{#each users.data as user, index (user.id)}
-									<Item.Root
-										class="cursor-pointer rounded-none px-3 transition-colors first:rounded-t-xl last:rounded-b-xl hover:bg-accent/50"
-										onclick={() => goto(`/users/${user.id}`)}
-									>
-										<Item.Media>
-											<Avatar.Root class="size-9 shrink-0">
-												{#if user.avatarUrl}
-													<Avatar.Image src={user.avatarUrl} alt={getDisplayName(user)} />
-												{/if}
-												<Avatar.Fallback class="text-xs font-medium">
-													{getInitials(user)}
-												</Avatar.Fallback>
-											</Avatar.Root>
-										</Item.Media>
-
-										<Item.Content>
-											<Item.Title class="text-sm font-semibold">
-												{getDisplayName(user)}
-											</Item.Title>
-											<Item.Description class="text-xs">@{user.login}</Item.Description>
-										</Item.Content>
-
-										<Item.Actions
-											class="gap-1.5"
-											onclick={(e) => e.stopPropagation()}
-										>
-											<Button
-												href="/users/{user.id}/projects"
-												variant="outline"
-												size="sm"
-												class="h-7 gap-1.5 text-xs"
-											>
-												<FolderOpen class="size-3" />
-												Projects
-											</Button>
-										</Item.Actions>
-									</Item.Root>
-
-									{#if index !== users.data.length - 1}
-										<Item.Separator />
-									{/if}
-								{/each}
-							</Item.Group>
-						{:else}
-							<div class="p-6">
-								<Empty.Root>
-									<Empty.Header>
-										<Empty.Media variant="icon">
-											<FolderCode />
-										</Empty.Media>
-										<Empty.Title>No users yet</Empty.Title>
-										<Empty.Description>There are no users, strange...</Empty.Description>
-									</Empty.Header>
-								</Empty.Root>
-							</div>
-						{/if}
-					</Card.Content>
-				</Card.Root>
-
-				{#if users.pages > 1}
-					<div class="flex justify-center">
-						<Pagination.Root count={users.count} perPage={users.perPage} page={currentPage}>
-							{#snippet children({ pages, currentPage: cp })}
-								<Pagination.Content>
-									<Pagination.Item>
-										<Pagination.PrevButton
-											href={cp > 1 ? buildPageUrl(cp - 1) : undefined}
-											disabled={cp <= 1}
-										/>
-									</Pagination.Item>
-
-									{#each pages as p (p.key)}
-										{#if p.type === 'ellipsis'}
-											<Pagination.Item>
-												<Pagination.Ellipsis />
-											</Pagination.Item>
-										{:else}
-											<Pagination.Item>
-												<Pagination.Link
-													href={buildPageUrl(p.value)}
-													page={p}
-													isActive={cp === p.value}
-												>
-													{p.value}
-												</Pagination.Link>
-											</Pagination.Item>
-										{/if}
-									{/each}
-
-									<Pagination.Item>
-										<Pagination.NextButton
-											href={cp < users.pages ? buildPageUrl(cp + 1) : undefined}
-											disabled={cp >= users.pages}
-										/>
-									</Pagination.Item>
-								</Pagination.Content>
-							{/snippet}
-						</Pagination.Root>
-					</div>
-				{/if}
-			</div>
-		{/snippet}
-	</Layout>
-</svelte:boundary>
+		<div class="flex gap-4">
+			{#each page.data as user (user.id)}
+				{@render tile(user)}
+			{:else}
+				{@render empty()}
+			{/each}
+		</div>
+	</svelte:boundary>
+</div>

@@ -28,12 +28,14 @@ public class UserGoalDO(UserGoal userGoal) : BaseEntityDO<UserGoal>(userGoal)
     /// <summary>
     /// The goal the user is enrolled in.
     /// </summary>
+    [Required]
     public GoalDO Goal { get; set; } = userGoal.Goal;
 
     /// <summary>
     /// The user enrolled in this goal.
     /// </summary>
-    public UserLightDO? User { get; set; } = userGoal.User;
+    [Required]
+    public UserLightDO User { get; set; } = userGoal.User;
 
     public static implicit operator UserGoalDO?(UserGoal? userGoal) =>
         userGoal is null ? null : new(userGoal);
