@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Button, buttonVariants } from '$lib/components/button/index.js';
 	import { CircleAlert, ExternalLink, Info, Plus } from '@lucide/svelte';
-	import * as SSH from '$lib/remotes/ssh.remote';
+	import * as Account from '$lib/remotes/account.remote';
 	import * as Dialog from '$lib/components/dialog/index.js';
 	import { Input } from '$lib/components/input/index.js';
 	import * as Field from '$lib/components/field';
@@ -12,12 +12,12 @@
 	let open = $state(false);
 	let title = $state('');
 	let publicKey = $state('');
-	let loading = $derived(SSH.create.pending > 0);
+	let loading = $derived(Account.addKey.pending > 0);
 	let disabled = $derived(title.trim() === '' || publicKey.trim() === '');
 
 	async function handleAdd() {
 		try {
-			await SSH.create({ title, publicKey });
+			await Account.addKey({ title, key: publicKey });
 			toast.success('SSH key added', {
 				description: `"${title}" has been added to your account.`
 			});
@@ -29,7 +29,7 @@
 </script>
 
 <Dialog.Root bind:open>
-	<Dialog.Trigger class={buttonVariants({ variant: 'outline' })}>
+	<Dialog.Trigger class={buttonVariants({ variant: 'outline', size: 'sm' })}>
 		Add Key
 		<Plus />
 	</Dialog.Trigger>

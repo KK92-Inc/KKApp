@@ -10,7 +10,7 @@
 </script>
 
 <Dialog.Root>
-	<Dialog.Trigger class={buttonVariants({ variant: 'outline' })}>
+	<Dialog.Trigger class={buttonVariants({ variant: 'outline', size: 'sm' })}>
 		About SSH
 		<CircleQuestionMark />
 	</Dialog.Trigger>

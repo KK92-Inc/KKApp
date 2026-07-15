@@ -1,43 +1,43 @@
 <script lang="ts">
-	import * as Item from '$lib/components/item';
-	import { Button } from '$lib/components/button/index.js';
+	import * as Account from '$lib/remotes/account.remote';
+	import * as ButtonGroup from '$lib/components/button-group';
+	import { Button } from '$lib/components/button';
+	import { useDialog } from '$lib/components/dialog';
+	import { Separator } from '$lib/components/separator';
 	import { KeyRound, Trash2Icon, TriangleAlert, X } from '@lucide/svelte';
-	import * as SSH from '$lib/remotes/ssh.remote';
+	import * as Alert from '$lib/components/alert';
+	import SshHelp from './ssh-help.svelte';
+	import SshAdd from './ssh-add.svelte';
+	import * as Item from '$lib/components/item';
+	import { DateFormatter } from '@internationalized/date';
 	import { page } from '$app/state';
 	import * as Empty from '$lib/components/empty';
-	import * as Alert from '$lib/components/alert';
-	import Separator from '$lib/components/separator/separator.svelte';
-	import SSHAdd from './ssh-add.svelte';
-	import SSHHelp from './ssh-help.svelte';
-	import { useDialog } from '$lib/components/dialog';
+	import Badge from '$lib/components/badge/badge.svelte';
 
 	const dialog = useDialog();
-	const keys = $derived(await SSH.get({}));
-	const confirm = $derived(
-		dialog.confirm(
-			'Delete SSH Key?',
-			"This will permanently delete the SSH key and if you'd like to use it in the future, you will need to upload it again."
-		)
-	);
-	const formatter = new Intl.DateTimeFormat(page.data.locale, {
+	const keys = await Account.getKeys();
+	const formatter = new DateFormatter(page.data.locale, {
 		dateStyle: 'medium',
 		timeStyle: 'short'
 	});
 </script>
 
-<div class="flex flex-col gap-2">
-	<div class="flex items-center justify-between gap-1">
-		<h1 class="text-xl font-bold">SSH Key</h1>
-		<Separator class="w-min flex-1" />
-		<SSHHelp />
-		<SSHAdd />
-	</div>
+<div class="flex items-center justify-between gap-4 pb-2">
+	<h1 class="text-xl font-bold">Account Settings</h1>
+	<Separator class="flex-1" />
+	<ButtonGroup.Root>
+		<SshHelp />
+		<SshAdd />
+	</ButtonGroup.Root>
+</div>
 
-	<Alert.Root variant="warning">
-		<TriangleAlert class="h-4 w-4" />
-		<Alert.Title>Make sure you recognize your keys!</Alert.Title>
-	</Alert.Root>
+<Alert.Root variant="warning">
+	<TriangleAlert class="h-4 w-4" />
+	<Alert.Title>Make sure you recognize your keys!</Alert.Title>
+</Alert.Root>
+<Separator class="my-2" />
 
+<Item.Group class="gap-2">
 	{#each keys as key (key.fingerprint)}
 		<Item.Root variant="outline">
 			<Item.Content class="min-w-0">
@@ -49,7 +49,7 @@
 					<span class="block">
 						{key.fingerprint}
 					</span>
-					<span>{key.keyType}</span>
+					<Badge variant="outline" class="rounded-sm">{key.keyType}</Badge>
 					<span>•</span>
 					<span>Created {formatter.format(new Date(key.createdAt))}</span>
 				</Item.Description>
@@ -57,8 +57,8 @@
 			<Item.Actions>
 				<Button
 					onclick={async () => {
-						if (await confirm) {
-							await SSH.remove({ fingerprint: key.fingerprint });
+						if (await confirm()) {
+							await Account.deleteKey(key.fingerprint);
 						}
 					}}
 					type="submit"
@@ -80,46 +80,20 @@
 			</Empty.Header>
 		</Empty.Root>
 	{/each}
-	<!-- {#each keys as key (key.title)}
-		<Item.Root variant="outline">
-			<Item.Content class="min-w-0">
-				<Item.Title>
-					<KeyRound size={16} />
-					<span>{key.title}</span>
-				</Item.Title>
-				<Item.Description>
-					{key.fingerprint}
-					<p class="mt-1 flex gap-2 text-xs text-muted-foreground">
-						<span>{key.keyType}</span>
-						<span>•</span>
-						<span>Created {formatter.format(new Date(key.createdAt))}</span>
-					</p>
-				</Item.Description>
-			</Item.Content>
-			<Item.Actions>
-				<Button
-					onclick={async () => {
-						if (await confirm) {
-							await SSH.remove({ fingerprint: key.fingerprint });
-						}
-					}}
-					type="submit"
-					variant="ghost"
-					size="icon"
-					aria-label="Delete SSH Key"
-				>
-					<Trash2Icon class="size-4 text-destructive" />
-				</Button>
-			</Item.Actions>
-		</Item.Root>
-	{:else}
-		<Empty.Root class="m-auto h-80 bg-card/30">
-			<Empty.Header>
-				<Empty.Media variant="icon">
-					<X />
-				</Empty.Media>
-				<Empty.Title>No SSH keys found.</Empty.Title>
-			</Empty.Header>
-		</Empty.Root>
-	{/each} -->
-</div>
+</Item.Group>
+
+<!-- <div class="flex flex-col gap-2">
+	<div class="flex items-center justify-between gap-1">
+		<h1 class="text-xl font-bold">SSH Key</h1>
+		<Separator class="w-min flex-1" />
+		<SSHHelp />
+		<SSHAdd />
+	</div>
+
+	<Alert.Root variant="warning">
+		<TriangleAlert class="h-4 w-4" />
+		<Alert.Title>Make sure you recognize your keys!</Alert.Title>
+	</Alert.Root>
+
+
+</div> -->

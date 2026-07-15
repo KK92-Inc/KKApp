@@ -193,7 +193,6 @@
 			<svelte:boundary>
 				{@const page = await Projects.getPage({
 					page: index.value,
-					size: 1,
 					name: search.value
 				})}
 

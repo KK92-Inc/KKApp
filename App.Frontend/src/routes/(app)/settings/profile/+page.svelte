@@ -220,7 +220,8 @@
 		<Field.Field class="col-span-full">
 			<Field.Label for="login">Biography</Field.Label>
 			<Field.Description class="text-xs">You can write a small biography about yourself.</Field.Description>
-			<MarkdownTextarea bind:value={details.markdown} maxlength={2000}/>
+			<MarkdownTextarea bind:value={details.markdown} maxlength={2000} />
+			<Field.Error errors={errors['details.Markdown']} class="text-xs" />
 		</Field.Field>
 	</Field.Group>
 </Field.Set>
