@@ -138,6 +138,7 @@ export class Problem {
 
 	/** Client: turn a caught command/form error into something renderable. */
 	public static resolve(e: unknown): Resolved {
+		console.log(JSON.stringify(e))
 		if (isHttpError(e)) {
 			if (e.status === 400 && e.body.errors) {
 				const fields: ValidationErrors = {};

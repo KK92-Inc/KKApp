@@ -13,12 +13,15 @@
 	import * as DropdownMenu from '$lib/components/dropdown-menu/';
 	import { page } from '$app/state';
 	import { logout } from '$lib/remotes/account.remote';
+	import { PUBLIC_S3_ENDPOINT } from '$env/static/public';
+
+	const avatar = $derived(`${PUBLIC_S3_ENDPOINT}/avatars/${page.data.session.userId}`);
 </script>
 
 <ButtonGroup.Root>
 	<Button variant="outline" href="/users/{page.data.session.userId}" class="max-md:p-2">
 		<Avatar.Root class="size-6">
-			<Avatar.Image src="https://github.com/w2wizard.png" alt="@evilrabbit" />
+			<Avatar.Image src={avatar} alt="@evilrabbit" />
 			<Avatar.Fallback>ER</Avatar.Fallback>
 		</Avatar.Root>
 		<span class="max-md:hidden">Account</span>

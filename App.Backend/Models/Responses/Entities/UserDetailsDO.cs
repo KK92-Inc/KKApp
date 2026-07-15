@@ -32,7 +32,7 @@ public class UserDetailsDO : BaseEntityDO<Details>
 
     [Required]
     public string? Email { get; set; }
-    [Required]
+    [Required, StringLength(maximumLength: 2000)]
     public string? Markdown { get; set; }
     [Required]
     public string? FirstName { get; set; }

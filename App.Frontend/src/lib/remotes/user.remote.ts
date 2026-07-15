@@ -49,15 +49,16 @@ export const get = query(Filters.id, async (userId) => {
 	return data;
 });
 
+const UrlField = v.optional(v.nullable(v.string()));
 const DetailsSchema = v.object({
-	markdown: v.optional(v.nullable(v.pipe(v.string(), v.maxLength(16384)))),
-	firstName: v.optional(v.nullable(v.pipe(v.string(), v.minLength(1), v.maxLength(100)))),
-	lastName: v.optional(v.nullable(v.pipe(v.string(), v.minLength(1), v.maxLength(100)))),
-	enabledNotifications: v.optional(v.number()),
-	githubUrl: v.optional(v.nullable(v.pipe(v.string(), v.url()))),
-	linkedinUrl: v.optional(v.nullable(v.pipe(v.string(), v.url()))),
-	redditUrl: v.optional(v.nullable(v.pipe(v.string(), v.url()))),
-	websiteUrl: v.optional(v.nullable(v.pipe(v.string(), v.url())))
+	markdown: v.optional(v.nullable(v.string())),
+	firstName: v.optional(v.nullable(v.string())),
+	lastName: v.optional(v.nullable(v.string())),
+	enabledNotifications: v.optional(v.nullable(v.number())),
+	githubUrl: UrlField,
+	linkedinUrl: UrlField,
+	redditUrl: UrlField,
+	websiteUrl: UrlField
 });
 
 const AvatarInput = v.union([
@@ -72,7 +73,7 @@ const AvatarInput = v.union([
 
 const UpdateSchema = v.object({
 	userId: Filters.id,
-	displayName: v.optional(v.nullable(v.pipe(v.string(), v.minLength(1), v.maxLength(100)))),
+	displayName: v.optional(v.string()),
 	avatarUrl: v.optional(v.nullable(AvatarInput)),
 	details: v.optional(v.nullable(DetailsSchema))
 });
