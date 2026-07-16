@@ -34,6 +34,12 @@ public class UserService(DatabaseContext ctx) : BaseService<User>(ctx), IUserSer
     /// <param name="token">Cancellation token.</param>
     public async Task AddSshKeyAsync(Guid userId, SshKey sshKey, CancellationToken token = default)
     {
+        var exists = await _context.SshKeys.FirstOrDefaultAsync(
+            k => k.KeyType == sshKey.KeyType && k.KeyBlob == sshKey.KeyBlob,
+        token);
+
+        ServiceException.ThrowIf(exists is not null, "This SSH Key already exists.");
+
         sshKey.UserId = userId;
         await _context.SshKeys.AddAsync(sshKey, token);
         await _context.SaveChangesAsync(token);
