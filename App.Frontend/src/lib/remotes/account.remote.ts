@@ -20,7 +20,7 @@ const PageSchema = v.object({
 
 const KeySchema = v.object({
 	title: v.string(),
-	key: v.string(),
+	publicKey: v.string(),
 });
 
 // ============================================================================
@@ -72,21 +72,23 @@ export const getKeys = query(async () => {
 	return data;
 });
 
-export const addKey = command(KeySchema, async ({ key, title }) => {
+export const addKey = command(KeySchema, async ({ publicKey, title }) => {
 	const { locals } = getRequestEvent();
 	const { error } = await locals.api.POST("/account/ssh-keys", {
-		body: { title, publicKey: key }
+		body: { title, publicKey }
 	});
 
+	getKeys().refresh()
 	if (error) Problem.throw(error)
 });
 
 export const deleteKey = command(v.string(), async (fingerprint) => {
 	const { locals } = getRequestEvent();
 	const { error } = await locals.api.DELETE("/account/ssh-keys/{fingerprint}", {
-		params: { path: { fingerprint }}
+		params: { path: { fingerprint: encodeURIComponent(fingerprint) }}
 	});
 
+	getKeys().refresh()
 	if (error) Problem.throw(error)
 });
 
