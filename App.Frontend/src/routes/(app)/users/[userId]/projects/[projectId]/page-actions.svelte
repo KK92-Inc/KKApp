@@ -1,7 +1,7 @@
 <script>
 	import * as Page from './index.svelte';
-	import * as Invite from '$lib/remotes/member.remote';
-	import * as Subscription from '$lib/remotes/subscribe.remote';
+	import * as Invite from '$lib/remotes/user-project.remote';
+	import * as Subscription from '$lib/remotes/subscription.remote';
 	import * as UserProjects from '$lib/remotes/user-project.remote';
 	import { page } from '$app/state';
 	import { UserCheck } from '@lucide/svelte';

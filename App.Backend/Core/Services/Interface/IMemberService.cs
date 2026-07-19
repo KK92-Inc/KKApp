@@ -11,7 +11,7 @@ using App.Backend.Domain.Enums;
 
 namespace App.Backend.Core.Services.Interface;
 
-public interface IMemberService
+public interface IMemberService : IDomainService<Member>
 {
     /// <summary>
     /// Find a member ship of a specific user on a specific entity.

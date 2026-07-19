@@ -28,6 +28,7 @@ using App.Backend.API.Notifications.Variants;
 using Wolverine;
 using App.Backend.Domain.Entities.Reviews;
 using Keycloak.AuthServices.Sdk.Admin;
+using App.Backend.API.Params;
 
 // ============================================================================
 
@@ -41,7 +42,6 @@ public class WorkspaceController(
     IApplicationService applicationService,
     IProjectService projectService,
     IGoalService goalService,
-    IGitService gitService,
     IUserService userService,
     ICursusService cursusService,
     IRubricService rubricService,
@@ -265,6 +265,33 @@ such as official cursi, projects or rubrics.
         return Ok(new RubricDO(rubric));
     }
 
+    [HttpGet("{id:guid}/application")]
+    [ProtectedResource("applications", "applications:read")]
+    [ProtectedResource("workspaces", "workspaces:read")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Query all applications")]
+    [EndpointDescription("Retrieve a paginated list of all applications within a workspace")]
+    public async Task<ActionResult<IEnumerable<ApplicationDO>>> GetAll(
+        Guid id,
+        [FromQuery(Name = "filter[id]")] Guid? appId,
+        [FromQuery(Name = "filter[client_id]")] Guid? clientId,
+        [FromQuery] Sorting sorting,
+        [FromQuery] Pagination pagination,
+        CancellationToken token
+    )
+    {
+        var page = await applicationService.GetAllAsync(sorting, pagination, token,
+            a => a.WorkspaceId == id,
+            appId is null ? null : a => a.Id == appId,
+            clientId is null ? null : a => a.KeycloakId == clientId
+        );
+
+        page.AppendHeaders(Response.Headers);
+        return Ok(page.Items.Select(app => new ApplicationDO(app)));
+    }
+
     [HttpPost("{id:guid}/application")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -465,6 +492,31 @@ such as official cursi, projects or rubrics.
         }
 
         return NoContent();
+    }
+
+    [HttpGet("{id:guid}/members")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Get workspace members")]
+    [EndpointDescription("Returns the paginated list of all members past and present")]
+    public async Task<ActionResult<IEnumerable<MemberDO>>> GetMembers(
+        Guid id,
+        [FromQuery(Name = "filter[active]")] bool? active,
+        [FromQuery] Pagination pagination,
+        [FromQuery] Sorting sorting,
+        CancellationToken token
+    )
+    {
+        var page = await memberService.GetAllAsync(sorting, pagination, token,
+            m => m.EntityType == MemberEntityType.Workspace,
+            m => m.EntityId == id,
+            active is null ? null : m => m.LeftAt != null
+        );
+
+        page.AppendHeaders(Response.Headers);
+        return Ok(page.Items.Select(m => new MemberDO(m)));
     }
 
     [HttpPost("{id:guid}/invite/{userId:guid}")]

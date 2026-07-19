@@ -299,7 +299,7 @@ const handle: Handle = async ({ event, resolve }) => {
 
 function signIn(): never {
 	const { cookies, isRemoteRequest } = getRequestEvent();
-	if (!isRemoteRequest) throw new Error('signIn() must be called from a server request');
+	// if (!isRemoteRequest) throw new Error('signIn() must be called from a server request');
 
 	const state = randomBytes(32).toString('hex');
 	const verifier = randomBytes(32).toString('base64url');
@@ -323,7 +323,7 @@ function signIn(): never {
 
 async function signOut(): Promise<never> {
 	const { cookies, isRemoteRequest, locals } = getRequestEvent();
-	if (!isRemoteRequest) throw new Error('signOut() must be called from a server request');
+	// if (!isRemoteRequest) throw new Error('signOut() must be called from a server request');
 
 	const access = cookies.get(COOKIE_ACCESS);
 	const refresh = cookies.get(COOKIE_REFRESH);

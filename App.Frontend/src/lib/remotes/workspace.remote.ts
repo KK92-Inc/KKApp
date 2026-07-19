@@ -5,9 +5,16 @@
 
 import * as v from 'valibot';
 import { query, command, getRequestEvent } from '$app/server';
-import { CompletionMode, CursusVariant, Filters, Problem } from '$lib/api';
+import { CompletionMode, CursusVariant, Filters, paginate, Problem } from '$lib/api';
 
 // ============================================================================
+
+const MembersPageSchema = v.object({
+	id: Filters.id,
+	active: v.optional(v.boolean()),
+	...Filters.sort,
+	...Filters.pagination
+});
 
 const CreateCursusSchema = v.object({
 	workspace: Filters.id,
@@ -90,7 +97,7 @@ const KickSchema = v.object({ id: Filters.id, memberId: Filters.id });
 /** Get the workspace for the currently authenticated account */
 export const current = query(async () => {
 	const { locals } = getRequestEvent();
-	const { error, data } = await locals.api.GET('/workspace/current', {});
+	const { error, data } = await locals.api.GET('/workspace/current');
 
 	if (error || !data) Problem.throw(error);
 	return data;
@@ -99,7 +106,7 @@ export const current = query(async () => {
 /** Get the root workspace */
 export const root = query(async () => {
 	const { locals } = getRequestEvent();
-	const { error, data } = await locals.api.GET('/workspace/root', {});
+	const { error, data } = await locals.api.GET('/workspace/root');
 
 	if (error || !data) Problem.throw(error);
 	return data;
@@ -212,6 +219,15 @@ export const removeRubric = command(Filters.id, async (id) => {
 // Applications (OAuth clients)
 // ============================================================================
 
+export const getApplications = query(Filters.id, async (id) => {
+	const { locals } = getRequestEvent();
+	const { error, data } = await locals.api.GET('/workspace/{id}/application', {
+		params: { path: { id } },
+	});
+
+	if (error || !data) Problem.throw(error);
+	return data;
+});
 
 /** Register a new application (OAuth client) for a workspace */
 export const createApplication = command(CreateApplicationSchema, async ({ id, ...rest }) => {
@@ -222,6 +238,7 @@ export const createApplication = command(CreateApplicationSchema, async ({ id, .
 	});
 
 	if (error) Problem.throw(error);
+	getApplications(id).refresh();
 });
 
 
@@ -234,6 +251,7 @@ export const updateApplication = command(UpdateApplicationSchema, async ({ id, a
 	});
 
 	if (error) Problem.throw(error);
+	getApplications(id).refresh();
 });
 
 /** Delete an application */
@@ -245,7 +263,9 @@ export const removeApplication = command(
 			params: { path: { id, appId } }
 		});
 
+
 		if (error) Problem.throw(error);
+		getApplications(id).refresh();
 	}
 );
 
@@ -303,6 +323,28 @@ export const transferProject = command(TransferSchema, async ({ from, to, ids })
 // ============================================================================
 // Membership
 // ============================================================================
+
+/** Paginated response for all members */
+export const getMembersPage = query(MembersPageSchema, async (params) => {
+	const { locals } = getRequestEvent();
+	const { response, error, data } = await locals.api.GET('/workspace/{id}/members', {
+		params: {
+			path: {
+				id: params.id
+			},
+			query: {
+				'filter[active]': params.active,
+				'sort[by]': params.sortBy,
+				'sort[order]': params.sort,
+				'page[index]': params.page,
+				'page[size]': params.size
+			}
+		}
+	});
+
+	if (error || !data) Problem.throw(error);
+	return paginate(data, response);
+});
 
 /** Invite a user to join a workspace */
 export const invite = command(InviteSchema, async ({ id, userId }) => {

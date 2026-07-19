@@ -3,7 +3,7 @@
 	import { Separator } from '$lib/components/separator';
 	import { Ellipsis, GitBranch, PlusIcon } from '@lucide/svelte';
 	import * as Git from '$lib/remotes/git.remote';
-	import * as Project from '$lib/remotes/project.remote';
+	import * as Project from '$lib/remotes/projects.remote';
 	import * as UserProject from '$lib/remotes/user-project.remote';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';

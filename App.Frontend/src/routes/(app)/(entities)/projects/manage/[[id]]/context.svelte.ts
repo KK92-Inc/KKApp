@@ -5,7 +5,7 @@
 
 import { createContext } from "svelte";
 import * as Workspace from "$lib/remotes/workspace.remote";
-import * as Project from "$lib/remotes/project.remote";
+import * as Project from "$lib/remotes/projects.remote";
 import type { components } from "$lib/api/api";
 
 // ============================================================================
@@ -54,7 +54,7 @@ export class Context {
 	]);
 
 	get workspaces() {
-		return Workspace.get({});
+		return Workspace.current();
 	}
 
 	/**
@@ -66,7 +66,7 @@ export class Context {
 	public async load() {
 		if (this.mode !== "edit") return;
 
-		const existing = await Project.get({ id: this.id! });
+		const existing = await Project.get(this.id!);
 		this.project = {
 			name: existing.name,
 			description: existing.description,

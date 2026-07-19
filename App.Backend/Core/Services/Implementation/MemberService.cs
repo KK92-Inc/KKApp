@@ -23,8 +23,22 @@ namespace App.Backend.Core.Services.Implementation;
 /// Works identically for Project, Rubric, Goal, Cursus, UserProject,
 /// and Workspace (staff) membership.
 /// </summary>
-public class MemberService(DatabaseContext ctx, TimeProvider time) : IMemberService
+public class MemberService(DatabaseContext context, TimeProvider time) : BaseService<Member>(context), IMemberService
 {
+    private readonly DatabaseContext ctx = context;
+
+    [Obsolete("Use Invite instead as it tracks other things.")]
+    public override Task<Member> CreateAsync(Member entity, CancellationToken token = default)
+    {
+        return base.CreateAsync(entity, token);
+    }
+
+    [Obsolete("Use Kick or Cancel instead as it tracks other things.")]
+    public override Task DeleteAsync(Member entity, CancellationToken token = default)
+    {
+        return base.DeleteAsync(entity, token);
+    }
+
     public async Task<Member> AcceptAsync(Guid memberId, CancellationToken token = default)
     {
         var member = await ctx.Members.FirstOrDefaultAsync(

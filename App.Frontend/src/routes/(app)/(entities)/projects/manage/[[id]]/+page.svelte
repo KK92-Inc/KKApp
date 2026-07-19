@@ -1,6 +1,6 @@
 <script lang="ts">
 	import * as Page from './context.svelte';
-	import * as Project from '$lib/remotes/project.remote';
+	import * as Project from '$lib/remotes/projects.remote';
 	import * as Stepper from '$lib/components/stepper/index.svelte';
 	import Separator from '$lib/components/separator/separator.svelte';
 	import PageStepOverview from './page-overview.svelte';

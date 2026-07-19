@@ -27,7 +27,7 @@
 </script>
 
 <div class="flex items-center justify-between gap-4 pb-2">
-	<h1 class="text-xl font-bold">Account Settings</h1>
+	<h1 class="text-xl font-bold">SSH Keys</h1>
 	<Separator class="flex-1" />
 	<ButtonGroup.Root>
 		<SshHelp />
@@ -97,19 +97,3 @@
 		{/each}
 	</svelte:boundary>
 </Item.Group>
-
-<!-- <div class="flex flex-col gap-2">
-	<div class="flex items-center justify-between gap-1">
-		<h1 class="text-xl font-bold">SSH Key</h1>
-		<Separator class="w-min flex-1" />
-		<SSHHelp />
-		<SSHAdd />
-	</div>
-
-	<Alert.Root variant="warning">
-		<TriangleAlert class="h-4 w-4" />
-		<Alert.Title>Make sure you recognize your keys!</Alert.Title>
-	</Alert.Root>
-
-
-</div> -->

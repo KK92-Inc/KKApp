@@ -10,6 +10,13 @@ import { paginate } from '../api';
 
 // ============================================================================
 
+const MembersPageSchema = v.object({
+	id: Filters.id,
+	active: v.optional(v.boolean()),
+	...Filters.sort,
+	...Filters.pagination
+});
+
 const PageByUserSchema = v.object({
 	userId: Filters.id,
 	name: v.optional(v.string()),
@@ -99,6 +106,28 @@ export const getTransactions = query(TransactionsSchema, async ({ id, ...params 
 // ============================================================================
 // Team Management
 // ============================================================================
+
+/** Paginated response for all members */
+export const getMembersPage = query(MembersPageSchema, async (params) => {
+	const { locals } = getRequestEvent();
+	const { response, error, data } = await locals.api.GET('/workspace/{id}/members', {
+		params: {
+			path: {
+				id: params.id
+			},
+			query: {
+				'filter[active]': params.active,
+				'sort[by]': params.sortBy,
+				'sort[order]': params.sort,
+				'page[index]': params.page,
+				'page[size]': params.size
+			}
+		}
+	});
+
+	if (error || !data) Problem.throw(error);
+	return paginate(data, response);
+});
 
 /** Invite a user to join a project team */
 export const invite = command(InviteSchema, async ({ id, userId }) => {

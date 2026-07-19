@@ -5058,6 +5058,95 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/user-projects/{id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get project session members
+         * @description Returns the paginated list of all members past and present
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description The page number/index */
+                    "page[index]"?: number | string;
+                    /** @description The amount of results per page */
+                    "page[size]"?: number | string;
+                    /** @description The name of the property to use for sorting. */
+                    "sort[by]"?: string;
+                    /** @description The sort direction. */
+                    "sort[order]"?: components["schemas"]["Order"];
+                    "filter[active]"?: boolean;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["MemberDO"][];
+                        "application/json": components["schemas"]["MemberDO"][];
+                        "text/json": components["schemas"]["MemberDO"][];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/user-projects/{id}/invite/{userId}": {
         parameters: {
             query?: never;
@@ -6271,7 +6360,77 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Query all applications
+         * @description Retrieve a paginated list of all applications within a workspace
+         */
+        get: {
+            parameters: {
+                query?: {
+                    "filter[id]"?: string;
+                    "filter[client_id]"?: string;
+                    /** @description The name of the property to use for sorting. */
+                    "sort[by]"?: string;
+                    /** @description The sort direction. */
+                    "sort[order]"?: components["schemas"]["Order"];
+                    /** @description The page number/index */
+                    "page[index]"?: number | string;
+                    /** @description The amount of results per page */
+                    "page[size]"?: number | string;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ApplicationDO"][];
+                        "application/json": components["schemas"]["ApplicationDO"][];
+                        "text/json": components["schemas"]["ApplicationDO"][];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         put?: never;
         /**
          * Create a new application
@@ -6808,6 +6967,95 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workspace/{id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get workspace members
+         * @description Returns the paginated list of all members past and present
+         */
+        get: {
+            parameters: {
+                query?: {
+                    "filter[active]"?: boolean;
+                    /** @description The page number/index */
+                    "page[index]"?: number | string;
+                    /** @description The amount of results per page */
+                    "page[size]"?: number | string;
+                    /** @description The name of the property to use for sorting. */
+                    "sort[by]"?: string;
+                    /** @description The sort direction. */
+                    "sort[order]"?: components["schemas"]["Order"];
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["MemberDO"][];
+                        "application/json": components["schemas"]["MemberDO"][];
+                        "text/json": components["schemas"]["MemberDO"][];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -7379,6 +7627,23 @@ export interface components {
             /** Format: uuid */
             reviewId: string;
             author: components["schemas"]["UserLightDO"];
+        };
+        ApplicationDO: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: uuid */
+            keycloakId: string;
+            name: string;
+            clientId: string;
+            description: string;
+            enabled: boolean;
+            redirectUris?: string[];
+            /** Format: uuid */
+            workspaceId: string;
         };
         /** @enum {unknown} */
         CompletionMode: "Ring" | "FreeStyle";

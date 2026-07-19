@@ -156,7 +156,7 @@
 						placeholder="ssh-ed25519 AAAAC3..."
 						bind:value={fields.publicKey}
 					/>
-					<Field.Description>A label to identify which device this key belongs to.</Field.Description>
+					<Field.Description>A public key you generated.</Field.Description>
 					<Field.Error errors={errors.publicKey} />
 				</Field.Field>
 			</Field.Group>

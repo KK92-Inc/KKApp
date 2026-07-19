@@ -75,14 +75,14 @@ export class Context {
 	) {}
 
 	get cursi() {
-		return UserCursus.getPage({ userId: this.userId(), size: 100 });
+		return UserCursus.getPageByUser({ userId: this.userId(), size: 100 });
 	}
 
 	get track() {
 		if (USE_FAKE_TRACK) return Promise.resolve(buildFakeTrack());
 
 		const id = this.userCursusId();
-		return id ? UserCursus.getTrack({ id }) : Promise.resolve(null);
+		return id ? UserCursus.getTrack(id) : Promise.resolve(null);
 	}
 
 	attachment(tree: GalaxyNode<TrackNode>): Attachment<SVGElement> {

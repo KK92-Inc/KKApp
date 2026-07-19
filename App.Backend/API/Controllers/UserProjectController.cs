@@ -140,6 +140,31 @@ public class UserProjectController(
         return Ok(page.Items.Select(t => new UserProjectTransactionDO(t)));
     }
 
+    [HttpGet("/user-projects/{id:guid}/members")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Get project session members")]
+    [EndpointDescription("Returns the paginated list of all members past and present")]
+    public async Task<ActionResult<IEnumerable<MemberDO>>> GetMembers(
+        Guid id,
+        [FromQuery] Pagination pagination,
+        [FromQuery] Sorting sorting,
+        [FromQuery(Name = "filter[active]")] bool? active,
+        CancellationToken token
+    )
+    {
+        var page = await memberService.GetAllAsync(sorting, pagination, token,
+            m => m.EntityType == MemberEntityType.UserProject,
+            m => m.EntityId == id,
+            active is null ? null : m => m.LeftAt != null
+        );
+
+        page.AppendHeaders(Response.Headers);
+        return Ok(page.Items.Select(m => new MemberDO(m)));
+    }
+
     [HttpPost("/user-projects/{id:guid}/invite/{userId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]

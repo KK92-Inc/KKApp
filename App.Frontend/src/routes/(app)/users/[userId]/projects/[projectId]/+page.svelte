@@ -17,7 +17,7 @@
 	const context = Page.getContext();
 	const [project, userProject] = $derived(await Promise.all([context.project, context.userProject]));
 	const blob = $derived.by(async () => {
-		const branches = await Git.branches({ id: project.gitInfo.id });
+		const branches = await Git.getBranches(project.gitInfo.id);
 		if (branches.length === 0) {
 			return null;
 		}
@@ -29,7 +29,7 @@
 				?.replace('*', '')
 				.trim() ?? 'master';
 
-		const blob = await Git.blob({
+		const blob = await Git.getBlob({
 			id: project.gitInfo.id,
 			branch: defaultBranch,
 			path: 'README.md'

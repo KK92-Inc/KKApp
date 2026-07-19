@@ -5,9 +5,8 @@
 
 import type { components } from "$lib/api/api";
 import { createContext } from "svelte";
-import * as Projects from "$lib/remotes/project.remote";
+import * as Projects from "$lib/remotes/projects.remote";
 import * as UserProjects from "$lib/remotes/user-project.remote";
-import * as Reviews from "$lib/remotes/reviews.remote";
 import * as Git from "$lib/remotes/git.remote";
 
 // ============================================================================
