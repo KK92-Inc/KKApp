@@ -512,7 +512,12 @@ such as official cursi, projects or rubrics.
         var page = await memberService.GetAllAsync(sorting, pagination, token,
             m => m.EntityType == MemberEntityType.Workspace,
             m => m.EntityId == id,
-            active is null ? null : m => m.LeftAt != null
+            active switch
+            {
+                true => m => m.LeftAt == null,
+                false => m => m.LeftAt != null,
+                null => null
+            }
         );
 
         page.AppendHeaders(Response.Headers);

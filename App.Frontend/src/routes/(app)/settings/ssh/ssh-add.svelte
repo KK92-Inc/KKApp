@@ -1,12 +1,6 @@
 <script lang="ts">
 	import { Button, buttonVariants } from '$lib/components/button';
-	import {
-		CircleQuestionMark,
-		Clipboard,
-		KeyRound,
-		Plus,
-		Save
-	} from '@lucide/svelte';
+	import { CircleQuestionMark, Clipboard, KeyRound, Plus, Save, TriangleAlert } from '@lucide/svelte';
 	import * as Account from '$lib/remotes/account.remote';
 	import * as Tabs from '$lib/components/tabs';
 	import * as Dialog from '$lib/components/dialog';
@@ -21,26 +15,32 @@
 	import Separator from '$lib/components/separator/separator.svelte';
 	import { page } from '$app/state';
 	import * as Kbd from '$lib/components/kbd';
+	import * as Alert from '$lib/components/alert';
+	import { env } from '$env/dynamic/public';
+	import { ensure } from '$lib/utils';
 
 	let open = $state(false);
-	let os = $state<'nt' | 'unix'>(navigator.userAgent.includes('Windows') ? 'nt' : 'unix');
-	let errors = $state<ValidationErrors>({});
-	let fields = $state({
-		title: '',
-		publicKey: ''
-	});
+	let agent = navigator.userAgent;
+	let os = $state<'nt' | 'macos' | 'linux'>(agent.includes('Windows') ? 'nt' : agent.includes('Mac') ? 'macos' : 'linux');
 
-	const keygen = $derived(`ssh-keygen -t ed25519 -C "${page.data.session.email}"`);
-	const cat = $derived(
-		os === 'nt' ? String.raw`Get-Content $env:USERPROFILE\.ssh\id_ed25519.pub` : 'cat ~/.ssh/id_ed25519.pub'
+	let errors = $state<ValidationErrors>({});
+	let fields = $state({ title: '', publicKey: '' });
+	// svelte-ignore state_referenced_locally
+	const original = $state.snapshot(fields);
+
+	const keygen = $derived(
+		os !== 'nt'
+			? `curl -fsSL ${env.PUBLIC_DOMAIN}/key | bash`
+			: `powershell -c "irm ${env.PUBLIC_DOMAIN}/key.ps1|iex"`
 	);
 
 	async function submit() {
 		try {
 			await Account.addKey(fields);
+			fields = original;
 			open = false;
-		} catch (e) {
-			const resolved = Problem.resolve(e);
+		} catch (error) {
+			const resolved = Problem.resolve(error);
 			if (resolved.kind === 'validation') {
 				errors = resolved.fields;
 			} else {
@@ -50,30 +50,45 @@
 	}
 </script>
 
-<Dialog.Root bind:open onOpenChange={(v) => { if (!v) errors = {}}}>
+<Dialog.Root
+	bind:open
+	onOpenChange={(v) => {
+		if (!v) errors = {};
+	}}
+>
 	<Dialog.Trigger type="button" class={buttonVariants({ variant: 'outline', size: 'sm' })}>
-		Add Key
+		Add
 		<Plus />
 	</Dialog.Trigger>
-	<Dialog.Content>
+	<Dialog.Content class="gap-2">
 		<Dialog.Header>
-			<Dialog.Title class="flex items-center justify-between">Add SSH Key</Dialog.Title>
+			<Dialog.Title class="flex items-center justify-between">Add Key</Dialog.Title>
 		</Dialog.Header>
 
-		<Tabs.Root bind:value={os} class="mt-4">
+		<Tabs.Root bind:value={os} class="mt-6">
 			<Tabs.List class="h-8 w-full">
-				<Tabs.Trigger class="h-6" value="unix">macOS / Linux</Tabs.Trigger>
+				<Tabs.Trigger class="h-6" value="macos">macOS</Tabs.Trigger>
+				<Tabs.Trigger class="h-6" value="linux">Linux</Tabs.Trigger>
 				<Tabs.Trigger class="h-6" value="nt">Windows</Tabs.Trigger>
 			</Tabs.List>
 		</Tabs.Root>
 
-		<Separator class=" absolute top-28 left-0" />
+		<Separator />
 
 		<Item.Group class="mt-2 grid grid-rows-[auto_auto] gap-3">
-			<Item.Root variant="muted" size="sm">
+			<!-- <Alert.Root variant="default">
+				<TriangleAlert class="h-4 w-4" />
+				<Alert.Title>Please try and read the instructions</Alert.Title>
+				<Alert.Description class="font-normal text-wrap">
+					If you're unfamiliar with terminals or shells this might be confusing. Make sure to read everything
+					so you understand whats going on.
+				</Alert.Description>
+			</Alert.Root> -->
+
+			<Item.Root variant="muted" size="sm" class="items-start">
 				<Item.Media variant="icon"><KeyRound class="size-4 text-primary" /></Item.Media>
 				<Item.Content>
-					<Item.Title class="text-sm">
+					<Item.Title class="text-xs">
 						<span class="inline-flex flex-wrap items-center gap-1">
 							<span>1. Open your</span>
 							<Tooltip.Root delayDuration={100}>
@@ -85,24 +100,28 @@
 										</span>
 									{/snippet}
 								</Tooltip.Trigger>
-								<Tooltip.Content>
+								<Tooltip.Content class="block">
 									{#if os === 'nt'}
-										Open the Start menu, type Windows PowerShell, select Windows PowerShell, then Open.
+										Open the Start menu, type Windows PowerShell, select Windows PowerShell, open it.
 									{:else}
-									<p>On macOS, press
-
-									<Kbd.Group>
-										<Kbd.Root>⌘</Kbd.Root>
-										<span class="text-foreground">+</span>
-										<Kbd.Root>Space</Kbd.Root>
-									</Kbd.Group>
-
-										, type Terminal, and press Return.</p>
-									<p>On Linux, open your Terminal app from the applications menu.</p>
+										<p>
+											On <span class="font-extrabold">macOs</span>, press
+											<Kbd.Group>
+												<Kbd.Root>⌘</Kbd.Root>
+												<span class="text-foreground">+</span>
+												<Kbd.Root>Space</Kbd.Root>
+											</Kbd.Group>
+											, type Terminal, and press Return.
+										</p>
+										<Separator class="my-1" />
+										<p>
+											On <span class="font-extrabold">Linux</span>, open your Terminal app from the
+											applications menu.
+										</p>
 									{/if}
 								</Tooltip.Content>
 							</Tooltip.Root>
-							<span>, paste the following:</span>
+							, paste the following and press enter:
 						</span>
 					</Item.Title>
 					<InputGroup.Root>
@@ -111,23 +130,15 @@
 							<InputGroup.Copy value={keygen} />
 						</InputGroup.Addon>
 					</InputGroup.Root>
-				</Item.Content>
-			</Item.Root>
-			<Item.Root variant="muted" size="sm">
-				<Item.Media variant="icon"><Clipboard class="size-4 text-primary" /></Item.Media>
-				<Item.Content>
-					<Item.Title class="text-sm">2. Copy your public key</Item.Title>
-					<InputGroup.Root>
-						<InputGroup.Input readonly value={cat} />
-						<InputGroup.Addon align="inline-end">
-							<InputGroup.Copy value={cat} />
-						</InputGroup.Addon>
-					</InputGroup.Root>
+					<p class="text-xs">
+						Once you've run the command your key should be in your clipboard, paste it into the Public Key
+						field below.
+					</p>
 				</Item.Content>
 			</Item.Root>
 		</Item.Group>
 
-		<Separator class=" absolute top-82 left-0" />
+		<Separator />
 
 		<Field.Set class="mt-4">
 			<Field.Group>
@@ -163,7 +174,7 @@
 		</Field.Set>
 		<Dialog.Footer>
 			<Dialog.Close type="button" class={buttonVariants({ variant: 'outline' })}>Cancel</Dialog.Close>
-			<Button type="submit" loading={Account.addKey.pending > 0} onclick={submit}>Add <Save/></Button>
+			<Button type="submit" loading={Account.addKey.pending > 0} onclick={submit}>Add <Save /></Button>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>

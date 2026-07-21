@@ -58,7 +58,7 @@ const meta: Partial<Record<RouteId, MetaEntry>> = {
 	},
 	'/(app)/settings/ssh': {
 		icon: KeyRound,
-		label: 'SSH Keys'
+		label: 'Keys'
 	},
 	'/(app)/reviews': {
 		icon: HeartHandshake,

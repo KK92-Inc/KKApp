@@ -45,7 +45,7 @@
 			</div>
 
 			<div class="ml-auto flex items-center gap-2">
-				<Header.Search />
+				<!-- <Header.Search /> -->
 				<Header.Theme />
 				<Separator orientation="vertical"/>
 				<Header.Create />

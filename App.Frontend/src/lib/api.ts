@@ -5,6 +5,7 @@
 
 import * as v from 'valibot';
 import { error, isHttpError } from '@sveltejs/kit';
+import { toast } from 'svelte-sonner';
 
 // ============================================================================
 
@@ -136,9 +137,30 @@ export class Problem {
 		});
 	}
 
+	public static async try<T>(
+		fn: () => Promise<T>,
+		opts?: { onValidation?: (fields: ValidationErrors) => void }
+	): Promise<T | undefined> {
+		try {
+			return await fn();
+		} catch (e) {
+			const resolved = Problem.resolve(e);
+
+			if (resolved.kind === 'validation') {
+				if (opts?.onValidation) {
+					opts.onValidation(resolved.fields);
+				} else {
+					toast.error('Please check the highlighted fields.');
+				}
+				return;
+			}
+
+			toast.error(resolved.message);
+		}
+	}
+
 	/** Client: turn a caught command/form error into something renderable. */
 	public static resolve(e: unknown): Resolved {
-		console.log(JSON.stringify(e))
 		if (isHttpError(e)) {
 			if (e.status === 400 && e.body.errors) {
 				const fields: ValidationErrors = {};

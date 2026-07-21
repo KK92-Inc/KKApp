@@ -22,7 +22,8 @@ export const getBranches = query(Filters.id, async (id) => {
 		params: { path: { id } }
 	});
 
-	if (error || !data) Problem.throw(error);
+	if (error) Problem.throw(error);
+	if (!data) return "";
 	return data;
 });
 

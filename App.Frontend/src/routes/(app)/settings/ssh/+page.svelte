@@ -18,7 +18,7 @@
 	const dialog = useDialog();
 	const confirm = dialog.confirm(
 		'Are you sure you want to delete this SSH key?',
-		'This action CANNOT be undone. This will permanently delete the SSH key and if you’d like to use it in the future, you will need to upload it again.'
+		'This action CANNOT be undone. This will permanently delete the SSH key and if you`d like to use it in the future, you will need to upload it again.'
 	);
 	const formatter = new DateFormatter(page.data.locale, {
 		dateStyle: 'medium',
@@ -27,7 +27,7 @@
 </script>
 
 <div class="flex items-center justify-between gap-4 pb-2">
-	<h1 class="text-xl font-bold">SSH Keys</h1>
+	<h1 class="text-xl font-bold">Authentication Keys</h1>
 	<Separator class="flex-1" />
 	<ButtonGroup.Root>
 		<SshHelp />
@@ -35,11 +35,11 @@
 	</ButtonGroup.Root>
 </div>
 
-<Alert.Root variant="warning">
-	<TriangleAlert class="h-4 w-4" />
-	<Alert.Title>Make sure you recognize your keys!</Alert.Title>
-	<Alert.Title class="font-normal">It is important that you know which key you created where.</Alert.Title>
-</Alert.Root>
+<p class="text-xs text-muted-foreground">
+	A Key lets you authenticate your device without requiring a username or password repeatedly. Keys are specific for your
+	device, for each device you can generate a key. They are commonly used to authenticate actions on projects
+	or rubrics like updating files.
+</p>
 
 <Separator class="my-2" />
 
@@ -47,10 +47,10 @@
 	<svelte:boundary>
 		{@const keys = await Account.getKeys()}
 		{#snippet pending()}
-			<Skeleton class="w-full h-12"/>
-			<Skeleton class="w-full h-12"/>
-			<Skeleton class="w-full h-12"/>
-			<Skeleton class="w-full h-12"/>
+			<Skeleton class="h-12 w-full" />
+			<Skeleton class="h-12 w-full" />
+			<Skeleton class="h-12 w-full" />
+			<Skeleton class="h-12 w-full" />
 		{/snippet}
 
 		{#each keys as key (key.fingerprint)}
@@ -86,7 +86,7 @@
 				</Item.Actions>
 			</Item.Root>
 		{:else}
-			<Empty.Root class="m-auto h-80 bg-card/30">
+			<Empty.Root class="h-80 bg-card/30">
 				<Empty.Header>
 					<Empty.Media variant="icon">
 						<X />

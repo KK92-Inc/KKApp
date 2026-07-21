@@ -5,7 +5,7 @@
 	import Separator from '$lib/components/separator/separator.svelte';
 	import * as Item from '$lib/components/item';
 
-	const { title = 'About SSH' }: { title?: string } = $props();
+	const { title = 'About' }: { title?: string } = $props();
 </script>
 
 <Dialog.Root>
@@ -20,37 +20,37 @@
 			<Dialog.Description></Dialog.Description>
 		</Dialog.Header>
 
-		<Item.Group class="grid grid-rows-3 gap-3">
+		<Item.Group class="flex flex-col gap-3">
 			<Item.Root variant="muted" size="sm">
-				<Item.Media variant="icon"><KeyRound class="size-4"/></Item.Media>
+				<Item.Media variant="icon"><KeyRound class="size-4" /></Item.Media>
 				<Item.Content>
-					<Item.Title class="text-sm">It's a pair of files, not a password</Item.Title>
+					<Item.Title class="text-sm">What is a Key?</Item.Title>
 					<Item.Description class="line-clamp-none">
-						Generating a key creates two files: a private one that never leaves your computer, and a public
-						one that's safe to hand out. They're mathematically linked, anything locked with the public key
-						can only be opened with the matching private one.
+						A Key (also called a SSH Key) is used to authorize and authenticate user actions. Without it you
+						would have to provide constantly a username and password for every action that you take, for
+						example pushing new files onto your project.
 					</Item.Description>
 				</Item.Content>
 			</Item.Root>
 			<Item.Root variant="muted" size="sm">
-				<Item.Media variant="icon"><Lock class="size-4"/></Item.Media>
+				<Item.Media variant="icon"><Lock class="size-4" /></Item.Media>
 				<Item.Content>
-					<Item.Title class="text-sm">We only ever want the public one</Item.Title>
+					<Item.Title class="text-sm">How do I get my Key?</Item.Title>
 					<Item.Description class="line-clamp-none">
-						The file ending in <code class="text-xs">.pub</code> is the one you need. The other file (no
-						extension, or ending in nothing) is your private key. Treat it like a house key,
-						if a site ever asks you to paste that one, don't.
+						You can click on the Add button to show you how to generate your key and how the get it. If you
+						know where to look you can simply paste the contents from the file ending in
+						<code class="text-xs">.pub</code> extension.
 					</Item.Description>
 				</Item.Content>
 			</Item.Root>
 			<Item.Root variant="muted" size="sm">
-				<Item.Media variant="icon"><ShieldCheck class="size-4"/></Item.Media>
+				<Item.Media variant="icon"><ShieldCheck class="size-4" /></Item.Media>
 				<Item.Content>
-					<Item.Title class="text-sm">Why bother, what for ?</Item.Title>
+					<Item.Title class="text-sm">What happens if I add my key ?</Item.Title>
 					<Item.Description class="line-clamp-none">
-						Once it's set up, your computer proves who you are automatically. No password typed or stored
-						anywhere, and it's not something that can be guessed or phished the way a password can. As a result
-						we can authenticate certain actions directly such as reading a repository.
+					Once uploaded you can start doing things such as pushing updates to your projects and other tracked entities.
+					No destructive action is taken, you simply provide a way for the platform to be able to prove that you are indeed you.
+					<p>In case you uploaded the incorrect key feel free to simply delete it and try again.</p>
 					</Item.Description>
 				</Item.Content>
 			</Item.Root>

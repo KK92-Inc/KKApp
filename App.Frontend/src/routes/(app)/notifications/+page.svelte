@@ -2,7 +2,7 @@
 	import NotificationCard from '$lib/components/notifications/notification-card.svelte';
 </script>
 
-+page view
+Notifications
 <!-- <NotificationCard
 	notification={{
 		id: '1',

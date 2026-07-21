@@ -13,37 +13,36 @@
 	import { cn } from '$lib/utils.js';
 	import * as InputGroup from '$lib/components/input-group';
 	import * as DropdownMenu from '$lib/components/dropdown-menu';
-	import * as Page from './context.svelte';
+	import * as Page from './index.svelte';
 
 	let search = $state('');
 	const context = Page.getContext();
+	const [project, userProject] = $derived(await Promise.all([context.project, context.userProject]));
 
-	// const [project, userProject] = $derived(await Promise.all([context.project, context.userProject]));
+	const getBranches = async () => {
+		if (!userProject || !userProject.gitInfo?.id) return [];
+		const branches = await Git.branches({ id: userProject.gitInfo.id });
+		// Multi-line string, default branch starts with a * put that one first and remove the * from the name
+		return branches
+			.split('\n')
+			.filter((line) => line.trim().length > 0)
+			.sort((a, b) => {
+				if (a.startsWith('*')) return -1;
+				if (b.startsWith('*')) return 1;
+				return 0;
+			})
+			.map((line) => line.replace('*', '').trim());
+	};
 
-	// const getBranches = async () => {
-	// 	if (!userProject || !userProject.gitInfo?.id) return [];
-	// 	const branches = await Git.branches({ id: userProject.gitInfo.id });
-	// 	// Multi-line string, default branch starts with a * put that one first and remove the * from the name
-	// 	return branches
-	// 		.split('\n')
-	// 		.filter((line) => line.trim().length > 0)
-	// 		.sort((a, b) => {
-	// 			if (a.startsWith('*')) return -1;
-	// 			if (b.startsWith('*')) return 1;
-	// 			return 0;
-	// 		})
-	// 		.map((line) => line.replace('*', '').trim());
-	// };
+	const branches = $derived(await getBranches());
 
-	// const branches = $derived(await getBranches());
-
-	// $effect(() => {
-	// 	context.branches = branches;
-	// 	console.log('branches', branches);
-	// 	if (context.view === 'submission' && !userProject) {
-	// 		context.view = 'assignment';
-	// 	}
-	// });
+	$effect(() => {
+		context.branches = branches;
+		console.log('branches', branches);
+		if (context.view === 'submission' && !userProject) {
+			context.view = 'assignment';
+		}
+	});
 </script>
 
 {#snippet createBranch()}
@@ -52,7 +51,7 @@
 		class="w-full p-2"
 		onclick={async () => {
 			await Git.createBranch({
-				id: context.project.gitInfo.id,
+				id: project.gitInfo.id,
 				ref: context.branch ?? 'HEAD',
 				child: search ?? `new-branch`
 			});
@@ -69,7 +68,7 @@
 <div class="flex items-center gap-2">
 	<Tabs.Root bind:value={context.view} class="w-max">
 		<Tabs.List>
-			<Tabs.Trigger disabled={!context.userProject} value="submission">Submission</Tabs.Trigger>
+			<Tabs.Trigger disabled={!userProject} value="submission">Submission</Tabs.Trigger>
 			<Tabs.Trigger value="assignment">Assignment</Tabs.Trigger>
 		</Tabs.List>
 	</Tabs.Root>
@@ -80,11 +79,10 @@
 		<Popover.Root>
 			<Popover.Trigger>
 				{#snippet child({ props })}
-					{#if context.initialized}
-						<!-- You can't select a branch when the repo has literally nothing. -->
+					{#if context.isInitialized}
 						<Button {...props} variant="outline" role="combobox">
 							<GitBranch />
-							{context.branch ?? 'Select a version'}
+							{context.branch ?? 'Select a branch...'}
 							<ChevronsUpDownIcon class="opacity-50" />
 						</Button>
 					{/if}
@@ -92,7 +90,7 @@
 			</Popover.Trigger>
 			<Popover.Content class="w-60 p-0" align="start">
 				<Command.Root>
-					<Command.Input maxlength={25} placeholder="Search versions..." bind:value={search} />
+					<Command.Input maxlength={25} placeholder="Search branches..." bind:value={search} />
 					<Command.List>
 						<Command.Empty class="p-0">
 							{@render createBranch()}
@@ -114,10 +112,10 @@
 			</Popover.Content>
 		</Popover.Root>
 		<!-- Git Clone Command -->
-		{#if context.userProject !== undefined}
-			{@const url = `ssh://git@localhost:2222/${context.project.id}/${context.userProject.id}`}
+		{#if userProject !== undefined}
+			{@const url = `ssh://git@localhost:2222/${project.id}/${userProject.id}`}
 			{@const cmd = `git clone ${url}`}
-			<InputGroup.Root class="w-auto">
+			<InputGroup.Root class="max-w-max">
 				<InputGroup.Addon align="inline-end">
 					<InputGroup.Copy value={cmd} />
 				</InputGroup.Addon>
@@ -126,7 +124,6 @@
 					autocomplete="off"
 					autocorrect="off"
 					autosave="off"
-					class="w-full"
 					readonly
 					value={cmd}
 				/>

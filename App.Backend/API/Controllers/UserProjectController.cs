@@ -16,6 +16,7 @@ using Microsoft.EntityFrameworkCore;
 using App.Backend.API.Controllers.Interfaces;
 using Wolverine;
 using App.Backend.API.Notifications.Variants;
+using System.Linq.Expressions;
 
 // ============================================================================
 
@@ -158,7 +159,12 @@ public class UserProjectController(
         var page = await memberService.GetAllAsync(sorting, pagination, token,
             m => m.EntityType == MemberEntityType.UserProject,
             m => m.EntityId == id,
-            active is null ? null : m => m.LeftAt != null
+            active switch
+            {
+                true => m => m.LeftAt == null,
+                false => m => m.LeftAt != null,
+                null => null
+            }
         );
 
         page.AppendHeaders(Response.Headers);

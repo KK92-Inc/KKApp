@@ -74,7 +74,7 @@ export const getPageByUser = query(PageByUserSchema, async ({ userId, ...params 
 });
 
 /** Get a user's membership on a specific project */
-export const getByUser = query(ByUserSchema, async ({ userId, projectId }) => {
+export const getByUserAndProject = query(ByUserSchema, async ({ userId, projectId }) => {
 	const { locals } = getRequestEvent();
 	const { error, data } = await locals.api.GET('/users/{userId}/projects/{projectId}', {
 		params: { path: { userId, projectId } }
@@ -110,7 +110,7 @@ export const getTransactions = query(TransactionsSchema, async ({ id, ...params 
 /** Paginated response for all members */
 export const getMembersPage = query(MembersPageSchema, async (params) => {
 	const { locals } = getRequestEvent();
-	const { response, error, data } = await locals.api.GET('/workspace/{id}/members', {
+	const { response, error, data } = await locals.api.GET('/user-projects/{id}/members', {
 		params: {
 			path: {
 				id: params.id
