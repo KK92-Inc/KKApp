@@ -3,120 +3,159 @@
 	import * as Avatar from '$lib/components/avatar/index.js';
 	import { Badge } from '$lib/components/badge/index.js';
 	import * as Card from '$lib/components/card/index.js';
+	import * as Empty from '$lib/components/empty/index.js';
+	import * as Item from '$lib/components/item/index.js';
 	import Navgroup from '$lib/components/navgroup.svelte';
 	import { Separator } from '$lib/components/separator/index.js';
 	import * as User from '$lib/remotes/user.remote';
 	import { cn } from '$lib/utils.js';
-	import { Code, ExternalLink, Globe, MessageCircle } from '@lucide/svelte';
+	import { Calendar, Code, ExternalLink, FileText, Globe, Link2, MessageCircle } from '@lucide/svelte';
 	import type { PageProps } from './$types';
 	import Markdown from '$lib/components/markdown/markdown.svelte';
 	import { PUBLIC_S3_ENDPOINT } from '$env/static/public';
+	import { DateFormatter } from '@internationalized/date';
 
 	const { params }: PageProps = $props();
+	const formatter = new DateFormatter(page.data.locale, {
+		day: 'numeric',
+		month: 'long',
+		year: 'numeric'
+	});
+
 	const user = $derived(await User.get(params.userId));
 	const avatar = $derived(`${PUBLIC_S3_ENDPOINT}/avatars/${user.id}`);
-	const socials = $derived([
-		{ label: 'Website', url: user.details?.websiteUrl, icon: Globe },
-		{ label: 'LinkedIn', url: user.details?.linkedinUrl, icon: Globe },
-		{ label: 'Reddit', url: user.details?.redditUrl, icon: MessageCircle },
-		{ label: 'GitHub', url: user.details?.githubUrl, icon: Globe }
-	]);
+	const socials = $derived(
+		[
+			{ label: 'Website', url: user.details?.websiteUrl, icon: Globe },
+			{ label: 'LinkedIn', url: user.details?.linkedinUrl, icon: Link2 },
+			{ label: 'Reddit', url: user.details?.redditUrl, icon: MessageCircle },
+			{ label: 'GitHub', url: user.details?.githubUrl, icon: Globe }
+		].filter((s) => s.url)
+	);
+
+	const roleStyles: Record<string, string> = {
+		developer: "bg-[url('/dev.gif')] bg-cover",
+		staff: 'bg-red-700'
+	};
 </script>
 
-<Avatar.Root class="absolute top-4 left-4 size-32 rounded shadow-xl">
-	<Avatar.Image src={avatar} alt="@evilrabbit" class="block" />
-	<Avatar.Fallback class="rounded text-2xl font-bold">
-		{user.login.slice(0, 2).toUpperCase()}
-	</Avatar.Fallback>
-</Avatar.Root>
-
-<!-- {#snippet badge(role: string)}
-	{@const bg: Record<string, string> = {
-		developer: "bg-[url('/dev.gif')]",
-		staff: "bg-red-700"
-	}}
-
-	{#if bg[role]}
+{#snippet roleBadge(role: string)}
+	{#if roleStyles[role]}
 		<Badge
 			variant="outline"
-			class={cn('flex items-center gap-1.5 border-black px-3 py-1.5 text-white', bg[role])}
+			class={cn('flex items-center gap-1.5 border-black px-2.5 py-1 text-white', roleStyles[role])}
 		>
-			<Code class="size-4" fill="transparent" />
-			<span class="capitalize">{role}</span>
+			<Code class="size-3.5" fill="transparent" />
+			<span class="text-xs capitalize">{role}</span>
 		</Badge>
 	{/if}
-{/snippet} -->
+{/snippet}
 
-<!-- <div class="container mx-auto max-w-5xl gap-3 py-8">
-	<Card.Root class="h-min p-0 shadow-sm">
-		<div class="relative h-48 rounded-t-[inherit] bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500">
-			<div
-				class="absolute inset-0 rounded-t-[inherit] bg-[url('/graph.png')] bg-cover bg-center opacity-20"
-			></div>
+	<div class="container mx-auto max-w-5xl py-8 grid grid-cols-1 items-start gap-6 lg:grid-cols-[280px_1fr] px-4">
+		<div class="flex flex-col gap-3 lg:sticky lg:top-8">
+			<Card.Root class="gap-0 overflow-hidden p-0 shadow-sm">
+				<div
+					class="relative border-b bg-muted/30 px-6 pt-8 pb-6 text-center"
+					style="background-image: radial-gradient(color-mix(in oklab, var(--foreground) 12%, transparent) 1px, transparent 1px); background-size: 14px 14px;"
+				>
+					<Avatar.Root class="mx-auto size-36 rounded-lg border-2 border-background shadow-md">
+						<Avatar.Image src={avatar} alt={user.login} class="block" />
+						<Avatar.Fallback class="rounded-lg text-xl font-bold">
+							{user.login.slice(0, 2).toUpperCase()}
+						</Avatar.Fallback>
+					</Avatar.Root>
 
-			<Avatar.Root class="absolute top-4 left-4 size-32 rounded shadow-xl">
-				<Avatar.Image src={avatar} alt="@evilrabbit" class="block"/>
-				<Avatar.Fallback class="rounded text-2xl font-bold" >
-					{user.login.slice(0, 2).toUpperCase()}
-				</Avatar.Fallback>
-			</Avatar.Root>
-		</div>
+					<h1 class="mt-4 text-xl font-bold tracking-tight">
+						{user.displayName ?? user.login}
+					</h1>
+					<p class="font-mono text-sm text-muted-foreground">~/{user.login}</p>
 
-		<div class="relative px-6">
-			<div class="py-6">
-				<div class="flex items-start gap-2">
-					<div>
-						<h1 class="text-3xl font-bold tracking-tight">{user.displayName}</h1>
-						<p class="text-muted-foreground">@{user.login}</p>
+					{#if page.data.session?.roles?.length}
+						<div class="mt-3 flex flex-wrap justify-center gap-1.5">
+							{#each page.data.session.roles as role (role)}
+								{@render roleBadge(role)}
+							{/each}
+						</div>
+					{/if}
+				</div>
+
+				<div class="p-2">
+					{#if socials.length > 0}
+						<Item.Group>
+							{#each socials as social, i (social.label)}
+								{@const Icon = social.icon}
+								<Item.Root size="sm">
+									{#snippet child({ props })}
+										<a href={social.url} target="_blank" rel="noopener noreferrer" {...props}>
+											<Item.Media variant="icon">
+												<Icon class="size-4" />
+											</Item.Media>
+											<Item.Content>
+												<Item.Title>{social.label}</Item.Title>
+											</Item.Content>
+											<Item.Actions>
+												<ExternalLink class="size-3.5 text-muted-foreground" />
+											</Item.Actions>
+										</a>
+									{/snippet}
+								</Item.Root>
+								{#if i !== socials.length - 1}
+									<Item.Separator />
+								{/if}
+							{/each}
+						</Item.Group>
+					{:else}
+						<p class="px-3 py-2 text-sm text-muted-foreground">No links added yet.</p>
+					{/if}
+
+					<Separator class="my-2" />
+
+					<div class="flex items-center gap-1.5 px-3 py-2 text-xs text-muted-foreground">
+						<Calendar class="size-3.5" />
+						Joined {formatter.format(new Date(user.createdAt))}
 					</div>
-					{#each page.data.session!.roles as role}
-						{@render badge(role)}
-					{/each}
 				</div>
-				<Separator class="my-4" />
-				<div class="flex flex-wrap gap-3">
-					{#each socials.filter((s) => s.url) as social}
-						{@const Icon = social.icon}
-						<Badge
-							href={social.url}
-							target="_blank"
-							rel="noopener noreferrer"
-							class="gap-1 transition-shadow hover:shadow"
-							variant="outline"
-						>
-							<Icon class="size-3.5"/>
-							{social.label}
-							<ExternalLink class="size-3" />
-						</Badge>
-					{/each}
-				</div>
-			</div>
-		</div>
-	</Card.Root>
+			</Card.Root>
 
-	<div class="grid grid-cols-1 gap-3 pt-3 md:grid-cols-[250px_1fr]">
-		<Card.Root class="h-min p-4 shadow-sm ">
-			<Navgroup
-				title="Navigation"
-				args={{ userId: params.userId }}
-				routes={[
-					'/(app)/users/[userId]/cursus',
-					'/(app)/users/[userId]/projects',
-					'/(app)/users/[userId]/goals',
-					'/(app)/users/[userId]/galaxy'
-				]}
-			/>
-		</Card.Root>
-		<Card.Root class="shadow-sm">
+			<!-- Navigation sits right under identity, still inside the sidebar -->
+			<Card.Root class="p-2 shadow-sm">
+				<Navgroup
+					title="Navigation"
+					args={{ userId: params.userId }}
+					routes={[
+						'/(app)/users/[userId]/cursus',
+						'/(app)/users/[userId]/projects',
+						'/(app)/users/[userId]/goals',
+						'/(app)/users/[userId]/galaxy'
+					]}
+				/>
+			</Card.Root>
+		</div>
+
+		<!-- Main column: bio -->
+		<Card.Root class="gap-2 shadow-sm">
 			{#if user.details?.markdown}
+				<Card.Header class="flex items-center gap-2 border-b">
+					<FileText class="size-4 text-muted-foreground" />
+					<Card.Title class="text-sm font-medium text-muted-foreground">About</Card.Title>
+				</Card.Header>
 				<Card.Content class="markdown max-h-125 overflow-auto">
-					<Markdown  value={user.details.markdown} />
+					<Markdown value={user.details.markdown} />
 				</Card.Content>
 			{:else}
-			<Card.Content class="p-8 text-center text-muted-foreground">
-				This user hasn't added a bio yet.
-			</Card.Content>
+				<Card.Content>
+					<Empty.Root>
+						<Empty.Header>
+							<Empty.Media variant="icon">
+								<FileText />
+							</Empty.Media>
+							<Empty.Title>No bio yet</Empty.Title>
+							<Empty.Description>
+								{user.displayName ?? user.login} hasn't written anything about themselves.
+							</Empty.Description>
+						</Empty.Header>
+					</Empty.Root>
+				</Card.Content>
 			{/if}
 		</Card.Root>
 	</div>
-</div> -->
