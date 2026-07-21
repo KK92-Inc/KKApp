@@ -36,7 +36,7 @@
 	>
 		<div class="absolute -top-6 -right-6 h-32 w-32 rounded-full bg-emerald-500/20 blur-3xl"></div>
 
-		<Sparkles class="h-5 w-5 animate-pulse text-emerald-500" />
+		<Sparkles size={20} class="text-emerald-500" />
 		<Alert.Title
 			class="bg-linear-to-r from-emerald-600 to-teal-600 bg-clip-text text-lg font-bold tracking-tight text-transparent dark:from-emerald-400 dark:to-teal-400"
 		>

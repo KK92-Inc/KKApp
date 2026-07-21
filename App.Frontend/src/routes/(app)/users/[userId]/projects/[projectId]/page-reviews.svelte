@@ -13,6 +13,7 @@
 		Plus,
 		SortAsc,
 		SortDesc,
+		TextSearch,
 		User,
 		Users
 	} from '@lucide/svelte';
@@ -55,56 +56,65 @@
 	} as const;
 </script>
 
-<Card.Root class="gap-2 py-3">
-	<Card.Header class="flex items-center  justify-between px-4">
-		<Card.Title
-			class="flex items-center gap-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase"
-		>
-			<HeartHandshake size={16} />
-			Reviews
-		</Card.Title>
-		<Card.Action>
-			<ButtonGroup.Root>
-				<Button size="sm" variant="outline">Request <Plus /></Button>
-				<Button size="sm" variant="outline" href="/reviews/project/{context.userProject?.id}">
-					View All <HeartHandshake />
-				</Button>
-				<Select.Root type="single" bind:value={sort}>
-					<Select.Trigger
-						icon={sort === "Ascending" ? SortAsc : SortDesc}
-						class={buttonVariants({ variant: 'outline', size: 'sm', class:"h-6! py-0" })}>
-						Sort
-					</Select.Trigger>
-					<Select.Content>
-						<Select.Group>
-							<Select.Label>Sort Order</Select.Label>
-							{#each Order.options as order (order)}
-								{@const label = order === "Descending" ? 'Newest' : 'Oldest'}
-								<Select.Item value={order} {label}>
-									{label}
-								</Select.Item>
-							{/each}
-						</Select.Group>
-					</Select.Content>
-				</Select.Root>
-			</ButtonGroup.Root>
-		</Card.Action>
-	</Card.Header>
-	<Card.Content class="px-3">
-		<Item.Group class="gap-2">
-			<svelte:boundary>
-				{@const reviews = await context.reviews(sort)}
+<svelte:boundary>
+	{@const members = await context.members()}
+	{@const reviews = await context.reviews(sort)}
+	{@const member = members.find((v) => v.userId === page.data.session.userId && !v.leftAt)}
 
-				{#snippet failed(error, reset)}
-					<Failed {error} {reset} />
-				{/snippet}
+	{#snippet failed(error, reset)}
+		<Failed {error} {reset} />
+	{/snippet}
 
-				{#snippet pending()}
-					<Skeleton class="h-16 w-full" />
-					<Skeleton class="h-16 w-full" />
-					<Skeleton class="h-16 w-full" />
-				{/snippet}
+	{#snippet pending()}
+		<Skeleton class="h-16 w-full" />
+		<Skeleton class="h-16 w-full" />
+		<Skeleton class="h-16 w-full" />
+	{/snippet}
 
+	<Card.Root class="gap-2 py-3">
+		<Card.Header class="flex items-center  justify-between px-4">
+			<Card.Title
+				class="flex items-center gap-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase"
+			>
+				<HeartHandshake size={16} />
+				Reviews
+			</Card.Title>
+			<Card.Action>
+				<ButtonGroup.Root>
+					{#if member?.role === "Leader" && context.userProject?.state !== "Inactive"}
+						<!-- Only leader can request it -->
+						<Button size="sm" variant="outline">Request <Plus /></Button>
+					{:else if !member}
+						<!-- Other user can review it -->
+						<Button size="sm" variant="outline">Review <TextSearch /></Button>
+					{/if}
+					<Button size="sm" variant="outline" href="/reviews/project/{context.userProject?.id}">
+						View All <HeartHandshake />
+					</Button>
+					<Select.Root type="single" bind:value={sort}>
+						<Select.Trigger
+							icon={sort === 'Ascending' ? SortAsc : SortDesc}
+							class={buttonVariants({ variant: 'outline', size: 'sm', class: 'h-6! py-0' })}
+						>
+							Sort
+						</Select.Trigger>
+						<Select.Content>
+							<Select.Group>
+								<Select.Label>Sort Order</Select.Label>
+								{#each Order.options as order (order)}
+									{@const label = order === 'Descending' ? 'Newest' : 'Oldest'}
+									<Select.Item value={order} {label}>
+										{label}
+									</Select.Item>
+								{/each}
+							</Select.Group>
+						</Select.Content>
+					</Select.Root>
+				</ButtonGroup.Root>
+			</Card.Action>
+		</Card.Header>
+		<Card.Content class="px-3">
+			<Item.Group class="gap-2">
 				{#each reviews as item (item.id)}
 					<Item.Root variant="outline" class="items-center gap-3 p-3">
 						<Item.Media variant="image" class="shrink-0 border">
@@ -215,13 +225,13 @@
 						</Item.Content>
 
 						<Item.Content class="shrink-0">
-							<Button size="icon-sm" href="/reviews/{item.id}" aria-label="Open review">
+							<Button variant="outline" size="icon-sm" href="/reviews/{item.id}" aria-label="Open review">
 								<ArrowRight class="size-4" />
 							</Button>
 						</Item.Content>
 					</Item.Root>
 				{/each}
-			</svelte:boundary>
-		</Item.Group>
-	</Card.Content>
-</Card.Root>
+			</Item.Group>
+		</Card.Content>
+	</Card.Root>
+</svelte:boundary>
