@@ -224,7 +224,7 @@ such as official cursi, projects or rubrics.
     [ProtectedResource("workspaces", "workspaces:write")]
     [EndpointSummary("Create a new rubric")]
     [EndpointDescription("Create a new rubric to be added to the workspace")]
-    public async Task<ActionResult<RubricDO>> AddRubric(Guid id, [FromBody] PostRubricEntityRequestDTO body, CancellationToken token)
+    public async Task<ActionResult<RubricDO>> AddRubric(Guid id, [FromBody] PostRubricRequestDTO body, CancellationToken token)
     {
         var space = await service.FindByIdAsync(id, token);
         if (space is null)

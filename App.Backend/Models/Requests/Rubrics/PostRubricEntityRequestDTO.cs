@@ -11,10 +11,21 @@ namespace App.Backend.Models.Requests.Rubrics;
 
 // ============================================================================
 
+public class RubricInitialFilesRequestDTO
+{
+    [Required, StringLength(256, MinimumLength = 1)]
+    [Description("The path of the file")]
+    public required string Path { get; init; }
+
+    [Required, StringLength(256, MinimumLength = 1)]
+    [Description("The content of the file")]
+    public required string Content { get; init; }
+}
+
 /// <summary>
 /// Request DTO for creating a new rubric entity.
 /// </summary>
-public record PostRubricEntityRequestDTO
+public record PostRubricRequestDTO
 {
     [Required, StringLength(256, MinimumLength = 1)]
     [Description("The name of the rubric.")]

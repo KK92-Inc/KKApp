@@ -51,7 +51,7 @@
 	}
 </script>
 
-<form class="container mx-auto flex max-w-260 flex-col gap-6 p-6">
+<form class="container mx-auto flex flex-col gap-6 p-6">
 	<div>
 		<h1 class="text-2xl font-semibold tracking-tight">
 			{params.id ? `Edit "${context.fields.name}"` : 'Create new goal'}

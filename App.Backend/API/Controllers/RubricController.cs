@@ -82,7 +82,7 @@ public class RubricController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Update a rubric")]
     [EndpointDescription("Update rubric information")]
-    public async Task<ActionResult<RubricDO>> Update(Guid id, [FromBody] PatchRubricEntityRequestDTO body, CancellationToken token)
+    public async Task<ActionResult<RubricDO>> Update(Guid id, [FromBody] PatchRubricRequestDTO body, CancellationToken token)
     {
         var rubric = await service.FindByIdAsync(id, token);
         if (rubric is null)

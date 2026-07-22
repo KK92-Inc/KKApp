@@ -15,7 +15,7 @@ namespace App.Backend.Models.Requests.Rubrics;
 /// <summary>
 /// Request DTO for updating a rubric entity (partial update).
 /// </summary>
-public record PatchRubricEntityRequestDTO
+public record PatchRubricRequestDTO
 {
     /// <summary>
     /// Optional name update.

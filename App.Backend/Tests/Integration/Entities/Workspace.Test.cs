@@ -113,7 +113,7 @@ public class WorkspaceIntegrationTests2
         var workspace = await client.GetWorkspaceAsync(db, user);
 
         var name = Faker.Internet.DomainName();
-        var response = await client.PostAsJsonAsync($"/workspace/{workspace.Id}/rubric", new PostRubricEntityRequestDTO
+        var response = await client.PostAsJsonAsync($"/workspace/{workspace.Id}/rubric", new PostRubricRequestDTO
         {
             Name = name,
             Public = true,
@@ -458,7 +458,7 @@ public class WorkspaceIntegrationTests2
         var (_, db, user, client) = await TestUtils.SetupAsync();
         var workspace = await client.GetWorkspaceAsync(db, user);
         var name = Faker.Internet.DomainName();
-        var request = new PostRubricEntityRequestDTO
+        var request = new PostRubricRequestDTO
         {
             Name = name,
             Public = true,

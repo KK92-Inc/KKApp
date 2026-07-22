@@ -151,7 +151,7 @@ public static class TestUtils
 
     public static async Task<RubricDO> CreateRubricAsync(this HttpClient client, Guid workspaceId)
     {
-        var response = await client.PostAsJsonAsync($"/workspace/{workspaceId}/rubric", new PostRubricEntityRequestDTO
+        var response = await client.PostAsJsonAsync($"/workspace/{workspaceId}/rubric", new PostRubricRequestDTO
         {
             Name = Faker.Internet.DomainName(),
             Public = true,
