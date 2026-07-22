@@ -29,6 +29,7 @@ using Wolverine;
 using App.Backend.Domain.Entities.Reviews;
 using Keycloak.AuthServices.Sdk.Admin;
 using App.Backend.API.Params;
+using App.Backend.Domain.Values.Misc;
 
 // ============================================================================
 
@@ -46,6 +47,7 @@ public class WorkspaceController(
     ICursusService cursusService,
     IRubricService rubricService,
     IMemberService memberService,
+    IGitService gitService,
     IMessageBus bus
 ) : Controller, IInviteController
 {
@@ -211,6 +213,18 @@ such as official cursi, projects or rubrics.
             Public = dto.Public,
             MaxMembers = dto.MaxMembers
         }, token);
+
+        var user = await userService.FindByIdAsync(User.GetSID());
+        if (user is null) return Forbid();
+
+        // And if this fails ?
+        await gitService.Commit(project.Git.Owner, project.Git.Name, "main", new()
+        {
+            Files = dto.Files.Select(f => new CommitFile(f.Path, f.Content, FileEncoding.UTF8)),
+            Message = "Initial Commit",
+            Author = new(user.Login, user.Details?.Email ?? "N/A")
+        }, token);
+
 
         return Ok(new ProjectDO(project));
     }
@@ -574,7 +588,7 @@ such as official cursi, projects or rubrics.
         if (ws is null) return NotFound();
         if (ws.OwnerId is null && !User.IsInRole("staff"))
             return Forbid();
-        if (!await userService.ExistsAsync([ userId ], token))
+        if (!await userService.ExistsAsync([userId], token))
             return NotFound();
 
         // Verify that requester is the leader.

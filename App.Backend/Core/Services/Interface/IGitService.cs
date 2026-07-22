@@ -4,6 +4,7 @@
 // ============================================================================
 
 using App.Backend.Domain.Entities;
+using App.Backend.Domain.Values.Misc;
 
 namespace App.Backend.Core.Services.Interface;
 
@@ -58,7 +59,6 @@ public interface IGitService
     /// <returns>True if deleted (204), false if not found (404).</returns>
     public Task<bool> DeleteBranchAsync(string owner, string name, string branch, CancellationToken token = default);
 
-
     /// <summary>
     /// Gets the tree structure of a repository at a given branch/path.
     /// 
@@ -89,16 +89,15 @@ public interface IGitService
     public Task<string?> GetBlobAsync(string owner, string name, string branch, string path, CancellationToken token = default);
 
     /// <summary>
-    /// Sets the content of a file at a given branch/path, creating or updating as needed.
+    /// Commits a commit to the remote.
     /// </summary>
     /// <param name="owner">The owner of the repository.</param>
     /// <param name="name">The name of the repository.</param>
     /// <param name="branch">The branch to update.</param>
-    /// <param name="path">The path of the file to update.</param>
-    /// <param name="content">The base64-encoded new content for the file.</param>
+    /// <param name="commit">The commit to submit.</param>
     /// <param name="token">The cancellation token.</param>
-    /// <returns>True if the blob was updated, false if not found.</returns>
-    public Task<bool> SetBlobAsync(string owner, string name, string branch, string path, string content, CancellationToken token = default);
+    /// <returns>True if the commit was processed, false if not found.</returns>
+    public Task<bool> Commit(string owner, string name, string branch, Commit commit, CancellationToken token = default);
 
     /// <summary>
     /// Gets the list of branches in the repository.

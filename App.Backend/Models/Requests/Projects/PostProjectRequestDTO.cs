@@ -5,21 +5,11 @@
 
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using App.Backend.Domain.Values.Misc;
 
 namespace App.Backend.Models.Requests.Projects;
 
 // ============================================================================
-
-public class ProjectInitialFilesRequestDTO
-{
-    [Required, StringLength(256, MinimumLength = 1)]
-    [Description("The path of the file")]
-    public required string Path { get; init; }
-
-    [Required, StringLength(256, MinimumLength = 1)]
-    [Description("The content of the file")]
-    public required string Content { get; init; }
-}
 
 /// <summary>
 /// Request DTO for creating a new project.
@@ -61,5 +51,5 @@ public class PostProjectRequestDTO : RequestDTO
 
     [Required, MinLength(1)]
     [Description("The list of files to initialize the project repository with.")]
-    public required IEnumerable<ProjectInitialFilesRequestDTO> Files { get; init; }
+    public required IEnumerable<CommitFile> Files { get; init; }
 }

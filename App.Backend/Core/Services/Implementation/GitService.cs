@@ -4,10 +4,12 @@
 // ============================================================================
 
 using System.Net;
+using System.Net.Http.Json;
 using App.Backend.Core.Services.Interface;
 using App.Backend.Core.Services.Options;
 using App.Backend.Database;
 using App.Backend.Domain.Entities;
+using App.Backend.Domain.Values.Misc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -112,6 +114,17 @@ public class GitService : IGitService
         return await response.Content.ReadAsStringAsync(token);
     }
 
+    public async Task<bool> Commit(string owner, string name, string branch, Commit commit, CancellationToken token = default)
+    {
+        var response = await _http.PutAsJsonAsync($"repo/{owner}/{name}/commit/{branch}", commit, token);
+        return response.StatusCode switch
+        {
+            HttpStatusCode.OK => true,
+            HttpStatusCode.NotFound => false,
+            _ => throw new ServiceException(500, $"Unexpected status {response.StatusCode} setting blob {owner}/{name}/{branch}")
+        };
+    }
+
     /// <inheritdoc />
     public async Task<string> GetBranchesAsync(string owner, string name, CancellationToken token = default)
     {
@@ -172,19 +185,6 @@ public class GitService : IGitService
             HttpStatusCode.OK => true,
             HttpStatusCode.NotFound => false,
             _ => throw new ServiceException((int)response.StatusCode, $"Unexpected status {response.StatusCode} unlocking repo {owner}/{name}")
-        };
-    }
-
-    public async Task<bool> SetBlobAsync(string owner, string name, string branch, string path, string content, CancellationToken token = default)
-    {
-        var request = new StringContent(content);
-        var response = await _http.PutAsync($"repo/{owner}/{name}/blob/{branch}/{path}", request, token);
-
-        return response.StatusCode switch
-        {
-            HttpStatusCode.OK => true,
-            HttpStatusCode.NotFound => false,
-            _ => throw new ServiceException(500, $"Unexpected status {response.StatusCode} setting blob {owner}/{name}/{branch}/{path}")
         };
     }
 }

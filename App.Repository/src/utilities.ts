@@ -37,6 +37,13 @@ export function env(key: string, message?: string): string | undefined {
 	return value;
 }
 
+/** HTTP error carrying a status code, thrown from anywhere and caught at the server's error() boundary */
+export class HTTPError extends Error {
+	constructor(public status: number, message: string) {
+		super(message);
+	}
+}
+
 /** Defers the execution of a function until the current scope exits */
 export function defer(fn: () => void | Promise<void>) {
 	return {

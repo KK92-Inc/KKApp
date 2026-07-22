@@ -82,7 +82,12 @@ public class RubricController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Update a rubric")]
     [EndpointDescription("Update rubric information")]
-    public async Task<ActionResult<RubricDO>> Update(Guid id, [FromBody] PatchRubricRequestDTO body, CancellationToken token)
+    public async Task<ActionResult<RubricDO>> Update(
+        Guid id,
+        [FromQuery(Name = "param[branch]")] string branch,
+        [FromBody] PatchRubricRequestDTO body,
+        CancellationToken token
+    )
     {
         var rubric = await service.FindByIdAsync(id, token);
         if (rubric is null)
@@ -91,21 +96,8 @@ public class RubricController(
             return Forbid();
 
         rubric.Name = body.Name ?? rubric.Name;
-        // rubric.Markdown = body.Markdown ?? rubric.Markdown;
         rubric.Public = body.Public ?? rubric.Public;
         rubric.Enabled = body.Enabled ?? rubric.Enabled;
-        if (body.Markdown is not null)
-        {
-            await gitService.SetBlobAsync(
-                owner: rubric.WorkspaceId.ToString(),
-                name: rubric.Id.ToString(),
-                branch: "main",
-                path: "README.md",
-                content: body.Markdown,
-            token);
-        }
-
-
         // TODO: Separate routes for updating rules to validate them properly
         // rubric.ReviewerRules = body.ReviewerRules ?? rubric.ReviewerRules;
         // rubric.RevieweeRules = body.RevieweeRules ?? rubric.RevieweeRules;
