@@ -68,7 +68,9 @@
 					<h1 class="mt-4 text-xl font-bold tracking-tight">
 						{user.displayName ?? user.login}
 					</h1>
-					<p class="font-mono text-sm text-muted-foreground">~/{user.login}</p>
+					<p class="font-mono text-sm text-muted-foreground">
+						@{user.login}
+					</p>
 
 					{#if page.data.session?.roles?.length}
 						<div class="mt-3 flex flex-wrap justify-center gap-1.5">

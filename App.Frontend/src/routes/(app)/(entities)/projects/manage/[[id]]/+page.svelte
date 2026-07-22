@@ -1,69 +1,74 @@
 <script lang="ts">
 	import * as Page from './context.svelte';
-	import * as Project from '$lib/remotes/projects.remote';
-	import * as Stepper from '$lib/components/stepper/index.svelte';
-	import Separator from '$lib/components/separator/separator.svelte';
-	import PageStepOverview from './page-overview.svelte';
-	import PageSetupStructure from './page-setup.svelte';
-	import Button from '$lib/components/button/button.svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
+	import { Button } from '$lib/components/button';
+	import Separator from '$lib/components/separator/separator.svelte';
+	import PageOverview from './page-overview.svelte';
+	import PageStructure from './page-setup.svelte';
+	import { cn } from '$lib/utils';
 	import type { PageProps } from './$types';
 
 	const { params }: PageProps = $props();
-	const context = Page.setContext(new Page.Context());
+
+	// Passing params.id is what actually puts the context in "edit" mode —
+	// the old _page.svelte never did this, so editing silently never worked.
+	const context = Page.setContext(new Page.Context(params.id));
+
+	// Kicks off the edit-mode fetch immediately; resolves on the spot in create mode.
+	const ready = context.load();
+
 	async function submit() {
 		const project = await context.submit();
 		await goto(`/users/${page.data.session.userId}/projects/${project.id}`);
 	}
 </script>
 
-<div class="container mx-auto my-8 max-w-4xl rounded-xl border bg-card p-8 shadow-sm space-y-3">
-	<PageStepOverview />
-	{#if !params.id}
-		<PageSetupStructure />
-	{/if}
-	<Separator />
-	<Button class="ms-auto" onclick={submit}>
-		Create Project
-	</Button>
-</div>
+{#snippet form()}
+	<form class="container mx-auto flex flex-col gap-6 p-6">
+		<div>
+			<h1 class="text-2xl font-semibold tracking-tight">
+				{context.mode === 'edit' ? `Edit "${context.project.name}"` : 'Create new project'}
+			</h1>
+			<p class="text-sm text-muted-foreground">
+				{context.mode === 'edit'
+					? "Update this project's identity and settings."
+					: 'Give it an identity, define its visibility, and seed its first commit.'}
+			</p>
+		</div>
 
-<!-- <Stepper.Root class="container mx-auto my-8 max-w-4xl rounded-xl border bg-card p-8 shadow-sm">
-	<Stepper.Header>
-		<Stepper.Item value={1} title="Setup" subtitle="Identity & configuration" />
-		<Stepper.Item value={2} title="Structure" subtitle="Project content" />
-		<Stepper.Item value={3} title="Review" subtitle="Confirm & create" />
-	</Stepper.Header>
+		<div
+			class={cn(
+				'grid grid-cols-1 items-start gap-6',
+				context.mode === 'create' && 'lg:grid-cols-[320px_1fr]'
+			)}
+		>
+			<!-- Sidebar: identity + settings. Structure (when present) owns the wide column. -->
+			<div class={cn('flex flex-col gap-6', context.mode === 'create' && 'lg:sticky lg:top-8')}>
+				<PageOverview />
+			</div>
 
-	<Stepper.Window>
-		<Stepper.WindowItem value={1} class="space-y-4">
-			<Separator />
-			<Overview />
-			<Separator />
-		</Stepper.WindowItem>
-		<Stepper.WindowItem value={2} class="space-y-4">
-			<Separator />
-			<Structure />
-			<Separator />
-		</Stepper.WindowItem>
-		<Stepper.WindowItem value={3} class="space-y-4">
-			<Separator />
-			<Final />
-			<Separator />
-		</Stepper.WindowItem>
-	</Stepper.Window>
+			{#if context.mode === 'create'}
+				<PageStructure />
+			{/if}
+		</div>
 
-	<Stepper.Actions
-		loading={Project.create.pending > 0}
-		finishLabel="Create project"
-		onfinish={async () => {
-			await Project.create({
-				workspace: context.workspace,
-				active: true,
-				public: true,
-				...context.project,
-			});
-		}}
-	/>
-</Stepper.Root> -->
+		<Separator />
+
+		<div class="flex justify-end gap-3">
+			<Button onclick={submit}>
+				{context.mode === 'edit' ? 'Save Changes' : 'Create Project'}
+			</Button>
+		</div>
+	</form>
+{/snippet}
+
+{#if context.mode === 'edit'}
+	{#await ready}
+		<div class="container mx-auto max-w-260 p-6 text-sm text-muted-foreground">Loading project…</div>
+	{:then}
+		{@render form()}
+	{/await}
+{:else}
+	{@render form()}
+{/if}

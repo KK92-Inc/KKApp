@@ -13,7 +13,7 @@
 	function feed(page: number) {
 		return Account.getNotificationPage({
 			page,
-			sort: 'Ascending',
+			sort: 'Descending',
 			size: 20,
 			variant: 1024
 		});

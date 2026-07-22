@@ -45,7 +45,7 @@
 	});
 
 	async function submit() {
-		try {
+		await Problem.try(async () => {
 			await User.update({
 				userId: user.id,
 				avatarUrl: avatar,
@@ -58,15 +58,10 @@
 					linkedinUrl: normalize(details.linkedinUrl),
 					redditUrl: normalize(details.redditUrl)
 				}
-			}).updates(Account.get());
-		} catch (e) {
-			const resolved = Problem.resolve(e);
-			if (resolved.kind === 'validation') {
-				errors = resolved.fields;
-			} else {
-				toast.error(resolved.message);
-			}
-		}
+			});
+
+			toast.success("Profile Updated!")
+		});
 	}
 </script>
 
@@ -87,7 +82,7 @@
 				Clear Cache
 				<Trash2 />
 			</Button>
-			<Button size="sm" variant="default" aria-label="Update Profile" onclick={submit}>
+			<Button size="sm" variant="default" aria-label="Update Profile" loading={User.update.pending >0} onclick={submit}>
 				Update
 				<Save />
 			</Button>
