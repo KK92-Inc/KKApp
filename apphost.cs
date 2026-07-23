@@ -171,18 +171,8 @@ var frontendBuilder = builder.AddViteApp("frontend", "./App.Frontend")
     .WithEnvironment("S3_ACCESS_KEY_ID", s3Key)
     .WithEnvironment("S3_SECRET_ACCESS_KEY", s3Password)
     .WithEnvironment("S3_ENDPOINT", rustfs.GetEndpoint("s3"))
-    // NOTE(W2): For sveltekit, PUBLIC means not private so we can expose it.
     .WithEnvironment("PUBLIC_S3_ENDPOINT", rustfs.GetEndpoint("s3"))
-    //TODO: Remove on Aspire 13.2: https://github.com/dotnet/aspire/issues/13686
-    .WithAnnotation(new JavaScriptPackageManagerAnnotation("bun", runScriptCommand: "run", cacheMount: "/root/.bun")
-    {
-        PackageFilesPatterns =
-        {
-            new CopyFilePattern("package.json", "./"),
-            new CopyFilePattern("bun.lock", "./")
-        }
-    })
-    .WithAnnotation(new JavaScriptInstallCommandAnnotation(["install"]));
+    .WithBun();
 
 if (isPublish)
 {

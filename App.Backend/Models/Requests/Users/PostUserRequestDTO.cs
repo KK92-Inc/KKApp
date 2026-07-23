@@ -18,16 +18,33 @@ public record PostUserRequestDTO
     /// <summary>
     /// The unique login/username for the user.
     /// </summary>
-    [Required, StringLength(100, MinimumLength = 2)]
+    [Required, StringLength(255, MinimumLength = 4)]
+    [RegularExpression(@"^[a-zA-Z0-9_-]+$", ErrorMessage = "Login can only contain letters, numbers, underscores, and hyphens.")]
     [Description("The unique login/username for the user.")]
     public required string Login { get; init; }
 
     /// <summary>
     /// Optional display name.
     /// </summary>
-    [StringLength(100, MinimumLength = 1)]
+    [Required, EmailAddress, StringLength(100, MinimumLength = 1)]
     [Description("Optional display name for the user.")]
-    public string? DisplayName { get; init; }
+    public required string Email { get; init; }
+
+    /// <summary>
+    /// Optional first name of the user.
+    /// </summary>
+    [StringLength(255, MinimumLength = 1)]
+    [RegularExpression(@"^[a-zA-Z\s'-]+$", ErrorMessage = "First name can only contain letters, spaces, hyphens, and apostrophes.")]
+    [Description("Optional first name of the user.")]
+    public string? FirstName { get; init; }
+
+    /// <summary>
+    /// Optional last name of the user.
+    /// </summary>
+    [StringLength(255, MinimumLength = 1)]
+    [RegularExpression(@"^[a-zA-Z\s'-]+$", ErrorMessage = "Last name can only contain letters, spaces, hyphens, and apostrophes.")]
+    [Description("Optional last name of the user.")]
+    public string? LastName { get; init; }
 
     /// <summary>
     /// Optional avatar URL.

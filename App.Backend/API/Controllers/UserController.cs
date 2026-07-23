@@ -15,6 +15,11 @@ using Microsoft.EntityFrameworkCore;
 using App.Backend.Models.Requests.Users;
 using App.Backend.Domain.Entities.Users;
 using System.ComponentModel;
+using Keycloak.AuthServices.Sdk.Admin.Models;
+using Keycloak.AuthServices.Sdk.Admin;
+using App.Backend.Domain.Enums;
+using Wolverine;
+using App.Backend.API.Notifications.Variants;
 
 // ============================================================================
 
@@ -28,8 +33,10 @@ namespace App.Backend.API.Controllers;
 [Route("users"), Tags("Users")]
 [Authorize]
 public class UserController(
-    ILogger<UserController> log,
+    ILogger<UserController> logger,
     IUserService users,
+    IMessageBus bus,
+    IWorkspaceService workspaces,
     ISubscriptionService subscription
 ) : Controller
 {
@@ -70,6 +77,69 @@ public class UserController(
         return user is null ? NotFound() : Ok(new UserDO(user));
     }
 
+
+    [HttpPost]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Create a user")]
+    [EndpointDescription("Provision a new user, creates a keycloak account for them.")]
+    [Authorize(Policy = "staff")]
+    public async Task<ActionResult<UserDO>> CreateUser(
+        [FromBody] PostUserRequestDTO request,
+        [FromServices] IKeycloakClient keycloak,
+        CancellationToken ct)
+    {
+        var id = Guid.CreateVersion7();
+        var user = new UserRepresentation
+        {
+            Id = id.ToString(),
+            Username = request.Login,
+            Email = request.Email,
+            Enabled = true,
+            EmailVerified = false,
+            RealmRoles = ["student"],
+            RequiredActions = ["UPDATE_PASSWORD"], // TODO: Force 2FA at all times, configure it ?
+        };
+
+        var conflict = await users.FindByLoginAsync(request.Login, ct);
+        if (conflict is not null) return Conflict();
+
+        var result = await keycloak.CreateUserWithResponseAsync("student", user, ct);
+        if (!result.IsSuccessStatusCode)
+        {
+            var content = await result.Content.ReadAsStringAsync(ct) ?? "<empty>";
+            logger.LogError(
+                "Failed to create user in Keycloak. Login={Login} StatusCode={StatusCode} Body={Body}",
+                request.Login,
+                result.StatusCode,
+                content
+            );
+
+            return Problem("Failed to provision Keycloak identity", statusCode: 500);
+        }
+
+        var account = await users.CreateAsync(new()
+        {
+            Id = id,
+            Login = request.Login,
+            Display = request.Login,
+            Details = new()
+            {
+                UserId = id,
+                // ProxyEmail = request.Email,
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+            },
+        }, ct);
+
+        await workspaces.CreateAsync(new() { OwnerId = id, Ownership = EntityOwnership.User }, ct);
+        await bus.PublishAsync(new WelcomeUserNotification(account));
+        return Ok(new UserDO(account));
+    }
+
     [HttpPatch("{userId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -93,7 +163,7 @@ public class UserController(
         if (body.Details is not null)
         {
             // Ensure the user has a Details object to update
-            user.Details ??= new ();
+            user.Details ??= new();
             if (body.Details.FirstName is not null) user.Details.FirstName = body.Details.FirstName;
             if (body.Details.LastName is not null) user.Details.LastName = body.Details.LastName;
             if (body.Details.Markdown is not null) user.Details.Markdown = body.Details.Markdown;
