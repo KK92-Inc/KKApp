@@ -73,8 +73,8 @@ public class GitController(ILogger<GitController> log, IGitService git, IUserSer
     }
 
     [HttpPut("{id:guid}/commit/{branch}")]
-    [EndpointSummary("Get file content from repository")]
-    [EndpointDescription("Retrieves the content of a file in the git repository associated with this entity.")]
+    [EndpointSummary("Commit to a repository")]
+    [EndpointDescription("Pushes a given commit to the remote repository")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProtectedResource("repository", "repository:write")]
