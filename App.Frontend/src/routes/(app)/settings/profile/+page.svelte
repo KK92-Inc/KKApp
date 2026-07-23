@@ -14,6 +14,7 @@
 	import * as Alert from '$lib/components/alert';
 	import { Problem, type ValidationErrors } from '$lib/api';
 	import { toast } from 'svelte-sonner';
+	import { page } from '$app/state';
 
 	const dialog = useDialog();
 	const user = await Account.get();
@@ -71,7 +72,7 @@
 	<Separator class="flex-1" />
 	<ButtonGroup.Root class="items-center">
 		<ButtonGroup.Root>
-			<Button size="sm" variant="outline" aria-label="Go to Profile">
+			<Button size="sm" variant="outline" aria-label="Go to Profile" href="/users/{page.data.session.userId}">
 				Go to my Profile
 				<House />
 			</Button>

@@ -95,6 +95,8 @@ public static class Services
             builder.Configuration.GetSection(GitServiceOptions.SectionName));
         builder.Services.Configure<SubscriptionOptions>(
             builder.Configuration.GetSection(SubscriptionOptions.SectionName));
+        builder.Services.Configure<WebhookOptions>(
+            builder.Configuration.GetSection(WebhookOptions.SectionName));
 
         builder.Services.AddHttpClient<ResendClient>();
         builder.Services.Configure<ResendClientOptions>(o =>
