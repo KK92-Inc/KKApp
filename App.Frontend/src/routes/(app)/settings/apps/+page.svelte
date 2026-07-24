@@ -7,6 +7,7 @@
 	import { useDialog } from '$lib/components/dialog';
 	import * as Item from '$lib/components/item';
 	import * as Empty from '$lib/components/empty';
+	import * as AlertDialog from '$lib/components/alert-dialog';
 	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
 	import Badge from '$lib/components/badge/badge.svelte';
 	import { toast } from 'svelte-sonner';
@@ -16,46 +17,64 @@
 	import OauthAdd from './app-add.svelte';
 	import { Problem } from '$lib/api';
 	import { page } from '$app/state';
+	import * as InputGroup from '$lib/components/input-group';
+	import Switch from '$lib/components/switch/switch.svelte';
 
 	const dialog = useDialog();
+	let open = $state(false);
+	let secret = $state('');
 	let target = $state<'current' | 'root'>('current');
 	let space = $derived(target === 'root' ? Workspace.root() : Workspace.current());
 
-	// async function remove(appId: string) {
-	// 	const confirm = await dialog.confirm(
-	// 		'Delete Application?',
-	// 		'This action CANNOT be undone. Any users currently authenticated with this app will be disconnected.'
-	// 	);
+	async function remove(workspaceId: string, appId: string) {
+		const confirm = await dialog.confirm(
+			'Delete Application?',
+			'This action CANNOT be undone. Any users currently authenticated with this app will be disconnected.'
+		);
 
-	// 	if (!confirm) return;
+		if (!confirm) return;
+		await Problem.try(async () => {
+			await Workspace.removeApplication({ id: workspaceId, appId });
+			toast.success('Application deleted.');
+		});
+	}
 
-	// 	try {
-	// 		await Workspace.removeApplication({ id: space.id, appId });
-	// 		toast.success('Application deleted.');
-	// 	} catch (e) {
-	// 		const resolved = Problem.resolve(e);
-	// 		if (resolved.kind === 'service') {
-	// 			toast.error(resolved.message);
-	// 		}
-	// 	}
-	// }
+	async function rotate(workspaceId: string, appId: string) {
+		const confirm = await dialog.confirm(
+			'Rotate Client Secret?',
+			'This will immediately invalidate the old secret. Your application will be unable to authenticate until you update it with the new secret.'
+		);
 
-	// async function rotate(appId: string) {
-	// 	const confirm = await dialog.confirm(
-	// 		'Rotate Client Secret?',
-	// 		'This will immediately invalidate the old secret. Your application will be unable to authenticate until you update it with the new secret.'
-	// 	);
-
-	// 	if (confirm) {
-	// 		try {
-	// 			await Workspace.rotateApplicationSecret({ id: space.id, appId });
-	// 			toast.success('Client secret rotated successfully.');
-	// 		} catch (e) {
-	// 			toast.error('Failed to rotate secret.');
-	// 		}
-	// 	}
-	// }
+		if (!confirm) return;
+		await Problem.try(async () => {
+			secret = await Workspace.rotateApplicationSecret({ id: workspaceId, appId });
+			toast.success('Client secret rotated successfully.');
+			open = true;
+		});
+	}
 </script>
+
+<AlertDialog.Root bind:open>
+	<AlertDialog.Content>
+		<AlertDialog.Header>
+			<AlertDialog.Title>Application Secret</AlertDialog.Title>
+			<AlertDialog.Description>
+				Your secret has been rotated, copy this now into a safe place as it will not be shown again.
+			</AlertDialog.Description>
+		</AlertDialog.Header>
+
+		<InputGroup.Root>
+			<InputGroup.Input readonly value={secret} />
+			<InputGroup.Addon align="inline-end">
+				<InputGroup.Copy value={secret} />
+			</InputGroup.Addon>
+		</InputGroup.Root>
+
+		<AlertDialog.Footer>
+			<AlertDialog.Action onclick={() => (open = false)}>Ok</AlertDialog.Action>
+		</AlertDialog.Footer>
+	</AlertDialog.Content>
+</AlertDialog.Root>
 
 <svelte:boundary>
 	{@const s = await space}
@@ -82,7 +101,7 @@
 		<ButtonGroup.Root>
 			<OauthHelp />
 			{#if target === 'root' || apps.length < 3}
-				<OauthAdd workspaceId={space.id} />
+				<OauthAdd workspaceId={s.id} />
 			{:else}
 				<Button disabled size="sm">Limit Reached</Button>
 			{/if}
@@ -99,7 +118,6 @@
 
 		<Separator class="my-2" />
 	{/if}
-
 
 	<Item.Group class="gap-2">
 		{#each apps as app (app.id)}
@@ -127,15 +145,22 @@
 				</Item.Content>
 
 				<Item.Actions class="flex items-center gap-1">
-					<Button onclick={() => rotate(app.id)} variant="ghost" size="icon" title="Rotate Client Secret">
+					<Button
+						onclick={() => rotate(s.id, app.id)}
+						variant="ghost"
+						size="icon"
+						title="Rotate Client Secret"
+					>
 						<RefreshCw class="size-4 text-orange-500" />
 					</Button>
 
-					<OauthAdd workspaceId={space.id} {app} />
+					<OauthAdd workspaceId={s.id} {app} />
 
-					<Button onclick={() => remove(app.id)} variant="ghost" size="icon" title="Delete Application">
+					<Button onclick={() => remove(s.id, app.id)} variant="ghost" size="icon" title="Delete Application">
 						<Trash2Icon class="size-4 text-destructive" />
 					</Button>
+
+					<Switch />
 				</Item.Actions>
 			</Item.Root>
 		{:else}

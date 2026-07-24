@@ -37,7 +37,7 @@ public class ApplicationService(DatabaseContext ctx, IHttpClientFactory factory,
             redirectUris = app.RedirectUris ?? [],
             attributes = new Dictionary<string, string> {
                 { "pkce.code.challenge.method", "S256" }
-            }
+            },
         }, token);
 
         if (!response.IsSuccessStatusCode)
@@ -48,7 +48,7 @@ public class ApplicationService(DatabaseContext ctx, IHttpClientFactory factory,
             throw new ServiceException(500, "Failed to create associated client in Keycloak");
         }
 
-        // CRITICAL: Keycloak returns the internal client-uuid inside the Location header!
+        // Keycloak returns the internal client-uuid inside the Location header!
         var locationHeader = response.Headers.Location?.ToString();
         if (!string.IsNullOrEmpty(locationHeader))
         {

@@ -274,11 +274,12 @@ export const rotateApplicationSecret = command(
 	v.object({ id: Filters.id, appId: Filters.id }),
 	async ({ id, appId }) => {
 		const { locals } = getRequestEvent();
-		const { error } = await locals.api.POST('/workspace/{id}/application/{appId}/secret/rotate', {
+		const { error, response } = await locals.api.POST('/workspace/{id}/application/{appId}/secret/rotate', {
 			params: { path: { id, appId } }
 		});
 
 		if (error) Problem.throw(error);
+		return response.headers.get("X-Client-Secret")!;
 	}
 );
 

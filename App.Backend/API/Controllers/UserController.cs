@@ -37,9 +37,12 @@ public class UserController(
     IUserService users,
     IMessageBus bus,
     IWorkspaceService workspaces,
-    ISubscriptionService subscription
+    ISubscriptionService subscription,
+    IHttpClientFactory factory
 ) : Controller
 {
+    private readonly HttpClient keycloak = factory.CreateClient("kc_admin");
+
     [HttpGet]
     // [ProtectedResource("users", "users:read")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -89,7 +92,6 @@ public class UserController(
     [Authorize(Policy = "staff")]
     public async Task<ActionResult<UserDO>> CreateUser(
         [FromBody] PostUserRequestDTO request,
-        [FromServices] IKeycloakClient keycloak,
         CancellationToken ct)
     {
         var id = Guid.CreateVersion7();
@@ -107,7 +109,7 @@ public class UserController(
         var conflict = await users.FindByLoginAsync(request.Login, ct);
         if (conflict is not null) return Conflict();
 
-        var result = await keycloak.CreateUserWithResponseAsync("student", user, ct);
+        var result = await keycloak.PostAsJsonAsync("users", user, ct);
         if (!result.IsSuccessStatusCode)
         {
             var content = await result.Content.ReadAsStringAsync(ct) ?? "<empty>";
