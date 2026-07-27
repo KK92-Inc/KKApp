@@ -20,7 +20,6 @@ using App.Backend.Models.Responses.Entities.Projects;
 using App.Backend.Models.Responses.Entities.Cursus;
 using App.Backend.Models.Responses.Entities.Reviews;
 using App.Backend.Models.Responses.Entities.Applications;
-using App.Backend.Models.Requests.Applications;
 using App.Backend.Domain.Entities;
 using App.Backend.Models.Requests.Application;
 using App.Backend.API.Controllers.Interfaces;
@@ -279,6 +278,7 @@ such as official cursi, projects or rubrics.
         return Ok(new RubricDO(rubric));
     }
 
+    [Tags("Application")]
     [HttpGet("{id:guid}/application")]
     [ProtectedResource("applications", "applications:read")]
     [ProtectedResource("workspaces", "workspaces:read")]
@@ -287,7 +287,7 @@ such as official cursi, projects or rubrics.
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Query all applications")]
     [EndpointDescription("Retrieve a paginated list of all applications within a workspace")]
-    public async Task<ActionResult<IEnumerable<ApplicationDO>>> GetAll(
+    public async Task<ActionResult<IEnumerable<ApplicationDO>>> GetAllApplications(
         Guid id,
         [FromQuery(Name = "filter[id]")] Guid? appId,
         [FromQuery(Name = "filter[client_id]")] Guid? clientId,
@@ -299,13 +299,14 @@ such as official cursi, projects or rubrics.
         var page = await applicationService.GetAllAsync(sorting, pagination, token,
             a => a.WorkspaceId == id,
             appId is null ? null : a => a.Id == appId,
-            clientId is null ? null : a => a.KeycloakId == clientId
+            clientId is null ? null : a => a.ClientId == clientId.ToString()
         );
 
         page.AppendHeaders(Response.Headers);
         return Ok(page.Items.Select(app => new ApplicationDO(app)));
     }
 
+    [Tags("Application")]
     [HttpPost("{id:guid}/application")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -326,64 +327,60 @@ such as official cursi, projects or rubrics.
             Enabled = dto.Enabled,
             ClientId = $"w2id-{dto.Name.ToSlug()}-{uniqueId}",
             WorkspaceId = space.Id,
-            RedirectUris = dto.RedirectUris ?? [],
+            Scopes = dto.Scopes,
+            RedirectUris = dto.RedirectUris
         }, token);
 
         return Created(new Uri($"/workspace/{space.Id}/application/{app.Id}", UriKind.Relative), new ApplicationDO(app));
     }
 
-    [HttpPatch("{id:guid}/application/{appId:guid}")]
+    [Tags("Application")]
+    [HttpPatch("/application/{appId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProtectedResource("applications", "applications:write")]
     [ProtectedResource("workspaces", "workspaces:write")]
     [EndpointSummary("Update an existing application")]
     [EndpointDescription("Update an existing application metadata configuration and synchronize changes out to Keycloak.")]
-    public async Task<IActionResult> UpdateApplication(Guid id, Guid appId, [FromBody] PatchApplicationRequestDTO dto, CancellationToken token)
+    public async Task<IActionResult> UpdateApplication(Guid appId, [FromBody] PatchApplicationRequestDTO dto, CancellationToken token)
     {
-        var space = await service.FindByIdAsync(id, token);
-        if (space is null) return NotFound();
-
         var app = await applicationService.FindByIdAsync(appId, token);
-        if (app is null || app.WorkspaceId != space.Id)
-            return NotFound();
+        if (app is null) return NotFound();
 
-        // Apply fields safely via null-coalescing operations
         app.Name = dto.Name ?? app.Name;
+        app.Enabled = dto.Enabled ?? app.Enabled;
         app.Description = dto.Description ?? app.Description;
         app.RedirectUris = dto.RedirectUris ?? app.RedirectUris;
+        app.Scopes = dto.Scopes ?? app.Scopes;
 
         await applicationService.UpdateAsync(app, token);
         return Ok(new ApplicationDO(app));
     }
 
-    [HttpDelete("{id:guid}/application/{appId:guid}")]
+    [Tags("Application")]
+    [HttpDelete("/application/{appId:guid}")]
     [ProtectedResource("applications", "applications:delete")]
-    [ProtectedResource("workspaces", "workspaces:delete")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [EndpointSummary("Delete an existing application")]
     [EndpointDescription("Permanently delete an application registration and dismantle its linked client in Keycloak.")]
-    public async Task<IActionResult> DeleteApplication(Guid id, Guid appId, CancellationToken token)
+    public async Task<IActionResult> DeleteApplication(Guid appId, CancellationToken token)
     {
-        var space = await service.FindByIdAsync(id, token);
-        if (space is null) return NotFound();
-
         var app = await applicationService.FindByIdAsync(appId, token);
-        if (app is null || app.WorkspaceId != space.Id)
-            return NotFound();
+        if (app is null) return NotFound();
 
         await applicationService.DeleteAsync(app, token);
         return NoContent();
     }
 
-    [HttpPost("{id:guid}/application/{appId:guid}/secret/rotate")]
+    [Tags("Application")]
+    [HttpPost("/application/{appId:guid}/secret/rotate")]
     [ProtectedResource("applications", "applications:write")]
     [ProtectedResource("workspaces", "workspaces:write")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [EndpointSummary("Rotate client secret")]
-    [EndpointDescription("Demotes the active secret to fallback 'rotated' status and issues a brand-new primary secret for zero-downtime migrations.")]
+    [EndpointDescription("Rotate / request a new secret")]
     public async Task<IActionResult> RotateApplicationSecret(Guid id, Guid appId, CancellationToken token)
     {
         var space = await service.FindByIdAsync(id, token);
@@ -394,8 +391,35 @@ such as official cursi, projects or rubrics.
             return NotFound();
 
         var secret = await applicationService.RotateClientSecretAsync(app.Id, token);
-        Response.Headers.TryAdd("X-Client-Secret", secret ?? "undefined");
+        Response.Headers.TryAdd("X-Client-Secret", secret);
         return NoContent();
+    }
+
+    [Tags("Application")]
+    [HttpDelete("/application/{appId:guid}/consent")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [EndpointSummary("Revoke consent for a application")]
+    [EndpointDescription("Revokes the consent you have given towards a application.")]
+    public async Task<IActionResult> RevokeConsent(Guid appId, CancellationToken token)
+    {
+        var app = await applicationService.FindByIdAsync(appId, token);
+        if (app is null) return NotFound();
+
+        await applicationService.RevokeAccess(app.Id, User.GetSID(), token);
+        return NoContent();
+    }
+
+    [Tags("Application")]
+    [HttpGet("/application/consented")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [EndpointSummary("Query consented applications")]
+    [EndpointDescription("Retrieve a list of all applications the current user has granted access to.")]
+    public async Task<ActionResult<IEnumerable<ApplicationDO>>> GetConsentedApplications(CancellationToken token)
+    {
+        var apps = await applicationService.GetConsentedApplicationsAsync(User.GetSID(), token);
+        return Ok(apps.Select(app => new ApplicationDO(app)));
     }
 
     [Authorize(Policy = "IsStaff")]

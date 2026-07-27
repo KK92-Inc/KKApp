@@ -28,6 +28,9 @@ public class PostApplicationRequestDTO
     [Description("A description of the application.")]
     public required string Description { get; set; }
 
+    [Description("List of scopes this app has.")]
+    public ICollection<string> Scopes { get; set; } = [];
+
     [Description("List of allowed redirect URIs after authentication.")]
     public ICollection<string> RedirectUris { get; set; } = [];
 }

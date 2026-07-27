@@ -6665,7 +6665,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/workspace/{id}/application/{appId}": {
+    "/application/{appId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -6684,7 +6684,6 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    id: string;
                     appId: string;
                 };
                 cookie?: never;
@@ -6740,10 +6739,11 @@ export interface paths {
          */
         patch: {
             parameters: {
-                query?: never;
+                query?: {
+                    id?: string;
+                };
                 header?: never;
                 path: {
-                    id: string;
                     appId: string;
                 };
                 cookie?: never;
@@ -6799,7 +6799,7 @@ export interface paths {
         };
         trace?: never;
     };
-    "/workspace/{id}/application/{appId}/secret/rotate": {
+    "/application/{appId}/secret/rotate": {
         parameters: {
             query?: never;
             header?: never;
@@ -6810,14 +6810,15 @@ export interface paths {
         put?: never;
         /**
          * Rotate client secret
-         * @description Demotes the active secret to fallback 'rotated' status and issues a brand-new primary secret for zero-downtime migrations.
+         * @description Rotate / request a new secret
          */
         post: {
             parameters: {
-                query?: never;
+                query?: {
+                    id?: string;
+                };
                 header?: never;
                 path: {
-                    id: string;
                     appId: string;
                 };
                 cookie?: never;
@@ -6865,6 +6866,150 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/application/{appId}/consent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke consent for a application
+         * @description Revokes the consent you have given towards a application.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    appId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/application/consented": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Query consented applications
+         * @description Retrieve a list of all applications the current user has granted access to.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ApplicationDO"][];
+                        "application/json": components["schemas"]["ApplicationDO"][];
+                        "text/json": components["schemas"]["ApplicationDO"][];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -7867,13 +8012,12 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
-            /** Format: uuid */
-            keycloakId: string;
             name: string;
             clientId: string;
             description: string;
             enabled: boolean;
-            redirectUris?: string[];
+            scopes: string[];
+            redirectUris: string[];
             /** Format: uuid */
             workspaceId: string;
         };
@@ -8036,8 +8180,12 @@ export interface components {
         PatchApplicationRequestDTO: {
             /** @description The name of the application. */
             name?: null | string;
+            /** @description Whether the application is enabled. */
+            enabled: null | boolean;
             /** @description A description of the application. */
             description?: null | string;
+            /** @description List of scopes this app has. */
+            scopes?: null | string[];
             /** @description List of allowed redirect URIs after authentication. */
             redirectUris?: null | string[];
         };
@@ -8130,6 +8278,8 @@ export interface components {
             enabled: boolean;
             /** @description A description of the application. */
             description: string;
+            /** @description List of scopes this app has. */
+            scopes?: string[];
             /** @description List of allowed redirect URIs after authentication. */
             redirectUris?: string[];
         };

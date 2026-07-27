@@ -24,8 +24,8 @@
 // Config — local test secrets only, never production.
 // ----------------------------------------------------------------------------
 
-const TEST_CLIENT_ID = "w2id-my-cool-app-019f93f8305e";
-const TEST_CLIENT_SECRET = "6zn4gcw7MTAmhAXvDwDbiaenm1kWJvy8";
+const TEST_CLIENT_ID = "w2id-apply-019fa334b04f";
+const TEST_CLIENT_SECRET = "A3yTJTLUAj7NyLR24XZJ28tRfGi3DbQn";
 
 const KEYCLOAK_BASE = "http://localhost:8080/realms/student/protocol/openid-connect";
 const BACKEND_URL = process.env.BACKEND_URL ?? "http://localhost:5145";
@@ -170,6 +170,7 @@ async function main() {
 
 	console.log("\n[1/3] Requesting service token (client_credentials)...");
 	let tokens = await getServiceToken();
+	console.log(tokens.access_token)
 	console.log(
 		`  got access_token (expires_in=${tokens.expires_in ?? "?"}s, has refresh_token=${!!tokens.refresh_token})`
 	);

@@ -10,7 +10,7 @@ using System.ComponentModel.DataAnnotations;
 
 // ============================================================================
 
-namespace App.Backend.Models.Requests.Applications;
+namespace App.Backend.Models.Requests.Application;
 
 public class PatchApplicationRequestDTO
 {
@@ -18,9 +18,16 @@ public class PatchApplicationRequestDTO
     [Description("The name of the application.")]
     public string? Name { get; set; }
 
+    [Required]
+    [Description("Whether the application is enabled.")]
+    public bool? Enabled { get; set; }
+
     [StringLength(2048, MinimumLength = 1)]
     [Description("A description of the application.")]
     public string? Description { get; set; }
+
+    [Description("List of scopes this app has.")]
+    public ICollection<string>? Scopes { get; set; }
 
     [Description("List of allowed redirect URIs after authentication.")]
     public ICollection<string>? RedirectUris { get; set; }

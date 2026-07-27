@@ -39,8 +39,7 @@ using App.Backend.Core.Engines.Evaluations.Rules;
 using App.Backend.API.Schemas.Schema;
 using App.Backend.API.Schemas.Document;
 using Duende.AccessTokenManagement;
-using Microsoft.AspNetCore.Authorization;
-using Keycloak.AuthServices.Authorization.Requirements;
+using Keycloak.AuthServices.Sdk.Kiota;
 
 // ============================================================================
 
@@ -83,7 +82,7 @@ public static class Services
         builder.Services.AddControllers(o =>
         {
             o.AddProtectedResources();
-            o.Filters.Add<UserResourceFilter>();
+            // o.Filters.Add<UserResourceFilter>();
             o.Filters.Add<ServiceExceptionFilter>();
         }).AddJsonOptions(o =>
         {
@@ -303,24 +302,130 @@ public static class Services
     // Rate Limiting
     // ============================================================================
 
+    /// <summary>
+    /// Rate limit values. Apps get a burst cap (req/s) AND an hourly cap, both scaled
+    /// x<see cref="StaffMultiplier"/> when the calling client carries the "staff" realm role.
+    /// </summary>
+    private static class RateLimits
+    {
+        public const int HumanPermitLimit = 100;
+        public static readonly TimeSpan HumanWindow = TimeSpan.FromMinutes(1);
+
+        public const int AppPerSecond = 2;
+        public const int AppPerHour = 1200;
+        public const int StaffMultiplier = 4;
+    }
+
+    /// <summary>
+    /// Distinguishes a human user token from a Keycloak service-account (client-credentials) token.
+    /// Keycloak stamps a "clientId" claim on service-account tokens that user tokens never carry,
+    /// so its presence is a reliable signal that the caller is an app, not a person.
+    /// </summary>
+    private static (bool IsApp, string PartitionKey, bool IsStaff) ClassifyCaller(HttpContext httpContext)
+    {
+        var user = httpContext.User;
+        var clientId = user.FindFirst("clientId")?.Value;
+
+        if (!string.IsNullOrEmpty(clientId))
+            return (true, clientId, user.IsInRole("staff"));
+
+        var key = user.Identity?.Name
+            ?? httpContext.Connection.RemoteIpAddress?.ToString()
+            ?? "unknown";
+        return (false, key, false);
+    }
+
+    /// <summary>
+    /// Limiter for human users only. No-ops (unlimited) for app/service-account callers,
+    /// since those are governed by <see cref="CreateAppBurstLimiter"/> and <see cref="CreateAppHourlyLimiter"/>.
+    /// </summary>
+    private static PartitionedRateLimiter<HttpContext> CreateHumanUserLimiter() =>
+        PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+        {
+            var (isApp, key, _) = ClassifyCaller(httpContext);
+            if (isApp)
+                return RateLimitPartition.GetNoLimiter("app-bypass");
+
+            return RateLimitPartition.GetSlidingWindowLimiter(
+                partitionKey: $"user:{key}",
+                factory: _ => new SlidingWindowRateLimiterOptions
+                {
+                    PermitLimit = RateLimits.HumanPermitLimit,
+                    Window = RateLimits.HumanWindow,
+                    SegmentsPerWindow = 4,
+                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                    QueueLimit = 10
+                });
+        });
+
+    /// <summary>
+    /// Per-app burst limiter (requests/second). No-ops for human callers.
+    /// </summary>
+    private static PartitionedRateLimiter<HttpContext> CreateAppBurstLimiter() =>
+        PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+        {
+            var (isApp, key, isStaff) = ClassifyCaller(httpContext);
+            if (!isApp)
+                return RateLimitPartition.GetNoLimiter("human-bypass");
+
+            var limit = isStaff ? RateLimits.AppPerSecond * RateLimits.StaffMultiplier : RateLimits.AppPerSecond;
+
+            return RateLimitPartition.GetTokenBucketLimiter(
+                partitionKey: $"app-burst:{key}",
+                factory: _ => new TokenBucketRateLimiterOptions
+                {
+                    TokenLimit = limit,
+                    TokensPerPeriod = limit,
+                    ReplenishmentPeriod = TimeSpan.FromSeconds(1),
+                    AutoReplenishment = true,
+                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                    QueueLimit = 0
+                });
+        });
+
+    /// <summary>
+    /// Per-app hourly limiter. No-ops for human callers. Runs alongside the burst limiter above,
+    /// so an app must satisfy BOTH the per-second and per-hour caps.
+    /// </summary>
+    private static PartitionedRateLimiter<HttpContext> CreateAppHourlyLimiter() =>
+        PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+        {
+            var (isApp, key, isStaff) = ClassifyCaller(httpContext);
+            if (!isApp)
+                return RateLimitPartition.GetNoLimiter("human-bypass");
+
+            var limit = isStaff ? RateLimits.AppPerHour * RateLimits.StaffMultiplier : RateLimits.AppPerHour;
+
+            return RateLimitPartition.GetSlidingWindowLimiter(
+                partitionKey: $"app-hourly:{key}",
+                factory: _ => new SlidingWindowRateLimiterOptions
+                {
+                    PermitLimit = limit,
+                    Window = TimeSpan.FromHours(1),
+                    SegmentsPerWindow = 12,
+                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                    QueueLimit = 0
+                });
+        });
+
     private static void RegisterRateLimiting(WebApplicationBuilder builder)
     {
         builder.Services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = 429;
-            options.AddPolicy("AuthenticatedRateLimit", context =>
-                RateLimitPartition.GetSlidingWindowLimiter(
-                    partitionKey: context.User.Identity?.Name
-                        ?? context.Connection.RemoteIpAddress?.ToString()
-                        ?? "unknown",
-                    factory: _ => new SlidingWindowRateLimiterOptions
-                    {
-                        PermitLimit = 100,
-                        Window = TimeSpan.FromMinutes(1),
-                        SegmentsPerWindow = 4,
-                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                        QueueLimit = 10
-                    }));
+            options.OnRejected = (context, token) =>
+            {
+                if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+                    context.HttpContext.Response.Headers.RetryAfter = ((int)retryAfter.TotalSeconds).ToString();
+
+                return ValueTask.CompletedTask;
+            };
+
+            // Global limiter: applies to every request automatically, no per-endpoint
+            options.GlobalLimiter = PartitionedRateLimiter.CreateChained(
+                CreateHumanUserLimiter(),
+                CreateAppBurstLimiter(),
+                CreateAppHourlyLimiter());
         });
     }
 
@@ -360,18 +465,22 @@ public static class Services
     private static void AddKeycloakAdminHttpClient(WebApplicationBuilder builder)
     {
         var name = ClientCredentialsClientName.Parse("kc_admin");
-        var options = builder.Configuration.GetKeycloakOptions<KeycloakAdminClientOptions>()!;
+        var options = builder.Configuration.GetKeycloakOptions<Keycloak.AuthServices.Sdk.Kiota.KeycloakAdminClientOptions>()!;
 
         builder.Services
             .AddClientCredentialsTokenManagement()
             .AddClient(name, client => BindKeycloak(client, options));
 
         builder.Services // NOTE(W2): We avoid using the package because it lacks methods.
-            .AddHttpClient(name, client =>
-            {
-                client.BaseAddress = new Uri($"{options.AuthServerUrl}admin/realms/{options.Realm}/");
-            })
+            .AddKiotaKeycloakAdminHttpClient(builder.Configuration)
             .AddClientCredentialsTokenHandler(name);
+
+        // .AddKiotaKeycloakAdminHttpClient(options)
+        // // .AddHttpClient(name, client =>
+        // // {
+        // //     client.BaseAddress = new Uri($"{options.AuthServerUrl}admin/realms/{options.Realm}/");
+        // // })
+        // .AddClientCredentialsTokenHandler(name);
     }
 
     /// <summary>

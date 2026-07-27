@@ -71,15 +71,18 @@ const CreateApplicationSchema = v.object({
 	name: v.string(),
 	enabled: v.boolean(),
 	description: v.string(),
-	redirectUris: v.optional(v.array(v.string()))
+	redirectUris: v.optional(v.array(v.string())),
+	scopes: v.optional(v.array(v.string()))
 });
 
 const UpdateApplicationSchema = v.object({
 	id: Filters.id,
 	appId: Filters.id,
+	enabled: v.optional(v.boolean()),
 	name: v.optional(v.string()),
 	description: v.optional(v.string()),
-	redirectUris: v.optional(v.nullable(v.array(v.string())))
+	redirectUris: v.optional(v.nullable(v.array(v.string()))),
+	scopes: v.optional(v.nullable(v.array(v.string())))
 });
 
 const TransferSchema = v.object({
@@ -229,6 +232,14 @@ export const getApplications = query(Filters.id, async (id) => {
 	return data;
 });
 
+export const getConsentedApps = query(async () => {
+	const { locals } = getRequestEvent();
+	const { error, data } = await locals.api.GET('/application/consented');
+
+	if (error || !data) Problem.throw(error);
+	return data;
+});
+
 /** Register a new application (OAuth client) for a workspace */
 export const createApplication = command(CreateApplicationSchema, async ({ id, ...rest }) => {
 	const { locals } = getRequestEvent();
@@ -245,8 +256,8 @@ export const createApplication = command(CreateApplicationSchema, async ({ id, .
 /** Update an application's details */
 export const updateApplication = command(UpdateApplicationSchema, async ({ id, appId, ...rest }) => {
 	const { locals } = getRequestEvent();
-	const { error } = await locals.api.PATCH('/workspace/{id}/application/{appId}', {
-		params: { path: { id, appId } },
+	const { error } = await locals.api.PATCH('/application/{appId}', {
+		params: { path: { appId } },
 		body: rest
 	});
 
@@ -259,7 +270,7 @@ export const removeApplication = command(
 	v.object({ id: Filters.id, appId: Filters.id }),
 	async ({ id, appId }) => {
 		const { locals } = getRequestEvent();
-		const { error } = await locals.api.DELETE('/workspace/{id}/application/{appId}', {
+		const { error } = await locals.api.DELETE('/application/{appId}', {
 			params: { path: { id, appId } }
 		});
 
@@ -274,7 +285,7 @@ export const rotateApplicationSecret = command(
 	v.object({ id: Filters.id, appId: Filters.id }),
 	async ({ id, appId }) => {
 		const { locals } = getRequestEvent();
-		const { error, response } = await locals.api.POST('/workspace/{id}/application/{appId}/secret/rotate', {
+		const { error, response } = await locals.api.POST('/application/{appId}/secret/rotate', {
 			params: { path: { id, appId } }
 		});
 
@@ -282,6 +293,17 @@ export const rotateApplicationSecret = command(
 		return response.headers.get("X-Client-Secret")!;
 	}
 );
+
+/** Revoke consent from an app */
+export const revokeConsent = command(Filters.id, async (appId) => {
+	const { locals } = getRequestEvent();
+	const { error } = await locals.api.DELETE('/application/{appId}/consent', {
+		params: { path: { appId } }
+	});
+
+	if (error) Problem.throw(error);
+	getConsentedApps().refresh();
+});
 
 // ============================================================================
 // Transfers

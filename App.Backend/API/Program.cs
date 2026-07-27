@@ -18,20 +18,12 @@ app.UseStatusCodePages();
 app.UseExceptionHandler();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 app.UseSerilogRequestLogging();
 app.UseResponseCompression();
 app.MapDefaultEndpoints();
 
-// app.MapControllers().RequireAuthorization();
-app.MapControllers().RequireAuthorization();;
+app.MapControllers().RequireAuthorization();
 
-// app.UseRouting();
-// app.UseAuthentication();
-// app.UseAuthorization();
-
-// app.UseHttpsRedirection();
-// app.MapControllers()
-//     .RequireAuthorization()
-//     .RequireRateLimiting("AuthenticatedRateLimit");
 
 app.Run();

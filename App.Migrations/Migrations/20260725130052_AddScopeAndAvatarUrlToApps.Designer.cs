@@ -3,6 +3,7 @@ using System;
 using App.Backend.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,13 +12,15 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Migrations.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    partial class DatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20260725130052_AddScopeAndAvatarUrlToApps")]
+    partial class AddScopeAndAvatarUrlToApps
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.8")
+                .HasAnnotation("ProductVersion", "10.0.7")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -52,6 +55,11 @@ namespace Migrations.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("enabled");
 
+                    b.Property<Guid>("KeycloakId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("kc_id")
+                        .HasColumnOrder(1);
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text")
@@ -76,6 +84,9 @@ namespace Migrations.Migrations
                         .HasColumnName("workspace_id");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("KeycloakId")
+                        .IsUnique();
 
                     b.HasIndex("WorkspaceId");
 

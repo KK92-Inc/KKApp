@@ -142,7 +142,10 @@ export class Problem {
 		opts?: { onValidation?: (fields: ValidationErrors) => void }
 	): Promise<T | undefined> {
 		try {
-			return await fn();
+			const id = toast.loading("Please wait...")
+			const out = await fn();
+			toast.dismiss(id)
+			return out;
 		} catch (e) {
 			const resolved = Problem.resolve(e);
 

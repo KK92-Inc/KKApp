@@ -12,19 +12,18 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace App.Backend.Domain.Entities;
 
 [Table("tbl_application")]
-[Index(nameof(KeycloakId), IsUnique = true)]
 public class Application : BaseEntity
 {
-    [Column("kc_id", Order = 1)]
-    public Guid KeycloakId { get; set; }
+    [Column("avatar_url")]
+    public string? AvatarUrl { get; set; }
 
-    [Column("name"), StringLength(255)]
+    [Column("name")]
     public required string Name { get; set; }
 
-    [Column("client_id"), StringLength(255)]
+    [Column("client_id")]
     public required string ClientId { get; set; }
 
-    [Column("description"), StringLength(2048)]
+    [Column("description")]
     public required string Description { get; set; }
 
     [Column("enabled")]
@@ -32,6 +31,9 @@ public class Application : BaseEntity
 
     [Column("redirect_uris")]
     public ICollection<string> RedirectUris { get; set; } = [];
+
+    [Column("scopes")]
+    public ICollection<string> Scopes { get; set; } = [];
 
     [Column("workspace_id")]
     public Guid WorkspaceId { get; set; }

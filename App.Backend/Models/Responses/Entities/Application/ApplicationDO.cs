@@ -18,9 +18,6 @@ namespace App.Backend.Models.Responses.Entities.Applications;
 public class ApplicationDO(Application application) : BaseEntityDO<Application>(application)
 {
     [Required]
-    public Guid KeycloakId { get; set; } = application.KeycloakId;
-
-    [Required]
     public string Name { get; set; } = application.Name;
 
     [Required]
@@ -32,6 +29,10 @@ public class ApplicationDO(Application application) : BaseEntityDO<Application>(
     [Required]
     public bool Enabled { get; set; } = application.Enabled;
 
+    [Required]
+    public ICollection<string> Scopes { get; set; } = application.Scopes;
+
+    [Required]
     public ICollection<string> RedirectUris { get; set; } = application.RedirectUris;
 
     [Required]

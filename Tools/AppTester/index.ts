@@ -11,8 +11,8 @@ import crypto from "node:crypto";
 // ============================================================================
 
 // These are "legit" secrets but they are just testing locally and are not used in production.
-const TEST_CLIENT_ID = "w2id-w2wizard-app-019f6bf05a14";
-const TEST_CLIENT_SECRET = "kPxRvFKnEFUj53Cp9nlVT37lNV1Mg9WB";
+const TEST_CLIENT_ID = "w2id-testapp-019fa4b5c21a";
+const TEST_CLIENT_SECRET = "YY1DsuOvfgFJ44ydYrOzCz7mhngTk8IW";
 const verifierStore = new Map<string, string>(); // Fake cookie store for demo purposes
 
 async function createPkce() {

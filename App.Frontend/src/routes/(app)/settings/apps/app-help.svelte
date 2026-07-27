@@ -5,13 +5,13 @@
   import Separator from '$lib/components/separator/separator.svelte';
   import * as Item from '$lib/components/item';
 
-  const { title = 'How Custom Apps Work' }: { title?: string } = $props();
+  const { title = 'About Apps' }: { title?: string } = $props();
 </script>
 
 <Dialog.Root>
   <Dialog.Trigger class={buttonVariants({ variant: 'outline', size: 'sm' })}>
     {title}
-    <CircleQuestionMark class="ml-2 h-4 w-4" />
+    <CircleQuestionMark />
   </Dialog.Trigger>
 
   <Dialog.Content>
@@ -22,7 +22,7 @@
       </Dialog.Description>
     </Dialog.Header>
 
-    <Item.Group class="grid grid-rows-3 gap-3">
+    <Item.Group class="flex flex-col gap-3">
       <Item.Root variant="muted" size="sm">
         <Item.Media variant="icon"><KeySquare class="size-4" /></Item.Media>
         <Item.Content>

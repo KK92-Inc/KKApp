@@ -5,11 +5,11 @@
 
 #:sdk Aspire.AppHost.Sdk@13.4.6
 #:package Scalar.Aspire@0.8.45
-#:package Aspire.Npgsql@13.3.5
-#:package Aspire.Hosting.JavaScript@13.3.5
-#:package Aspire.Hosting.Docker@13.3.5
-#:package Aspire.Hosting.Valkey@13.3.5
-#:package Aspire.Hosting.PostgreSQL@13.3.5
+#:package Aspire.Npgsql@13.4.6
+#:package Aspire.Hosting.JavaScript@13.4.6
+#:package Aspire.Hosting.Docker@13.4.6
+#:package Aspire.Hosting.Valkey@13.4.6
+#:package Aspire.Hosting.PostgreSQL@13.4.6
 #:package CommunityToolkit.Aspire.Hosting.Bun@*
 #:package Keycloak.AuthServices.Aspire.Hosting@0.2.0
 // Project references
@@ -94,6 +94,7 @@ var migration = builder.AddProject<Projects.Migrations>("migration-job")
 // ============================================================================
 
 var api = builder.AddDockerfile("git-api", "./App.Repository", "Dockerfile.api")
+    // .WithHttpHealthCheck("/health", endpointName: "http")
     .WithVolume("git-repos", "/home/git/repos")
     .WithHttpEndpoint(targetPort: 3000, name: "http")
     .WithLifetime(ContainerLifetime.Persistent);

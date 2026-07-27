@@ -3,88 +3,140 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using System.Net.Http.Json;
+using System.Text.Json;
 using App.Backend.Database;
 using App.Backend.Core.Services.Interface;
 using App.Backend.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System.Net.Http.Json;
+using Keycloak.AuthServices.Sdk.Kiota.Admin;
+using Microsoft.Kiota.Abstractions;
+using App.Backend.Core.Query;
+using Keycloak.AuthServices.Sdk.Kiota.Admin.Models;
 
 namespace App.Backend.Core.Services.Implementation;
 
-public class ApplicationService(DatabaseContext ctx, IHttpClientFactory factory, ILogger<ApplicationService> log) : BaseService<Application>(ctx), IApplicationService
+// ============================================================================
+
+public class ApplicationService(DatabaseContext ctx, ILogger<ApplicationService> log, KeycloakAdminApiClient client) : BaseService<Application>(ctx), IApplicationService
 {
+    private const string Realm = "student";
+    private const string StaffRoleName = "staff";
     private readonly DatabaseContext context = ctx;
-    private readonly HttpClient keycloak = factory.CreateClient("kc_admin");
+
+    public async Task<List<Application>> GetConsentedApplicationsAsync(Guid userId, CancellationToken token = default)
+    {
+        // 1. Fetch user consents from Keycloak
+        var consents = await client.Admin.Realms[Realm]
+            .Users[userId.ToString()]
+            .Consents
+            .GetAsync(null, token);
+
+        if (consents is null || consents.Count == 0)
+            return [];
+
+        var consented = consents
+            .Select(c =>
+            {
+                if (c.AdditionalData.TryGetValue("clientId", out var val))
+                    return val?.ToString();
+                return null;
+            })
+            .Where(id => !string.IsNullOrEmpty(id))
+            .Cast<string>()
+            .Distinct()
+            .ToList();
+
+        if (consented.Count == 0)
+            return [];
+        return await _dbSet.AsNoTracking()
+            .Where(a => consented.Contains(a.ClientId))
+            .ToListAsync(token);
+    }
 
     public override async Task<Application> CreateAsync(Application entity, CancellationToken token = default)
     {
         var workspace = await context.Workspaces.FirstOrDefaultAsync(w => w.Id == entity.WorkspaceId, token)
             ?? throw new ServiceException(400, "Associated workspace not found");
 
-        var app = await base.CreateAsync(entity, token);
-        var response = await keycloak.PostAsJsonAsync("clients", new
+        try
         {
-            name = app.Name,
-            clientId = app.ClientId,
-            description = app.Description,
-            enabled = app.Enabled,
-            protocol = "openid-connect",
-            publicClient = false,
-            standardFlowEnabled = true,
-            consentRequired = true,
-            serviceAccountsEnabled = true,
-            redirectUris = app.RedirectUris ?? [],
-            attributes = new Dictionary<string, string> {
-                { "pkce.code.challenge.method", "S256" }
-            },
-        }, token);
+            var realm = client.Admin.Realms[Realm];
+            await realm.Clients.PostAsync(new()
+            {
+                Name = entity.Name,
+                Id = entity.Id.ToString(),
+                ClientId = entity.ClientId,
+                Description = entity.Description,
+                Enabled = entity.Enabled,
+                Protocol = "openid-connect",
+                PublicClient = false,
+                StandardFlowEnabled = true,
+                ConsentRequired = true,
+                ServiceAccountsEnabled = true,
+                FullScopeAllowed = false,
+                RedirectUris = [.. entity.RedirectUris],
+                Attributes = new() { AdditionalData = { { "pkce.code.challenge.method", "S256" } } }
+            }, null, token);
 
-        if (!response.IsSuccessStatusCode)
+            if (workspace.Owner is null)
+            {
+                // First we get the role and service account
+                var role = await realm.Roles[StaffRoleName].GetAsync(null, token);
+                var account = await realm.Clients[entity.Id.ToString()].ServiceAccountUser.GetAsync(null, token);
+
+#pragma warning disable CS0618 // Type or member is obsolete
+                /**
+                    The desired role must be set in both Scope and Service account roles tabs,
+                    or allow full scope and then just set the role in Service account roles.
+
+                    However Full scope is dangerous for third party clients as the roles of
+                    a privilged users i.e: Staff can by hijacked and then used to make privileged requests.
+
+                    Thus we have to explicitely add the role to both Role and Scope Mappings.
+                */
+                await realm.Clients[entity.Id.ToString()]
+                    .ScopeMappings
+                    .Realm.PostAsync([role!], null, token);
+
+                await realm.Users[account!.Id]
+                    .RoleMappings
+                    .Realm.PostAsync([role!], null, token);
+#pragma warning restore CS0618 // There is no alternative.
+
+            }
+
+            await SyncClientScopesAsync(entity.Id, entity.Scopes, token);
+        }
+        catch (Exception e)
         {
-            await _dbSet.Where(a => a.Id == app.Id).ExecuteDeleteAsync(token);
-            var errorContent = await response.Content.ReadAsStringAsync(token);
-            log.LogError("Failed to create Keycloak client for application {AppId}: {Error}", app.Id, errorContent);
+            log.LogError("Failed to create Keycloak client for application: {Error}", e.Message);
             throw new ServiceException(500, "Failed to create associated client in Keycloak");
         }
 
-        // Keycloak returns the internal client-uuid inside the Location header!
-        var locationHeader = response.Headers.Location?.ToString();
-        if (!string.IsNullOrEmpty(locationHeader))
-        {
-            var internalId = locationHeader.Split('/').Last();
-            app.KeycloakId = Guid.Parse(internalId);
-            await context.SaveChangesAsync(token); // Persist internal Keycloak ID
-        }
-
+        var app = await base.CreateAsync(entity, token);
         log.LogInformation("Created application {AppId} in workspace {WorkspaceId}", app.Id, workspace.Id);
         return app;
     }
 
     public override async Task UpdateAsync(Application entity, CancellationToken token = default)
     {
-        var existingApp = await context.Applications.FirstOrDefaultAsync(a => a.Id == entity.Id, token)
+        var app = await FindByIdAsync(entity.Id, token)
             ?? throw new ServiceException(404, "Application not found");
 
+        var id = entity.Id.ToString();
+        var clients = client.Admin.Realms[Realm].Clients[id];
+        var kcClient = await clients.GetAsync(cancellationToken: token)
+            ?? throw new ServiceException(404, "Keycloak client not found");
+
+        kcClient.Name = entity.Name;
+        kcClient.Enabled = entity.Enabled;
+        kcClient.Description = entity.Description;
+        kcClient.RedirectUris = entity.RedirectUris?.ToList() ?? [];
+        await clients.PutAsync(kcClient, cancellationToken: token);
+        await SyncClientScopesAsync(entity.Id, entity.Scopes, token);
         await base.UpdateAsync(entity, token);
-
-        // Fixed: Route now points to app.KeycloakId (internal UUID) instead of app.ClientId
-        var response = await keycloak.PutAsJsonAsync($"clients/{existingApp.KeycloakId}", new
-        {
-            name = entity.Name,
-            enabled = entity.Enabled,
-            description = entity.Description,
-            redirectUris = entity.RedirectUris ?? [],
-        }, token);
-
-        if (!response.IsSuccessStatusCode)
-        {
-            var errorContent = await response.Content.ReadAsStringAsync(token);
-            log.LogError("Failed to update Keycloak client for application {AppId}: {Error}", entity.Id, errorContent);
-            throw new ServiceException(500, "Failed to update associated client in Keycloak");
-        }
-
-        log.LogInformation("Updated application {AppId} in workspace {WorkspaceId}", entity.Id, entity.WorkspaceId);
     }
 
     public override async Task DeleteAsync(Application entity, CancellationToken token = default)
@@ -92,47 +144,72 @@ public class ApplicationService(DatabaseContext ctx, IHttpClientFactory factory,
         var app = await context.Applications.FirstOrDefaultAsync(a => a.Id == entity.Id, token)
             ?? throw new ServiceException(404, "Application not found");
 
-        var response = await keycloak.DeleteAsync($"clients/{app.KeycloakId}", token);
-        if (!response.IsSuccessStatusCode)
-        {
-            var errorContent = await response.Content.ReadAsStringAsync(token);
-            log.LogError("Failed to delete Keycloak client for application {AppId}: {Error}", entity.Id, errorContent);
-            throw new ServiceException(500, "Failed to delete associated client in Keycloak");
-        }
-
+        await client.Admin.Realms[Realm].Clients[entity.Id.ToString()].DeleteAsync(null, token);
         await base.DeleteAsync(entity, token);
-        log.LogInformation("Deleted application {AppId} from workspace {WorkspaceId}", entity.Id, entity.WorkspaceId);
     }
 
-    /// <summary>
-    /// Step 1: Demotes current secret to 'rotated' slot and generates/returns a brand new primary secret.
-    /// </summary>
-    public async Task<string?> RotateClientSecretAsync(Guid id, CancellationToken token = default)
+    public async Task<string> RotateClientSecretAsync(Guid id, CancellationToken token = default)
     {
         var app = await context.Applications.FirstOrDefaultAsync(a => a.Id == id, token)
             ?? throw new ServiceException(404, "Application not found");
 
-        // Triggers Keycloak to push current secret to fallback and regenerate primary
-        var response = await keycloak.PostAsync($"clients/{app.KeycloakId}/client-secret", null, token);
-        if (!response.IsSuccessStatusCode)
+        var rotated = await client.Admin.Realms[Realm].Clients[id.ToString()].ClientSecret.PostAsync(null, token);
+        return rotated?.Value ?? throw new ServiceException(500, "No credentials found");
+    }
+
+    public async Task RevokeAccess(Guid id, Guid userId, CancellationToken token = default)
+    {
+       var app = await context.Applications.FirstOrDefaultAsync(a => a.Id == id, token)
+            ?? throw new ServiceException(404, "Application not found");
+
+        var realm = client.Admin.Realms[Realm];
+        await realm.Users[userId.ToString()].Consents[app.ClientId].DeleteAsync(null, token);
+    }
+
+    /// <summary>
+    /// Syncs the requested scopes for the client with Keycloak.
+    /// Effectively removes those that are not specified anymore.
+    /// </summary>
+    /// <param name="appId"></param>
+    /// <param name="scopes"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    private async Task SyncClientScopesAsync(Guid appId, ICollection<string>? scopes, CancellationToken token)
+    {
+        var id = appId.ToString();
+        var realm = client.Admin.Realms[Realm];
+
+        var requested = scopes?.ToHashSet() ?? [];
+
+        // Fetch available realm scopes to validate requests and resolve Names to IDs
+        var realmScopes = await realm.ClientScopes.GetAsync(null, token);
+        var realmScopeMap = realmScopes?.ToDictionary(s => s.Name!, s => s.Id!) ?? [];
+
+        // Fetch currently assigned optional scopes for this specific client
+        var assignedScopes = await realm.Clients[id].OptionalClientScopes.GetAsync(null, token);
+        var assignedScopeMap = assignedScopes?.ToDictionary(s => s.Name!, s => s.Id!) ?? [];
+
+        var assigned = assignedScopeMap.Keys.ToHashSet();
+
+        // Scopes that are requested but not currently assigned
+        var add = requested.Except(assigned);
+        foreach (var scope in add)
         {
-            var errorContent = await response.Content.ReadAsStringAsync(token);
-            log.LogError("Failed to rotate secret for application {AppId}: {Error}", id, errorContent);
-            throw new ServiceException(500, "Failed to rotate client secret in Keycloak");
+            if (!realmScopeMap.TryGetValue(scope, out var scopeId))
+            {
+                log.LogWarning("Trying to add non-existent scope '{ScopeName}' to client '{ClientId}', Skipping.", scope, id);
+                continue;
+            }
+
+            await realm.Clients[id].OptionalClientScopes[scopeId].PutAsync(null, token);
         }
 
-        // Map Keycloak's CredentialRepresentation back to read the plaintext new secret value
-        var credential = await response.Content.ReadFromJsonAsync<CredentialRepresentation>(cancellationToken: token);
-        log.LogInformation("Successfully initiated secret rotation for application {AppId}", id);
-        return credential?.Value;
+        // Scopes that are currently assigned but no longer requested
+        var remove = assigned.Except(requested);
+        foreach (var scope in remove)
+        {
+            if (assignedScopeMap.TryGetValue(scope, out var scopeId))
+                await realm.Clients[id].OptionalClientScopes[scopeId].DeleteAsync(null, token);
+        }
     }
-}
-
-/// <summary>
-/// Helper DTO matching Keycloak's internal CredentialRepresentation scheme
-/// </summary>
-public class CredentialRepresentation
-{
-    public string? Type { get; set; }
-    public string? Value { get; set; }
 }
