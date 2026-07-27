@@ -78,7 +78,7 @@
 								{/snippet}
 							</Tooltip.Trigger>
 							<Tooltip.Content>
-								<p>Enable or disable the application</p>
+								<p>Revoke your consent from the app.</p>
 							</Tooltip.Content>
 						</Tooltip.Root>
 					</Item.Title>
@@ -93,15 +93,7 @@
 								<RefreshCw size={14} />
 								{formatter.format(new Date(app.updatedAt))}
 							</span>
-							{#if app.redirectUris && app.redirectUris.length > 0}
-								<Separator orientation="vertical" class="h-3" />
-								<span class="flex items-center gap-1">
-									<Link size={14} />
-									{app.redirectUris.length} Redirect URI(s)
-								</span>
-							{/if}
 						</div>
-
 						<span class="line-clamp-2 block text-sm">
 							{app.description}
 						</span>
@@ -115,7 +107,7 @@
 						<X />
 					</Empty.Media>
 					<Empty.Title>No applications found.</Empty.Title>
-					<Empty.Description>You haven't created any third-party apps yet.</Empty.Description>
+					<Empty.Description>You haven't granted any third-party apps consent yet.</Empty.Description>
 				</Empty.Header>
 			</Empty.Root>
 		{/each}

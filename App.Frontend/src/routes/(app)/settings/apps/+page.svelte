@@ -125,15 +125,17 @@
 
 	<div class="flex items-center justify-between gap-4 pb-2">
 		<h1 class="text-xl font-bold">
-			Third-party API Apps
-			<span class="text-sm text-muted-foreground">
-				Applications
-				{#if target === 'root'}
-					({apps.length}/&infin;)
-				{:else}
-					({apps.length}/3)
-				{/if}
-			</span>
+			Applications
+			{#if !consented}
+				<span class="text-sm text-muted-foreground">
+					Limit
+					{#if target === 'root'}
+						({apps.length}/&infin;)
+					{:else}
+						({apps.length}/3)
+					{/if}
+				</span>
+			{/if}
 		</h1>
 		<Separator class="flex-1" />
 		<ButtonGroup.Root>
