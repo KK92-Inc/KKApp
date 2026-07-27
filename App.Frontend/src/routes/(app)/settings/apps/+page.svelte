@@ -27,9 +27,8 @@
 	import {
 		Blocks,
 		Calendar,
-		CheckCheck,
+		Eye,
 		EyeDashed,
-		Handshake,
 		Link,
 		Pencil,
 		Plus,
@@ -147,8 +146,8 @@
 					variant="outline"
 					class="h-6 data-[state=on]:bg-transparent data-[state=on]:*:[svg]:stroke-primary"
 				>
-					<EyeDashed />
 					Show Consented
+					<Eye />
 				</Toggle>
 			</ButtonGroup.Root>
 			<ButtonGroup.Root>
@@ -187,8 +186,8 @@
 		{#if page.data.session.roles.includes('staff')}
 			<Tabs.Root bind:value={target}>
 				<Tabs.List class="h-8 w-full">
-					<Tabs.Trigger value="current">My Workspace</Tabs.Trigger>
-					<Tabs.Trigger value="root">Root</Tabs.Trigger>
+					<Tabs.Trigger value="current">Personal Workspace</Tabs.Trigger>
+					<Tabs.Trigger value="root">Staff Workspace</Tabs.Trigger>
 				</Tabs.List>
 			</Tabs.Root>
 
