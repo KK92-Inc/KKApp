@@ -19,15 +19,36 @@ import { error, isHttpError } from "@sveltejs/kit";
 
 // ============================================================================
 
+export const Branches = {
+	/**
+	 * Reusable helper to parse raw git branch output.
+	 * Returns the list of clean branch names and the currently active branch.
+	 */
+	parse(raw: string) {
+		const lines = raw
+			.split('\n')
+			.map(b => b.trim())
+			.filter(b => b.length > 0);
+
+		const branches = lines.map(b => b.startsWith('*') ? b.slice(1).trim() : b);
+
+		const master = lines.find(b => b.startsWith('*'));
+		const active = master
+			? master.slice(1).trim()
+			: (branches.length > 0 ? branches[0] : undefined);
+
+		return { branches, active, master: master?.slice(1).trim() };
+	}
+}
+
 
 // ============================================================================
 
 export class Context {
 	public view = $state<"submission" | "assignment">("assignment");
-	public branches = $derived<string[]>([]);
-	public branch = $derived(this.branches[0]);
-	public initialized = $derived(this.branches.length > 0);
 
+	public branch = $state<string>();
+	public initialized = $state(false);
 	public project = $state<components['schemas']['ProjectDO']>()!;
 	public userProject = $state<components['schemas']['UserProjectDO']>();
 
@@ -35,7 +56,6 @@ export class Context {
 		public readonly userId: () => string,
 		public readonly projectId: () => string
 	) { }
-
 
 	/** Retrieve all members of the session if it exists. */
 	public async members() {
@@ -62,6 +82,18 @@ export class Context {
 		return page.data;
 	}
 
+	public async transactions(page: number) {
+		if (!this.userProject) return { data: [], pages: 1 };
+		const result = await UserProjects.getTransactions({
+			id: this.userProject.id,
+			page: page,
+			sort: 'Descending',
+			size: 6
+		});
+
+		return result;
+	}
+
 	/** Hydrate the context */
 	public async hydrate() {
 		const [project, userProject] = await Promise.allSettled([
@@ -81,16 +113,15 @@ export class Context {
 		if (userProject.status === "fulfilled") {
 			this.userProject = userProject.value;
 			this.view = 'submission';
-			const gitId = this.userProject?.gitInfo?.id;
-			if (!gitId) {
-				return;
-			}
 
-			const branches = await Git.getBranches(gitId);
-			console.log(branches);
+			// Basically no branches means theres jack shit
+			if (this.userProject?.gitInfo?.id) {
+				const raw = await Git.getBranches(this.userProject.gitInfo.id);
+				this.initialized = raw.trim().length > 0;
+				this.branch = Branches.parse(raw).active;
+			}
 		} else if (isHttpError(userProject.reason)) {
 			if (userProject.reason.status === 404) return;
-
 			// Escalate the error because now something is fucked.
 			error(userProject.reason.status, userProject.reason.body);
 		}

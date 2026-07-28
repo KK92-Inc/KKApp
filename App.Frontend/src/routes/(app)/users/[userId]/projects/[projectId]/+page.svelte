@@ -14,7 +14,10 @@
 		CircleAlert,
 		GitBranch,
 		Archive,
-		Trophy
+		Trophy,
+		RefreshCcw,
+		BookA,
+		HistoryIcon
 	} from '@lucide/svelte';
 	import * as Field from '$lib/components/field';
 	import * as Alert from '$lib/components/alert';
@@ -23,6 +26,7 @@
 	import * as Dialog from '$lib/components/dialog';
 	import * as Empty from '$lib/components/empty';
 	import * as InputGroup from '$lib/components/input-group';
+	import * as Accordion from '$lib/components/accordion';
 	import { Button } from '$lib/components/button';
 	import { Input } from '$lib/components/input';
 	import { Textarea } from '$lib/components/textarea';
@@ -80,6 +84,62 @@
 				<Components.Init />
 			{:else}
 				File Explorer TODO
+				<Card.Root class="py-0 shadow-none">
+					<Card.Content class="p-0">
+						<Accordion.Root type="single">
+							<Accordion.Item value="item-1">
+								<Accordion.Trigger class="px-4">
+									<span class="flex items-center gap-2">
+										<BookA />
+										Project Overview
+									</span>
+								</Accordion.Trigger>
+								<Accordion.Content class="pl-4">
+									<!-- <svelte:boundary>
+								{@const readme = await blob}
+
+								{#snippet pending()}
+									<p>Loading...</p>
+								{/snippet}
+
+								{#snippet failed(e, reset)}
+									{@const err = e as HttpError}
+									<Alert.Root variant="destructive">
+										<CircleAlert />
+										<Alert.Title>{err.body.message}</Alert.Title>
+										<Alert.Description>
+											This could resolve itself or may be a bug.
+											<Button variant="outline" class="text-foreground" size="sm" onclick={reset}>
+												<RefreshCcw class="size-3" />
+												Try again
+											</Button>
+										</Alert.Description>
+									</Alert.Root>
+								{/snippet}
+
+								{#if readme}
+									<Markdown value={readme} />
+								{:else}
+									<p>No README found.</p>
+								{/if}
+							</svelte:boundary> -->
+								</Accordion.Content>
+							</Accordion.Item>
+
+							<Accordion.Item value="item-2">
+								<Accordion.Trigger class="px-4">
+									<span class="flex items-center gap-2">
+										<HistoryIcon />
+										Session Timeline
+									</span>
+								</Accordion.Trigger>
+								<Accordion.Content class="pl-4">
+									<Components.Timeline />
+								</Accordion.Content>
+							</Accordion.Item>
+						</Accordion.Root>
+					</Card.Content>
+				</Card.Root>
 			{/if}
 		{/snippet}
 	</Layout>

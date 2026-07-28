@@ -17,6 +17,7 @@ using App.Backend.API.Controllers.Interfaces;
 using Wolverine;
 using App.Backend.API.Notifications.Variants;
 using System.Linq.Expressions;
+using App.Backend.API.Utils;
 
 // ============================================================================
 
@@ -101,25 +102,6 @@ public class UserProjectController(
         return up is null ? NotFound() : Ok(new UserProjectDO(up));
     }
 
-    // [HttpGet("/user-projects/{id:guid}/members")]
-    // [ProducesResponseType(StatusCodes.Status200OK)]
-    // [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    // [ProducesResponseType(StatusCodes.Status404NotFound)]
-    // [ProducesErrorResponseType(typeof(ProblemDetails))]
-    // [EndpointSummary("Get project session members")]
-    // [EndpointDescription("Returns all current and past members of the specified user project session.")]
-    // public async Task<ActionResult<IEnumerable<MemberDO>>> GetMembers(Guid id, CancellationToken token)
-    // {
-    //     // up.Members is gone — fetch directly from the member service instead.
-    //     // The session existence check is preserved: 404 if the session doesn't exist,
-    //     // empty list if it exists but has no members (shouldn't happen in practice).
-    //     var up = await userProjectService.FindByIdAsync(id, token);
-    //     if (up is null) return NotFound();
-
-    //     var members = await memberService.GetProjectMembersAsync(id, token);
-    //     return Ok(members.Select(m => new MemberDO(m)));
-    // }
-
     [HttpGet("/user-projects/{id:guid}/transactions")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -172,6 +154,7 @@ public class UserProjectController(
     }
 
     [HttpPost("/user-projects/{id:guid}/invite/{userId:guid}")]
+    [RequireScope("workspace")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]

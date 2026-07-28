@@ -87,7 +87,7 @@ export const getByUserAndProject = query(ByUserSchema, async ({ userId, projectI
 /** Paginated response for a user-project's transactions */
 export const getTransactions = query(TransactionsSchema, async ({ id, ...params }) => {
 	const { locals } = getRequestEvent();
-	const { error, data } = await locals.api.GET('/user-projects/{id}/transactions', {
+	const { error, data , response} = await locals.api.GET('/user-projects/{id}/transactions', {
 		params: {
 			path: { id },
 			query: {
@@ -100,7 +100,7 @@ export const getTransactions = query(TransactionsSchema, async ({ id, ...params 
 	});
 
 	if (error || !data) Problem.throw(error);
-	return data;
+	return paginate(data, response);
 });
 
 // ============================================================================

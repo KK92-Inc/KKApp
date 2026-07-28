@@ -50,6 +50,7 @@ var feOrigin = isPublish ? builder.AddParameter("fe-origin", true) : null;
 // ============================================================================
 
 var postgres = builder.AddPostgres("database")
+    .WithImageTag("17")
     .WithDataVolume(name: "database-volume")
     .WithLifetime(ContainerLifetime.Persistent);
 

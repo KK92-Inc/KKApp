@@ -18,6 +18,7 @@ using App.Backend.Models.Responses.Entities;
 using App.Backend.Models.Requests.Goals;
 using App.Backend.Models.Responses.Entities.Projects;
 using App.Backend.Domain.Relations;
+using App.Backend.API.Utils;
 
 // ============================================================================
 
@@ -57,6 +58,7 @@ public class GoalController(
 
     [Tags("Workspace")]
     [HttpDelete("{id:guid}")]
+    [RequireScope("workspace")]
     [ProtectedResource("goals", "goals:delete")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -74,6 +76,7 @@ public class GoalController(
     }
 
     [HttpGet("{id:guid}")]
+    [RequireScope("workspace")]
     [ProtectedResource("goals", "goals:read")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -88,6 +91,7 @@ public class GoalController(
     }
 
     [HttpPatch("{id:guid}")]
+    [RequireScope("workspace")]
     [ProtectedResource("goals", "goals:write")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -111,6 +115,7 @@ public class GoalController(
     }
 
     [HttpGet("{id:guid}/projects")]
+    [RequireScope("workspace")]
     [ProtectedResource("goals", "goals:read")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -125,7 +130,8 @@ public class GoalController(
     }
 
     [HttpPost("{id:guid}/projects")]
-    // [ProtectedResource("goals", "goals:write")]
+    [RequireScope("workspace")]
+    [ProtectedResource("goals", "goals:write")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
@@ -149,86 +155,4 @@ public class GoalController(
             return NotFound();
         return NoContent();
     }
-
-    // [HttpPost("{id:guid}/subscribe")]
-    // [ProducesResponseType(StatusCodes.Status201Created)]
-    // [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    // [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    // [ProducesErrorResponseType(typeof(ProblemDetails))]
-    // [EndpointSummary("Subscribe to goal")]
-    // [EndpointDescription("Subscribe current user to a goal")]
-    // public async Task<ActionResult> SubscribeToGoal(Guid id, [FromBody] SubscribeToGoalRequestDTO? request = null)
-    // {
-    //     var userId = User.GetSID();
-    //     var subscribeRequest = request ?? new SubscribeToGoalRequestDTO { GoalId = id };
-
-    //     var userGoal = await subscriptions.SubscribeToGoalAsync(userId, subscribeRequest);
-    //     return CreatedAtAction(nameof(GetUserGoals), new { }, new UserGoalDO(userGoal));
-    // }
-
-    // [HttpGet("my-goals")]
-    // [ProducesResponseType(StatusCodes.Status200OK)]
-    // [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    // [ProducesErrorResponseType(typeof(ProblemDetails))]
-    // [EndpointSummary("Get user goals")]
-    // [EndpointDescription("Retrieve goals subscribed by current user")]
-    // public async Task<ActionResult> GetUserGoals()
-    // {
-    //     var userId = User.GetSID();
-    //     var userGoals = await subscriptions.GetUserGoalsAsync(userId);
-    //     return Ok(userGoals.Select(ug => new UserGoalDO(ug)));
-    // }
-
-    // [HttpDelete("subscriptions/{id:guid}")]
-    // [ProducesResponseType(StatusCodes.Status204NoContent)]
-    // [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    // [ProducesResponseType(StatusCodes.Status404NotFound)]
-    // [ProducesErrorResponseType(typeof(ProblemDetails))]
-    // [EndpointSummary("Unsubscribe from goal")]
-    // [EndpointDescription("Unsubscribe current user from a goal")]
-    // public async Task<IActionResult> UnsubscribeFromGoal(Guid id)
-    // {
-    //     var userId = User.GetSID();
-    //     var success = await subscriptions.UnsubscribeFromGoalAsync(id, userId);
-    //     return success ? NoContent() : NotFound();
-    // }
-
-    // [HttpPost("{id:guid}/collaborators")]
-    // [ProducesResponseType(StatusCodes.Status201Created)]
-    // [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    // [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    // [ProducesErrorResponseType(typeof(ProblemDetails))]
-    // [EndpointSummary("Add goal collaborator")]
-    // [EndpointDescription("Add a user as collaborator to a goal")]
-    // public async Task<ActionResult> AddCollaborator(Guid id, [FromBody] AddCollaboratorRequestDTO request)
-    // {
-    //     var collaborator = await subscriptions.AddGoalCollaboratorAsync(request.UserId, id);
-    //     return CreatedAtAction(nameof(GetCollaborators), new { id = id }, new GoalCollaboratorDO(collaborator));
-    // }
-
-    // [HttpGet("{id:guid}/collaborators")]
-    // [ProducesResponseType(StatusCodes.Status200OK)]
-    // [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    // [ProducesResponseType(StatusCodes.Status404NotFound)]
-    // [ProducesErrorResponseType(typeof(ProblemDetails))]
-    // [EndpointSummary("Get goal collaborators")]
-    // [EndpointDescription("Retrieve collaborators for a goal")]
-    // public async Task<ActionResult> GetCollaborators(Guid id)
-    // {
-    //     var collaborators = await subscriptions.GetGoalCollaboratorsAsync(id);
-    //     return Ok(collaborators.Select(c => new GoalCollaboratorDO(c)));
-    // }
-
-    // [HttpDelete("{id:guid}/collaborators/{userId:guid}")]
-    // [ProducesResponseType(StatusCodes.Status204NoContent)]
-    // [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    // [ProducesResponseType(StatusCodes.Status404NotFound)]
-    // [ProducesErrorResponseType(typeof(ProblemDetails))]
-    // [EndpointSummary("Remove goal collaborator")]
-    // [EndpointDescription("Remove a user as collaborator from a goal")]
-    // public async Task<IActionResult> RemoveCollaborator(Guid id, Guid userId)
-    // {
-    //     var success = await subscriptions.RemoveGoalCollaboratorAsync(userId, id);
-    //     return success ? NoContent() : NotFound();
-    // }
 }

@@ -29,7 +29,8 @@
 		ClipboardCheck,
 		Bell,
 		GitBranch,
-		HeartHandshake
+		HeartHandshake,
+		Archive
 	} from '@lucide/svelte';
 	import type { WithChild } from 'bits-ui';
 	import type { components } from '$lib/api/api';
@@ -86,6 +87,12 @@
 			label: 'Repository',
 			desc: 'Grants full access to make commits to git tracked entities such as projects or rubrics',
 			icon: GitBranch
+		},
+		{
+			id: 'subscription',
+			label: 'Subscriptions',
+			desc: 'Grants subscribe/unsubscribe access to your goals, cursi and projects.',
+			icon: Archive
 		}
 	];
 
@@ -141,7 +148,7 @@
 		{/snippet}
 	</Dialog.Trigger>
 
-	<Dialog.Content class="flex max-h-[90vh] flex-col gap-0 p-0 md:max-w-4xl">
+	<Dialog.Content class="flex flex-col gap-0 p-0 md:max-w-3xl">
 		<Dialog.Header class="px-6 py-4">
 			<Dialog.Title>
 				{#if isEditing}
@@ -152,36 +159,40 @@
 			</Dialog.Title>
 		</Dialog.Header>
 
-		<div class="grid grid-cols-1 gap-x-6 gap-y-2 p-6 md:grid-cols-2">
+		<!-- Replaced the 2-column grid with a scrollable flex column layout -->
+		<div class="flex flex-col gap-8 overflow-y-auto p-6">
+			<!-- 1. General Info -->
 			<Field.Set>
-				<Field.Group class="flex flex-col gap-4 sm:flex-row sm:items-start">
-					<div class="flex-1 space-y-4">
-						<Field.Field>
-							<Field.Label for="name">Name</Field.Label>
-							<Input
-								id="name"
-								autocomplete="off"
-								placeholder="Release Bot"
-								bind:value={application.name}
-								aria-invalid={!!errors.name}
-							/>
-							<Field.Error errors={errors.name} />
-						</Field.Field>
-						<Field.Field>
-							<Field.Label for="description">Description</Field.Label>
-							<Textarea
-								id="description"
-								autocomplete="off"
-								placeholder="What does this application do, and who's it for?"
-								bind:value={application.description}
-								aria-invalid={!!errors.description}
-							/>
-							<Field.Error errors={errors.description} />
-						</Field.Field>
-					</div>
+				<Field.Group class="flex flex-col gap-4">
+					<Field.Field>
+						<Field.Label for="name">Name</Field.Label>
+						<Input
+							id="name"
+							autocomplete="off"
+							placeholder="Release Bot"
+							bind:value={application.name}
+							aria-invalid={!!errors.name}
+						/>
+						<Field.Error errors={errors.name} />
+					</Field.Field>
+
+					<Field.Field>
+						<Field.Label for="description">Description</Field.Label>
+						<Textarea
+							id="description"
+							autocomplete="off"
+							placeholder="What does this application do, and who's it for?"
+							bind:value={application.description}
+							aria-invalid={!!errors.description}
+						/>
+						<Field.Error errors={errors.description} />
+					</Field.Field>
 				</Field.Group>
 			</Field.Set>
 
+			<Separator />
+
+			<!-- 2. Callbacks -->
 			<Field.Set>
 				<Field.Legend class="flex items-center gap-2">
 					Callback URLs
@@ -194,7 +205,7 @@
 				<Field.Description>
 					Once someone approves access, they're sent back to one of these URLs.
 				</Field.Description>
-				<Field.Group class="gap-1.5">
+				<Field.Group class="mt-2 gap-1.5">
 					<InputGroup.Root>
 						<InputGroup.Input
 							bind:value={redirect}
@@ -251,9 +262,10 @@
 				</Field.Group>
 			</Field.Set>
 
-			<Separator class="col-span-1 md:col-span-2" />
+			<Separator />
 
-			<Field.Set class="col-span-1 md:col-span-2">
+			<!-- 3. Permissions -->
+			<Field.Set>
 				<Field.Legend class="flex items-center gap-2">
 					Permissions
 					{#if application.scopes?.length}
@@ -266,8 +278,8 @@
 					Scopes let you specify exactly what type of access you need. Scopes limit access for OAuth tokens.
 					They do not grant any additional permission beyond that which the user already has.
 				</Field.Description>
-				<Field.Group>
-					<Item.Group class="grid  grid-cols-2 gap-1.5">
+				<Field.Group class="mt-2">
+					<Item.Group class="grid grid-cols-1 gap-2 md:grid-cols-2">
 						{#each AVAILABLE_SCOPES as scope (scope.id)}
 							{@const ScopeIcon = scope.icon}
 							{@const checked = application.scopes?.includes(scope.id)}
@@ -301,13 +313,14 @@
 					</Item.Group>
 				</Field.Group>
 			</Field.Set>
-
-			<Dialog.Footer class="col-span-1 border-t py-2 md:col-span-2">
-				<Button variant="outline" onclick={() => (open = false)} disabled={loading}>Cancel</Button>
-				<Button onclick={submit} disabled={loading || !application.name}>
-					{isEditing ? 'Save changes' : 'Create application'}
-				</Button>
-			</Dialog.Footer>
 		</div>
+
+		<!-- Pinned Footer -->
+		<Dialog.Footer class="border-t px-6 py-4">
+			<Button variant="outline" onclick={() => (open = false)} disabled={loading}>Cancel</Button>
+			<Button onclick={submit} disabled={loading || !application.name}>
+				{isEditing ? 'Save changes' : 'Create application'}
+			</Button>
+		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>

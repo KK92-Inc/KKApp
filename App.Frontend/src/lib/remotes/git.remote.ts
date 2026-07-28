@@ -19,6 +19,7 @@ const BlobSchema = v.object({ id: Filters.id, branch: v.string(), path: v.string
 export const getBranches = query(Filters.id, async (id) => {
 	const { locals } = getRequestEvent();
 	const { error, data } = await locals.api.GET('/git/{id}/branches', {
+		parseAs: "text",
 		params: { path: { id } }
 	});
 
@@ -37,6 +38,7 @@ export const createBranch = command(
 		});
 
 		if (error) Problem.throw(error);
+		getBranches(id).refresh();
 	}
 );
 

@@ -165,7 +165,6 @@ public class ReviewService(DatabaseContext context, IRuleService rules) : BaseSe
 
         review.State = ReviewState.InProgress;
         await context.SaveChangesAsync(token);
-
         return review;
     }
 

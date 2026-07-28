@@ -173,7 +173,12 @@ public static class Services
                                     { "openid", "Authenticate using Keycloak" },
                                     { "profile", "Access user profile information" },
                                     { "email", "Access user email address" },
-                                    { "roles", "Access user roles" }
+                                    { "roles", "Access user roles" },
+                                    { "workspace", "Access workspace related endpoints" },
+                                    { "evaluation", "Access evaluation related endpoints" },
+                                    { "subscription", "Access subscription related endpoints" },
+                                    { "repository", "Access repository related endpoints" },
+                                    { "user", "Access basic user profile information" }
                                 },
                                 AuthorizationUrl = new Uri($"{options.KeycloakUrlRealm}protocol/openid-connect/auth"),
                                 TokenUrl = new Uri($"{options.KeycloakUrlRealm}protocol/openid-connect/token"),

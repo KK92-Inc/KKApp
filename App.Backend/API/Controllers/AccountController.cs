@@ -17,6 +17,8 @@ using App.Backend.Models.Responses.Entities.Notifications;
 using App.Backend.API.Notifications.Registers.Interface;
 using App.Backend.Models.Requests.SshKeys;
 using App.Backend.Domain.Entities.Users;
+using App.Backend.API.Utils;
+using System.Net;
 
 // ============================================================================
 
@@ -37,6 +39,7 @@ public class AccountController(
 ) : Controller
 {
     [HttpGet]
+    [RequireScope("user")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
@@ -49,6 +52,7 @@ public class AccountController(
     }
 
     [HttpGet("notifications")]
+    [RequireScope("user")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
@@ -75,6 +79,7 @@ public class AccountController(
     }
 
     [HttpGet("stream")]
+    [RequireScope("user")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
@@ -98,6 +103,7 @@ public class AccountController(
     }
 
     [HttpGet("spotlights")]
+    [RequireScope("user")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
@@ -119,6 +125,7 @@ public class AccountController(
     }
 
     [HttpDelete("spotlights/{id:guid}")]
+    [RequireScope("user")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
@@ -134,6 +141,7 @@ public class AccountController(
     }
 
     [HttpGet("ssh-keys")]
+    [RequireScope("user")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
@@ -146,6 +154,7 @@ public class AccountController(
     }
 
     [HttpDelete("ssh-keys/{fingerprint}")]
+    [RequireScope("user")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -154,13 +163,13 @@ public class AccountController(
     [EndpointDescription("Delete an SSH key by its fingerprint for the authenticated user.")]
     public async Task<IActionResult> RemoveSshKey(string fingerprint, CancellationToken cancellationToken)
     {
-        // Handle URL-encoded fingerprints
-        var decodedFingerprint = System.Net.WebUtility.UrlDecode(fingerprint);
+        var decodedFingerprint = WebUtility.UrlDecode(fingerprint);
         var removed = await users.RemoveSshKeyAsync(decodedFingerprint, cancellationToken);
         return removed ? NoContent() : NotFound();
     }
 
     [HttpPost("ssh-keys")]
+    [RequireScope("user")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
@@ -169,17 +178,16 @@ public class AccountController(
     public async Task<ActionResult> AddSshKey([FromBody] PostSshKeyRequestDTO data, CancellationToken cancellationToken)
     {
         var parts = data.PublicKey.Trim().Split(' ', 3);
-        if (parts.Length < 2)
-            return UnprocessableEntity("Invalid SSH public key format.");
+        if (parts.Length < 2) return UnprocessableEntity("Invalid SSH public key format.");
 
-        var sshKey = new SshKey
+        var key = new SshKey
         {
             Title = data.Title,
             KeyType = parts[0],
             KeyBlob = parts[1]
         };
 
-        await users.AddSshKeyAsync(User.GetSID(), sshKey, cancellationToken);
+        await users.AddSshKeyAsync(User.GetSID(), key, cancellationToken);
         return Created();
     }
 }

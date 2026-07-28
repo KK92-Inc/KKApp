@@ -10,6 +10,6 @@ export { default as Reviews } from "./page-reviews.svelte";
 export { default as Members } from "./page-members.svelte";
 export { default as Menu } from "./page-menu.svelte";
 export { default as Init } from "./page-init.svelte";
-// export { default as Timeline } from "./page-timeline.svelte";
+export { default as Timeline } from "./page-timeline.svelte";
 
 

@@ -22,7 +22,7 @@
 				sm: 'h-6 gap-1.5 rounded-md px-2 has-[>svg]:px-2.5 text-xs',
 				lg: 'h-10 rounded-md px-6 has-[>svg]:px-4',
 				icon: 'size-9',
-				'icon-sm': 'size-8',
+				'icon-sm': 'size-7',
 				'icon-lg': 'size-10'
 			}
 		},

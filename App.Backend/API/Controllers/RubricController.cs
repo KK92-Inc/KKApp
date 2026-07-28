@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using App.Backend.Models.Responses.Entities.Reviews;
 using App.Backend.Models.Requests.Rubrics;
 using App.Backend.Domain.Entities.Reviews;
+using App.Backend.API.Utils;
 
 // ============================================================================
 
@@ -21,10 +22,9 @@ namespace App.Backend.API.Controllers;
 [Route("rubrics")]
 [ProtectedResource("rubrics")]
 public class RubricController(
-    ILogger<RubricController> log,
     IRubricService service,
-    IGitService gitService,
-    IProjectService projectService
+    IAuthorizationService auth,
+    IMemberService memberService
 ) : Controller
 {
     [HttpGet]
@@ -67,13 +67,14 @@ public class RubricController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Query a rubric")]
     [EndpointDescription("Retrieve a specific rubric by ID")]
-    public async Task<ActionResult<RubricDO>> GetById(Guid id)
+    public async Task<ActionResult<RubricDO>> GetById(Guid id, CancellationToken token)
     {
-        var rubric = await service.FindByIdAsync(id);
+        var rubric = await service.FindByIdAsync(id, token);
         return rubric is null ? NotFound() : Ok(new RubricDO(rubric));
     }
 
     [HttpPatch("{id:guid}")]
+    [RequireScope("workspace")]
     [ProtectedResource("rubrics", "rubrics:write")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -89,24 +90,27 @@ public class RubricController(
         CancellationToken token
     )
     {
+        var isStaff = await auth.AuthorizeAsync(User, "staff");
         var rubric = await service.FindByIdAsync(id, token);
         if (rubric is null)
             return NotFound();
-        if (rubric.CreatorId != User.GetSID() && !User.IsInRole("admin"))
-            return Forbid();
+
+        if (!isStaff.Succeeded)
+        {
+            var member = await memberService.FindByEntityAndUserId(rubric.WorkspaceId, User.GetSID(), token);
+            if (member is null) return Forbid();
+        }
 
         rubric.Name = body.Name ?? rubric.Name;
         rubric.Public = body.Public ?? rubric.Public;
         rubric.Enabled = body.Enabled ?? rubric.Enabled;
-        // TODO: Separate routes for updating rules to validate them properly
-        // rubric.ReviewerRules = body.ReviewerRules ?? rubric.ReviewerRules;
-        // rubric.RevieweeRules = body.RevieweeRules ?? rubric.RevieweeRules;
 
         await service.UpdateAsync(rubric, token);
         return Ok(new RubricDO(rubric));
     }
 
     [HttpPut("{id:guid}/variants")]
+    [RequireScope("workspace")]
     [ProtectedResource("rubrics", "rubrics:write")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -118,11 +122,16 @@ public class RubricController(
         CancellationToken token
     )
     {
+        var isStaff = await auth.AuthorizeAsync(User, "staff");
         var rubric = await service.FindByIdAsync(id, token);
         if (rubric is null)
             return NotFound();
-        if (rubric.CreatorId != User.GetSID() && !User.IsInRole("admin"))
-            return Forbid();
+
+        if (!isStaff.Succeeded)
+        {
+            var member = await memberService.FindByEntityAndUserId(rubric.WorkspaceId, User.GetSID(), token);
+            if (member is null) return Forbid();
+        }
 
         rubric = await service.SetVariantsAsync(
             id,
@@ -134,14 +143,15 @@ public class RubricController(
             token
         );
 
+
         if (rubric is null)
             return NotFound();
-
         return Ok(new RubricDO(rubric));
     }
 
     [Tags("Workspace")]
     [HttpDelete("{id:guid}")]
+    [RequireScope("workspace")]
     [ProtectedResource("rubrics", "rubrics:delete")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -151,9 +161,17 @@ public class RubricController(
     [EndpointDescription("Delete a rubric")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken token)
     {
+        var isStaff = (await auth.AuthorizeAsync(User, "staff")).Succeeded;
+
         var rubric = await service.FindByIdAsync(id, token);
         if (rubric is null)
             return NotFound();
+
+        if (!isStaff)
+        {
+            var member = await memberService.FindByEntityAndUserId(rubric.WorkspaceId, User.GetSID(), token);
+            if (member is null) return Forbid();
+        }
 
         await service.DeleteAsync(rubric, token);
         return NoContent();

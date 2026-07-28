@@ -16,15 +16,6 @@ using App.Backend.Domain.Enums;
 
 namespace App.Backend.API.Controllers;
 
-/// <summary>
-/// Operations on user cursus enrollments.
-///
-/// Supports two access patterns:
-/// <list type="bullet">
-///   <item>Nested: <c>GET /users/{userId}/cursus</c> — scoped listing and lookup by cursus ID</item>
-///   <item>Direct: <c>GET /user-cursus/{id}</c> — lookup by UserCursus entity ID or track</item>
-/// </list>
-/// </summary>
 [ApiController]
 [Route("users/{userId:guid}/cursus"), Tags("UserCursus")]
 [Authorize]

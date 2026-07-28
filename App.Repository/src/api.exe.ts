@@ -43,8 +43,6 @@ function sanitized(...args: string[]) {
 function requires(owner: string, name: string, opts: { exists?: boolean } = {}): string {
 	const entity = path(owner, name);
 	if (!entity) throw new HTTPError(400, "Bad Request");
-
-	Log.info(`${entity}, "does it exist ?"`);
 	if (opts.exists !== undefined) {
 		const exists = existsSync(entity);
 		if (opts.exists && !exists) throw new HTTPError(404, "Not Found");
@@ -125,6 +123,7 @@ const server = Bun.serve({
 				sanitized(ref, child);
 				const entity = requires(owner, name, { exists: true });
 
+				Log.info(`${entity}: ${ref} => ${child}`)
 				try {
 					await $`git -C ${entity} branch ${child} ${ref}`.quiet();
 					return new Response(null, { status: 201 });

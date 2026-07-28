@@ -21,6 +21,9 @@ using App.Backend.Domain.Enums;
 using Wolverine;
 using App.Backend.API.Notifications.Variants;
 using Keycloak.AuthServices.Sdk.Kiota.Admin;
+using App.Backend.API.Utils;
+using Keycloak.AuthServices.Sdk.Protection;
+using Keycloak.AuthServices.Authorization.Requirements;
 
 // ============================================================================
 
@@ -38,6 +41,7 @@ public class UserController(
     IUserService users,
     IMessageBus bus,
     IWorkspaceService workspaces,
+    IAuthorizationService auth,
     KeycloakAdminApiClient keycloak
 ) : Controller
 {
@@ -65,7 +69,7 @@ public class UserController(
     }
 
     [HttpGet("{userId:guid}")]
-    // [ProtectedResource("users", "users:read")]
+    [ProtectedResource("users", "users:read")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -80,6 +84,7 @@ public class UserController(
 
 
     [HttpPost]
+    [Authorize(Policy = "staff")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
@@ -87,7 +92,6 @@ public class UserController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Create a user")]
     [EndpointDescription("Provision a new user, creates a keycloak account for them.")]
-    [Authorize(Policy = "staff")]
     public async Task<ActionResult<UserDO>> CreateUser(
         [FromBody] PostUserRequestDTO request,
         CancellationToken token)
@@ -104,7 +108,7 @@ public class UserController(
             Enabled = true,
             EmailVerified = false,
             RealmRoles = ["student"],
-             // TODO: Force 2FA at all times, configure it ?
+            // TODO: Force 2FA at all times, configure it ?
             RequiredActions = ["UPDATE_PASSWORD"],
         }, null, token);
 
@@ -128,6 +132,7 @@ public class UserController(
     }
 
     [HttpPatch("{userId:guid}")]
+    [RequireScope("user")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -136,28 +141,34 @@ public class UserController(
     [EndpointDescription("Retrieve a specific user by their unique identifier")]
     public async Task<ActionResult<UserDO>> Update(Guid userId, [FromBody] PatchUserRequestDTO body, CancellationToken token)
     {
-        // if (userId != User.GetSID() && !User.IsInRole("staff"))
-        //     return Forbid();
+        var self = userId == User.GetSID();
+        var staff = await auth.AuthorizeAsync(User, "staff");
+        if (!staff.Succeeded && !self)
+            return Forbid();
+
+        // Depending on who we're updating, inquire about the permission first.
+        var requirement = new DecisionRequirement("users", self ? "user:profile:write" : "users:write");
+        var result = await auth.AuthorizeAsync(User, null, requirement);
+        if (!result.Succeeded) return Forbid();
 
         var user = await users.FindByIdAsync(userId, token);
         if (user is null) return NotFound();
 
         // Update root properties if provided
-        if (body.AvatarUrl is not null) user.AvatarUrl = body.AvatarUrl;
-        if (body.DisplayName is not null) user.Display = body.DisplayName;
+        user.AvatarUrl = body.AvatarUrl ?? user.AvatarUrl;
+        user.Display = body.DisplayName ?? user.Display;
 
-        // Update details if provided
         if (body.Details is not null)
         {
-            // Ensure the user has a Details object to update
             user.Details ??= new();
-            if (body.Details.FirstName is not null) user.Details.FirstName = body.Details.FirstName;
-            if (body.Details.LastName is not null) user.Details.LastName = body.Details.LastName;
-            if (body.Details.Markdown is not null) user.Details.Markdown = body.Details.Markdown;
-            if (body.Details.WebsiteUrl is not null) user.Details.WebsiteUrl = body.Details.WebsiteUrl;
-            if (body.Details.LinkedinUrl is not null) user.Details.LinkedinUrl = body.Details.LinkedinUrl;
-            if (body.Details.RedditUrl is not null) user.Details.RedditUrl = body.Details.RedditUrl;
-            if (body.Details.GithubUrl is not null) user.Details.GithubUrl = body.Details.GithubUrl;
+            var d = body.Details;
+            user.Details.FirstName = d.FirstName ?? user.Details.FirstName;
+            user.Details.LastName = d.LastName ?? user.Details.LastName;
+            user.Details.Markdown = d.Markdown ?? user.Details.Markdown;
+            user.Details.WebsiteUrl = d.WebsiteUrl ?? user.Details.WebsiteUrl;
+            user.Details.LinkedinUrl = d.LinkedinUrl ?? user.Details.LinkedinUrl;
+            user.Details.RedditUrl = d.RedditUrl ?? user.Details.RedditUrl;
+            user.Details.GithubUrl = d.GithubUrl ?? user.Details.GithubUrl;
         }
 
         await users.UpdateAsync(user, token);

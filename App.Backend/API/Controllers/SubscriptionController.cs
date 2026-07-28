@@ -9,6 +9,7 @@ using App.Backend.Core.Services.Interface;
 using App.Backend.Models.Responses.Entities;
 using App.Backend.Models.Responses.Entities.Projects;
 using App.Backend.Models.Responses.Entities.Cursus;
+using App.Backend.API.Utils;
 
 // ============================================================================
 
@@ -25,22 +26,26 @@ public class SubscriptionController(
     ILogger<SubscriptionController> log,
     ISubscriptionService service,
     ICursusService cursusService,
+    IAuthorizationService auth,
     IGoalService goalService,
     IProjectService projectService
 ) : Controller
 {
+    // NOTE(W2): Subscriptions can only be managed by the user or staff
     // ========================================================================
     // Cursus
     // ========================================================================
 
     [HttpPost("{userId:guid}/cursus/{cursusId:guid}")]
+    [RequireScope("subscription")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Subscribe a user to a cursus")]
     [EndpointDescription("Enroll the specified user in the given cursus. Staff can enroll other users.")]
     public async Task<ActionResult<UserCursusDO>> SubscribeToCursus(Guid userId, Guid cursusId, CancellationToken token)
     {
-        if (User.GetSID() != userId && !User.IsInRole("Staff"))
+        var result = await auth.AuthorizeAsync(User, "staff");
+        if (!result.Succeeded && userId != User.GetSID())
             return Forbid();
 
         var cursus = await cursusService.FindByIdAsync(cursusId, token);
@@ -58,18 +63,19 @@ public class SubscriptionController(
     }
 
     [HttpDelete("{userId:guid}/cursus/{cursusId:guid}")]
+    [RequireScope("subscription")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Unsubscribe a user from a cursus")]
     [EndpointDescription("Remove the specified user's enrollment from the given cursus. Staff can unenroll other users.")]
     public async Task<ActionResult<UserCursusDO>> UnsubscribeFromCursus(Guid userId, Guid cursusId, CancellationToken token)
     {
-        if (User.GetSID() != userId && !User.IsInRole("Staff"))
+        var result = await auth.AuthorizeAsync(User, "staff");
+        if (!result.Succeeded && userId != User.GetSID())
             return Forbid();
 
         var cursus = await cursusService.FindByIdAsync(cursusId, token);
-        if (cursus is null)
-            return NotFound();
+        if (cursus is null) return NotFound();
 
         var userCursus = await service.UnsubscribeFromCursusAsync(userId, cursusId, token);
         return Ok(new UserCursusDO(userCursus));
@@ -80,13 +86,15 @@ public class SubscriptionController(
     // ========================================================================
 
     [HttpPost("{userId:guid}/goals/{goalId:guid}")]
+    [RequireScope("subscription")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Subscribe a user to a goal")]
     [EndpointDescription("Create a subscription for the specified user to the given goal. Staff can enroll other users.")]
     public async Task<ActionResult<UserGoalDO>> SubscribeToGoal(Guid userId, Guid goalId, CancellationToken token)
     {
-        if (User.GetSID() != userId && !User.IsInRole("Staff"))
+        var result = await auth.AuthorizeAsync(User, "staff");
+        if (!result.Succeeded && userId != User.GetSID())
             return Forbid();
 
         var goal = await goalService.FindByIdAsync(goalId, token);
@@ -105,18 +113,19 @@ public class SubscriptionController(
     }
 
     [HttpDelete("{userId:guid}/goals/{goalId:guid}")]
+    [RequireScope("subscription")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Unsubscribe a user from a goal")]
     [EndpointDescription("Remove the specified user's subscription to the given goal. Staff can unenroll other users.")]
     public async Task<ActionResult<UserGoalDO>> UnsubscribeFromGoal(Guid userId, Guid goalId, CancellationToken token)
     {
-        if (User.GetSID() != userId && !User.IsInRole("Staff"))
+        var result = await auth.AuthorizeAsync(User, "staff");
+        if (!result.Succeeded && userId != User.GetSID())
             return Forbid();
 
         var goal = await goalService.FindByIdAsync(goalId, token);
-        if (goal is null)
-            return NotFound();
+        if (goal is null) return NotFound();
 
         var userGoal = await service.UnsubscribeFromGoalAsync(userId, goalId, token);
         return Ok(new UserGoalDO(userGoal));
@@ -127,13 +136,15 @@ public class SubscriptionController(
     // ========================================================================
 
     [HttpPost("{userId:guid}/projects/{projectId:guid}")]
+    [RequireScope("subscription")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Subscribe a user to a project")]
     [EndpointDescription("Create a project session for the specified user. Staff can enroll other users.")]
     public async Task<ActionResult<UserProjectDO>> SubscribeToProject(Guid userId, Guid projectId, CancellationToken token)
     {
-        if (User.GetSID() != userId && !User.IsInRole("Staff"))
+        var result = await auth.AuthorizeAsync(User, "staff");
+        if (!result.Succeeded && userId != User.GetSID())
             return Forbid();
 
         var project = await projectService.FindByIdAsync(projectId, token);
@@ -152,17 +163,19 @@ public class SubscriptionController(
     }
 
     [HttpDelete("{userId:guid}/projects/{projectId:guid}")]
+    [RequireScope("subscription")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Unsubscribe a user from a project")]
     [EndpointDescription("Remove the specified user from the project session. Staff can unenroll other users.")]
     public async Task<ActionResult<UserProjectDO>> UnsubscribeFromProject(Guid userId, Guid projectId, CancellationToken token)
     {
-        var project = await projectService.FindByIdAsync(projectId, token);
-        if (project is null)
-            return NotFound();
-        if (User.GetSID() != userId && !User.IsInRole("Staff"))
+        var result = await auth.AuthorizeAsync(User, "staff");
+        if (!result.Succeeded && userId != User.GetSID())
             return Forbid();
+
+        var project = await projectService.FindByIdAsync(projectId, token);
+        if (project is null) return NotFound();
 
         var userProject = await service.UnsubscribeFromProjectAsync(userId, projectId, token);
         return Ok(new UserProjectDO(userProject));
