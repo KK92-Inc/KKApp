@@ -29,6 +29,7 @@ using App.Backend.Domain.Entities.Reviews;
 using Keycloak.AuthServices.Sdk.Admin;
 using App.Backend.API.Params;
 using App.Backend.Domain.Values.Misc;
+using App.Backend.API.Utils;
 
 // ============================================================================
 
@@ -48,10 +49,11 @@ public class WorkspaceController(
     IMemberService memberService,
     IGitService gitService,
     IMessageBus bus
-) : Controller, IInviteController
+) : Controller
 {
     [HttpGet("current")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [RequireScope("workspace")]
     [ProtectedResource("workspaces", "workspaces:read")]
     [EndpointSummary("Get the workspace of the user")]
     [EndpointDescription("Retrieves the workspace of the currently authenticated user")]
@@ -61,6 +63,7 @@ public class WorkspaceController(
         if (space is not null) return Ok(new WorkspaceDO(space));
 
         // If it is a new user, we just create it for them.
+        // TODO: Should not be necessary as new users via POST does this for them.
         return Ok(new WorkspaceDO(await service.CreateAsync(new()
         {
             OwnerId = User.GetSID(),
@@ -88,6 +91,18 @@ such as official cursi, projects or rubrics.
             OwnerId = null,
             Ownership = EntityOwnership.Organization
         }, token)));
+    }
+
+    [HttpGet("user/{id:guid}")]
+    [RequireScope("workspace")]
+    [ProtectedResource("workspaces", "workspaces:read")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [EndpointSummary("Get the workspace of a user")]
+    [EndpointDescription("Retrieves the workspace of a user")]
+    public async Task<ActionResult<WorkspaceDO>> Get(Guid id, CancellationToken token)
+    {
+        var space = await service.FindByUserId(id, token);
+        return space is null ? NotFound() : Ok(new WorkspaceDO(space));
     }
 
     [HttpPost("{workspace:guid}/cursus")]
@@ -180,6 +195,7 @@ such as official cursi, projects or rubrics.
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [RequireScope("workspace")]
     [ProtectedResource("projects", "projects:write")]
     [ProtectedResource("workspaces", "workspaces:write")]
     [EndpointSummary("Create a new project")]
@@ -319,13 +335,12 @@ such as official cursi, projects or rubrics.
         var space = await service.FindByIdAsync(id, token);
         if (space is null) return NotFound();
 
-        var uniqueId = Guid.CreateVersion7().ToString("N")[..12];
         var app = await applicationService.CreateAsync(new Application
         {
             Name = dto.Name,
             Description = dto.Description,
             Enabled = dto.Enabled,
-            ClientId = $"w2id-{dto.Name.ToSlug()}-{uniqueId}",
+            ClientId = $"w2id-{dto.Name.ToSlug()}-{Guid.CreateVersion7()}",
             WorkspaceId = space.Id,
             Scopes = dto.Scopes,
             RedirectUris = dto.RedirectUris
@@ -369,6 +384,9 @@ such as official cursi, projects or rubrics.
         var app = await applicationService.FindByIdAsync(appId, token);
         if (app is null) return NotFound();
 
+        if (app.Workspace.OwnerId != User.GetSID())
+            return Forbid();
+
         await applicationService.DeleteAsync(app, token);
         return NoContent();
     }
@@ -381,16 +399,15 @@ such as official cursi, projects or rubrics.
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [EndpointSummary("Rotate client secret")]
     [EndpointDescription("Rotate / request a new secret")]
-    public async Task<IActionResult> RotateApplicationSecret(Guid id, Guid appId, CancellationToken token)
+    public async Task<IActionResult> RotateApplicationSecret(Guid appId, CancellationToken token)
     {
-        var space = await service.FindByIdAsync(id, token);
-        if (space is null) return NotFound();
-
         var app = await applicationService.FindByIdAsync(appId, token);
-        if (app is null || app.WorkspaceId != space.Id)
-            return NotFound();
+        if (app is null) return NotFound();
 
-        var secret = await applicationService.RotateClientSecretAsync(app.Id, token);
+        if (app.Workspace.OwnerId != User.GetSID())
+            return Forbid();
+
+        var secret = await applicationService.RotateClientSecretAsync(app, token);
         Response.Headers.TryAdd("X-Client-Secret", secret);
         return NoContent();
     }
@@ -406,7 +423,7 @@ such as official cursi, projects or rubrics.
         var app = await applicationService.FindByIdAsync(appId, token);
         if (app is null) return NotFound();
 
-        await applicationService.RevokeAccess(app.Id, User.GetSID(), token);
+        await applicationService.RevokeAccess(app, User.GetSID(), token);
         return NoContent();
     }
 
@@ -532,190 +549,191 @@ such as official cursi, projects or rubrics.
         return NoContent();
     }
 
-    [HttpGet("{id:guid}/members")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [EndpointSummary("Get workspace members")]
-    [EndpointDescription("Returns the paginated list of all members past and present")]
-    public async Task<ActionResult<IEnumerable<MemberDO>>> GetMembers(
-        Guid id,
-        [FromQuery(Name = "filter[active]")] bool? active,
-        [FromQuery] Pagination pagination,
-        [FromQuery] Sorting sorting,
-        CancellationToken token
-    )
-    {
-        var page = await memberService.GetAllAsync(sorting, pagination, token,
-            m => m.EntityType == MemberEntityType.Workspace,
-            m => m.EntityId == id,
-            active switch
-            {
-                true => m => m.LeftAt == null,
-                false => m => m.LeftAt != null,
-                null => null
-            }
-        );
+    // TODO: At a later date we can do cross workspace collaborations, for now no.
+    // [HttpGet("{id:guid}/members")]
+    // [ProducesResponseType(StatusCodes.Status200OK)]
+    // [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    // [ProducesResponseType(StatusCodes.Status404NotFound)]
+    // [ProducesErrorResponseType(typeof(ProblemDetails))]
+    // [EndpointSummary("Get workspace members")]
+    // [EndpointDescription("Returns the paginated list of all members past and present")]
+    // public async Task<ActionResult<IEnumerable<MemberDO>>> GetMembers(
+    //     Guid id,
+    //     [FromQuery(Name = "filter[active]")] bool? active,
+    //     [FromQuery] Pagination pagination,
+    //     [FromQuery] Sorting sorting,
+    //     CancellationToken token
+    // )
+    // {
+    //     var page = await memberService.GetAllAsync(sorting, pagination, token,
+    //         m => m.EntityType == MemberEntityType.Workspace,
+    //         m => m.EntityId == id,
+    //         active switch
+    //         {
+    //             true => m => m.LeftAt == null,
+    //             false => m => m.LeftAt != null,
+    //             null => null
+    //         }
+    //     );
 
-        page.AppendHeaders(Response.Headers);
-        return Ok(page.Items.Select(m => new MemberDO(m)));
-    }
+    //     page.AppendHeaders(Response.Headers);
+    //     return Ok(page.Items.Select(m => new MemberDO(m)));
+    // }
 
-    [HttpPost("{id:guid}/invite/{userId:guid}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
-    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [ProtectedResource("workspaces", "workspaces:write")]
-    [EndpointSummary("Invite a user to a workspace")]
-    [EndpointDescription("Invites another user to the workspace, granting them access to its projects and resources upon acceptance.")]
-    public async Task<ActionResult<MemberDO>> InviteAsync(Guid Id, Guid userId, CancellationToken token)
-    {
-        var ws = await service.FindByIdAsync(Id, token);
-        if (ws is null) return NotFound();
+    // [HttpPost("{id:guid}/invite/{userId:guid}")]
+    // [ProducesResponseType(StatusCodes.Status200OK)]
+    // [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    // [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    // [ProducesResponseType(StatusCodes.Status404NotFound)]
+    // [ProducesResponseType(StatusCodes.Status409Conflict)]
+    // [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    // [ProducesErrorResponseType(typeof(ProblemDetails))]
+    // [ProtectedResource("workspaces", "workspaces:write")]
+    // [EndpointSummary("Invite a user to a workspace")]
+    // [EndpointDescription("Invites another user to the workspace, granting them access to its projects and resources upon acceptance.")]
+    // public async Task<ActionResult<MemberDO>> InviteAsync(Guid Id, Guid userId, CancellationToken token)
+    // {
+    //     var ws = await service.FindByIdAsync(Id, token);
+    //     if (ws is null) return NotFound();
 
-        // Workspace with Null as owner is the root workspace for admin/staff/global entities.
-        // NOTE(W2): Ensure that JWT carries the correct claim in the JWT for the role to work.
-        if (ws.OwnerId is null && !User.IsInRole("staff"))
-            return Forbid();
-        if (!await userService.ExistsAsync([userId], token))
-            return NotFound();
+    //     // Workspace with Null as owner is the root workspace for admin/staff/global entities.
+    //     // NOTE(W2): Ensure that JWT carries the correct claim in the JWT for the role to work.
+    //     if (ws.OwnerId is null && !User.IsInRole("staff"))
+    //         return Forbid();
+    //     if (!await userService.ExistsAsync([userId], token))
+    //         return NotFound();
 
-        // Verify that requester is the leader.
-        var actor = await memberService.FindByEntityAndUserId(Id, User.GetSID(), token);
-        if (actor is null || actor.Role is not MemberRole.Leader)
-            return Forbid();
+    //     // Verify that requester is the leader.
+    //     var actor = await memberService.FindByEntityAndUserId(Id, User.GetSID(), token);
+    //     if (actor is null || actor.Role is not MemberRole.Leader)
+    //         return Forbid();
 
-        // Notify invite.
-        var member = await memberService.InviteAsync(Id, userId, null, null, token);
-        await bus.PublishAsync(new WorkspaceInviteNotification(userId, User.GetSID(), ws.Id));
-        return Ok(new MemberDO(member));
-    }
+    //     // Notify invite.
+    //     var member = await memberService.InviteAsync(Id, userId, null, null, token);
+    //     await bus.PublishAsync(new WorkspaceInviteNotification(userId, User.GetSID(), ws.Id));
+    //     return Ok(new MemberDO(member));
+    // }
 
-    [HttpDelete("{id:guid}/invite/{userId:guid}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
-    [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [ProtectedResource("workspaces", "workspaces:write")]
-    [EndpointSummary("Cancel a pending invite")]
-    [EndpointDescription("The session leader cancels a pending invitation before it is accepted.")]
-    public async Task<ActionResult<MemberDO>> UninviteAsync(Guid Id, Guid userId, CancellationToken token)
-    {
-        var ws = await service.FindByIdAsync(Id, token);
-        if (ws is null) return NotFound();
-        if (ws.OwnerId is null && !User.IsInRole("staff"))
-            return Forbid();
-        if (!await userService.ExistsAsync([userId], token))
-            return NotFound();
+    // [HttpDelete("{id:guid}/invite/{userId:guid}")]
+    // [ProducesResponseType(StatusCodes.Status200OK)]
+    // [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    // [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    // [ProducesResponseType(StatusCodes.Status404NotFound)]
+    // [ProducesResponseType(StatusCodes.Status409Conflict)]
+    // [ProducesErrorResponseType(typeof(ProblemDetails))]
+    // [ProtectedResource("workspaces", "workspaces:write")]
+    // [EndpointSummary("Cancel a pending invite")]
+    // [EndpointDescription("The session leader cancels a pending invitation before it is accepted.")]
+    // public async Task<ActionResult<MemberDO>> UninviteAsync(Guid Id, Guid userId, CancellationToken token)
+    // {
+    //     var ws = await service.FindByIdAsync(Id, token);
+    //     if (ws is null) return NotFound();
+    //     if (ws.OwnerId is null && !User.IsInRole("staff"))
+    //         return Forbid();
+    //     if (!await userService.ExistsAsync([userId], token))
+    //         return NotFound();
 
-        // Verify that requester is the leader.
-        var actor = await memberService.FindByEntityAndUserId(Id, User.GetSID(), token);
-        if (actor is null || actor.Role is not MemberRole.Leader)
-            return Forbid();
-        if (actor.Id == userId)
-            return UnprocessableEntity();
+    //     // Verify that requester is the leader.
+    //     var actor = await memberService.FindByEntityAndUserId(Id, User.GetSID(), token);
+    //     if (actor is null || actor.Role is not MemberRole.Leader)
+    //         return Forbid();
+    //     if (actor.Id == userId)
+    //         return UnprocessableEntity();
 
-        var member = await memberService.UnInviteAsync(Id, userId, token);
-        return Ok(new MemberDO(member));
-    }
+    //     var member = await memberService.UnInviteAsync(Id, userId, token);
+    //     return Ok(new MemberDO(member));
+    // }
 
-    [HttpPost("{id:guid}/invite/accept")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [EndpointSummary("Accept a workspace invite")]
-    [EndpointDescription("Accept an invitation to join a workspace, granting access to its projects and resources.")]
-    public async Task<ActionResult<MemberDO>> AcceptAsync(Guid Id, CancellationToken token)
-    {
-        var ws = await service.FindByIdAsync(Id, token);
-        if (ws is null) return NotFound();
-        if (ws.OwnerId is null && !User.IsInRole("staff"))
-            return Forbid();
+    // [HttpPost("{id:guid}/invite/accept")]
+    // [ProducesResponseType(StatusCodes.Status200OK)]
+    // [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    // [ProducesResponseType(StatusCodes.Status404NotFound)]
+    // [ProducesErrorResponseType(typeof(ProblemDetails))]
+    // [EndpointSummary("Accept a workspace invite")]
+    // [EndpointDescription("Accept an invitation to join a workspace, granting access to its projects and resources.")]
+    // public async Task<ActionResult<MemberDO>> AcceptAsync(Guid Id, CancellationToken token)
+    // {
+    //     var ws = await service.FindByIdAsync(Id, token);
+    //     if (ws is null) return NotFound();
+    //     if (ws.OwnerId is null && !User.IsInRole("staff"))
+    //         return Forbid();
 
-        var member = await memberService.FindByEntityAndUserId(Id, User.GetSID(), token);
-        if (member is null) return NotFound();
+    //     var member = await memberService.FindByEntityAndUserId(Id, User.GetSID(), token);
+    //     if (member is null) return NotFound();
 
-        return Ok(new MemberDO(await memberService.AcceptAsync(member.Id, token)));
-    }
+    //     return Ok(new MemberDO(await memberService.AcceptAsync(member.Id, token)));
+    // }
 
-    [HttpPost("{id:guid}/invite/decline")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [EndpointSummary("Decline a workspace invite")]
-    [EndpointDescription("Declines the currently authenticated user's pending invitation to join the workspace.")]
-    public async Task<ActionResult<MemberDO>> DeclineAsync(Guid Id, CancellationToken token)
-    {
-        var ws = await service.FindByIdAsync(Id, token);
-        if (ws is null) return NotFound();
-        if (ws.OwnerId is null && !User.IsInRole("staff"))
-            return Forbid();
+    // [HttpPost("{id:guid}/invite/decline")]
+    // [ProducesResponseType(StatusCodes.Status200OK)]
+    // [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    // [ProducesResponseType(StatusCodes.Status404NotFound)]
+    // [ProducesErrorResponseType(typeof(ProblemDetails))]
+    // [EndpointSummary("Decline a workspace invite")]
+    // [EndpointDescription("Declines the currently authenticated user's pending invitation to join the workspace.")]
+    // public async Task<ActionResult<MemberDO>> DeclineAsync(Guid Id, CancellationToken token)
+    // {
+    //     var ws = await service.FindByIdAsync(Id, token);
+    //     if (ws is null) return NotFound();
+    //     if (ws.OwnerId is null && !User.IsInRole("staff"))
+    //         return Forbid();
 
-        var member = await memberService.FindByEntityAndUserId(Id, User.GetSID(), token);
-        if (member is null) return NotFound();
+    //     var member = await memberService.FindByEntityAndUserId(Id, User.GetSID(), token);
+    //     if (member is null) return NotFound();
 
-        return Ok(new MemberDO(await memberService.DeclineAsync(member.Id, token)));
-    }
+    //     return Ok(new MemberDO(await memberService.DeclineAsync(member.Id, token)));
+    // }
 
-    [HttpPost("{id:guid}/member/leave")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [ProtectedResource("workspaces", "workspaces:write")]
-    [EndpointSummary("Leave a workspace")]
-    [EndpointDescription("The user leaves a workspace.")]
-    public async Task<ActionResult> LeaveAsync(Guid Id, CancellationToken token)
-    {
-        var ws = await service.FindByIdAsync(Id, token);
-        if (ws is null) return NotFound();
-        if (ws.OwnerId is null && !User.IsInRole("staff"))
-            return Forbid();
+    // [HttpPost("{id:guid}/member/leave")]
+    // [ProducesResponseType(StatusCodes.Status204NoContent)]
+    // [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    // [ProducesResponseType(StatusCodes.Status404NotFound)]
+    // [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    // [ProducesErrorResponseType(typeof(ProblemDetails))]
+    // [ProtectedResource("workspaces", "workspaces:write")]
+    // [EndpointSummary("Leave a workspace")]
+    // [EndpointDescription("The user leaves a workspace.")]
+    // public async Task<ActionResult> LeaveAsync(Guid Id, CancellationToken token)
+    // {
+    //     var ws = await service.FindByIdAsync(Id, token);
+    //     if (ws is null) return NotFound();
+    //     if (ws.OwnerId is null && !User.IsInRole("staff"))
+    //         return Forbid();
 
-        var member = await memberService.FindByEntityAndUserId(Id, User.GetSID(), token);
-        if (member is null) return NotFound();
+    //     var member = await memberService.FindByEntityAndUserId(Id, User.GetSID(), token);
+    //     if (member is null) return NotFound();
 
-        return Ok(new MemberDO(await memberService.LeaveAsync(member.Id, token)));
-    }
+    //     return Ok(new MemberDO(await memberService.LeaveAsync(member.Id, token)));
+    // }
 
-    [HttpPost("{id:guid}/member/kick/{memberId:guid}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [ProtectedResource("workspaces", "workspaces:write")]
-    [EndpointSummary("Kick a member from a workspace")]
-    [EndpointDescription("Remove a member from a workspace.")]
-    public async Task<ActionResult> KickAsync(Guid Id, Guid memberId, CancellationToken token)
-    {
-        var ws = await service.FindByIdAsync(Id, token);
-        if (ws is null) return NotFound();
-        if (ws.OwnerId is null && !User.IsInRole("staff"))
-            return Forbid();
+    // [HttpPost("{id:guid}/member/kick/{memberId:guid}")]
+    // [ProducesResponseType(StatusCodes.Status200OK)]
+    // [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    // [ProducesResponseType(StatusCodes.Status404NotFound)]
+    // [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    // [ProducesErrorResponseType(typeof(ProblemDetails))]
+    // [ProtectedResource("workspaces", "workspaces:write")]
+    // [EndpointSummary("Kick a member from a workspace")]
+    // [EndpointDescription("Remove a member from a workspace.")]
+    // public async Task<ActionResult> KickAsync(Guid Id, Guid memberId, CancellationToken token)
+    // {
+    //     var ws = await service.FindByIdAsync(Id, token);
+    //     if (ws is null) return NotFound();
+    //     if (ws.OwnerId is null && !User.IsInRole("staff"))
+    //         return Forbid();
 
-        // Verify that requester is the leader.
-        var actor = await memberService.FindByEntityAndUserId(Id, User.GetSID(), token);
-        if (actor is null || actor.Role is not MemberRole.Leader)
-            return Forbid();
+    //     // Verify that requester is the leader.
+    //     var actor = await memberService.FindByEntityAndUserId(Id, User.GetSID(), token);
+    //     if (actor is null || actor.Role is not MemberRole.Leader)
+    //         return Forbid();
 
-        var member = await memberService.KickAsync(memberId, token);
-        return Ok(new MemberDO(member));
-    }
+    //     var member = await memberService.KickAsync(memberId, token);
+    //     return Ok(new MemberDO(member));
+    // }
 
-    [Obsolete("Workspaces do not have a concept of session leadership like projects do")]
-    public Task<ActionResult> TransferLeadershipAsync(Guid entityId, Guid newLeaderId, CancellationToken token)
-    {
-        throw new NotImplementedException();
-    }
+    // [Obsolete("Workspaces do not have a concept of session leadership like projects do")]
+    // public Task<ActionResult> TransferLeadershipAsync(Guid entityId, Guid newLeaderId, CancellationToken token)
+    // {
+    //     throw new NotImplementedException();
+    // }
 }

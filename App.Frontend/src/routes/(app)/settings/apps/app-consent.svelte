@@ -83,6 +83,17 @@
 						</Tooltip.Root>
 					</Item.Title>
 					<Item.Description class="mt-2 flex flex-col gap-3">
+						{#if app.scopes}
+							<div class="flex flex-wrap gap-1.5">
+								Scopes:
+								{#each app.scopes as scope (scope)}
+									<Badge variant="outline" class="rounded-sm capitalize">
+										{scope}
+									</Badge>
+								{/each}
+							</div>
+							<Separator />
+						{/if}
 						<div class="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
 							<span class="flex items-center gap-1" title="Created At">
 								<Calendar size={14} />

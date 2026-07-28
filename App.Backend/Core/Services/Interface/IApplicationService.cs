@@ -26,7 +26,7 @@ public interface IApplicationService : IDomainService<Application>
     /// <param name="id">The application ID</param>
     /// <param name="token">The cancellation token</param>
     /// <returns></returns>
-    public Task<string> RotateClientSecretAsync(Guid id, CancellationToken token = default);
+    public Task<string> RotateClientSecretAsync(Application entity, CancellationToken token = default);
 
     /// <summary>
     /// 
@@ -35,5 +35,5 @@ public interface IApplicationService : IDomainService<Application>
     /// <param name="userId"></param>
     /// <param name="token"></param>
     /// <returns></returns>
-    public Task RevokeAccess(Guid id, Guid userId, CancellationToken token = default);
+    public Task RevokeAccess(Application entity, Guid userId, CancellationToken token = default);
 }

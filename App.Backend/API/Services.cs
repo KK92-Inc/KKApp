@@ -40,6 +40,8 @@ using App.Backend.API.Schemas.Schema;
 using App.Backend.API.Schemas.Document;
 using Duende.AccessTokenManagement;
 using Keycloak.AuthServices.Sdk.Kiota;
+using App.Backend.API.Utils;
+using Microsoft.AspNetCore.Authorization;
 
 // ============================================================================
 
@@ -111,12 +113,17 @@ public static class Services
     private static void RegisterAuthentication(WebApplicationBuilder builder)
     {
         builder.Services.AddKeycloakWebApiAuthentication(builder.Configuration);
-
+        builder.Services.AddSingleton<IAuthorizationHandler, RequireScopeHandler>();
         builder.Services
             .AddAuthorization(options =>
             {
                 options.AddPolicy("staff", policy => policy.RequireRealmRoles("staff"));
                 options.AddPolicy("dev", policy => policy.RequireRealmRoles("developer"));
+                // JWT Scopes
+                options.AddPolicy("scope:user", p => p.Requirements.Add(new RequireScopeRequirement("user")));
+                options.AddPolicy("scope:workspace", p => p.Requirements.Add(new RequireScopeRequirement("workspace")));
+                options.AddPolicy("scope:evaluation", p => p.Requirements.Add(new RequireScopeRequirement("evaluation")));
+                options.AddPolicy("scope:repository", p => p.Requirements.Add(new RequireScopeRequirement("repository")));
             })
             .AddKeycloakAuthorization(options =>
             {

@@ -84,7 +84,7 @@
 
 		if (!confirm) return;
 		await Problem.try(async () => {
-			secret = await Workspace.rotateApplicationSecret({ id: workspaceId, appId });
+			secret = await Workspace.rotateApplicationSecret(appId);
 			toast.success('Client secret rotated successfully.');
 			open = true;
 		});

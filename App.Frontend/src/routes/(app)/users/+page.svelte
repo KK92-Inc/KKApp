@@ -67,7 +67,7 @@
 {#snippet tile(user: components['schemas']['UserDO'])}
 	<Item.Root variant="outline">
 		{#snippet child({ props })}
-			<a href="/users/{user.id}" {...props} class="grid rounded border">
+			<a href="/users/{user.id}" {...props} class="grid rounded border hover:border-ring hover:ring-ring/50 hover:ring-2 transition-all">
 				<Avatar.Root class="h-40 w-full rounded-none border-b">
 					<Avatar.Image src={user.avatarUrl} alt={user.login} class="object-cover" />
 					<Avatar.Fallback class="rounded-none text-xl font-medium">

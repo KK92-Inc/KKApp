@@ -148,22 +148,16 @@ public class ApplicationService(DatabaseContext ctx, ILogger<ApplicationService>
         await base.DeleteAsync(entity, token);
     }
 
-    public async Task<string> RotateClientSecretAsync(Guid id, CancellationToken token = default)
+    public async Task<string> RotateClientSecretAsync(Application entity, CancellationToken token = default)
     {
-        var app = await context.Applications.FirstOrDefaultAsync(a => a.Id == id, token)
-            ?? throw new ServiceException(404, "Application not found");
-
-        var rotated = await client.Admin.Realms[Realm].Clients[id.ToString()].ClientSecret.PostAsync(null, token);
+        var rotated = await client.Admin.Realms[Realm].Clients[entity.Id.ToString()].ClientSecret.PostAsync(null, token);
         return rotated?.Value ?? throw new ServiceException(500, "No credentials found");
     }
 
-    public async Task RevokeAccess(Guid id, Guid userId, CancellationToken token = default)
+    public async Task RevokeAccess(Application entity, Guid userId, CancellationToken token = default)
     {
-       var app = await context.Applications.FirstOrDefaultAsync(a => a.Id == id, token)
-            ?? throw new ServiceException(404, "Application not found");
-
         var realm = client.Admin.Realms[Realm];
-        await realm.Users[userId.ToString()].Consents[app.ClientId].DeleteAsync(null, token);
+        await realm.Users[userId.ToString()].Consents[entity.ClientId].DeleteAsync(null, token);
     }
 
     /// <summary>

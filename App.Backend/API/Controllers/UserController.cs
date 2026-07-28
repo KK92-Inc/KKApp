@@ -20,6 +20,7 @@ using Keycloak.AuthServices.Sdk.Admin;
 using App.Backend.Domain.Enums;
 using Wolverine;
 using App.Backend.API.Notifications.Variants;
+using Keycloak.AuthServices.Sdk.Kiota.Admin;
 
 // ============================================================================
 
@@ -37,12 +38,9 @@ public class UserController(
     IUserService users,
     IMessageBus bus,
     IWorkspaceService workspaces,
-    ISubscriptionService subscription,
-    IHttpClientFactory factory
+    KeycloakAdminApiClient keycloak
 ) : Controller
 {
-    private readonly HttpClient keycloak = factory.CreateClient("kc_admin");
-
     [HttpGet]
     // [ProtectedResource("users", "users:read")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -92,10 +90,13 @@ public class UserController(
     [Authorize(Policy = "staff")]
     public async Task<ActionResult<UserDO>> CreateUser(
         [FromBody] PostUserRequestDTO request,
-        CancellationToken ct)
+        CancellationToken token)
     {
+        var conflict = await users.FindByLoginAsync(request.Login, token);
+        if (conflict is not null) return Conflict();
+
         var id = Guid.CreateVersion7();
-        var user = new UserRepresentation
+        await keycloak.Admin.Realms["student"].Users.PostAsync(new()
         {
             Id = id.ToString(),
             Username = request.Login,
@@ -103,25 +104,9 @@ public class UserController(
             Enabled = true,
             EmailVerified = false,
             RealmRoles = ["student"],
-            RequiredActions = ["UPDATE_PASSWORD"], // TODO: Force 2FA at all times, configure it ?
-        };
-
-        var conflict = await users.FindByLoginAsync(request.Login, ct);
-        if (conflict is not null) return Conflict();
-
-        var result = await keycloak.PostAsJsonAsync("users", user, ct);
-        if (!result.IsSuccessStatusCode)
-        {
-            var content = await result.Content.ReadAsStringAsync(ct) ?? "<empty>";
-            logger.LogError(
-                "Failed to create user in Keycloak. Login={Login} StatusCode={StatusCode} Body={Body}",
-                request.Login,
-                result.StatusCode,
-                content
-            );
-
-            return Problem("Failed to provision Keycloak identity", statusCode: 500);
-        }
+             // TODO: Force 2FA at all times, configure it ?
+            RequiredActions = ["UPDATE_PASSWORD"],
+        }, null, token);
 
         var account = await users.CreateAsync(new()
         {
@@ -131,14 +116,14 @@ public class UserController(
             Details = new()
             {
                 UserId = id,
-                // ProxyEmail = request.Email,
+                Email = request.Email,
                 FirstName = request.FirstName,
                 LastName = request.LastName,
             },
-        }, ct);
+        }, token);
 
-        await workspaces.CreateAsync(new() { OwnerId = id, Ownership = EntityOwnership.User }, ct);
-        await bus.PublishAsync(new WelcomeUserNotification(account));
+        await workspaces.CreateAsync(new() { OwnerId = id, Ownership = EntityOwnership.User }, token);
+        await bus.PublishAsync(new WelcomeUserNotification(account!));
         return Ok(new UserDO(account));
     }
 

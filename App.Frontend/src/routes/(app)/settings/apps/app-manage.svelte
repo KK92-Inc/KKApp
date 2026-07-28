@@ -20,7 +20,17 @@
 	import Switch from '$lib/components/switch/switch.svelte';
 
 	// Icons
-	import { Link, Plus, Trash2, Settings2, UserRound, ClipboardCheck, Bell } from '@lucide/svelte';
+	import {
+		Link,
+		Plus,
+		Trash2,
+		Settings2,
+		UserRound,
+		ClipboardCheck,
+		Bell,
+		GitBranch,
+		HeartHandshake
+	} from '@lucide/svelte';
 	import type { WithChild } from 'bits-ui';
 	import type { components } from '$lib/api/api';
 
@@ -56,26 +66,26 @@
 		{
 			id: 'workspace',
 			label: 'Workspace',
-			desc: 'Full administrative control over workspace settings, billing, and members.',
+			desc: 'Access to workspaces including read and write access to project, goals, cursi, rubrics.',
 			icon: Settings2
 		},
 		{
-			id: 'profile',
-			label: 'Profile',
-			desc: 'View and update the name, avatar, and account details of the connected user.',
+			id: 'user',
+			label: 'User',
+			desc: 'Grants read/write access to profile info only.',
 			icon: UserRound
 		},
 		{
-			id: 'evaluations',
+			id: 'evaluation',
 			label: 'Evaluations',
-			desc: 'Read results and manage evaluation runs on your behalf.',
-			icon: ClipboardCheck
+			desc: 'Read results and manage evaluation runs on behalf of the user.',
+			icon: HeartHandshake
 		},
 		{
-			id: 'notifications',
-			label: 'Notifications',
-			desc: 'Send and manage notifications on your behalf.',
-			icon: Bell
+			id: 'repository',
+			label: 'Repository',
+			desc: 'Grants full access to make commits to git tracked entities such as projects or rubrics',
+			icon: GitBranch
 		}
 	];
 
@@ -253,7 +263,8 @@
 					{/if}
 				</Field.Legend>
 				<Field.Description>
-					Grant only what this application needs to do its job, you can change this anytime.
+					Scopes let you specify exactly what type of access you need. Scopes limit access for OAuth tokens.
+					They do not grant any additional permission beyond that which the user already has.
 				</Field.Description>
 				<Field.Group>
 					<Item.Group class="grid  grid-cols-2 gap-1.5">

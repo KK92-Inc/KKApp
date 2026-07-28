@@ -39,6 +39,15 @@ public class MemberService(DatabaseContext context, TimeProvider time) : BaseSer
         return base.DeleteAsync(entity, token);
     }
 
+    public async Task<Member?> FindByGitAndUserId(Guid entityId, Guid userId, CancellationToken token = default)
+    {
+        return await ctx.Members.FirstOrDefaultAsync(
+            m => m.GitId == entityId
+            && m.UserId == userId
+            && m.LeftAt != null,
+        token);
+    }
+
     public async Task<Member> AcceptAsync(Guid memberId, CancellationToken token = default)
     {
         var member = await ctx.Members.FirstOrDefaultAsync(

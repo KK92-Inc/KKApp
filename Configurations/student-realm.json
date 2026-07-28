@@ -347,16 +347,7 @@
           "attributes": {}
         }
       ],
-      "w2id-019e8340663a": [
-        {
-          "id": "276a0227-0f8a-4bc9-a106-09d5c45832e8",
-          "name": "uma_protection",
-          "composite": false,
-          "clientRole": true,
-          "containerId": "b64c3df7-ff9b-4122-b2a7-ec2a476ae97c",
-          "attributes": {}
-        }
-      ],
+      "w2id-workspacetest-019fa7d6368d": [],
       "account": [
         {
           "id": "c0f3255e-1f1b-4a13-b6e2-6c868f42ff02",
@@ -531,7 +522,8 @@
           "view-realm",
           "view-clients",
           "view-authorization",
-          "create-client"
+          "create-client",
+          "manage-users"
         ],
         "intra": [
           "uma_protection"
@@ -544,26 +536,31 @@
       "groups": []
     },
     {
-      "id": "46c86840-902d-4262-b9d6-a7faab67a8b4",
-      "username": "service-account-w2id-019e8340663a",
+      "id": "699f4d8c-f63a-46ca-b819-d2f73687a552",
+      "username": "service-account-w2id-workspacetest-019fa7d6368d",
       "emailVerified": false,
       "enabled": true,
-      "createdTimestamp": 1780396231972,
+      "createdTimestamp": 1785227261600,
       "totp": false,
-      "serviceAccountClientId": "w2id-019e8340663a",
+      "serviceAccountClientId": "w2id-workspacetest-019fa7d6368d",
       "disableableCredentialTypes": [],
       "requiredActions": [],
       "realmRoles": [
-        "default-roles-student",
-        "staff",
-        "student",
-        "admin"
+        "default-roles-student"
       ],
       "notBefore": 0,
       "groups": []
     }
   ],
   "scopeMappings": [
+    {
+      "client": "security-admin-console",
+      "roles": [
+        "student",
+        "admin",
+        "staff"
+      ]
+    },
     {
       "clientScope": "offline_access",
       "roles": [
@@ -932,6 +929,7 @@
         "service_account",
         "web-origins",
         "acr",
+        "workspace",
         "profile",
         "basic",
         "email"
@@ -1157,6 +1155,50 @@
               }
             ],
             "icon_uri": ""
+          },
+          {
+            "name": "applications",
+            "type": "urn:intra:resources:applications",
+            "ownerManagedAccess": false,
+            "displayName": "Applications",
+            "attributes": {},
+            "uris": [
+              "/*"
+            ],
+            "scopes": [
+              {
+                "name": "applications:write"
+              },
+              {
+                "name": "applications:delete"
+              },
+              {
+                "name": "applications:read"
+              }
+            ],
+            "icon_uri": ""
+          },
+          {
+            "name": "repository",
+            "type": "urn:intra:resources:repository",
+            "ownerManagedAccess": false,
+            "displayName": "Repository",
+            "attributes": {},
+            "uris": [
+              "/*"
+            ],
+            "scopes": [
+              {
+                "name": "repository:write"
+              },
+              {
+                "name": "repository:read"
+              },
+              {
+                "name": "repository:delete"
+              }
+            ],
+            "icon_uri": ""
           }
         ],
         "policies": [
@@ -1178,16 +1220,18 @@
             "logic": "POSITIVE",
             "decisionStrategy": "UNANIMOUS",
             "config": {
-              "fetchRoles": "false",
+              "fetchRoles": "true",
               "roles": "[{\"id\":\"staff\",\"required\":true}]"
             }
           },
           {
             "name": "Role: Admin",
+            "description": "",
             "type": "role",
             "logic": "POSITIVE",
             "decisionStrategy": "UNANIMOUS",
             "config": {
+              "fetchRoles": "true",
               "roles": "[{\"id\":\"realm-management/realm-admin\",\"required\":true}]"
             }
           },
@@ -1401,6 +1445,54 @@
               "scopes": "[\"workspaces:write\"]",
               "applyPolicies": "[\"Access: Manage\"]"
             }
+          },
+          {
+            "name": "View Applications",
+            "description": "",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "resources": "[\"applications\"]",
+              "scopes": "[\"applications:read\"]",
+              "applyPolicies": "[\"Access: Basic\"]"
+            }
+          },
+          {
+            "name": "Manage Applications",
+            "description": "",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "resources": "[\"applications\"]",
+              "scopes": "[\"applications:delete\",\"applications:write\"]",
+              "applyPolicies": "[\"Access: Manage\"]"
+            }
+          },
+          {
+            "name": "Manage Repositories",
+            "description": "",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "resources": "[\"repository\"]",
+              "scopes": "[\"repository:write\",\"repository:delete\"]",
+              "applyPolicies": "[\"Access: Manage\"]"
+            }
+          },
+          {
+            "name": "View Repositories",
+            "description": "",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "resources": "[\"repository\"]",
+              "scopes": "[\"repository:read\"]",
+              "applyPolicies": "[\"Access: Basic\"]"
+            }
           }
         ],
         "scopes": [
@@ -1524,6 +1616,30 @@
           {
             "name": "workspaces:delete",
             "displayName": "Delete Workspaces"
+          },
+          {
+            "name": "applications:write",
+            "displayName": "Create Applications"
+          },
+          {
+            "name": "applications:read",
+            "displayName": "View Applications"
+          },
+          {
+            "name": "applications:delete",
+            "displayName": "Delete Applications"
+          },
+          {
+            "name": "repository:read",
+            "displayName": "Read Repositories"
+          },
+          {
+            "name": "repository:write",
+            "displayName": "Write Repositories"
+          },
+          {
+            "name": "repository:delete",
+            "displayName": "Delete repositories"
           }
         ],
         "decisionStrategy": "UNANIMOUS"
@@ -1605,7 +1721,7 @@
         "pkce.code.challenge.method": "S256"
       },
       "authenticationFlowBindingOverrides": {},
-      "fullScopeAllowed": true,
+      "fullScopeAllowed": false,
       "nodeReRegistrationTimeout": 0,
       "protocolMappers": [
         {
@@ -1642,23 +1758,21 @@
       ]
     },
     {
-      "id": "b64c3df7-ff9b-4122-b2a7-ec2a476ae97c",
-      "clientId": "w2id-019e8340663a",
-      "name": "KKApp Integration w2id-019e8340663a",
-      "description": "OAuth2.0 client application created by KKApp for integration purposes",
-      "rootUrl": "",
-      "adminUrl": "",
-      "baseUrl": "",
+      "id": "019fa7d6-368d-726e-8b9d-4daedd4f1eb9",
+      "clientId": "w2id-workspacetest-019fa7d6368d",
+      "name": "WorkspaceTest",
+      "description": "1",
       "surrogateAuthRequired": false,
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "secret": "**********",
       "redirectUris": [
-        "http://localhost:36327/",
         "http://localhost:5000/callback"
       ],
-      "webOrigins": [],
+      "webOrigins": [
+        "http://localhost:5000"
+      ],
       "notBefore": 0,
       "bearerOnly": false,
       "consentRequired": true,
@@ -1671,12 +1785,8 @@
       "protocol": "openid-connect",
       "attributes": {
         "realm_client": "false",
-        "oidc.ciba.grant.enabled": "false",
-        "client.secret.creation.time": "1780318496",
+        "client.secret.creation.time": "1785229284",
         "backchannel.logout.session.required": "true",
-        "standard.token.exchange.enabled": "false",
-        "oauth2.device.authorization.grant.enabled": "false",
-        "display.on.consent.screen": "false",
         "pkce.code.challenge.method": "S256",
         "backchannel.logout.revoke.offline.tokens": "false"
       },
@@ -1693,11 +1803,10 @@
         "email"
       ],
       "optionalClientScopes": [
-        "address",
-        "phone",
-        "organization",
-        "offline_access",
-        "microprofile-jwt"
+        "evaluation",
+        "workspace",
+        "repository",
+        "user"
       ]
     }
   ],
@@ -1873,6 +1982,18 @@
       ]
     },
     {
+      "id": "8e6d7810-4b53-4bd1-932a-f05837030839",
+      "name": "user",
+      "description": "Grants read/write access to profile info only. ",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "true",
+        "gui.order": "",
+        "consent.screen.text": "Grants read/write access to profile info only. "
+      }
+    },
+    {
       "id": "85b2bbd3-2489-4c72-b9fd-df9f44cb69dd",
       "name": "address",
       "description": "OpenID Connect built-in scope: address",
@@ -1910,9 +2031,10 @@
       "description": "OpenID Connect scope for add user roles to the access token",
       "protocol": "openid-connect",
       "attributes": {
-        "include.in.token.scope": "false",
-        "consent.screen.text": "${rolesScopeConsentText}",
-        "display.on.consent.screen": "true"
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "true",
+        "gui.order": "",
+        "consent.screen.text": "${rolesScopeConsentText}"
       },
       "protocolMappers": [
         {
@@ -1957,6 +2079,18 @@
           }
         }
       ]
+    },
+    {
+      "id": "c9b8efca-70cd-4629-98aa-475eb004648f",
+      "name": "workspace",
+      "description": "Grants full access to workspaces including read and write access to project, goals, cursi, rubrics",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "true",
+        "gui.order": "",
+        "consent.screen.text": "Grants full access to workspaces including read and write access to project, goals, cursi, rubrics"
+      }
     },
     {
       "id": "71827b9a-831b-4e33-b2e1-429adf158532",
@@ -2043,6 +2177,18 @@
       ]
     },
     {
+      "id": "34b9fc72-ba83-4faf-ab2e-5ac72f32caae",
+      "name": "evaluation",
+      "description": "Read results and manage evaluation runs on behalf of the user.",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "true",
+        "gui.order": "",
+        "consent.screen.text": "Read results and manage evaluation runs on behalf of the user."
+      }
+    },
+    {
       "id": "9e219c17-093d-42c9-97f8-6a9670c12f89",
       "name": "saml_organization",
       "description": "Organization Membership",
@@ -2099,6 +2245,18 @@
           }
         }
       ]
+    },
+    {
+      "id": "886a912e-7df0-4936-8f96-e6f0e9691920",
+      "name": "repository",
+      "description": "Grants full access to make commits to git tracked entities such as projects or rubrics.",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "true",
+        "gui.order": "",
+        "consent.screen.text": "Grants full access to make commits to git tracked entities such as projects or rubrics."
+      }
     },
     {
       "id": "c1fcbf93-2412-40a5-90d1-c241426ae2fc",
@@ -2173,11 +2331,14 @@
           "protocolMapper": "oidc-usermodel-attribute-mapper",
           "consentRequired": false,
           "config": {
+            "aggregate.attrs": "false",
             "introspection.token.claim": "true",
-            "userinfo.token.claim": "true",
+            "multivalued": "false",
+            "userinfo.token.claim": "false",
             "user.attribute": "middleName",
-            "id.token.claim": "true",
-            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "lightweight.claim": "false",
+            "access.token.claim": "false",
             "claim.name": "middle_name",
             "jsonType.label": "String"
           }
@@ -2269,10 +2430,11 @@
           "protocolMapper": "oidc-full-name-mapper",
           "consentRequired": false,
           "config": {
-            "id.token.claim": "true",
+            "id.token.claim": "false",
+            "lightweight.claim": "false",
             "introspection.token.claim": "true",
-            "access.token.claim": "true",
-            "userinfo.token.claim": "true"
+            "access.token.claim": "false",
+            "userinfo.token.claim": "false"
           }
         },
         {
@@ -2314,11 +2476,14 @@
           "protocolMapper": "oidc-usermodel-attribute-mapper",
           "consentRequired": false,
           "config": {
+            "aggregate.attrs": "false",
             "introspection.token.claim": "true",
-            "userinfo.token.claim": "true",
+            "multivalued": "false",
+            "userinfo.token.claim": "false",
             "user.attribute": "lastName",
-            "id.token.claim": "true",
-            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "lightweight.claim": "false",
+            "access.token.claim": "false",
             "claim.name": "family_name",
             "jsonType.label": "String"
           }
@@ -2362,11 +2527,14 @@
           "protocolMapper": "oidc-usermodel-attribute-mapper",
           "consentRequired": false,
           "config": {
+            "aggregate.attrs": "false",
             "introspection.token.claim": "true",
-            "userinfo.token.claim": "true",
+            "multivalued": "false",
+            "userinfo.token.claim": "false",
             "user.attribute": "firstName",
-            "id.token.claim": "true",
-            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "lightweight.claim": "false",
+            "access.token.claim": "false",
             "claim.name": "given_name",
             "jsonType.label": "String"
           }
@@ -2405,7 +2573,11 @@
     "phone",
     "microprofile-jwt",
     "organization",
-    "role_list"
+    "role_list",
+    "workspace",
+    "evaluation",
+    "user",
+    "repository"
   ],
   "browserSecurityHeaders": {
     "contentSecurityPolicyReportOnly": "",

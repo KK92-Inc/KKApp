@@ -14,6 +14,17 @@ namespace App.Backend.Core.Services.Interface;
 public interface IMemberService : IDomainService<Member>
 {
     /// <summary>
+    /// Find a membership of a user towards a git id.
+    /// This essentially answers the question of "Is this user a member of this git instance"
+    /// </summary>
+    /// <param name="entityId"></param>
+    /// <param name="userId"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public Task<Member?> FindByGitAndUserId(Guid entityId, Guid userId, CancellationToken token = default);
+
+
+    /// <summary>
     /// Find a member ship of a specific user on a specific entity.
     /// If null then user is not a member of this entity.
     /// </summary>

@@ -282,11 +282,11 @@ export const removeApplication = command(
 
 /** Rotate an application's client secret */
 export const rotateApplicationSecret = command(
-	v.object({ id: Filters.id, appId: Filters.id }),
-	async ({ id, appId }) => {
+	Filters.id,
+	async (appId) => {
 		const { locals } = getRequestEvent();
 		const { error, response } = await locals.api.POST('/application/{appId}/secret/rotate', {
-			params: { path: { id, appId } }
+			params: { path: { appId } }
 		});
 
 		if (error) Problem.throw(error);

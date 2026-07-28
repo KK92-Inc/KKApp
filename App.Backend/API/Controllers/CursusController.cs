@@ -21,6 +21,7 @@ using Microsoft.EntityFrameworkCore;
 using App.Backend.Models.Responses.Entities.Goals;
 using App.Backend.Domain.Entities;
 using Wolverine;
+using App.Backend.API.Utils;
 
 // ============================================================================
 
@@ -37,6 +38,7 @@ public class CursusController(
 ) : Controller
 {
     [HttpGet]
+    [RequireScope("workspace")]
     [ProtectedResource("cursus", "cursus:read")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -64,6 +66,7 @@ public class CursusController(
 
     [Tags("Workspace")]
     [HttpDelete("{id:guid}")]
+    [RequireScope("workspace")]
     [ProtectedResource("cursus", "cursus:delete")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -82,6 +85,7 @@ public class CursusController(
     }
 
     [HttpGet("{id:guid}")]
+    [RequireScope("workspace")]
     [ProtectedResource("cursus", "cursus:read")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
