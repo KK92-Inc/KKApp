@@ -68,7 +68,7 @@
 		{/snippet}
 	</Layout>
 {:then _blank}
-	<Layout classR="pt-4 grid gap-2" classL="pt-4 flex flex-col gap-2">
+	<Layout classR="pt-4 flex flex-col gap-2" classL="pt-4 flex flex-col gap-2">
 		{#snippet left()}
 			<Components.Info />
 			<Components.Members />
