@@ -19,6 +19,7 @@ using App.Backend.Models.Requests.SshKeys;
 using App.Backend.Domain.Entities.Users;
 using App.Backend.API.Utils;
 using System.Net;
+using System.ComponentModel;
 
 // ============================================================================
 
@@ -76,6 +77,23 @@ public class AccountController(
 
         page.AppendHeaders(Response.Headers);
         return Ok(page.Items.Select(e => new NotificationDO(e)));
+    }
+
+    [HttpPost("notifications/read")]
+    [RequireScope("user")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Get current user's notifications")]
+    [EndpointDescription("Retrieve a paginated list of notifications for the authenticated user.")]
+    public async Task<ActionResult<IEnumerable<NotificationDO>>> MarkAsRead(
+        [FromQuery(Name = "mark[read]"), Description("Whether to mark them as read, defaults to true ")] bool? read,
+        [FromBody] IEnumerable<Guid> ids,
+        CancellationToken token
+    )
+    {
+        await notifications.MarkAsAsync(User.GetSID(), ids, read ?? true, token);
+        return NoContent();
     }
 
     [HttpGet("stream")]

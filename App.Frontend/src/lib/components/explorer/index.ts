@@ -16,9 +16,7 @@ export interface FileNode {
 export function parseGitTree(input: string, path?: string): FileNode[] {
 	const nodes: FileNode[] = [];
 	const basePath = path ? `${path.replace(/\/$/, '')}/` : '';
-	// 2. Use non-capturing groups (?:) for data we don't need to extract
 	const regex = /^\s*\d+\s+([a-z]+)\s+[0-9a-f]+\s+(?:-|\d+)\s+(.+)$/gmi;
-	// 3. Use matchAll to bypass string splitting entirely
 	for (const m of input.matchAll(regex)) {
 		const name = m[2].trimEnd();
 		nodes.push({

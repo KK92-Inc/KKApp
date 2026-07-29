@@ -61,6 +61,11 @@ export const getNotificationPage = query(PageSchema, async (params) => {
 	return paginate(data, response);
 });
 
+export const markNotifications = command(v.array(Filters.id), async (ids) => {
+	// const { locals } = getRequestEvent();
+	// TODO: Implement
+});
+
 // ============================================================================
 // SSH
 // ============================================================================

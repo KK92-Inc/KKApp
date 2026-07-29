@@ -59,6 +59,7 @@ export const removeBranch = command(
 export const getTree = query(TreeSchema, async ({ id, branch }) => {
 	const { locals } = getRequestEvent();
 	const { error, data } = await locals.api.GET('/git/{id}/tree/{branch}', {
+		parseAs: "text",
 		params: { path: { id, branch } }
 	});
 
@@ -70,6 +71,7 @@ export const getTree = query(TreeSchema, async ({ id, branch }) => {
 export const getTreePath = query(TreePathSchema, async ({ id, branch, path }) => {
 	const { locals } = getRequestEvent();
 	const { error, data } = await locals.api.GET('/git/{id}/tree/{branch}/{path}', {
+		parseAs: "text",
 		params: { path: { id, branch, path } }
 	});
 
@@ -81,6 +83,7 @@ export const getTreePath = query(TreePathSchema, async ({ id, branch, path }) =>
 export const getBlob = query(BlobSchema, async ({ id, branch, path }) => {
 	const { locals } = getRequestEvent();
 	const { error, data } = await locals.api.GET('/git/{id}/blob/{branch}/{path}', {
+		parseAs: "text",
 		params: { path: { id, branch, path } }
 	});
 

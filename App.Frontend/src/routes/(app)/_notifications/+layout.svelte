@@ -25,7 +25,7 @@
 	import * as Resizable from '$lib/components/resizable';
 	import * as InputGroup from '$lib/components/input-group';
 	import * as v from 'valibot';
-	import { getNotifications } from '$lib/remotes/notification.remote';
+	import * as Account from '$lib/remotes/account.remote';
 	import useSearchParams from '$lib/hooks/url.svelte';
 
 	let { data, children }: LayoutProps = $props();

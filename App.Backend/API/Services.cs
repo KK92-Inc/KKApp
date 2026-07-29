@@ -124,6 +124,7 @@ public static class Services
                 options.AddPolicy("scope:workspace", p => p.Requirements.Add(new RequireScopeRequirement("workspace")));
                 options.AddPolicy("scope:evaluation", p => p.Requirements.Add(new RequireScopeRequirement("evaluation")));
                 options.AddPolicy("scope:repository", p => p.Requirements.Add(new RequireScopeRequirement("repository")));
+                options.AddPolicy("scope:subscription", p => p.Requirements.Add(new RequireScopeRequirement("subscription")));
             })
             .AddKeycloakAuthorization(options =>
             {

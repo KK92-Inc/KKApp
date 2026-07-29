@@ -2,16 +2,16 @@
 	import type { Paginated } from '$lib/api';
 	import * as Empty from '$lib/components/empty';
 	import { Loader } from '@lucide/svelte';
-	import type { Snippet } from 'svelte';
+	import { tick, type Snippet } from 'svelte';
 	import type { ClassValue } from 'svelte/elements';
 	import Button from './button/button.svelte';
+	import ScrollArea from './scroll-area/scroll-area.svelte';
 
 	interface Props {
 		class?: ClassValue;
 		item: Snippet<[value: T]>;
 		end?: Snippet<[]>;
 		load: (page: number) => Promise<Paginated<T>>;
-		/** How far (px) before the bottom to start loading the next page */
 		threshold?: number;
 	}
 
@@ -24,6 +24,11 @@
 	let error = $state<unknown>(null);
 
 	let sentinel = $state<HTMLDivElement>();
+
+	function isSentinelVisible(el: HTMLElement) {
+		const rect = el.getBoundingClientRect();
+		return rect.top <= window.innerHeight + threshold;
+	}
 
 	async function more() {
 		if (loading || finished) return;
@@ -40,12 +45,15 @@
 			error = e;
 		} finally {
 			loading = false;
+			// Wait for Svelte to render the new DOM items, then check if
+			// the sentinel is still visible. If so, keep loading!
+			await tick();
+			if (!finished && sentinel && isSentinelVisible(sentinel)) {
+				more();
+			}
 		}
 	}
 
-	// Re-runs only when `sentinel` changes identity — i.e. once when it
-	// mounts, and once more when it's removed from the DOM (finished
-	// becomes true, `bind:this` resets it to undefined, cleanup fires).
 	$effect(() => {
 		if (!sentinel) return;
 
@@ -61,7 +69,7 @@
 	});
 </script>
 
-<div class={klass}>
+<ScrollArea class={klass}>
 	<svelte:boundary>
 		{#each items as entry, i (i)}
 			{@render item(entry)}
@@ -82,15 +90,17 @@
 				</Empty.Root>
 			{/if}
 		{:else}
+			<!-- Keep the sentinel in the DOM so IntersectionObserver can observe it,
+			     but only render the spinner text when actively loading -->
 			<div
 				bind:this={sentinel}
-				class="flex w-full flex-col items-center justify-center gap-2 py-8 text-muted-foreground"
+				class="flex w-full flex-col items-center justify-center gap-2 py-6 text-muted-foreground"
 			>
 				{#if error}
-					<span class="text-sm text-destructive">Couldn't load more.</span>
+					<span class="text-sm text-destructive">Couldn't load more. {JSON.stringify(error)}</span>
 					<button class="text-sm underline" onclick={more}>Retry</button>
-				{:else}
-					<Loader class="animate-spin" />
+				{:else if loading}
+					<Loader class="h-5 w-5 animate-spin" />
 					<span class="text-sm">Loading...</span>
 				{/if}
 			</div>
@@ -103,4 +113,4 @@
 			</div>
 		{/snippet}
 	</svelte:boundary>
-</div>
+</ScrollArea>

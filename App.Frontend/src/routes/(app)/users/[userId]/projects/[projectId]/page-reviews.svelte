@@ -230,6 +230,8 @@
 							</Button>
 						</Item.Content>
 					</Item.Root>
+				{:else}
+					<span class="text-xs text-muted-foreground">No Reviews yet.</span>
 				{/each}
 			</Item.Group>
 		</Card.Content>

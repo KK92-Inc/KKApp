@@ -19,6 +19,15 @@ import { error, isHttpError } from "@sveltejs/kit";
 
 // ============================================================================
 
+// TODO: Both user project and project could be uninitialized meaning empty and branchless...
+interface GitContext<T> {
+	/** What is the default branch, if undefined means the repo is bare. */
+	head?: string;
+	entity: T;
+}
+
+// ============================================================================
+
 export const Branches = {
 	/**
 	 * Reusable helper to parse raw git branch output.
@@ -47,9 +56,11 @@ export const Branches = {
 export class Context {
 	public view = $state<"submission" | "assignment">("assignment");
 
+	/** The currently targeted branch */
 	public branch = $state<string>();
 	public initialized = $state(false);
 	public project = $state<components['schemas']['ProjectDO']>()!;
+	public projectBranch = $state<string>()!;
 	public userProject = $state<components['schemas']['UserProjectDO']>();
 
 	constructor(
@@ -106,6 +117,9 @@ export class Context {
 
 		if (project.status === "fulfilled") {
 			this.project = project.value;
+			const raw = await Git.getBranches(this.project.gitInfo.id);
+			this.projectBranch = Branches.parse(raw).master!;
+
 		} else if (isHttpError(project.reason)) {
 			error(project.reason.status, project.reason.body);
 		}
