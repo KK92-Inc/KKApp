@@ -6,7 +6,7 @@
 import * as v from 'valibot';
 import { S3Client } from "bun";
 import { query, command, getRequestEvent } from '$app/server';
-import { Filters, paginate, Problem } from '$lib/api';
+import { EntityObjectState, EntityType, Filters, paginate, Problem } from '$lib/api';
 import { avatars } from '$lib/s3';
 import { S3_ENDPOINT } from '$env/static/private';
 
@@ -37,6 +37,42 @@ export const getPage = query(PageSchema, async (params) => {
 	if (error || !data) Problem.throw(error);
 	return paginate(data, response);
 });
+
+// ============================================================================
+
+const EligiblePageSchema = v.object({
+	login: v.optional(v.string()),
+	display: v.optional(v.string()),
+	userId: v.optional(Filters.id),
+	type: EntityType,
+	id: Filters.id,
+	...Filters.sort,
+	...Filters.pagination
+});
+/** Paginated response for all users */
+export const getEligiblePage = query(EligiblePageSchema, async (params) => {
+	const { locals } = getRequestEvent();
+	const { response, error, data } = await locals.api.GET('/users/eligible', {
+		params: {
+			query: {
+				'filter[login]': params.login,
+				'filter[display]': params.display,
+				'filter[user_id]': params.userId,
+				'type[id]': params.id,
+				'type[entity]': params.type,
+				'sort[by]': params.sortBy,
+				'sort[order]': params.sort,
+				'page[index]': params.page,
+				'page[size]': params.size
+			}
+		}
+	});
+
+	if (error || !data) Problem.throw(error);
+	return paginate(data, response);
+});
+
+// ============================================================================
 
 /** Get a single user */
 export const get = query(Filters.id, async (userId) => {

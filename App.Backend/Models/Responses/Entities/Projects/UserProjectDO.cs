@@ -21,26 +21,23 @@ public class UserProjectDO(UserProject userProject) : BaseEntityDO<UserProject>(
     /// <summary>
     /// The current state of the object.
     /// </summary>
-    [Required, Description("The current state of the object.")]
+    [Description("The current state of the object.")]
     public EntityObjectState State { get; set; } = userProject.State;
-
-    /// <summary>
-    /// The rubric selected for evaluating this project.
-    /// </summary>
-    // [Required, Description("The rubric selected for evaluating this project.")]
-    // public Guid? RubricId { get; set; } = userProject.RubricId;
 
     /// <summary>
     /// The project template this instance is based on.
     /// </summary>
-    [Required, Description("The project template this instance is based on.")]
+    [Description("The project template this instance is based on.")]
     public ProjectLightDO Project { get; set; } = userProject.Project;
 
     /// <summary>
     /// Git repository information for this project instance.
     /// </summary>
-    [Required, Description("Git repository information for this project instance.")]
+    [Description("Git repository information for this project instance.")]
     public GitDO? GitInfo { get; set; } = userProject.GitInfo;
+
+    [Description("Determines if and how long there is a cooldown on acting on this session again.")]
+    public DateTimeOffset? UnlocksAt { get; set; } = userProject.UnlocksAt;
 
     public static implicit operator UserProjectDO?(UserProject? userProject) =>
         userProject is null ? null : new(userProject);

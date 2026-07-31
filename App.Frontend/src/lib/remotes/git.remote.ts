@@ -19,13 +19,32 @@ const BlobSchema = v.object({ id: Filters.id, branch: v.string(), path: v.string
 export const getBranches = query(Filters.id, async (id) => {
 	const { locals } = getRequestEvent();
 	const { error, data } = await locals.api.GET('/git/{id}/branches', {
+		params: { path: { id } },
 		parseAs: "text",
-		params: { path: { id } }
 	});
 
 	if (error) Problem.throw(error);
-	if (!data) return "";
-	return data;
+	if (!data) return { branches: [] as string[], master: undefined };
+
+	const branches: string[] = [];
+	let master: string | undefined;
+	for (const raw of data.split('\n')) {
+		const line = raw.trim();
+		if (!line) continue;
+
+		if (line.startsWith('*')) {
+			const name = line.slice(1).trim();
+			branches.push(name);
+			master = name;
+		} else {
+			branches.push(line);
+		}
+	}
+
+	return {
+		branches,
+		master: master ?? branches[0],
+	};
 });
 
 /** Create a new branch pointing at a given ref (branch or SHA) */

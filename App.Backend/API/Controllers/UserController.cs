@@ -24,6 +24,7 @@ using Keycloak.AuthServices.Sdk.Kiota.Admin;
 using App.Backend.API.Utils;
 using Keycloak.AuthServices.Sdk.Protection;
 using Keycloak.AuthServices.Authorization.Requirements;
+using System.ComponentModel.DataAnnotations;
 
 // ============================================================================
 
@@ -46,7 +47,7 @@ public class UserController(
 ) : Controller
 {
     [HttpGet]
-    // [ProtectedResource("users", "users:read")]
+    [ProtectedResource("users", "users:read")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
@@ -64,6 +65,44 @@ public class UserController(
             string.IsNullOrWhiteSpace(login) ? null : u => EF.Functions.ILike(u.Login, $"%{login}%"),
             string.IsNullOrWhiteSpace(display) ? null : u => EF.Functions.ILike(u.Display, $"%{display}%")
         );
+        page.AppendHeaders(Response.Headers);
+        return Ok(page.Items.Select(u => new UserDO(u)));
+    }
+
+    [HttpGet("eligible")]
+    [ProtectedResource("users", "users:read")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Query all eligible users")]
+    [EndpointDescription(@"
+Retrieve a paginated list of all users who are elligible for a certain entity.
+For example this could be finding all users who can subscribe to a project, goal or cursus.
+Another one would be finding users eligible to be invited to a user project.
+
+It will also let you know if a user is for example eligible to user a rubric.
+    ")]
+    public async Task<ActionResult<IEnumerable<UserDO>>> GetEligible(
+        [FromQuery(Name = "filter[login]")] string? login,
+        [FromQuery(Name = "filter[display]")] string? display,
+        [FromQuery(Name = "filter[user_id]")] Guid? userId,
+        [FromQuery(Name = "type[id]"), Required, Description("The ID of the entity to query")] Guid id,
+        [FromQuery(Name = "type[entity]"), Required, Description("Defaults to Project")] EntityType type,
+        [FromServices] IEligibilityService service,
+        [FromQuery] Pagination pagination,
+        [FromQuery] Sorting sorting,
+        CancellationToken token
+    )
+    {
+        if (id == Guid.Empty)
+            return BadRequest(new ProblemDetails() { Title = "type[id] and type[entity] are required"});
+
+        var page = await service.GetAllEligibleAsync(id, type, sorting, pagination, token,
+            u => !userId.HasValue || u.Id == userId.Value,
+            string.IsNullOrWhiteSpace(login) ? null : u => EF.Functions.ILike(u.Login, $"%{login}%"),
+            string.IsNullOrWhiteSpace(display) ? null : u => EF.Functions.ILike(u.Display, $"%{display}%")
+        );
+
         page.AppendHeaders(Response.Headers);
         return Ok(page.Items.Select(u => new UserDO(u)));
     }

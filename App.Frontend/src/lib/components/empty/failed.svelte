@@ -19,7 +19,7 @@
 	<Empty.Header>
 		<Empty.Title class="text-xs text-destructive flex items-center gap-2 animate-pulse">
 			<TriangleAlert size={18}/>
-			{(error as HttpError).body.message}
+			{JSON.stringify(error)}
 		</Empty.Title>
 	</Empty.Header>
 	<Empty.Content>

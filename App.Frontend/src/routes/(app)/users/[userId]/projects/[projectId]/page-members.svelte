@@ -13,6 +13,7 @@
 	import Separator from '$lib/components/separator/separator.svelte';
 	import Failed from '$lib/components/empty/failed.svelte';
 	import * as ButtonGroup from '$lib/components/button-group';
+	import * as Components from './index.svelte';
 
 	const context = Page.getContext();
 	const formatter = new DateFormatter(page.data.locale, {
@@ -36,12 +37,11 @@
 			>
 				<Users size={16} />
 				Members
-				{members.length} / {context.project.maxMembers}
+				{members.length} / {context.project.entity.maxMembers}
 			</Card.Title>
 			<Card.Action>
 				<ButtonGroup.Root>
-					<Button size="sm" variant="outline">Manage <Settings /></Button>
-					<!-- <Button size="sm" variant="outline">View All <HeartHandshake /></Button> -->
+					<Components.MembersManage />
 				</ButtonGroup.Root>
 			</Card.Action>
 		</Card.Header>
@@ -85,6 +85,8 @@
 									</Button>
 									{#if member.role === 'Leader'}
 										<Crown size={12} class="absolute -top-1.5 left-1/2 -translate-x-1/2 text-yellow-500" />
+									{:else if member.role === 'Pending'}
+										<ClockFading size={12} class="absolute -top-1.5 left-1/2 -translate-x-1/2 text-amber-500" />
 									{/if}
 								</li>
 							{/snippet}
@@ -109,6 +111,8 @@
 										</span>
 										{#if member.role === 'Leader'}
 											<Badge>Leader <Crown /></Badge>
+										{:else if member.role === 'Pending'}
+											<Badge variant="outline">Pending <ClockFading /></Badge>
 										{/if}
 									</h4>
 									<Separator />

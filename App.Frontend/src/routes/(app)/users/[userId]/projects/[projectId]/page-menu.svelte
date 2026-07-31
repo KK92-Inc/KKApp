@@ -26,12 +26,6 @@
 
 	let name = $state('');
 	let search = $state('');
-
-	async function branches() {
-		const raw = await Git.getBranches(context.userProject!.gitInfo!.id);
-		return Page.Branches.parse(raw);
-	}
-
 	async function create(child: string) {
 		const confirm = dialog
 			.confirm(
@@ -40,11 +34,11 @@
 			)
 			.confirmLabel(`Create ${child}`);
 
-		if (!(await confirm)) return;
-		await Problem.try(async () => {
+		if (!context.branch || !(await confirm)) return;
+		Problem.try(async () => {
 			await Git.createBranch({
-				id: context.userProject!.gitInfo!.id,
-				ref: context.branch ?? 'HEAD',
+				id: context.userProject!.entity.id,
+				ref: context.branch,
 				child
 			});
 
@@ -61,9 +55,9 @@
 			.confirmLabel(`Delete ${branch}`);
 
 		if (!(await confirm)) return;
-		await Problem.try(async () => {
+		Problem.try(async () => {
 			await Git.removeBranch({
-				id: context.userProject!.gitInfo!.id,
+				id: context.userProject!.entity.id,
 				branch
 			});
 
@@ -115,9 +109,9 @@
 						</Command.Empty>
 						<Command.Group>
 							<svelte:boundary>
-								{@const output = await branches()}
+								{@const output = await Git.getBranches(context.userProject!.entity.gitInfo!.id)}
 								{#each output.branches as b (b)}
-									<Command.Item value={b} class="h-8" onSelect={() => (context.branch = b)}>
+									<Command.Item value={b} class="h-8" onSelect={() => (context.userProject!.branch = b)}>
 										<CheckIcon class={cn(context.branch !== b && 'text-transparent')} />
 										<span class="flex-1">{b}</span>
 										<!-- Obviously lets not allow deleting the default branch... -->
@@ -155,7 +149,7 @@
 									<PlusIcon />
 									Create branch
 								</Dialog.Trigger>
-								<Dialog.Content class="sm:max-w-[425px]">
+								<Dialog.Content class="sm:max-w-106.25">
 									<Dialog.Header>
 										<Dialog.Title>Edit profile</Dialog.Title>
 										<Dialog.Description>
@@ -183,7 +177,7 @@
 		</Popover.Root>
 		<!-- Git Clone Command -->
 		{#if context.userProject !== undefined}
-			{@const url = `ssh://git@localhost:2222/${context.project.id}/${context.userProject.id}`}
+			{@const url = `ssh://git@localhost:2222/${context.project.entity.id}/${context.userProject.entity.id}`}
 			{@const cmd = `git clone ${url}`}
 			<InputGroup.Root class="w-auto">
 				<InputGroup.Addon align="inline-end">

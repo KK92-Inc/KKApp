@@ -91,6 +91,7 @@ export const Order = v.picklist(['Ascending', 'Descending']);
 export const EntityObjectState = v.picklist(['Inactive', 'Active', 'Awaiting', 'Completed']);
 export const ReviewState = v.picklist(['Pending', 'InProgress', 'Finished', 'Cancelled']);
 export const CursusVariant = v.picklist(['Dynamic', 'Static', 'Partial']);
+export const EntityType = v.picklist(['Project', 'Cursus', 'Goal', 'Rubric']);
 export const CompletionMode = v.picklist(['Ring', 'FreeStyle']);
 export const Filters = {
 	id,

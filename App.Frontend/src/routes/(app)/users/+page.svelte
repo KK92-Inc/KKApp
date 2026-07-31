@@ -10,7 +10,7 @@
 		ArrowUpNarrowWide,
 		CalendarDays,
 		FolderCode,
-		Search,
+		Search
 	} from '@lucide/svelte';
 	import useDebounce from '$lib/hooks/debounce.svelte';
 	import useSearchParams from '$lib/hooks/url.svelte';
@@ -29,8 +29,9 @@
 	import Label from '$lib/components/label/label.svelte';
 	import { Toggle } from '$lib/components/toggle';
 	import * as Select from '$lib/components/select';
+	import UserTile from '$lib/components/user-tile.svelte';
 
-	const orderByOptions = v.picklist(["CreatedAt", "UpdatedAt"]);
+	const orderByOptions = v.picklist(['CreatedAt', 'UpdatedAt']);
 	const url = useSearchParams({
 		index: v.fallback(
 			v.pipe(
@@ -51,75 +52,11 @@
 	const index = url.query('index');
 	const order = url.query('order');
 	const orderBy = url.query('orderBy');
-
 	const debounced = useDebounce((query: string) => {
 		if (query.length <= 0) search.clear();
 		else search.value = query;
 	});
-
-	const formatter = new DateFormatter(page.data.locale, {
-		day: 'numeric',
-		month: 'long',
-		year: 'numeric'
-	});
 </script>
-
-{#snippet tile(user: components['schemas']['UserDO'])}
-	<Item.Root variant="outline">
-		{#snippet child({ props })}
-			<a href="/users/{user.id}" {...props} class="grid rounded border hover:border-ring hover:ring-ring/50 hover:ring-2 transition-all">
-				<Avatar.Root class="h-40 w-full rounded-none border-b">
-					<Avatar.Image src={user.avatarUrl} alt={user.login} class="object-cover" />
-					<Avatar.Fallback class="rounded-none text-xl font-medium">
-						{user.displayName?.slice(0, 2)}
-					</Avatar.Fallback>
-				</Avatar.Root>
-
-				<Item.Content class="border-b p-2">
-					<Item.Title class="text-md items-center font-semibold">
-						{user.displayName} <span class="text-xs text-muted-foreground">@{user.login}</span>
-					</Item.Title>
-					<Item.Description class="text-xs">
-						<div class="flex items-center text-xs text-muted-foreground">
-							<CalendarDays class="me-1.5 size-3.5 opacity-70" />
-							<span>Joined {formatter.format(new Date(user.createdAt))}</span>
-						</div>
-					</Item.Description>
-				</Item.Content>
-
-				<Item.Actions class="p-2" onclick={(e) => e.stopPropagation()}>
-					<Button href="/users/{user.id}/projects" variant="outline" size="icon-sm">
-						<Archive class="size-3" />
-					</Button>
-				</Item.Actions>
-			</a>
-		{/snippet}
-	</Item.Root>
-{/snippet}
-
-{#snippet loader()}
-	<div class="grid grid-cols-2 gap-4 p-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-		<Skeleton class="h-60" />
-		<Skeleton class="h-60" />
-		<Skeleton class="h-60" />
-		<Skeleton class="h-60" />
-		<Skeleton class="h-60" />
-	</div>
-{/snippet}
-
-{#snippet empty()}
-	<Empty.Root class="col-span-full">
-		<Empty.Header>
-			<Empty.Media variant="icon">
-				<FolderCode />
-			</Empty.Media>
-			<Empty.Title>Nothing here</Empty.Title>
-			<Empty.Description>
-				Nothing matched your criteria, thus we have nothing to show for you.
-			</Empty.Description>
-		</Empty.Header>
-	</Empty.Root>
-{/snippet}
 
 <div class="container mx-auto px-4">
 	<span class="flex items-center gap-2 py-2">
@@ -214,14 +151,36 @@
 		</span>
 
 		{#snippet pending()}
-			{@render loader()}
+			<div class="grid grid-cols-2 gap-4 p-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+				<Skeleton class="h-60" />
+				<Skeleton class="h-60" />
+				<Skeleton class="h-60" />
+				<Skeleton class="h-60" />
+				<Skeleton class="h-60" />
+			</div>
 		{/snippet}
 
 		<div class="flex gap-4">
 			{#each page.data as user (user.id)}
-				{@render tile(user)}
+				<UserTile {user}>
+					{#snippet actions()}
+						<Button href="/users/{user.id}/projects" variant="outline" size="icon-sm">
+							<Archive class="size-3" />
+						</Button>
+					{/snippet}
+				</UserTile>
 			{:else}
-				{@render empty()}
+				<Empty.Root class="col-span-full">
+					<Empty.Header>
+						<Empty.Media variant="icon">
+							<FolderCode />
+						</Empty.Media>
+						<Empty.Title>Nothing here</Empty.Title>
+						<Empty.Description>
+							Nothing matched your criteria, thus we have nothing to show for you.
+						</Empty.Description>
+					</Empty.Header>
+				</Empty.Root>
 			{/each}
 		</div>
 	</svelte:boundary>

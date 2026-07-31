@@ -133,10 +133,11 @@ export const getMembersPage = query(MembersPageSchema, async (params) => {
 export const invite = command(InviteSchema, async ({ id, userId }) => {
 	const { locals } = getRequestEvent();
 	const { error, data } = await locals.api.POST('/user-projects/{id}/invite/{userId}', {
-		params: { path: { Id: id, userId } }
+		params: { path: { id, userId } }
 	});
 
 	if (error || !data) Problem.throw(error);
+	getMembersPage({ id }).refresh();
 	return data;
 });
 
@@ -144,10 +145,11 @@ export const invite = command(InviteSchema, async ({ id, userId }) => {
 export const cancel = command(InviteSchema, async ({ id, userId }) => {
 	const { locals } = getRequestEvent();
 	const { error, data } = await locals.api.DELETE('/user-projects/{id}/invite/{userId}', {
-		params: { path: { Id: id, userId } }
+		params: { path: { id, userId } }
 	});
 
 	if (error || !data) Problem.throw(error);
+	getMembersPage({ id }).refresh();
 	return data;
 });
 
@@ -155,10 +157,11 @@ export const cancel = command(InviteSchema, async ({ id, userId }) => {
 export const accept = command(Filters.id, async (id) => {
 	const { locals } = getRequestEvent();
 	const { error, data } = await locals.api.POST('/user-projects/{id}/invite/accept', {
-		params: { path: { Id: id } }
+		params: { path: { id } }
 	});
 
 	if (error || !data) Problem.throw(error);
+	getMembersPage({ id }).refresh();
 	return data;
 });
 
@@ -166,10 +169,11 @@ export const accept = command(Filters.id, async (id) => {
 export const decline = command(Filters.id, async (id) => {
 	const { locals } = getRequestEvent();
 	const { error, data } = await locals.api.POST('/user-projects/{id}/invite/decline', {
-		params: { path: { Id: id } }
+		params: { path: { id } }
 	});
 
 	if (error || !data) Problem.throw(error);
+	getMembersPage({ id }).refresh();
 	return data;
 });
 
@@ -177,28 +181,31 @@ export const decline = command(Filters.id, async (id) => {
 export const transfer = command(TransferSchema, async ({ id, newLeaderId }) => {
 	const { locals } = getRequestEvent();
 	const { error } = await locals.api.PUT('/user-projects/{id}/member/transfer/{newLeaderId}', {
-		params: { path: { Id: id, newLeaderId } }
+		params: { path: { id, newLeaderId } }
 	});
 
 	if (error) Problem.throw(error);
+	getMembersPage({ id }).refresh();
 });
 
 /** Leave a project team */
 export const leave = command(Filters.id, async (id) => {
 	const { locals } = getRequestEvent();
 	const { error } = await locals.api.POST('/user-projects/{id}/member/leave', {
-		params: { path: { Id: id } }
+		params: { path: { id } }
 	});
 
 	if (error) Problem.throw(error);
+	getMembersPage({ id }).refresh();
 });
 
 /** Remove a member from a project team */
 export const kick = command(KickSchema, async ({ id, memberId }) => {
 	const { locals } = getRequestEvent();
 	const { error } = await locals.api.POST('/user-projects/{id}/member/kick/{memberId}', {
-		params: { path: { Id: id, memberId } }
+		params: { path: { id, memberId } }
 	});
 
 	if (error) Problem.throw(error);
+	getMembersPage({ id }).refresh();
 });

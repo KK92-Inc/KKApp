@@ -27,10 +27,14 @@ public class UserProjectService(DatabaseContext ctx) : BaseService<UserProject>(
                 userProject => userProject.Id,
                 member => member.EntityId,
                 (userProject, member) => new { userProject, member })
-            .FirstOrDefaultAsync(
-                joined => joined.userProject.ProjectId == projectId &&
+            .FirstOrDefaultAsync(joined =>
+                joined.userProject.ProjectId == projectId &&
                 joined.member.UserId == userId &&
-                joined.member.EntityType == MemberEntityType.UserProject,
+                joined.member.EntityType == MemberEntityType.UserProject &&
+                // 1. Ensure they are not just pending/invited
+                joined.member.Role != MemberRole.Pending &&
+                // 2. Ensure they haven't left the project (if applicable)
+                joined.member.LeftAt == null,
             token);
 
         return result?.userProject;
@@ -48,7 +52,7 @@ public class UserProjectService(DatabaseContext ctx) : BaseService<UserProject>(
 
     public async Task<UserProjectTransaction> LogTransactionAsync(Guid userProjectId, Guid? userId, UserProjectTransactionVariant variant, CancellationToken token = default)
     {
-        var result = await ctx.UserProjectTransactions.AddAsync(new ()
+        var result = await ctx.UserProjectTransactions.AddAsync(new()
         {
             UserId = userId,
             UserProjectId = userProjectId,

@@ -283,11 +283,12 @@ public static class Services
         builder.Services.AddScoped<IProjectService, ProjectService>();
         builder.Services.AddScoped<IRubricService, RubricService>();
         builder.Services.AddScoped<IReviewService, ReviewService>();
+        builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
+        builder.Services.AddScoped<IEligibilityService, EligibilityService>();
 
         // Rules
-        builder.Services.AddScoped<IRuleService, RuleService>();
-        builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
         builder.Services.AddScoped<RuleEngine>();
+        builder.Services.AddScoped<IRuleService, RuleService>();
         builder.Services.AddScoped<IRuleEvaluator, HasCursusEvaluator>();
         builder.Services.AddScoped<IRuleEvaluator, CompletedProjectEvaluator>();
         builder.Services.AddScoped<IRuleEvaluator, IsMemberEvaluator>();
