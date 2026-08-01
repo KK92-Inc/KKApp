@@ -104,7 +104,11 @@
 							<!-- Other user can review it -->
 							<Button size="sm" variant="outline">Review <TextSearch /></Button>
 						{/if}
-						<Button size="sm" variant="outline" href="/reviews/project/{session?.id}">
+						<Button
+							size="sm"
+							variant="outline"
+							href="/reviews/user/{context.userId()}/project/{context.projectId()}"
+						>
 							View All <HeartHandshake />
 						</Button>
 						<Select.Root type="single" bind:value={sort}>

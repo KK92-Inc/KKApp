@@ -25,7 +25,7 @@ declare global {
 		}
 		interface Error {
 			message: string;
-			status: number;
+			// status: number;
 			errors?: Record<string, string[]>;
 		}
 		// interface PageState {}

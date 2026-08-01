@@ -133,7 +133,6 @@ export class Problem {
 		const status = Number(problem?.status ?? 500);
 		error(status, {
 			message: problem?.detail ?? problem?.title ?? 'Something went wrong...',
-			status,
 			errors: problem?.errors as Record<string, string[]> | undefined
 		});
 	}
