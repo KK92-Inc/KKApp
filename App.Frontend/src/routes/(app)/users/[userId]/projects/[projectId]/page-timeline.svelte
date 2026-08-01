@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as Item from '$lib/components/item';
 	import * as UserProjects from '$lib/remotes/user-project.remote';
+	import * as Projects from '$lib/remotes/projects.remote';
 	import {
 		Play,
 		UserPlus,
@@ -20,10 +21,19 @@
 	import { page } from '$app/state';
 	import * as Page from './context.svelte';
 	import { Button } from '$lib/components/button';
+	import { DateFormatter } from '@internationalized/date';
 
 	let index = $state(1);
 	const context = Page.getContext();
-	const formatter = new Intl.DateTimeFormat(page.data.locale, {
+	const project = await Projects.get(context.projectId());
+	const session = $derived(
+		await UserProjects.getByUserAndProject({
+			userId: context.userId(),
+			projectId: context.projectId()
+		})
+	);
+
+	const formatter = new DateFormatter(page.data.locale, {
 		dateStyle: 'long',
 		timeStyle: 'short',
 		hour12: false
@@ -60,61 +70,74 @@
 	};
 </script>
 
-<svelte:boundary>
-	{@const page = await context.transactions(index)}
+{#if session}
+	<svelte:boundary>
+		{@const page = await UserProjects.getTransactions({
+			id: session.id,
+			page: index,
+			sort: 'Descending',
+			size: 6
+		})}
 
-	{#snippet pending()}
-		Loading...
-	{/snippet}
+		{#snippet pending()}
+			Loading...
+		{/snippet}
 
-	<Item.Group class="relative space-y-2 border-s p-4">
-		{#each page.data as tx (tx.id)}
-			{@const config = events[tx.type]}
-			{@const EventIcon = config.icon}
+		<Item.Group class="relative space-y-2 border-s p-4">
+			{#each page.data as tx (tx.id)}
+				{@const config = events[tx.type]}
+				{@const EventIcon = config.icon}
 
-			<Item.Root variant="muted" class="relative ml-2">
-				<span class="absolute -inset-s-9 grid size-6 place-items-center rounded border bg-background">
-					<EventIcon size={16} class={config.class} />
+				<Item.Root variant="muted" class="relative ml-2">
+					<span class="absolute -inset-s-9 grid size-6 place-items-center rounded border bg-background">
+						<EventIcon size={16} class={config.class} />
+					</span>
+					<Item.Content>
+						<Item.Title class="flex w-full justify-between">
+							{config.label}
+							<time class="text-[11px] text-muted-foreground" datetime={tx.createdAt}>
+								{formatter.format(new Date(tx.createdAt))}
+							</time>
+						</Item.Title>
+						{#if tx.user}
+							<Item.Description>
+								by
+								<a class="underline" href={`/users/${tx.user.id}`}>
+									{tx.user.displayName ?? tx.user.login}
+								</a>
+							</Item.Description>
+						{/if}
+					</Item.Content>
+				</Item.Root>
+			{:else}
+				<p class="py-4 text-center text-sm text-muted-foreground">No activity yet</p>
+			{/each}
+		</Item.Group>
+
+		{#if page.pages > 1}
+			<div class="flex items-center justify-between p-3">
+				<span class="text-xs text-muted-foreground">
+					Page {index} of {page.pages}
 				</span>
-				<Item.Content>
-					<Item.Title class="flex w-full justify-between">
-						{config.label}
-						<time class="text-[11px] text-muted-foreground" datetime={tx.createdAt}>
-							{formatter.format(new Date(tx.createdAt))}
-						</time>
-					</Item.Title>
-					{#if tx.user}
-						<Item.Description>
-							by
-							<a class="underline" href={`/users/${tx.user.id}`}>
-								{tx.user.displayName ?? tx.user.login}
-							</a>
-						</Item.Description>
-					{/if}
-				</Item.Content>
-			</Item.Root>
-		{:else}
-			<p class="py-4 text-center text-sm text-muted-foreground">No activity yet</p>
-		{/each}
-	</Item.Group>
-
-	{#if page.pages > 1}
-		<div class="flex items-center justify-between p-3">
-			<span class="text-xs text-muted-foreground">
-				Page {index} of {page.pages}
-			</span>
-			<div class="flex gap-1">
-				<Button variant="outline" disabled={index <= 1} onclick={() => (index = Math.max(1, index - 1))}>
-					Prev
-				</Button>
-				<Button
-					variant="outline"
-					disabled={index >= page.pages}
-					onclick={() => (index = Math.min(page.pages, index + 1))}
-				>
-					Next
-				</Button>
+				<div class="flex gap-1">
+					<Button
+						variant="outline"
+						loading={$effect.pending() > 0}
+						disabled={index <= 1}
+						onclick={() => (index = Math.max(1, index - 1))}
+					>
+						Prev
+					</Button>
+					<Button
+						variant="outline"
+						loading={$effect.pending() > 0}
+						disabled={index >= page.pages}
+						onclick={() => (index = Math.min(page.pages, index + 1))}
+					>
+						Next
+					</Button>
+				</div>
 			</div>
-		</div>
-	{/if}
-</svelte:boundary>
+		{/if}
+	</svelte:boundary>
+{/if}

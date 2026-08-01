@@ -1,21 +1,35 @@
 <script lang="ts">
-	import * as Page from './context.svelte';
-	import { CircleAlert, RefreshCcw, BookA, HistoryIcon, TriangleAlert } from '@lucide/svelte';
-	import * as Alert from '$lib/components/alert';
-	import * as Card from '$lib/components/card';
-	import * as Accordion from '$lib/components/accordion';
-	import { Button } from '$lib/components/button';
-	import Separator from '$lib/components/separator/separator.svelte';
-
-	import * as Components from './index.svelte';
-	import type { PageProps } from './$types';
-	import Layout from '$lib/components/layout.svelte';
-	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
+	import * as Projects from '$lib/remotes/projects.remote';
+	import * as Subscription from '$lib/remotes/subscription.remote';
+	import * as Reviews from '$lib/remotes/review.remote';
+	import * as UserProject from '$lib/remotes/user-project.remote';
 	import * as Git from '$lib/remotes/git.remote';
+	import * as Project from '$lib/remotes/projects.remote';
+	import type { PageProps } from './$types';
+	import { Button } from '$lib/components/button';
+	import { Problem } from '$lib/api';
+	import { page } from '$app/state';
+	import * as Page from './context.svelte';
+	import Layout from '$lib/components/layout.svelte';
+	import { Skeleton } from '$lib/components/skeleton';
+	import * as Components from './index.svelte';
+	import * as Alert from '$lib/components/alert';
+	import {
+		BookA,
+		CircleAlert,
+		GitBranch,
+		HistoryIcon,
+		LockKeyhole,
+		RefreshCcw,
+		TriangleAlert
+	} from '@lucide/svelte';
+	import { any } from 'valibot';
 	import Explorer from '$lib/components/explorer/explorer.svelte';
 	import { parseGitTree } from '$lib/components/explorer';
-	import type { HttpError } from '@sveltejs/kit';
+	import * as Card from '$lib/components/card';
+	import * as Accordion from '$lib/components/accordion';
 	import Markdown from '$lib/components/markdown/markdown.svelte';
+	import type { HttpError } from '@sveltejs/kit';
 
 	let { params }: PageProps = $props();
 	const context = Page.setContext(
@@ -24,87 +38,106 @@
 			() => params.projectId
 		)
 	);
+
+	const project = await Project.get(context.projectId());
+	const projectGit = await Git.getBranches(project.gitInfo.id);
 </script>
 
-{#await context.hydrate()}
-	<Layout classR="pt-4 grid gap-2" classL="pt-4 flex flex-col gap-2">
-		{#snippet left()}
-			<Skeleton class="h-40" />
-			<Skeleton class="h-20" />
-			<Skeleton class="h-20" />
-			<Skeleton class="h-40" />
-			<Skeleton class="h-10" />
-		{/snippet}
+<svelte:boundary>
+	{#snippet pending()}
+		<Layout classR="pt-4 grid gap-2" classL="pt-4 flex flex-col gap-2">
+			{#snippet left()}
+				<Skeleton class="h-40" />
+				<Skeleton class="h-20" />
+				<Skeleton class="h-20" />
+				<Skeleton class="h-40" />
+				<Skeleton class="h-10" />
+			{/snippet}
 
-		{#snippet right()}
-			<div class="flex h-10 gap-3">
-				<Skeleton class="w-50" />
-				<Skeleton class="w-80" />
-			</div>
-			<Skeleton class="h-100 w-full" />
-		{/snippet}
-	</Layout>
-{:then _}
-	<Layout classR="pt-4 flex flex-col gap-2 px-0!" classL="pt-4 flex flex-col gap-2">
+			{#snippet right()}
+				<div class="flex h-10 gap-3">
+					<Skeleton class="w-50" />
+					<Skeleton class="w-80" />
+				</div>
+				<Skeleton class="h-100 w-full" />
+			{/snippet}
+		</Layout>.
+	{/snippet}
+
+	<Layout classR="pt-4 flex flex-col gap-2 px-0!" classL="pt-4 flex flex-col gap-2 overflow-hidden!">
 		{#snippet left()}
 			<Components.Info />
 			<Components.Members />
-			{#if context.userProject}
-				<Components.Reviews />
-			{/if}
+			<Components.Reviews />
 			<Components.Actions />
 		{/snippet}
 
 		{#snippet right()}
 			<Components.Menu />
+			{@const session = await UserProject.getByUserAndProject({
+				userId: context.userId(),
+				projectId: context.projectId()
+			})}
 
-			<!-- <Components.Menu />
-
-			{#if !context.initialized && context.view === 'submission'}
-				<Components.Init />
-			{:else}
-				{@const submission = context.view === 'submission'}
-				{@const id = submission ? context.userProject?.entity.gitInfo?.id : context.project.entity.gitInfo.id}
-				{@const branch = submission ? context.branch : context.project.branch}
-				{#if branch && id}
-					<svelte:boundary>
-						{@const tree = await Git.getTree({ branch, id })}
-						{#snippet pending()}
-							Loading...
-						{/snippet}
-
-						<Explorer baseUrl="." nodes={parseGitTree(tree)} />
-					</svelte:boundary>
-				{:else}
+			<!-- There is no session or we're not looking at it -->
+			{#if !session || context.view === 'assignment'}
+				{#if !projectGit.master}
 					<Alert.Root variant="destructive">
-						<Alert.Title class="flex items-center gap-1">
-							<TriangleAlert size={16} />
-							Project is uninitialized
-						</Alert.Title>
+						<GitBranch />
+						<Alert.Title>Project repository is empty</Alert.Title>
 						<Alert.Description>
-							The project repository is bare, please report this to staff.
+							<p>This repository is empty, so there are currently no project guidelines to follow.</p>
+							<p>If this is a campus-curated project and this seems incorrect, please report it to staff.</p>
+							<p>If this is your project, please initialize the repository.</p>
 						</Alert.Description>
 					</Alert.Root>
+				{:else}
+					{@const tree = await Git.getTree({ branch: projectGit.master, id: project.gitInfo.id })}
+					<Explorer baseUrl="." nodes={parseGitTree(tree)} />
+				{/if}
+				<!-- There is a session and we're trying to look at it. -->
+			{:else}
+				{@const git = session.gitInfo
+					? await Git.getBranches(session.gitInfo.id)
+					: { master: undefined, branches: [] }}
+				<!-- Show how to initialize your session -->
+				{#if git.master === undefined}
+					<Components.Init />
+				{:else}
+					<!-- Show warning that modifications are not possible in this state... -->
+					{#if session?.state === 'Inactive' || session.state === 'Awaiting'}
+						<Alert.Root variant="warning">
+							<LockKeyhole />
+							<Alert.Title>Repository is locked</Alert.Title>
+							<Alert.Description>
+								Your repository is currently locked and unable to be changed. This is due to your project
+								session being '{session?.state}'
+							</Alert.Description>
+						</Alert.Root>
+					{/if}
+					<!-- Show Project files -->
+					{#if context.branch && session.gitInfo}
+						{@const tree = await Git.getTree({ branch: context.branch, id: session.gitInfo.id })}
+						<Explorer baseUrl="." nodes={parseGitTree(tree)} />
+					{/if}
 				{/if}
 			{/if}
-
-			<Separator />
 
 			<Card.Root class="py-0 shadow-none">
 				<Card.Content class="p-0">
 					<Accordion.Root type="single">
-						<Accordion.Item value="item-1">
-							<Accordion.Trigger class="px-4">
-								<span class="flex items-center gap-2">
-									<BookA /> Project Overview
-								</span>
-							</Accordion.Trigger>
-							<Accordion.Content class="pl-4">
-								{#if context.project.branch}
+						{#if projectGit.master}
+							<Accordion.Item>
+								<Accordion.Trigger class="px-4">
+									<span class="flex items-center gap-2">
+										<BookA /> Project Overview
+									</span>
+								</Accordion.Trigger>
+								<Accordion.Content class="pl-4">
 									<svelte:boundary>
 										{@const readme = await Git.getBlob({
-											id: context.project.entity.gitInfo.id,
-											branch: context.project.branch,
+											id: project.gitInfo.id,
+											branch: projectGit.master,
 											path: 'README.md'
 										})}
 
@@ -142,22 +175,12 @@
 											</Alert.Root>
 										{/if}
 									</svelte:boundary>
-								{:else}
-									<Alert.Root variant="destructive">
-										<Alert.Title class="flex items-center gap-1">
-											<TriangleAlert size={16} />
-											Project is uninitialized
-										</Alert.Title>
-										<Alert.Description>
-											The project repository is bare, please report this to staff.
-										</Alert.Description>
-									</Alert.Root>
-								{/if}
-							</Accordion.Content>
-						</Accordion.Item>
+								</Accordion.Content>
+							</Accordion.Item>
+						{/if}
 
 						{#if context.view === 'submission'}
-							<Accordion.Item value="item-2">
+							<Accordion.Item>
 								<Accordion.Trigger class="px-4">
 									<span class="flex items-center gap-2">
 										<HistoryIcon />
@@ -171,7 +194,7 @@
 						{/if}
 					</Accordion.Root>
 				</Card.Content>
-			</Card.Root> -->
+			</Card.Root>
 		{/snippet}
 	</Layout>
-{/await}
+</svelte:boundary>

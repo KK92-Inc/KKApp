@@ -23,53 +23,33 @@
 
 	const dialog = Dialog.useDialog();
 	const context = Page.getContext();
+	const session = $derived(
+		await UserProject.getByUserAndProject({
+			userId: context.userId(),
+			projectId: context.projectId()
+		})
+	);
+
+	const git = $derived(
+		session?.gitInfo ? await Git.getBranches(session.gitInfo.id) : { master: undefined, branches: [] }
+	);
+	const initialized = $derived(git.master !== undefined);
+
+	$effect(() => {
+		if (initialized) context.branch = git.master;
+	});
 
 	let name = $state('');
 	let search = $state('');
-	async function create(child: string) {
-		const confirm = dialog
-			.confirm(
-				`Create Version: ${child}?`,
-				`This new version will base itself on the currently selected version "${context.branch}"`
-			)
-			.confirmLabel(`Create ${child}`);
 
-		if (!context.branch || !(await confirm)) return;
-		Problem.try(async () => {
-			await Git.createBranch({
-				id: context.userProject!.entity.id,
-				ref: context.branch,
-				child
-			});
-
-			toast.success('New branch created!');
-		});
-	}
-
-	async function remove(branch: string) {
-		const confirm = dialog
-			.confirm(
-				`Delete Version: ${branch}?`,
-				"Deleting this branch will erase everything on that branch with no recovery. Do this if you're sure there is nothing important."
-			)
-			.confirmLabel(`Delete ${branch}`);
-
-		if (!(await confirm)) return;
-		Problem.try(async () => {
-			await Git.removeBranch({
-				id: context.userProject!.entity.id,
-				branch
-			});
-
-			toast.success('Branch deleted');
-		});
-	}
+	async function create(name: string) {}
+	async function remove(name: string) {}
 </script>
 
 {#snippet createBranch()}
 	<Button variant="ghost" class="w-full p-2" onclick={() => create(search)}>
 		<PlusIcon />
-		Create branch
+		Create version
 		{#if search.length > 0}
 			<span class="max-w-18 truncate">"{search}"</span>
 		{/if}
@@ -79,19 +59,106 @@
 <div class="flex items-center gap-2">
 	<Tabs.Root bind:value={context.view} class="w-max">
 		<Tabs.List>
-			<Tabs.Trigger disabled={!context.userProject} value="submission">Submission</Tabs.Trigger>
+			<Tabs.Trigger disabled={!session} value="submission">Submission</Tabs.Trigger>
 			<Tabs.Trigger value="assignment">Assignment</Tabs.Trigger>
 		</Tabs.List>
 	</Tabs.Root>
 
-	{#if context.view === 'submission'}
+	{#if session && context.view === 'submission'}
+		<Popover.Root>
+			<Popover.Trigger>
+				{#snippet child({ props })}
+					<Button {...props} disabled={!initialized} variant="outline" role="combobox">
+						<GitBranch />
+						{context.branch ?? 'Select a version'}
+						<ChevronsUpDownIcon class="opacity-50" />
+					</Button>
+				{/snippet}
+			</Popover.Trigger>
+			<Popover.Content class="w-60 p-0" align="start">
+				<Command.Root>
+					<Command.Input maxlength={25} placeholder="Search versions..." bind:value={search} />
+					<Command.List>
+						{#if session.state === 'Active'}
+							<Command.Empty class="p-0">
+								{@render createBranch()}
+							</Command.Empty>
+						{/if}
+						<Command.Group>
+							<svelte:boundary>
+								{#each git.branches as b (b)}
+									<Command.Item value={b} class="h-8" onSelect={() => (context.branch = b)}>
+										<CheckIcon class={cn(context.branch !== b && 'text-transparent')} />
+										<span class="flex-1">{b}</span>
+										{#if b !== git.master && session.state === 'Active'}
+											<Button
+												type="button"
+												onclick={async (e) => {
+													e.stopImmediatePropagation();
+													await remove(b);
+												}}
+												class="hover:bg-destructive/20!"
+												variant="ghost"
+												size="icon-sm"
+											>
+												<Trash2 class="text-destructive" />
+											</Button>
+										{:else}
+											<Badge variant="outline" class="rounded-sm">Primary</Badge>
+										{/if}
+									</Command.Item>
+								{/each}
+							</svelte:boundary>
+						</Command.Group>
+						<Command.Separator />
+						{#if initialized && session.state === 'Active'}
+							<Command.Group>
+								<Dialog.Root
+									onOpenChange={(v) => {
+										if (!v) {
+											search = '';
+										}
+									}}
+								>
+									<Dialog.Trigger type="button" class={buttonVariants({ variant: 'ghost', class: 'w-full' })}>
+										<PlusIcon />
+										Create version
+									</Dialog.Trigger>
+									<Dialog.Content class="sm:max-w-106.25">
+										<Dialog.Header>
+											<Dialog.Title>Edit profile</Dialog.Title>
+											<Dialog.Description>
+												Make changes to your profile here. Click save when you&apos;re done.
+											</Dialog.Description>
+										</Dialog.Header>
+										<div class="grid gap-4">
+											<div class="grid gap-3">
+												<Label for="name-1">Name</Label>
+												<Input bind:value={name} id="name-1" name="name" defaultValue="Pedro Duarte" />
+											</div>
+										</div>
+										<Dialog.Footer>
+											<Dialog.Close type="button" class={buttonVariants({ variant: 'outline' })}>
+												Cancel
+											</Dialog.Close>
+											<Button type="submit" onclick={() => create(name)}>Save changes</Button>
+										</Dialog.Footer>
+									</Dialog.Content>
+								</Dialog.Root>
+							</Command.Group>
+						{/if}
+					</Command.List>
+				</Command.Root>
+			</Popover.Content>
+		</Popover.Root>
+	{/if}
+
+	<!-- {#if context.view === 'submission'}
 		<Separator orientation="vertical" />
-		<!-- Branch Selection -->
 		<Popover.Root>
 			<Popover.Trigger>
 				{#snippet child({ props })}
 					{#if context.initialized}
-						<!-- You can't select a branch when the repo has literally nothing. -->
 						<Button {...props} variant="outline" role="combobox">
 							<GitBranch />
 							{context.branch ?? 'Select a version'}
@@ -114,7 +181,6 @@
 									<Command.Item value={b} class="h-8" onSelect={() => (context.userProject!.branch = b)}>
 										<CheckIcon class={cn(context.branch !== b && 'text-transparent')} />
 										<span class="flex-1">{b}</span>
-										<!-- Obviously lets not allow deleting the default branch... -->
 										{#if b !== output.master}
 											<Button
 												type="button"
@@ -175,7 +241,6 @@
 				</Command.Root>
 			</Popover.Content>
 		</Popover.Root>
-		<!-- Git Clone Command -->
 		{#if context.userProject !== undefined}
 			{@const url = `ssh://git@localhost:2222/${context.project.entity.id}/${context.userProject.entity.id}`}
 			{@const cmd = `git clone ${url}`}
@@ -216,6 +281,6 @@
 				</InputGroup.Addon>
 			</InputGroup.Root>
 		{/if}
-	{/if}
+	{/if} -->
 	<Separator class="my-1 flex-1" />
 </div>

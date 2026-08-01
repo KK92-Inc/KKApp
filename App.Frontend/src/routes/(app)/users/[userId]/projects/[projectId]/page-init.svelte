@@ -6,13 +6,24 @@
 	import * as Card from '$lib/components/card';
 	import * as InputGroup from '$lib/components/input-group';
 	import { parseGitTree } from '$lib/components/explorer';
-	import { CircleAlert, RefreshCcw } from '@lucide/svelte';
+	import { CircleAlert, GitBranch, RefreshCcw, Rocket } from '@lucide/svelte';
 	import * as Alert from '$lib/components/alert';
 	import type { HttpError } from '@sveltejs/kit';
 	import { Button } from '$lib/components/button';
+	import Separator from '$lib/components/separator/separator.svelte';
+	import * as UserProject from '$lib/remotes/user-project.remote';
+	import * as Projects from '$lib/remotes/projects.remote';
 
 	const context = Page.getContext();
-	const repoUrl = 'ssh://git@localhost:2222/';
+	const project = await Projects.get(context.projectId());
+	const session = $derived(
+		await UserProject.getByUserAndProject({
+			userId: context.userId(),
+			projectId: context.projectId()
+		})
+	);
+
+	const repoUrl = $derived(`ssh://git@localhost:2222/${project.id}/${session!.id}`);
 	const mirror = $derived(
 		`
 		git remote add origin ${repoUrl}
@@ -35,6 +46,10 @@
 			.replace(/^\t+/gm, '')
 			.trim()
 	);
+
+	async function initialize() {
+		console.warn("You have to implement Git.commit :D")
+	}
 </script>
 
 {#snippet step(title: string, content: string)}
@@ -57,7 +72,7 @@
 			<span class="font-normal text-muted-foreground"> — if you've done this kind of thing before </span>
 		</Card.Title>
 		<InputGroup.Root>
-			<InputGroup.Input id="id" autocomplete="off" autocorrect="off" readonly value={repoUrl} />
+			<InputGroup.Input id="id" autocomplete="off" autocorrect="off" readonly value={`git clone ${repoUrl}`} />
 			<InputGroup.Addon align="inline-end">
 				<InputGroup.Copy value={repoUrl} />
 			</InputGroup.Addon>
@@ -71,13 +86,27 @@
 	</Card.Header>
 
 	<Card.Content class="space-y-4 p-4">
-		<Tabs.Root value="account" class="w-100">
-			<Tabs.List>
-				<Tabs.Trigger value="account">Account</Tabs.Trigger>
-				<Tabs.Trigger value="password">Password</Tabs.Trigger>
+		<Tabs.Root value="browser">
+			<Tabs.List class="w-full">
+				<Tabs.Trigger value="browser">Browser</Tabs.Trigger>
+				<Tabs.Trigger value="terminal">Terminal</Tabs.Trigger>
 			</Tabs.List>
-			<Tabs.Content value="account">Make changes to your account here.</Tabs.Content>
-			<Tabs.Content value="password">
+			<Tabs.Content value="browser">
+				<Alert.Root>
+					<GitBranch />
+					<Alert.Title>Initializing the repository</Alert.Title>
+					<Alert.Description>
+						Currently your repository is completey bare of any versions or files.
+						Click below to start out with a simple README.md file to be created for you
+					</Alert.Description>
+				</Alert.Root>
+				<Separator class="my-2"/>
+				<Button class="w-full" onclick={initialize}>
+					Initialize Repository
+					<Rocket size={16} />
+				</Button>
+			</Tabs.Content>
+			<Tabs.Content value="terminal">
 				{@render step('To set up your local repository', init)}
 				{@render step('... or if you have an existing repository', mirror)}
 			</Tabs.Content>

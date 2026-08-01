@@ -76,11 +76,13 @@ export const getPageByUser = query(PageByUserSchema, async ({ userId, ...params 
 /** Get a user's membership on a specific project */
 export const getByUserAndProject = query(ByUserSchema, async ({ userId, projectId }) => {
 	const { locals } = getRequestEvent();
-	const { error, data } = await locals.api.GET('/users/{userId}/projects/{projectId}', {
+	const { error, data, response } = await locals.api.GET('/users/{userId}/projects/{projectId}', {
 		params: { path: { userId, projectId } }
 	});
 
-	if (error) Problem.throw(error);
+	// 404 is a valid response here just means no session ever existed.
+	if (error && response.status !== 404)
+		Problem.throw(error);
 	return data;
 });
 

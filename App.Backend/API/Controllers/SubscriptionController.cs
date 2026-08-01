@@ -23,7 +23,6 @@ namespace App.Backend.API.Controllers;
 [ApiController]
 [Route("subscribe"), Tags("Subscriptions")]
 public class SubscriptionController(
-    ILogger<SubscriptionController> log,
     ISubscriptionService service,
     ICursusService cursusService,
     IAuthorizationService auth,
@@ -39,6 +38,7 @@ public class SubscriptionController(
     [HttpPost("{userId:guid}/cursus/{cursusId:guid}")]
     [RequireScope("subscription")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Subscribe a user to a cursus")]
     [EndpointDescription("Enroll the specified user in the given cursus. Staff can enroll other users.")]
@@ -64,7 +64,8 @@ public class SubscriptionController(
 
     [HttpDelete("{userId:guid}/cursus/{cursusId:guid}")]
     [RequireScope("subscription")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Unsubscribe a user from a cursus")]
     [EndpointDescription("Remove the specified user's enrollment from the given cursus. Staff can unenroll other users.")]
@@ -88,6 +89,7 @@ public class SubscriptionController(
     [HttpPost("{userId:guid}/goals/{goalId:guid}")]
     [RequireScope("subscription")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Subscribe a user to a goal")]
     [EndpointDescription("Create a subscription for the specified user to the given goal. Staff can enroll other users.")]
@@ -114,7 +116,8 @@ public class SubscriptionController(
 
     [HttpDelete("{userId:guid}/goals/{goalId:guid}")]
     [RequireScope("subscription")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Unsubscribe a user from a goal")]
     [EndpointDescription("Remove the specified user's subscription to the given goal. Staff can unenroll other users.")]
@@ -138,6 +141,7 @@ public class SubscriptionController(
     [HttpPost("{userId:guid}/projects/{projectId:guid}")]
     [RequireScope("subscription")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Subscribe a user to a project")]
     [EndpointDescription("Create a project session for the specified user. Staff can enroll other users.")]
@@ -164,7 +168,8 @@ public class SubscriptionController(
 
     [HttpDelete("{userId:guid}/projects/{projectId:guid}")]
     [RequireScope("subscription")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Unsubscribe a user from a project")]
     [EndpointDescription("Remove the specified user from the project session. Staff can unenroll other users.")]

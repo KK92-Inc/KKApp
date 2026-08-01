@@ -254,7 +254,7 @@ public class SubscriptionService(
             await using var transaction = await context.Database.BeginTransactionAsync(ct);
 
             existing.State = EntityObjectState.Inactive;
-            existing.UnlocksAt = time.GetUtcNow().Add(_config.Cooldown);
+            // existing.UnlocksAt = time.GetUtcNow().Add(_config.Cooldown);
             context.UserProjects.Update(existing);
 
             await context.UserProjectTransactions.AddAsync(new()
@@ -264,7 +264,7 @@ public class SubscriptionService(
                 UserId = userId,
             }, ct);
 
-            await git.LockAsync(projectId.ToString(), existing.Id.ToString(), ct);
+            // await git.LockAsync(projectId.ToString(), existing.Id.ToString(), ct);
             await context.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
             return existing;

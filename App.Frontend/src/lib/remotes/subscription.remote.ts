@@ -4,6 +4,7 @@
 // ============================================================================
 
 import * as v from 'valibot';
+import * as UserProject from "./user-project.remote";
 import { command, getRequestEvent } from '$app/server';
 import { Filters, Problem } from '$lib/api';
 
@@ -29,11 +30,12 @@ export const subscribeToCursus = command(CursusSchema, async ({ userId, cursusId
 /** Unsubscribe a user from a cursus */
 export const unsubscribeFromCursus = command(CursusSchema, async ({ userId, cursusId }) => {
 	const { locals } = getRequestEvent();
-	const { error } = await locals.api.DELETE('/subscribe/{userId}/cursus/{cursusId}', {
+	const { error, data } = await locals.api.DELETE('/subscribe/{userId}/cursus/{cursusId}', {
 		params: { path: { userId, cursusId } }
 	});
 
-	if (error) Problem.throw(error);
+	if (error || !data) Problem.throw(error);
+	return data;
 });
 
 // ============================================================================
@@ -52,11 +54,12 @@ export const subscribeToGoal = command(GoalSchema, async ({ userId, goalId }) =>
 /** Unsubscribe a user from a goal */
 export const unsubscribeFromGoal = command(GoalSchema, async ({ userId, goalId }) => {
 	const { locals } = getRequestEvent();
-	const { error } = await locals.api.DELETE('/subscribe/{userId}/goals/{goalId}', {
+	const { error, data } = await locals.api.DELETE('/subscribe/{userId}/goals/{goalId}', {
 		params: { path: { userId, goalId } }
 	});
 
-	if (error) Problem.throw(error);
+	if (error || !data) Problem.throw(error);
+	return data;
 });
 
 // ============================================================================
@@ -75,9 +78,10 @@ export const subscribeToProject = command(ProjectSchema, async ({ userId, projec
 /** Unsubscribe a user from a project */
 export const unsubscribeFromProject = command(ProjectSchema, async ({ userId, projectId }) => {
 	const { locals } = getRequestEvent();
-	const { error } = await locals.api.DELETE('/subscribe/{userId}/projects/{projectId}', {
+	const { error, data } = await locals.api.DELETE('/subscribe/{userId}/projects/{projectId}', {
 		params: { path: { userId, projectId } }
 	});
 
-	if (error) Problem.throw(error);
+	if (error || !data) Problem.throw(error);
+	return data;
 });
