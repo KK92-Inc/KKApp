@@ -33,94 +33,23 @@ namespace App.Backend.API.Controllers;
 
 [ApiController]
 [Route("system")]
-public class SystemController(
-    DatabaseContext db, // NOTE(W2): Kinda shit, but honestly it's for 1 query.
-    IUserService user,
-    IWorkspaceService workspace,
-    IMemberService member,
-    IMessageBus bus,
-    [FromKeyedServices("admin")] KeycloakAdminApiClient keycloak
-) : Controller
+public class SystemController(ISystemService service, IMessageBus bus) : Controller
 {
     [HttpGet]
     [AllowAnonymous]
     [ExcludeFromDescription]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [EndpointSummary("Query the system status")]
-    [EndpointDescription("Used to initilize / bootstrap the application on inital startup")]
     public async Task<IActionResult> Query(CancellationToken token)
     {
-        var complete = await db.System.FirstOrDefaultAsync(token);
-        return complete is null ? NoContent() : Forbid();
+        var entry = await service.CheckAsync(token);
+        return entry is null ? NoContent() : Forbid();
     }
 
     [HttpPost]
-    [ExcludeFromDescription]
     [AllowAnonymous]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [EndpointSummary("Set the system status")]
-    [EndpointDescription("Used to initilize / bootstrap the application on inital startup")]
+    [ExcludeFromDescription]
     public async Task<IActionResult> Bootstrap([FromBody] PostUserRequestDTO body, CancellationToken token)
     {
-        var complete = await db.System.FirstOrDefaultAsync(token);
-        if (complete is not null) return Forbid();
-
-        var id = Guid.CreateVersion7();
-        await keycloak.Admin.Realms["admin"].Users.PostAsync(new()
-        {
-            Id = id.ToString(),
-            Username = body.Login,
-            Email = body.Email,
-            Enabled = true,
-            EmailVerified = false,
-            Credentials =
-            [
-                new CredentialRepresentation
-                {
-                    Type = "password",
-                    Value = "admin",
-                    Temporary = true
-                }
-            ],
-            // RealmRoles = [""],
-            // TODO: Force 2FA at all times, configure it ?
-            RequiredActions = ["UPDATE_PASSWORD"],
-        }, null, token);
-
-        var account = await user.CreateAsync(new()
-        {
-            Id = id,
-            Login = body.Login,
-            Display = body.Login,
-            Details = new()
-            {
-                UserId = id,
-                Email = body.Email,
-                FirstName = body.FirstName,
-                LastName = body.LastName,
-            },
-        }, token);
-
-        // Create Root Workspace
-        var space = await workspace.CreateAsync(new() { Ownership = EntityOwnership.Organization }, token);
-        await member.CreateAsync(new()
-        {
-            EntityId = space.Id,
-            EntityType = MemberEntityType.Workspace,
-            Role = MemberRole.Leader,
-            UserId = id
-        }, token);
-
-        // Create User Workspace
-        await workspace.CreateAsync(new() { OwnerId = id, Ownership = EntityOwnership.User }, token);
-        // Mark as initiated
-        await db.System.AddAsync(new(), token);
-        await db.SaveChangesAsync(token);
-        
+        var account = await service.InitializeAsync(body.Login, body.Email, token);
         await bus.PublishAsync(new WelcomeUserNotification(account!));
         return NoContent();
     }

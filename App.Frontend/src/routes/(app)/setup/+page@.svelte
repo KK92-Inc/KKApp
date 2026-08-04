@@ -65,7 +65,7 @@
 										<Field.Description>Enter your account login handle.</Field.Description>
 										<Field.Error errors={bootstrap.fields.login.issues()} />
 									</Field.Field>
-									<div class="grid grid-cols-4 gap-4">
+									<!-- <div class="grid grid-cols-2 gap-4"> -->
 										<Field.Field class="col-span-2">
 											<Field.Label for="email">Email*</Field.Label>
 											<Input
@@ -76,19 +76,7 @@
 											<Field.Description>Enter your work email.</Field.Description>
 											<Field.Error errors={bootstrap.fields.email.issues()} />
 										</Field.Field>
-										<Field.Field class="col-span-1">
-											<Field.Label for="firstName">First Name</Field.Label>
-											<Input id="firstName" placeholder="John" {...bootstrap.fields.firstName.as('text')} />
-											<Field.Description>Optional First Name.</Field.Description>
-											<Field.Error errors={bootstrap.fields.firstName.issues()} />
-										</Field.Field>
-										<Field.Field class="col-span-1">
-											<Field.Label for="lastName">Last Name</Field.Label>
-											<Input id="lastName" placeholder="Doe" {...bootstrap.fields.lastName.as('text')} />
-											<Field.Description>Optional Last Name.</Field.Description>
-											<Field.Error errors={bootstrap.fields.lastName.issues()} />
-										</Field.Field>
-									</div>
+									<!-- </div> -->
 								</Field.Group>
 							</Field.Set>
 						</Field.Group>

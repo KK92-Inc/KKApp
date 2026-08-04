@@ -14,7 +14,9 @@ public static class Extensions
         /// <returns></returns>
         public Guid GetSID()
         {
-            string? claim = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+            string? claim = principal.FindFirstValue("admin_user_id") 
+                ?? principal.FindFirstValue(ClaimTypes.NameIdentifier);
+
             return Guid.TryParse(claim, out var guid) ?
                 guid :
                 throw new ServiceException(403, "Unable to verify user");

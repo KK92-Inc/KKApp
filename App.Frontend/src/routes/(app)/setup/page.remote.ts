@@ -21,8 +21,6 @@ export const bootstrap = form(bootstrapSchema, async (data) => {
 		body: JSON.stringify({
 			login: data.login,
 			email: data.email,
-			firstName: data.firstName,
-			lastName: data.lastName,
 		} satisfies PostUserRequestDTO)
 	});
 

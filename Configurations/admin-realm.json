@@ -311,6 +311,7 @@
           "attributes": {}
         }
       ],
+      "intra": [],
       "security-admin-console": [],
       "student-realm-broker": [],
       "admin-cli": [],
@@ -469,6 +470,31 @@
   "webAuthnPolicyPasswordlessAvoidSameAuthenticatorRegister": false,
   "webAuthnPolicyPasswordlessAcceptableAaguids": [],
   "webAuthnPolicyPasswordlessExtraOrigins": [],
+  "users": [
+    {
+      "id": "1af61081-5e12-4efe-b962-98a52418470f",
+      "username": "service-account-intra",
+      "emailVerified": false,
+      "enabled": true,
+      "createdTimestamp": 1785856325584,
+      "totp": false,
+      "serviceAccountClientId": "intra",
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "default-roles-admin"
+      ],
+      "clientRoles": {
+        "realm-management": [
+          "manage-realm",
+          "manage-users",
+          "manage-authorization"
+        ]
+      },
+      "notBefore": 0,
+      "groups": []
+    }
+  ],
   "scopeMappings": [
     {
       "clientScope": "offline_access",
@@ -682,6 +708,63 @@
       ]
     },
     {
+      "id": "fcdea46a-9027-445d-9cdd-989979500d2b",
+      "clientId": "intra",
+      "name": "Intra",
+      "description": "The intra client for admins",
+      "rootUrl": "",
+      "adminUrl": "",
+      "baseUrl": "",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "**********",
+      "redirectUris": [
+        ""
+      ],
+      "webOrigins": [],
+      "notBefore": 0,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "publicClient": false,
+      "frontchannelLogout": true,
+      "protocol": "openid-connect",
+      "attributes": {
+        "realm_client": "false",
+        "oidc.ciba.grant.enabled": "false",
+        "client.secret.creation.time": "1785856325",
+        "backchannel.logout.session.required": "true",
+        "standard.token.exchange.enabled": "false",
+        "oauth2.device.authorization.grant.enabled": "false",
+        "pkce.code.challenge.method": "S256",
+        "backchannel.logout.revoke.offline.tokens": "false"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1,
+      "defaultClientScopes": [
+        "service_account",
+        "web-origins",
+        "acr",
+        "roles",
+        "profile",
+        "basic",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "organization",
+        "offline_access",
+        "microprofile-jwt"
+      ]
+    },
+    {
       "id": "c4a0469b-e407-4361-ab4a-58fa6b29be5a",
       "clientId": "realm-management",
       "name": "${client_realm-management}",
@@ -798,8 +881,8 @@
       "clientId": "student-realm-broker",
       "name": "Student Realm Broker",
       "description": "Allows the Student Realm trust the Admin Realm.",
-      "rootUrl": "https://auth.kk92.net/realms/student/",
-      "adminUrl": "https://auth.kk92.net/realms/student/",
+      "rootUrl": "http://keycloak-peeru.dev.localhost:8080/realms/student/",
+      "adminUrl": "http://keycloak-peeru.dev.localhost:8080/realms/student/",
       "baseUrl": "",
       "surrogateAuthRequired": false,
       "enabled": true,
@@ -807,7 +890,8 @@
       "clientAuthenticatorType": "client-secret",
       "secret": "**********",
       "redirectUris": [
-        "https://auth.kk92.net/realms/student/broker/admin-realm-auth/endpoint"
+        "http://keycloak-peeru.dev.localhost:8080/realms/student/broker/admin-realm-auth/endpoint",
+        "http://localhost*"
       ],
       "webOrigins": [
         "+"
@@ -825,7 +909,7 @@
       "attributes": {
         "realm_client": "false",
         "oidc.ciba.grant.enabled": "false",
-        "client.secret.creation.time": "1768915250",
+        "client.secret.creation.time": "1785857999",
         "backchannel.logout.session.required": "true",
         "standard.token.exchange.enabled": "false",
         "post.logout.redirect.uris": "+",
@@ -1631,13 +1715,13 @@
         "subComponents": {},
         "config": {
           "allowed-protocol-mapper-types": [
+            "saml-user-attribute-mapper",
+            "oidc-usermodel-attribute-mapper",
+            "oidc-usermodel-property-mapper",
+            "saml-role-list-mapper",
+            "saml-user-property-mapper",
             "oidc-address-mapper",
             "oidc-sha256-pairwise-sub-mapper",
-            "saml-user-property-mapper",
-            "saml-role-list-mapper",
-            "oidc-usermodel-attribute-mapper",
-            "saml-user-attribute-mapper",
-            "oidc-usermodel-property-mapper",
             "oidc-full-name-mapper"
           ]
         }
@@ -1650,14 +1734,14 @@
         "subComponents": {},
         "config": {
           "allowed-protocol-mapper-types": [
-            "saml-user-attribute-mapper",
-            "oidc-full-name-mapper",
             "saml-user-property-mapper",
+            "oidc-full-name-mapper",
+            "oidc-usermodel-property-mapper",
             "oidc-address-mapper",
-            "saml-role-list-mapper",
             "oidc-usermodel-attribute-mapper",
             "oidc-sha256-pairwise-sub-mapper",
-            "oidc-usermodel-property-mapper"
+            "saml-role-list-mapper",
+            "saml-user-attribute-mapper"
           ]
         }
       },

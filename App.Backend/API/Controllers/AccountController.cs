@@ -20,6 +20,7 @@ using App.Backend.Domain.Entities.Users;
 using App.Backend.API.Utils;
 using System.Net;
 using System.ComponentModel;
+using Serilog;
 
 // ============================================================================
 
@@ -49,6 +50,7 @@ public class AccountController(
     public async Task<ActionResult<UserDO>> GetCurrent()
     {
         var user = await users.FindByIdAsync(User.GetSID());
+        Log.Debug("{Id}", User.GetSID());
         return user is null ? Forbid() : Ok(new UserDO(user));
     }
 

@@ -7,6 +7,7 @@ import * as v from 'valibot';
 import { command, form, getRequestEvent, query } from '$app/server';
 import { Keycloak } from '$lib/auth';
 import { Filters, paginate, Problem } from '$lib/api';
+import { Log } from '$lib/log';
 
 // ============================================================================
 
@@ -36,6 +37,7 @@ export const logout = form(async () => await Keycloak.signOut());
 export const get = query(async () => {
 	const { locals } = getRequestEvent();
 	const { error, data } = await locals.api.GET("/account");
+	Log.dbg(JSON.stringify(error))
 	if (error || !data) Problem.throw(error)
 	return data;
 });

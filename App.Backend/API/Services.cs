@@ -268,6 +268,7 @@ public static class Services
     private static void RegisterDomainServices(WebApplicationBuilder builder)
     {
         // Infrastructure
+        builder.Services.AddScoped<ISystemService, SystemService>();
         builder.Services.AddScoped<IGitService, GitService>();
         builder.Services.AddScoped<INotificationService, NotificationService>();
         builder.Services.AddScoped<ISpotlightService, SpotlightService>();
