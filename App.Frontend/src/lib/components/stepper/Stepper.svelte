@@ -1,41 +1,34 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import * as Stepper from './index.svelte';
+	import { Stepper, setStepperContext } from './context.svelte';
 	import { cn } from '$lib/utils.js';
 
 	interface Props {
-		/** Currently active step (bindable). */
+		/** Initial / current step (bindable, read-only from outside is fine too). */
 		step?: number;
-		/** Allow clicking completed steps to go back. */
-		editable?: boolean;
 		/** Arrange steps top-to-bottom instead of left-to-right. */
 		vertical?: boolean;
-		/** Place step labels below the indicators. */
-		altLabels?: boolean;
+		/** Allow clicking a completed/active indicator to jump to it. */
+		editable?: boolean;
 		children: Snippet;
 		class?: string;
 	}
 
 	let {
 		step = $bindable(1),
-		editable = false,
 		vertical = false,
-		altLabels = false,
+		editable = false,
 		children,
 		class: className = ''
 	}: Props = $props();
 
-	Stepper.setContext(new Stepper.Context(step));
+	const stepper = setStepperContext(new Stepper(step, { vertical, editable }));
 
-	// // Propagate external prop changes → internal state
-	// $effect(() => {
-	// 	if (ctx.step !== step) ctx.step = step;
-	// });
-
-	// // Propagate internal state changes → bound prop
-	// $effect(() => {
-	// 	if (step !== ctx.step) step = ctx.step;
-	// });
+	// Mirror internal state back onto the bindable prop so a parent can
+	// read (e.g. show "Step {step} of N") without reaching into context.
+	$effect(() => {
+		step = stepper.current;
+	});
 </script>
 
 <div class={cn('w-full', className)}>

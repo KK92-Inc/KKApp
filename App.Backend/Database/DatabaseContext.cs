@@ -33,6 +33,7 @@ public class DatabaseContext(DbContextOptions<DatabaseContext> options) : DbCont
     // }
 
 #nullable disable
+    public DbSet<Domain.Entities.System> System { get; set; }
     public DbSet<User> Users { get; set; }
     public DbSet<SshKey> SshKeys { get; set; }
     public DbSet<Details> Details { get; set; }

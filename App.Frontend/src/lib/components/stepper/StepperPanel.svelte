@@ -1,10 +1,10 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { cn } from '$lib/utils.js';
-	import * as Stepper from './index.svelte';
+	import { getStepperContext } from './context.svelte';
 
 	interface Props {
-		/** Must match the `value` of the corresponding StepperItem. */
+		/** Must match the `value` of the corresponding StepperStep. */
 		value: number;
 		children: Snippet;
 		class?: string;
@@ -12,8 +12,8 @@
 
 	let { value, children, class: className = '' }: Props = $props();
 
-	const ctx = Stepper.getContext();
-	const isActive = $derived(ctx.isActive(value));
+	const stepper = getStepperContext();
+	const isActive = $derived(stepper.isActive(value));
 </script>
 
 {#if isActive}

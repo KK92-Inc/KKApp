@@ -209,8 +209,7 @@ async function createSession(accessToken: string, payload: jose.JWTPayload) {
 // ============================================================================
 
 const handle: Handle = async ({ event, resolve }) => {
-	// Auth routes manage their own state — let them through entirely
-	if (event.url.pathname.startsWith('/auth')) {
+	if (event.url.pathname.startsWith('/auth') || event.url.pathname.startsWith('/setup')) {
 		return resolve(event);
 	}
 

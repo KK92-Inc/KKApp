@@ -10,6 +10,6 @@
 	let { children, class: className = '' }: Props = $props();
 </script>
 
-<div class={cn('mt-4 w-full', className)}>
+<div class={cn('mt-6 w-full', className)}>
 	{@render children()}
 </div>
