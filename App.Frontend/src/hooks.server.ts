@@ -45,7 +45,6 @@ api.use(middleware);
 // ============================================================================
 
 let bootstrapped = false;
-
 const bootstrap: Handle = async ({ event, resolve }) => {
 	if (bootstrapped) {
 		if (event.url.pathname.startsWith('/setup')) {
@@ -60,7 +59,6 @@ const bootstrap: Handle = async ({ event, resolve }) => {
 	}
 
 	const response = await event.fetch(`${BACKEND_URI}/system`);
-
 	if (response.status === 403) {
 		bootstrapped = true;
 		return resolve(event);

@@ -36,7 +36,8 @@ var s3Password = builder.AddParameter("s3-secret-access-key", true);
 // Keycloak settings
 var kcId = builder.AddParameter("kc-id", "intra");
 var kcRealm = builder.AddParameter("kc-realm", "student");
-var kcSecret = builder.AddParameter("kc-secret", true);
+var kcAdminSecret = builder.AddParameter("kc-admin-secret", true);
+var kcStudentSecret = builder.AddParameter("kc-student-secret", true);
 var kcCookie = builder.AddParameter("kc-cookie", "kc.session");
 
 // Resend email token
@@ -146,7 +147,8 @@ var backend = builder.AddProject<Projects.App_Backend_API>("backend")
     .WithReference(cache)
     .WithReference(keycloak)
     .WithEnvironment("Resend__Secret", resendToken)
-    .WithEnvironment("Keycloak__Credentials__Secret", kcSecret)
+    .WithEnvironment("KeycloakAdmin__Credentials__Secret", kcAdminSecret)
+    .WithEnvironment("KeycloakStudent__Credentials__Secret", kcStudentSecret)
     .WithEnvironment("Git__BaseUrl", api.GetEndpoint("http"))
     .WaitFor(migration)
     .WaitFor(postgres)
@@ -168,7 +170,7 @@ var frontendBuilder = builder.AddViteApp("frontend", "./App.Frontend")
     .WithReference(rustfs.GetEndpoint("s3"))
     .WithEnvironment("KC_ID", kcId)
     .WithEnvironment("KC_REALM", kcRealm)
-    .WithEnvironment("KC_SECRET", kcSecret)
+    .WithEnvironment("KC_SECRET", kcStudentSecret)
     .WithEnvironment("KC_COOKIE", kcCookie)
     .WithEnvironment("S3_ACCESS_KEY_ID", s3Key)
     .WithEnvironment("S3_SECRET_ACCESS_KEY", s3Password)

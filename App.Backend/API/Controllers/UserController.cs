@@ -43,7 +43,7 @@ public class UserController(
     IMessageBus bus,
     IWorkspaceService workspaces,
     IAuthorizationService auth,
-    KeycloakAdminApiClient keycloak
+    [FromKeyedServices("student")] KeycloakAdminApiClient keycloak
 ) : Controller
 {
     [HttpGet]

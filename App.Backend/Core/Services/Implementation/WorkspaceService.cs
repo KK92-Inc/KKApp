@@ -31,16 +31,16 @@ public class WorkspaceService(DatabaseContext ctx, IGitService git) : BaseServic
     {
         // TODO: Implement orgs and assign workspace to org when that is done
         var result = await base.CreateAsync(entity, token);
-        if (result.Ownership is EntityOwnership.Organization)
-            throw new ServiceException(501, "Organization-owned workspaces are not yet supported");
-
-        _context.Members.Add(new()
+        if (result.Ownership is not EntityOwnership.Organization)
         {
-            EntityId = result.Id,
-            UserId = result.OwnerId ?? throw new ServiceException(500, "User-owned workspace must have an owner ID"),
-            EntityType = MemberEntityType.Workspace,
-            Role = MemberRole.Leader
-        });
+            _context.Members.Add(new()
+            {
+                EntityId = result.Id,
+                UserId = result.OwnerId ?? throw new ServiceException(500, "User-owned workspace must have an owner ID"),
+                EntityType = MemberEntityType.Workspace,
+                Role = MemberRole.Leader
+            });
+        }
 
         await _context.SaveChangesAsync(token);
         return result;

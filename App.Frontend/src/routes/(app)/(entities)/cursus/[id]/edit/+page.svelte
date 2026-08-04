@@ -1,20 +1,11 @@
 <script lang="ts">
-	import * as Stepper from '$lib/components/stepper/index.svelte';
+	import * as Stepper from '$lib/components/stepper/context.svelte';
 	import { User, CreditCard, PackageCheck } from '@lucide/svelte';
 
-	// ─── Basic example ────────────────────────────────────────────────────────
 	let step = $state(1);
-
-	// ─── Vertical example ────────────────────────────────────────────────────
 	let vStep = $state(1);
-
-	// ─── Alt-labels example ──────────────────────────────────────────────────
 	let altStep = $state(1);
-
-	// ─── Error example ───────────────────────────────────────────────────────
 	let eStep = $state(2);
-
-	// ─── Custom icon example ─────────────────────────────────────────────────
 	let iStep = $state(1);
 </script>
 

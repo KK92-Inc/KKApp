@@ -9,6 +9,7 @@ using System.Threading.RateLimiting;
 
 using Microsoft.OpenApi;
 using Microsoft.EntityFrameworkCore;
+using Aspire.StackExchange.Redis;
 
 using Keycloak.AuthServices.Authentication;
 using Keycloak.AuthServices.Authorization;
@@ -42,6 +43,10 @@ using Duende.AccessTokenManagement;
 using Keycloak.AuthServices.Sdk.Kiota;
 using App.Backend.API.Utils;
 using Microsoft.AspNetCore.Authorization;
+using Keycloak.AuthServices.Sdk.Kiota.Admin;
+using Microsoft.Kiota.Http.HttpClientLibrary;
+using Microsoft.Kiota.Abstractions.Authentication;
+using KeycloakAdminClientOptions = Keycloak.AuthServices.Sdk.KeycloakAdminClientOptions;
 
 // ============================================================================
 
@@ -112,7 +117,7 @@ public static class Services
 
     private static void RegisterAuthentication(WebApplicationBuilder builder)
     {
-        builder.Services.AddKeycloakWebApiAuthentication(builder.Configuration);
+        builder.Services.AddKeycloakWebApiAuthentication(builder.Configuration, "KeycloakStudent");
         builder.Services.AddSingleton<IAuthorizationHandler, RequireScopeHandler>();
         builder.Services
             .AddAuthorization(options =>
@@ -133,7 +138,8 @@ public static class Services
             })
             .AddAuthorizationServer(builder.Configuration);
 
-        AddKeycloakAdminHttpClient(builder);
+        AddRealmAdminClient(builder, "admin", "kc_admin_admin", "KeycloakAdmin");
+        AddRealmAdminClient(builder, "student", "kc_admin_student", "KeycloakStudent");
         AddKeycloakProtectionHttpClient(builder);
     }
 
@@ -198,10 +204,10 @@ public static class Services
     // ============================================================================
     private static void RegisterCaching(WebApplicationBuilder builder)
     {
-        builder.Services.AddStackExchangeRedisCache(options =>
+        // Aspire handles connection strings, health checks, telemetry, and retries automatically.
+        builder.AddRedisClient("valkey", configureOptions: options =>
         {
-            options.InstanceName = "KKBackend";
-            options.Configuration = builder.Configuration.GetConnectionString("cache");
+            options.ClientName = "KKBackend";
         });
 
         builder.Services.AddOutputCache(options =>
@@ -472,29 +478,29 @@ public static class Services
     }
 
     /// <summary>
-    /// Registers an authenticated <see cref="HttpClient"/> named <c>kc_admin</c>
-    /// targeting <c>/admin/realms/{realm}/</c>. Token is managed automatically
-    /// via client credentials and attached to every outgoing request.
+    /// Registers a realm-scoped Keycloak Admin API client, keyed by <paramref name="key"/>,
+    /// so multiple realms can each have their own client-credentials identity + token.
     /// </summary>
-    private static void AddKeycloakAdminHttpClient(WebApplicationBuilder builder)
+    private static void AddRealmAdminClient(
+        WebApplicationBuilder builder, string key, string ccName, string section)
     {
-        var name = ClientCredentialsClientName.Parse("kc_admin");
-        var options = builder.Configuration.GetKeycloakOptions<Keycloak.AuthServices.Sdk.Kiota.KeycloakAdminClientOptions>()!;
+        var name = ClientCredentialsClientName.Parse(ccName);
+        var options = builder.Configuration.GetKeycloakOptions<KeycloakAdminClientOptions>(section)!;
 
         builder.Services
             .AddClientCredentialsTokenManagement()
             .AddClient(name, client => BindKeycloak(client, options));
 
-        builder.Services // NOTE(W2): We avoid using the package because it lacks methods.
-            .AddKiotaKeycloakAdminHttpClient(builder.Configuration)
+        builder.Services
+            .AddHttpClient(key, http => http.BaseAddress = new Uri(options.AuthServerUrl!))
             .AddClientCredentialsTokenHandler(name);
 
-        // .AddKiotaKeycloakAdminHttpClient(options)
-        // // .AddHttpClient(name, client =>
-        // // {
-        // //     client.BaseAddress = new Uri($"{options.AuthServerUrl}admin/realms/{options.Realm}/");
-        // // })
-        // .AddClientCredentialsTokenHandler(name);
+        builder.Services.AddKeyedScoped(key, (sp, _) =>
+        {
+            var httpClient = sp.GetRequiredService<IHttpClientFactory>().CreateClient(key);
+            var adapter = new HttpClientRequestAdapter(new AnonymousAuthenticationProvider(), httpClient: httpClient);
+            return new KeycloakAdminApiClient(adapter);
+        });
     }
 
     /// <summary>

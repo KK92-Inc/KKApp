@@ -113,6 +113,8 @@ dotnet ef migrations add AddUserPreferences \
     --startup-project App.Migrations
 ```
 
+dotnet ef migrations add AddSystemTable --project App.Migrations  --startup-project App.Migrations
+
 ### Migration Best Practices
 
 1. **Use descriptive names** - `AddUserPreferences`, `CreateNotificationsTable`

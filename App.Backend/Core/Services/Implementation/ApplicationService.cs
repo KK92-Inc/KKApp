@@ -14,12 +14,17 @@ using Keycloak.AuthServices.Sdk.Kiota.Admin;
 using Microsoft.Kiota.Abstractions;
 using App.Backend.Core.Query;
 using Keycloak.AuthServices.Sdk.Kiota.Admin.Models;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace App.Backend.Core.Services.Implementation;
 
 // ============================================================================
 
-public class ApplicationService(DatabaseContext ctx, ILogger<ApplicationService> log, KeycloakAdminApiClient client) : BaseService<Application>(ctx), IApplicationService
+public class ApplicationService(
+    DatabaseContext ctx,
+    ILogger<ApplicationService> log,
+    [FromKeyedServices("student")] KeycloakAdminApiClient client
+) : BaseService<Application>(ctx), IApplicationService
 {
     private const string Realm = "student";
     private const string StaffRoleName = "staff";

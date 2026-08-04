@@ -25,6 +25,7 @@ using Microsoft.AspNetCore.OutputCaching;
 using App.Backend.Models.Requests.Users;
 using Keycloak.AuthServices.Sdk.Kiota.Admin;
 using App.Backend.API.Notifications.Variants;
+using Keycloak.AuthServices.Sdk.Kiota.Admin.Models;
 
 // ============================================================================
 
@@ -36,22 +37,23 @@ public class SystemController(
     DatabaseContext db, // NOTE(W2): Kinda shit, but honestly it's for 1 query.
     IUserService user,
     IWorkspaceService workspace,
+    IMemberService member,
     IMessageBus bus,
-    KeycloakAdminApiClient keycloak
+    [FromKeyedServices("admin")] KeycloakAdminApiClient keycloak
 ) : Controller
 {
     [HttpGet]
     [AllowAnonymous]
     [ExcludeFromDescription]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status418ImATeapot)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Query the system status")]
     [EndpointDescription("Used to initilize / bootstrap the application on inital startup")]
     public async Task<IActionResult> Query(CancellationToken token)
     {
         var complete = await db.System.FirstOrDefaultAsync(token);
-        return complete is null ? NoContent() : Problem(statusCode: 418);
+        return complete is null ? NoContent() : Forbid();
     }
 
     [HttpPost]
@@ -75,6 +77,15 @@ public class SystemController(
             Email = body.Email,
             Enabled = true,
             EmailVerified = false,
+            Credentials =
+            [
+                new CredentialRepresentation
+                {
+                    Type = "password",
+                    Value = "admin",
+                    Temporary = true
+                }
+            ],
             // RealmRoles = [""],
             // TODO: Force 2FA at all times, configure it ?
             RequiredActions = ["UPDATE_PASSWORD"],
@@ -94,8 +105,22 @@ public class SystemController(
             },
         }, token);
 
-        await workspace.CreateAsync(new() { Ownership = EntityOwnership.Organization }, token);
+        // Create Root Workspace
+        var space = await workspace.CreateAsync(new() { Ownership = EntityOwnership.Organization }, token);
+        await member.CreateAsync(new()
+        {
+            EntityId = space.Id,
+            EntityType = MemberEntityType.Workspace,
+            Role = MemberRole.Leader,
+            UserId = id
+        }, token);
+
+        // Create User Workspace
         await workspace.CreateAsync(new() { OwnerId = id, Ownership = EntityOwnership.User }, token);
+        // Mark as initiated
+        await db.System.AddAsync(new(), token);
+        await db.SaveChangesAsync(token);
+        
         await bus.PublishAsync(new WelcomeUserNotification(account!));
         return NoContent();
     }
