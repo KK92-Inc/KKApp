@@ -56,27 +56,36 @@ public class GoalCompletionHandler(
             .Where(ug => ug.UserId == userId && ug.State == EntityObjectState.Completed)
             .Select(ug => ug.GoalId);
 
-        var eligibleCursusIds = context.CursusGoal
-            .Where(cg => cg.GoalId == goalId)
-            .Select(cg => cg.CursusId)
-            .Where(cursusId => context.UserCursi.Any(uc => uc.UserId == userId && uc.CursusId == cursusId));
-
-        // Of those, keep only cursi where the full track is satisfied:
-        //   - Every required goal (ChoiceGroup == null) is completed
-        //   - Every choice group has at least one completed goal
-        var completedCursusIds = await context.CursusGoal
-            .Where(cg => eligibleCursusIds.Contains(cg.CursusId))
-            .GroupBy(cg => cg.CursusId)
-            .Where(g =>
-                g.Where(cg => cg.ChoiceGroup == null)
-                    .All(cg => completedGoalIds.Contains(cg.GoalId)) &&
-                g.Where(cg => cg.ChoiceGroup != null)
-                    .GroupBy(cg => cg.ChoiceGroup)
-                    .All(choiceGroup => choiceGroup.Any(cg => completedGoalIds.Contains(cg.GoalId))))
-            .Select(g => g.Key)
+        // Only cursi actively enrolled in, where this goal is actually part of
+        // *this user's own frozen snapshot* - not just the live master track,
+        // which may have moved on and no longer resembles the path they took.
+        var eligibleUserCursi = await context.UserCursi
+            .Where(uc => uc.UserId == userId && uc.State != EntityObjectState.Inactive)
+            .Where(uc => context.UserCursusGoal.Any(ucg => ucg.UserCursusId == uc.Id && ucg.GoalId == goalId))
+            .Select(uc => new { uc.Id, uc.CursusId })
             .ToListAsync(ct);
 
-        foreach (var cursusId in completedCursusIds)
-            await bus.PublishAsync(new CursusCompletionMessage(userId, cursusId));
+        if (eligibleUserCursi.Count == 0)
+            return;
+
+        var eligibleUserCursusIds = eligibleUserCursi.Select(uc => uc.Id).ToList();
+
+        // Of those, keep only the ones where the user's own snapshot is fully satisfied:
+        //   - Every required goal (ChoiceGroup == null) in their snapshot is completed
+        //   - Every choice group in their snapshot has at least one completed goal
+        var completedUserCursusIds = await context.UserCursusGoal
+            .Where(ucg => eligibleUserCursusIds.Contains(ucg.UserCursusId))
+            .GroupBy(ucg => ucg.UserCursusId)
+            .Where(g =>
+                g.Where(ucg => ucg.ChoiceGroup == null)
+                    .All(ucg => completedGoalIds.Contains(ucg.GoalId)) &&
+                g.Where(ucg => ucg.ChoiceGroup != null)
+                    .GroupBy(ucg => ucg.ChoiceGroup)
+                    .All(choiceGroup => choiceGroup.Any(ucg => completedGoalIds.Contains(ucg.GoalId))))
+            .Select(g => g.Key)
+            .ToHashSetAsync(ct);
+
+        foreach (var uc in eligibleUserCursi.Where(uc => completedUserCursusIds.Contains(uc.Id)))
+            await bus.PublishAsync(new CursusCompletionMessage(userId, uc.CursusId));
     }
 }

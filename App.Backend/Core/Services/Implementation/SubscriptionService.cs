@@ -13,6 +13,7 @@ using App.Backend.Domain.Enums;
 using App.Backend.Domain.Relations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using App.Backend.Core.Services.Persistence.Interface;
 
 namespace App.Backend.Core.Services.Implementation;
 
@@ -21,6 +22,7 @@ public class SubscriptionService(
     IGitService git,
     TimeProvider time,
     IEligibilityService eligibilityService,
+    ICursusSnapshotTracker snapshotTracker,
     IOptions<SubscriptionOptions> options
 ) : ISubscriptionService
 {
@@ -32,7 +34,6 @@ public class SubscriptionService(
     {
         // 1. Run read-only eligibility checks first (throws ServiceException if ineligible)
         await eligibilityService.EligibleForCursusAsync(userId, cursusId, token);
-
         var existing = await context.UserCursi.FirstOrDefaultAsync(
             uc => uc.UserId == userId && uc.CursusId == cursusId,
             token
@@ -47,8 +48,15 @@ public class SubscriptionService(
             context.UserCursi.Update(existing);
 
             await CascadeActivateGoalsAsync(userId, cursusId, token);
-
             await context.SaveChangesAsync(token);
+
+            // Catch the snapshot up on whatever the master track did while this
+            // subscription sat inactive. Runs after goal states are restored above,
+            // so anything the user was mid-progress on before unsubscribing is
+            // correctly seen as locked-in and stays frozen rather than getting
+            // swept up by a track change that happened in the meantime.
+            await snapshotTracker.AdvanceTrackAsync(userId, cursusId, existing.Id, token);
+
             return existing;
         }
 
@@ -81,7 +89,6 @@ public class SubscriptionService(
     {
         // 1. Run read-only eligibility checks outside the transaction
         await eligibilityService.EligibleForGoalAsync(userId, goalId, token);
-
         return await context.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
         {
             await using var transaction = await context.Database.BeginTransactionAsync(ct);
@@ -137,7 +144,6 @@ public class SubscriptionService(
     {
         // 1. Run read-only eligibility checks outside the transaction
         await eligibilityService.EligibleForProjectAsync(userId, projectId, token);
-
         return await context.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
         {
             await using var transaction = await context.Database.BeginTransactionAsync(ct);
@@ -254,6 +260,7 @@ public class SubscriptionService(
             await using var transaction = await context.Database.BeginTransactionAsync(ct);
 
             existing.State = EntityObjectState.Inactive;
+            // TODO: Enable again later for now, it's annoying my testing.
             // existing.UnlocksAt = time.GetUtcNow().Add(_config.Cooldown);
             context.UserProjects.Update(existing);
 
@@ -264,7 +271,7 @@ public class SubscriptionService(
                 UserId = userId,
             }, ct);
 
-            // await git.LockAsync(projectId.ToString(), existing.Id.ToString(), ct);
+            await git.LockAsync(projectId.ToString(), existing.Id.ToString(), ct);
             await context.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
             return existing;
@@ -289,8 +296,22 @@ public class SubscriptionService(
             context.UserGoals.Update(existing);
 
             await CascadeDeactivateProjectsAsync(userId, [goalId], ct);
-
             await context.SaveChangesAsync(ct);
+
+            // This goal just gave up its locked-in state. If it belongs to any
+            // cursus the user is actively enrolled in, release that branch back
+            // to the current master track right now, instead of leaving it stale
+            // until the next unrelated staff-triggered track edit.
+            // TODO: Maybe make this a configurable thing as well.
+            var affectedCursi = await context.UserCursi
+                .Where(uc => uc.UserId == userId && uc.State != EntityObjectState.Inactive)
+                .Where(uc => context.CursusGoal.Any(cg => cg.CursusId == uc.CursusId && cg.GoalId == goalId))
+                .Select(uc => new { uc.Id, uc.CursusId })
+                .ToListAsync(ct);
+
+            foreach (var uc in affectedCursi)
+                await snapshotTracker.AdvanceTrackAsync(userId, uc.CursusId, uc.Id, ct);
+
             await transaction.CommitAsync(ct);
             return existing;
         }, token);

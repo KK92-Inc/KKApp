@@ -20,7 +20,7 @@
 	const user = await Account.get();
 
 	const read = $derived(page.data.session.permissions.includes('user:profile:read'));
-	const write = $derived(page.data.session.permissions.includes('balls'));
+	const write = $derived(page.data.session.permissions.includes('user:profile:write'));
 
 	let errors = $state<ValidationErrors>({});
 	let avatar = $state<File | string | null>(user.avatarUrl);
@@ -72,6 +72,7 @@
 <!-- Header settings -->
 <div class="flex items-center justify-between gap-4 pb-2">
 	<h1 class="text-xl font-bold">Account Settings</h1>
+	{JSON.stringify(page.data.session.permissions)}
 	<Separator class="flex-1" />
 	<ButtonGroup.Root class="items-center">
 		<ButtonGroup.Root>

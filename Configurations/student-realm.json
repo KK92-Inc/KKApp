@@ -1040,28 +1040,6 @@
             "icon_uri": ""
           },
           {
-            "name": "user",
-            "type": "urn:intra:resources:user",
-            "ownerManagedAccess": false,
-            "displayName": "Current User",
-            "attributes": {},
-            "uris": [
-              "/*"
-            ],
-            "scopes": [
-              {
-                "name": "user:settings:read"
-              },
-              {
-                "name": "user:settings:write"
-              },
-              {
-                "name": "user:settings:delete"
-              }
-            ],
-            "icon_uri": ""
-          },
-          {
             "name": "rubrics",
             "type": "urn:intra:resources:rubrics",
             "ownerManagedAccess": false,
@@ -1140,6 +1118,12 @@
               "/*"
             ],
             "scopes": [
+              {
+                "name": "user:profile:read"
+              },
+              {
+                "name": "user:profile:write"
+              },
               {
                 "name": "users:read"
               },
@@ -1418,18 +1402,6 @@
             }
           },
           {
-            "name": "Manage Settings",
-            "description": "Allow to edit the user settings",
-            "type": "scope",
-            "logic": "POSITIVE",
-            "decisionStrategy": "UNANIMOUS",
-            "config": {
-              "resources": "[\"user\"]",
-              "scopes": "[\"user:settings:read\",\"user:settings:write\"]",
-              "applyPolicies": "[\"Access: Basic\"]"
-            }
-          },
-          {
             "name": "View Workspaces",
             "description": "",
             "type": "scope",
@@ -1525,6 +1497,18 @@
               "scopes": "[\"users:read\"]",
               "applyPolicies": "[\"Access: Basic\"]"
             }
+          },
+          {
+            "name": "Manage Profile",
+            "description": "Allow users to manage their profile",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "resources": "[\"users\"]",
+              "scopes": "[\"user:profile:read\",\"user:profile:write\"]",
+              "applyPolicies": "[\"Access: Basic\"]"
+            }
           }
         ],
         "scopes": [
@@ -1584,12 +1568,12 @@
             "displayName": "Write Comments"
           },
           {
-            "name": "user:settings:read",
+            "name": "user:profile:read",
             "iconUri": "",
             "displayName": "Read User (Current)"
           },
           {
-            "name": "user:settings:write",
+            "name": "user:profile:write",
             "iconUri": "",
             "displayName": "Write User (Current)"
           },
@@ -1601,10 +1585,6 @@
           {
             "name": "projects:delete",
             "displayName": "Delete Projects"
-          },
-          {
-            "name": "user:settings:delete",
-            "displayName": "Delete User (Current)"
           },
           {
             "name": "users:read",

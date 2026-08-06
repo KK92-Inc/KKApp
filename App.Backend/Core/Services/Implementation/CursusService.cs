@@ -16,12 +16,19 @@ using App.Backend.Core.Query;
 using System.Linq.Expressions;
 using App.Backend.Models.Responses.Entities.Cursus;
 using App.Backend.Models.Responses.Entities.Goals;
+using App.Backend.Core.Services.Persistence.Implementation;
+using App.Backend.Core.Services.Persistence.Interface;
 
 // ============================================================================
 
 namespace App.Backend.Core.Services.Implementation;
 
-public class CursusService(DatabaseContext ctx, IGoalService goalService, ILogger<CursusService> log) : BaseService<Cursus>(ctx), ICursusService, ISlugQueryable<Cursus>
+public class CursusService(
+    DatabaseContext ctx,
+    IGoalService goalService,
+    IPersistenceGraphMesher mesher,
+    ILogger<CursusService> log
+) : BaseService<Cursus>(ctx), ICursusService, ISlugQueryable<Cursus>
 {
     public async Task<string?> ValidateTrackAsync(
         IReadOnlyList<(Guid GoalId, Guid? ParentId, Guid? Group)> nodes,
@@ -147,23 +154,22 @@ public class CursusService(DatabaseContext ctx, IGoalService goalService, ILogge
     }
 
     /// <summary>
-    /// Merges global track changes into every user's snapshot for this cursus.
+    /// Merges global track changes into every <em>actively subscribed</em> user's
+    /// snapshot for this cursus, via <see cref="PersistenceGraphMesher"/>.
     ///
-    /// Rule: once any goal in a user's snapshot is locked-in (Active/Completed), that
-    /// goal's entire subtree - started or not - is frozen exactly as recorded. The
-    /// master track can never reach into a branch the user has already committed to.
-    /// A master node whose entire purpose is feeding an already-frozen descendant
-    /// (i.e. it has no unclaimed content anywhere below it) is pruned rather than
-    /// inserted, so a "replacement root" that only exists to host an already-frozen
-    /// child never shows up as a dangling extra root.
+    /// Inactive (unsubscribed) user-cursuses are skipped here on purpose: there is
+    /// no student watching that snapshot right now, so re-meshing it would be wasted
+    /// work on every future track edit until they come back. Instead it is caught up
+    /// in one shot by <see cref="CursusSnapshotTracker.AdvanceTrackAsync"/> when they
+    /// resubscribe - see <see cref="SubscriptionService.SubscribeToCursusAsync"/>.
     ///
-    /// Batched across the whole cohort - 3 queries total regardless of how many
-    /// students are subscribed, instead of 2 queries per student.
+    /// Batched across the whole active cohort - a small, fixed number of queries
+    /// regardless of how many students are subscribed, instead of per-student queries.
     /// </summary>
     private async Task PropagateTrackChangesToUsersAsync(Guid cursusId, List<CursusGoal> newGlobalGoals, CancellationToken ct)
     {
         var userCursuses = await ctx.UserCursi
-            .Where(uc => uc.CursusId == cursusId)
+            .Where(uc => uc.CursusId == cursusId && uc.State != EntityObjectState.Inactive)
             .Select(uc => new { uc.Id, uc.UserId })
             .ToListAsync(ct);
 
@@ -173,124 +179,78 @@ public class CursusService(DatabaseContext ctx, IGoalService goalService, ILogge
         var userCursusIds = userCursuses.Select(uc => uc.Id).ToList();
         var userIds = userCursuses.Select(uc => uc.UserId).Distinct().ToList();
 
-        // Batch-load every snapshot row and every locked-in goal up front.
         var allSnapshotRows = await ctx.UserCursusGoal
             .Where(ucg => userCursusIds.Contains(ucg.UserCursusId))
             .ToListAsync(ct);
 
+        // Only the goals that could possibly matter here - anything already in a
+        // snapshot, or anything the new master track could introduce - not every
+        // goal these users have ever touched across every other cursus they're in.
+        var relevantGoalIds = allSnapshotRows.Select(r => r.GoalId)
+            .Concat(newGlobalGoals.Select(g => g.GoalId))
+            .ToHashSet();
+
         var lockedInRows = await ctx.UserGoals
             .Where(ug => userIds.Contains(ug.UserId) &&
+                relevantGoalIds.Contains(ug.GoalId) &&
                 (ug.State == EntityObjectState.Active || ug.State == EntityObjectState.Completed))
             .Select(ug => new { ug.UserId, ug.GoalId })
             .ToListAsync(ct);
 
         var snapshotByUserCursus = allSnapshotRows
             .GroupBy(r => r.UserCursusId)
-            .ToDictionary(g => g.Key, g => g.ToList());
+            .ToDictionary(g => g.Key, g => (IReadOnlyList<UserCursusGoal>)g.ToList());
 
         var lockedByUser = lockedInRows
             .GroupBy(r => r.UserId)
-            .ToDictionary(g => g.Key, g => g.Select(r => r.GoalId).ToHashSet());
+            .ToDictionary(g => g.Key, g => (IReadOnlySet<Guid>)g.Select(r => r.GoalId).ToHashSet());
 
-        // Master tree is identical for every user in this cursus - build it once.
-        var masterChildrenOf = newGlobalGoals
-            .Where(g => g.ParentGoalId is not null)
-            .GroupBy(g => g.ParentGoalId!.Value)
-            .ToDictionary(g => g.Key, g => g.Select(x => x.GoalId).ToList());
-
-        // True if this master goal contributes anything not already frozen for the
-        // given user - i.e. it or something below it is genuinely new content.
-        bool HasNewContent(Guid goalId, HashSet<Guid> frozen)
-        {
-            if (frozen.Contains(goalId)) return false;
-            if (!masterChildrenOf.TryGetValue(goalId, out var children) || children.Count == 0) return true;
-            return children.Any(c => HasNewContent(c, frozen));
-        }
-
-        var toRemove = new List<UserCursusGoal>();
+        var emptyLockedIn = (IReadOnlySet<Guid>)new HashSet<Guid>();
         var toAdd = new List<UserCursusGoal>();
+        var toRemoveKeys = new HashSet<(Guid UserCursusId, Guid GoalId)>();
+        var repointByKey = new Dictionary<(Guid UserCursusId, Guid GoalId), Node>();
 
         foreach (var uc in userCursuses)
         {
             var oldSnapshot = snapshotByUserCursus.GetValueOrDefault(uc.Id, []);
+            var lockedIn = lockedByUser.GetValueOrDefault(uc.UserId, emptyLockedIn);
+            var diff = mesher.Diff(oldSnapshot, newGlobalGoals, lockedIn);
 
-            if (oldSnapshot.Count == 0)
+            foreach (var goalId in diff.ToRemove)
+                toRemoveKeys.Add((uc.Id, goalId));
+
+            toAdd.AddRange(diff.ToAdd.Select(n => new UserCursusGoal
             {
-                // Nothing recorded yet - mirror the master track wholesale.
-                toAdd.AddRange(newGlobalGoals.Select(g => new UserCursusGoal
-                {
-                    UserCursusId = uc.Id,
-                    GoalId = g.GoalId,
-                    ParentGoalId = g.ParentGoalId,
-                    ChoiceGroup = g.ChoiceGroup
-                }));
-                continue;
-            }
+                UserCursusId = uc.Id,
+                GoalId = n.GoalId,
+                ParentGoalId = n.ParentGoalId,
+                ChoiceGroup = n.ChoiceGroup
+            }));
 
-            var lockedIn = lockedByUser.GetValueOrDefault(uc.UserId, []);
-            var oldById = oldSnapshot.ToDictionary(n => n.GoalId);
-            var oldParentOf = oldSnapshot.ToDictionary(n => n.GoalId, n => n.ParentGoalId);
-            var oldChildrenOf = oldSnapshot
-                .Where(n => n.ParentGoalId is not null)
-                .GroupBy(n => n.ParentGoalId!.Value)
-                .ToDictionary(g => g.Key, g => g.Select(n => n.GoalId).ToList());
+            foreach (var n in diff.ToRepoint)
+                repointByKey[(uc.Id, n.GoalId)] = n;
+        }
 
-            // Frozen = every locked-in goal, its ancestors (so it stays connected to
-            // root), and its full descendant subtree (already-presented next steps).
-            var frozen = new HashSet<Guid>();
-            foreach (var goalId in lockedIn)
+        if (repointByKey.Count > 0)
+        {
+            foreach (var row in allSnapshotRows)
             {
-                if (!oldById.ContainsKey(goalId)) continue;
-                var current = goalId;
-                while (frozen.Add(current) && oldParentOf.TryGetValue(current, out var parent) && parent is Guid p)
-                    current = p;
-            }
-
-            var frontier = new Queue<Guid>(frozen);
-            while (frontier.Count > 0)
-            {
-                var id = frontier.Dequeue();
-                if (!oldChildrenOf.TryGetValue(id, out var children)) continue;
-                foreach (var child in children)
-                    if (frozen.Add(child))
-                        frontier.Enqueue(child);
-            }
-
-            var survivingMasterIds = newGlobalGoals
-                .Where(g => !frozen.Contains(g.GoalId) && HasNewContent(g.GoalId, frozen))
-                .Select(g => g.GoalId)
-                .ToHashSet();
-
-            // Old, non-frozen nodes with no place left in the (pruned) master track.
-            toRemove.AddRange(oldSnapshot.Where(n =>
-                !frozen.Contains(n.GoalId) && !survivingMasterIds.Contains(n.GoalId)));
-
-            foreach (var g in newGlobalGoals)
-            {
-                if (frozen.Contains(g.GoalId) || !survivingMasterIds.Contains(g.GoalId))
+                if (!repointByKey.TryGetValue((row.UserCursusId, row.GoalId), out var n))
                     continue;
 
-                if (oldById.TryGetValue(g.GoalId, out var existing))
-                {
-                    // Already tracked from the batch query above - mutating is enough.
-                    existing.ParentGoalId = g.ParentGoalId;
-                    existing.ChoiceGroup = g.ChoiceGroup;
-                }
-                else
-                {
-                    toAdd.Add(new UserCursusGoal
-                    {
-                        UserCursusId = uc.Id,
-                        GoalId = g.GoalId,
-                        ParentGoalId = g.ParentGoalId,
-                        ChoiceGroup = g.ChoiceGroup
-                    });
-                }
+                row.ParentGoalId = n.ParentGoalId;
+                row.ChoiceGroup = n.ChoiceGroup;
             }
         }
 
-        if (toRemove.Count > 0)
-            ctx.UserCursusGoal.RemoveRange(toRemove);
+        if (toRemoveKeys.Count > 0)
+        {
+            var rowsToRemove = allSnapshotRows
+                .Where(r => toRemoveKeys.Contains((r.UserCursusId, r.GoalId)))
+                .ToList();
+            ctx.UserCursusGoal.RemoveRange(rowsToRemove);
+        }
+
         if (toAdd.Count > 0)
             await ctx.UserCursusGoal.AddRangeAsync(toAdd, ct);
     }
