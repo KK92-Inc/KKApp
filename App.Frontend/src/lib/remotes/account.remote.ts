@@ -37,7 +37,6 @@ export const logout = form(async () => await Keycloak.signOut());
 export const get = query(async () => {
 	const { locals } = getRequestEvent();
 	const { error, data } = await locals.api.GET("/account");
-	Log.dbg(JSON.stringify(error))
 	if (error || !data) Problem.throw(error)
 	return data;
 });
@@ -104,7 +103,7 @@ export const deleteKey = command(v.string(), async (fingerprint) => {
 // ============================================================================
 
 export const getSpotlights = query(async () => {
-	const { locals } = getRequestEvent();
+	const { locals, request } = getRequestEvent();
 	const { error, data } = await locals.api.GET("/account/spotlights");
 	if (error || !data) Problem.throw(error)
 	return data;

@@ -45,12 +45,10 @@ const meta: Partial<Record<RouteId, MetaEntry>> = {
 	'/(app)/settings/profile': {
 		icon: UserPen,
 		label: 'Profile',
-		scopes: ['user:profile:read']
 	},
 	'/(app)/settings/apps': {
 		icon: Bot,
 		label: 'Applications',
-		scopes: ['user:profile:read']
 	},
 	'/(app)/settings/features': {
 		icon: FlaskConical,

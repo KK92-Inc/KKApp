@@ -19,6 +19,9 @@
 	const dialog = useDialog();
 	const user = await Account.get();
 
+	const read = $derived(page.data.session.permissions.includes('user:profile:read'));
+	const write = $derived(page.data.session.permissions.includes('balls'));
+
 	let errors = $state<ValidationErrors>({});
 	let avatar = $state<File | string | null>(user.avatarUrl);
 	async function clearCache() {
@@ -61,7 +64,7 @@
 				}
 			});
 
-			toast.success("Profile Updated!")
+			toast.success('Profile Updated!');
 		});
 	}
 </script>
@@ -83,10 +86,18 @@
 				Clear Cache
 				<Trash2 />
 			</Button>
-			<Button size="sm" variant="default" aria-label="Update Profile" loading={User.update.pending >0} onclick={submit}>
-				Update
-				<Save />
-			</Button>
+			{#if write}
+				<Button
+					size="sm"
+					variant="default"
+					aria-label="Update Profile"
+					loading={User.update.pending > 0}
+					onclick={submit}
+				>
+					Update
+					<Save />
+				</Button>
+			{/if}
 		</ButtonGroup.Root>
 	</ButtonGroup.Root>
 </div>
@@ -95,7 +106,7 @@
 	<Field.Group class="grid grid-cols-[auto_1fr] gap-2">
 		<Field.Field>
 			<Field.Label>Thumbnail</Field.Label>
-			<Thumbnail size={256} bind:value={avatar} />
+			<Thumbnail size={256} bind:value={avatar} readonly={!write} />
 			<Field.Description>Your profile picture</Field.Description>
 			<Field.Error />
 		</Field.Field>
@@ -121,21 +132,21 @@
 
 			<Field.Field>
 				<Field.Label>Display</Field.Label>
-				<Input value={user.displayName} />
+				<Input disabled={!write} value={user.displayName} />
 				<Field.Description>Used to publicly display a alternative name</Field.Description>
 				<Field.Error />
 			</Field.Field>
 
 			<Field.Field>
 				<Field.Label>First Name</Field.Label>
-				<Input bind:value={details.firstName} />
+				<Input disabled={!write} bind:value={details.firstName} />
 				<Field.Description>Display your first name</Field.Description>
 				<Field.Error />
 			</Field.Field>
 
 			<Field.Field>
 				<Field.Label>Last Name</Field.Label>
-				<Input bind:value={details.lastName} />
+				<Input disabled={!write} bind:value={details.lastName} />
 				<Field.Description>Display your last name</Field.Description>
 				<Field.Error />
 			</Field.Field>
@@ -151,6 +162,7 @@
 				<Field.Label for="website">Website</Field.Label>
 				<Input
 					id="website"
+					readonly={!write}
 					bind:value={details.websiteUrl}
 					placeholder="https://example.com"
 					autocomplete="off"
@@ -167,6 +179,7 @@
 				<Field.Label for="github">GitHub</Field.Label>
 				<Input
 					id="github"
+					readonly={!write}
 					bind:value={details.githubUrl}
 					placeholder="https://github.com/username"
 					autocomplete="off"
@@ -183,6 +196,7 @@
 				<Field.Label for="linkedin">LinkedIn</Field.Label>
 				<Input
 					id="linkedin"
+					readonly={!write}
 					bind:value={details.linkedinUrl}
 					placeholder="https://linkedin.com/in/username"
 					autocomplete="off"
@@ -199,6 +213,7 @@
 				<Field.Label for="reddit">Reddit</Field.Label>
 				<Input
 					id="reddit"
+					readonly={!write}
 					bind:value={details.redditUrl}
 					placeholder="https://reddit.com/user/username"
 					autocomplete="off"
