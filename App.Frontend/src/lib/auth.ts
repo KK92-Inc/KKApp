@@ -15,6 +15,7 @@ import { Log } from './log';
 import { redis } from './redis';
 import { getRequestEvent } from '$app/server';
 import { randomBytes, createHash } from 'crypto';
+import { isPublic } from '../routes/index.svelte';
 
 // ============================================================================
 // URLs
@@ -312,13 +313,10 @@ async function rotate(event: RequestEvent, resolve: Resolve, token: string): Pro
 // ============================================================================
 
 const handle: Handle = async ({ event, resolve }) => {
-	if (event.url.pathname.startsWith('/auth') || event.url.pathname.startsWith('/setup')) {
-		return resolve(event);
-	}
+	if (isPublic(event.url.pathname)) return resolve(event);
 
 	const access = event.cookies.get(COOKIE_ACCESS);
 	const refreshToken = event.cookies.get(COOKIE_REFRESH);
-
 	if (!access && !refreshToken) {
 		return bounce(event);
 	}

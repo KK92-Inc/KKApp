@@ -17,6 +17,10 @@ import {
 	Users
 } from '@lucide/svelte';
 import type { RouteId } from '$app/types';
+// ============================================================================
+
+export const UNAUTHED = ["/auth", "/setup"];
+export const isPublic = (pathname: string) => UNAUTHED.some((r) => pathname.startsWith(r));
 
 // ============================================================================
 
