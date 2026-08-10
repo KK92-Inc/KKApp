@@ -16,7 +16,6 @@ using App.Backend.Core.Query;
 using System.Linq.Expressions;
 using App.Backend.Models.Responses.Entities.Cursus;
 using App.Backend.Models.Responses.Entities.Goals;
-using App.Backend.Core.Services.Persistence.Implementation;
 using App.Backend.Core.Services.Persistence.Interface;
 
 // ============================================================================
@@ -26,8 +25,8 @@ namespace App.Backend.Core.Services.Implementation;
 public class CursusService(
     DatabaseContext ctx,
     IGoalService goalService,
-    IPersistenceGraphMesher mesher,
-    ILogger<CursusService> log
+    ILogger<CursusService> log,
+    IPersistenceGraphMesher mesher
 ) : BaseService<Cursus>(ctx), ICursusService, ISlugQueryable<Cursus>
 {
     public async Task<string?> ValidateTrackAsync(
@@ -138,7 +137,6 @@ public class CursusService(
             await ctx.CursusGoal.AddRangeAsync(nodeList, ct);
             await ctx.SaveChangesAsync(ct);
 
-            // --- PROPAGATE CHANGES TO USER SNAPSHOTS IN A FRONTIER FASHION ---
             await PropagateTrackChangesToUsersAsync(cursusId, nodeList, ct);
 
             await ctx.SaveChangesAsync(ct);
@@ -199,7 +197,7 @@ public class CursusService(
 
         var snapshotByUserCursus = allSnapshotRows
             .GroupBy(r => r.UserCursusId)
-            .ToDictionary(g => g.Key, g => (IReadOnlyList<UserCursusGoal>)g.ToList());
+            .ToDictionary(g => g.Key, g => (IReadOnlyList<UserCursusGoal>)[.. g]);
 
         var lockedByUser = lockedInRows
             .GroupBy(r => r.UserId)

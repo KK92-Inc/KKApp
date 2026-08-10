@@ -109,6 +109,7 @@ public static class TestUtils
             Active = true,
             MaxMembers = 1,
             Public = true,
+            Files = []
         });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -122,12 +123,18 @@ public static class TestUtils
         var response = await client.PostAsJsonAsync($"/workspace/{workspaceId}/goal", new PostGoalRequestDTO
         {
             Name = Faker.Internet.DomainName(),
-            Description = Faker.Lorem.Paragraph(1),
+            Description = Faker.Internet.DomainName(),
             Active = true,
             Public = true,
+            Projects = [ ]
         });
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        if (response.StatusCode is not HttpStatusCode.OK)
+        {
+            var problemDetails = await response.Content.ReadAsStringAsync();
+            Assert.Fail($"Expected OK but got {response.StatusCode}: {problemDetails}");
+        }
+
         var result = await response.Content.ReadFromJsonAsync<GoalDO>(JsonOptions.Default);
         Assert.NotNull(result);
         return result;

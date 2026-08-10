@@ -40,7 +40,7 @@ public record PostGoalRequestDTO
     [Description("Indicates whether the goal is publicly visible.")]
     public bool Public { get; init; } = false;
 
-    [Required, MinLength(1)]
+    [Required]
     [Description("The list of project IDs to initalize this goal with.")]
     public required IEnumerable<Guid> Projects { get; init; }
 }

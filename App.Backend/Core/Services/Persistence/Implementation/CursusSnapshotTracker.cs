@@ -14,8 +14,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace App.Backend.Core.Services.Persistence.Implementation;
 
-
-/// <inheritdoc />
 public class CursusSnapshotTracker(DatabaseContext ctx, IPersistenceGraphMesher mesher) : ICursusSnapshotTracker
 {
     public async Task AdvanceTrackAsync(Guid userId, Guid cursusId, Guid userCursusId, CancellationToken token = default)

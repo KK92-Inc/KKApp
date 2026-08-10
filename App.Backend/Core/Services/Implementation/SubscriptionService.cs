@@ -34,6 +34,7 @@ public class SubscriptionService(
     {
         // 1. Run read-only eligibility checks first (throws ServiceException if ineligible)
         await eligibilityService.EligibleForCursusAsync(userId, cursusId, token);
+
         var existing = await context.UserCursi.FirstOrDefaultAsync(
             uc => uc.UserId == userId && uc.CursusId == cursusId,
             token
@@ -89,6 +90,7 @@ public class SubscriptionService(
     {
         // 1. Run read-only eligibility checks outside the transaction
         await eligibilityService.EligibleForGoalAsync(userId, goalId, token);
+
         return await context.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
         {
             await using var transaction = await context.Database.BeginTransactionAsync(ct);
@@ -144,6 +146,7 @@ public class SubscriptionService(
     {
         // 1. Run read-only eligibility checks outside the transaction
         await eligibilityService.EligibleForProjectAsync(userId, projectId, token);
+
         return await context.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
         {
             await using var transaction = await context.Database.BeginTransactionAsync(ct);
@@ -260,7 +263,7 @@ public class SubscriptionService(
             await using var transaction = await context.Database.BeginTransactionAsync(ct);
 
             existing.State = EntityObjectState.Inactive;
-            // TODO: Enable again later for now, it's annoying my testing.
+            // TODO: Reactive
             // existing.UnlocksAt = time.GetUtcNow().Add(_config.Cooldown);
             context.UserProjects.Update(existing);
 
@@ -298,14 +301,16 @@ public class SubscriptionService(
             await CascadeDeactivateProjectsAsync(userId, [goalId], ct);
             await context.SaveChangesAsync(ct);
 
-            // This goal just gave up its locked-in state. If it belongs to any
-            // cursus the user is actively enrolled in, release that branch back
-            // to the current master track right now, instead of leaving it stale
-            // until the next unrelated staff-triggered track edit.
-            // TODO: Maybe make this a configurable thing as well.
+            // This goal just gave up its locked-in state. If it's sitting in the
+            // snapshot of any cursus the user is actively enrolled in, release that
+            // branch back to the current master track right now, instead of leaving
+            // it stale until the next unrelated staff-triggered track edit. Checked
+            // against the user's own snapshot, not the live master track - the goal
+            // may already have been renamed out of the master track entirely while
+            // the user was frozen on it, which is exactly the case this exists for.
             var affectedCursi = await context.UserCursi
                 .Where(uc => uc.UserId == userId && uc.State != EntityObjectState.Inactive)
-                .Where(uc => context.CursusGoal.Any(cg => cg.CursusId == uc.CursusId && cg.GoalId == goalId))
+                .Where(uc => context.UserCursusGoal.Any(ucg => ucg.UserCursusId == uc.Id && ucg.GoalId == goalId))
                 .Select(uc => new { uc.Id, uc.CursusId })
                 .ToListAsync(ct);
 

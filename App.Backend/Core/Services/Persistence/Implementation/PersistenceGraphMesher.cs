@@ -3,8 +3,8 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-using App.Backend.Domain.Relations;
 using App.Backend.Core.Services.Persistence.Interface;
+using App.Backend.Domain.Relations;
 
 // ============================================================================
 
@@ -13,8 +13,12 @@ namespace App.Backend.Core.Services.Persistence.Implementation;
 /// <inheritdoc />
 public class PersistenceGraphMesher : IPersistenceGraphMesher
 {
+
     /// <inheritdoc />
-    public Difference Diff(IReadOnlyList<UserCursusGoal> oldSnapshot, IReadOnlyList<CursusGoal> masterTrack, IReadOnlySet<Guid> lockedInGoalIds)
+    public Difference Diff(
+        IReadOnlyList<UserCursusGoal> oldSnapshot,
+        IReadOnlyList<CursusGoal> masterTrack,
+        IReadOnlySet<Guid> lockedInGoalIds)
     {
         if (oldSnapshot.Count == 0)
         {
@@ -26,18 +30,15 @@ public class PersistenceGraphMesher : IPersistenceGraphMesher
 
         var oldById = oldSnapshot.ToDictionary(n => n.GoalId);
         var oldParentOf = oldSnapshot.ToDictionary(n => n.GoalId, n => n.ParentGoalId);
-        var oldChildrenOf = oldSnapshot
-            .Where(n => n.ParentGoalId is not null)
-            .GroupBy(n => n.ParentGoalId!.Value)
-            .ToDictionary(g => g.Key, g => g.Select(n => n.GoalId).ToList());
 
         var masterChildrenOf = masterTrack
             .Where(g => g.ParentGoalId is not null)
             .GroupBy(g => g.ParentGoalId!.Value)
             .ToDictionary(g => g.Key, g => g.Select(x => x.GoalId).ToList());
 
-        // Frozen = every locked-in goal, its ancestors (so it stays connected to
-        // root), and its full descendant subtree (already-presented next steps).
+        // Frozen = every locked-in goal plus its ancestors, so it stays connected to
+        // root. Deliberately NOT closed downward over untouched descendants - see
+        // the rule above.
         var frozen = new HashSet<Guid>();
         foreach (var goalId in lockedInGoalIds)
         {
@@ -45,16 +46,6 @@ public class PersistenceGraphMesher : IPersistenceGraphMesher
             var current = goalId;
             while (frozen.Add(current) && oldParentOf.TryGetValue(current, out var parent) && parent is Guid p)
                 current = p;
-        }
-
-        var frontier = new Queue<Guid>(frozen);
-        while (frontier.Count > 0)
-        {
-            var id = frontier.Dequeue();
-            if (!oldChildrenOf.TryGetValue(id, out var children)) continue;
-            foreach (var child in children)
-                if (frozen.Add(child))
-                    frontier.Enqueue(child);
         }
 
         // True if this master goal contributes anything not already frozen for the

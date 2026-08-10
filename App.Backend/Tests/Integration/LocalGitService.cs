@@ -7,6 +7,7 @@ using System.Diagnostics;
 using App.Backend.Core.Services.Interface;
 using App.Backend.Database;
 using App.Backend.Domain.Entities;
+using App.Backend.Domain.Values.Misc;
 using Microsoft.EntityFrameworkCore;
 
 // ============================================================================
@@ -252,5 +253,10 @@ public class LocalGitService(DatabaseContext db) : IGitService
         }
 
         directory.Delete(true);
+    }
+
+    public Task<bool> Commit(string owner, string name, string branch, Commit commit, CancellationToken token = default)
+    {
+        throw new NotImplementedException();
     }
 }
