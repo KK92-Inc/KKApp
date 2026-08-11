@@ -8,7 +8,7 @@ import { S3Client } from "bun";
 import { query, command, getRequestEvent } from '$app/server';
 import { EntityObjectState, EntityType, Filters, paginate, Problem } from '$lib/api';
 import { avatars } from '$lib/s3';
-import { S3_ENDPOINT } from '$env/static/private';
+import { env } from '$env/dynamic/public';
 
 // ============================================================================
 
@@ -123,7 +123,7 @@ export const update = command(UpdateSchema, async (params) => {
 
 	if (avatarUrl instanceof File) {
 		await avatars.write(userId, avatarUrl);
-		avatar = `${S3_ENDPOINT}/avatars/${userId}`; // stable, no expiry
+		avatar = `${env.PUBLIC_S3_ENDPOINT}/avatars/${userId}`; // stable, no expiry
 	} else if (typeof avatarUrl === 'string') {
 		avatar = avatarUrl;
 	} else if (avatarUrl === null) {

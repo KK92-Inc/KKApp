@@ -10,6 +10,5 @@ export default defineConfig({
 	optimizeDeps: {
 		exclude: ['object-inspect'],
 	},
-
 	plugins: [tailwindcss(), sveltekit(), devtoolsJson()]
 });

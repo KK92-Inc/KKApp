@@ -174,7 +174,6 @@ var frontendBuilder = builder.AddViteApp("frontend", "./App.Frontend")
     .WithEnvironment("KC_COOKIE", kcCookie)
     .WithEnvironment("S3_ACCESS_KEY_ID", s3Key)
     .WithEnvironment("S3_SECRET_ACCESS_KEY", s3Password)
-    .WithEnvironment("S3_ENDPOINT", rustfs.GetEndpoint("s3"))
     .WithEnvironment("PUBLIC_S3_ENDPOINT", rustfs.GetEndpoint("s3"))
     .WithBun();
 
@@ -189,11 +188,6 @@ if (isPublish)
         .WithEnvironment("HOST_HEADER", "x-forwarded-host")
         .WithEnvironment("PORT_HEADER", "x-forwarded-port")
         .WithEnvironment("ADDRESS_HEADER", "True-Client-IP");
-}
-else
-{
-    // Local dev: KC_ORIGIN is resolved via service discovery from the keycloak reference
-    // ORIGIN is not needed locally — SvelteKit infers it from the listening address
 }
 
 // Scalar API Reference
