@@ -138,7 +138,7 @@ public static class Services
                 options.RoleClaimType = ClaimTypes.Role;
                 options.EnableRolesMapping = RolesClaimTransformationSource.All; // or .All to include resource_access too
             })
-            .AddAuthorizationServer(builder.Configuration);
+            .AddAuthorizationServer(builder.Configuration, configSectionName: "KeycloakStudent");
 
         AddRealmAdminClient(builder, "admin", "kc_admin_admin", "KeycloakAdmin");
         AddRealmAdminClient(builder, "student", "kc_admin_student", "KeycloakStudent");
@@ -165,7 +165,7 @@ public static class Services
             {
                 document.Components ??= new OpenApiComponents();
 
-                var options = builder.Configuration.GetKeycloakOptions<KeycloakAuthenticationOptions>();
+                var options = builder.Configuration.GetKeycloakOptions<KeycloakAuthenticationOptions>(configSectionName: "KeycloakStudent");
                 if (options?.KeycloakUrlRealm is not null)
                 {
                     document.Components.SecuritySchemes!.TryAdd("OAuth2", new OpenApiSecurityScheme
@@ -515,7 +515,7 @@ public static class Services
     private static void AddKeycloakProtectionHttpClient(WebApplicationBuilder builder)
     {
         var name = ClientCredentialsClientName.Parse("kc_protection");
-        var options = builder.Configuration.GetKeycloakOptions<KeycloakProtectionClientOptions>()!;
+        var options = builder.Configuration.GetKeycloakOptions<KeycloakProtectionClientOptions>("KeycloakStudent")!;
 
         builder.Services
             .AddClientCredentialsTokenManagement()

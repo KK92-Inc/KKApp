@@ -28,7 +28,7 @@
   "oauth2DeviceCodeLifespan": 600,
   "oauth2DevicePollingInterval": 5,
   "enabled": true,
-  "sslRequired": "external",
+  "sslRequired": "none",
   "registrationAllowed": false,
   "registrationEmailAsUsername": false,
   "rememberMe": false,
@@ -777,9 +777,9 @@
       "clientId": "intra",
       "name": "Intra",
       "description": "",
-      "rootUrl": "https://intra.kk92.net/",
-      "adminUrl": "https://intra.kk92.net/",
-      "baseUrl": "https://intra.kk92.net/",
+      "rootUrl": "http://localhost*",
+      "adminUrl": "http://localhost*",
+      "baseUrl": "http://localhost*",
       "surrogateAuthRequired": false,
       "enabled": true,
       "alwaysDisplayInConsole": false,
@@ -804,11 +804,11 @@
       "frontchannelLogout": true,
       "protocol": "openid-connect",
       "attributes": {
-        "client.secret.creation.time": "1785858106",
+        "client.secret.creation.time": "1786391253",
         "client.introspection.response.allow.jwt.claim.enabled": "false",
         "standard.token.exchange.enabled": "false",
         "login_theme": "keycloak.v2",
-        "post.logout.redirect.uris": "https://intra.kk92.net/",
+        "post.logout.redirect.uris": "http://localhost*",
         "frontchannel.logout.session.required": "true",
         "oauth2.device.authorization.grant.enabled": "false",
         "use.jwks.url": "false",
@@ -1244,7 +1244,7 @@
             "logic": "POSITIVE",
             "decisionStrategy": "AFFIRMATIVE",
             "config": {
-              "applyPolicies": "[\"Role: Staff\",\"Role: Student\"]"
+              "applyPolicies": "[\"Role: Student\",\"Role: Staff\"]"
             }
           },
           {
@@ -1254,7 +1254,7 @@
             "logic": "POSITIVE",
             "decisionStrategy": "AFFIRMATIVE",
             "config": {
-              "applyPolicies": "[\"Role: Staff\",\"Role: Admin\"]"
+              "applyPolicies": "[\"Role: Admin\",\"Role: Staff\"]"
             }
           },
           {
@@ -1265,7 +1265,7 @@
             "decisionStrategy": "UNANIMOUS",
             "config": {
               "resources": "[\"comments\"]",
-              "scopes": "[\"comments:delete\",\"comments:write\",\"comments:read\"]",
+              "scopes": "[\"comments:read\",\"comments:delete\",\"comments:write\"]",
               "applyPolicies": "[\"Access: Basic\"]"
             }
           },
@@ -1325,7 +1325,7 @@
             "decisionStrategy": "UNANIMOUS",
             "config": {
               "resources": "[\"projects\"]",
-              "scopes": "[\"projects:delete\",\"projects:write\"]",
+              "scopes": "[\"projects:write\",\"projects:delete\"]",
               "applyPolicies": "[\"Access: Manage\"]"
             }
           },
@@ -1397,7 +1397,7 @@
             "decisionStrategy": "UNANIMOUS",
             "config": {
               "resources": "[\"goals\"]",
-              "scopes": "[\"goals:delete\",\"goals:write\"]",
+              "scopes": "[\"goals:write\",\"goals:delete\"]",
               "applyPolicies": "[\"Access: Manage\"]"
             }
           },
@@ -1445,7 +1445,7 @@
             "decisionStrategy": "UNANIMOUS",
             "config": {
               "resources": "[\"applications\"]",
-              "scopes": "[\"applications:delete\",\"applications:write\"]",
+              "scopes": "[\"applications:write\",\"applications:delete\"]",
               "applyPolicies": "[\"Access: Manage\"]"
             }
           },
@@ -1506,7 +1506,7 @@
             "decisionStrategy": "UNANIMOUS",
             "config": {
               "resources": "[\"users\"]",
-              "scopes": "[\"user:profile:read\",\"user:profile:write\"]",
+              "scopes": "[\"user:profile:write\",\"user:profile:read\"]",
               "applyPolicies": "[\"Access: Basic\"]"
             }
           }
@@ -2687,21 +2687,21 @@
       "linkOnly": false,
       "hideOnLogin": false,
       "config": {
-        "tokenUrl": "http://keycloak-peeru.dev.localhost:8080/realms/admin/protocol/openid-connect/token",
+        "tokenUrl": "http://localhost:8080/realms/admin/protocol/openid-connect/token",
         "acceptsPromptNoneForwardFromClient": "false",
-        "jwksUrl": "http://keycloak-peeru.dev.localhost:8080/realms/admin/protocol/openid-connect/certs",
+        "jwksUrl": "http://localhost:8080/realms/admin/protocol/openid-connect/certs",
         "isAccessTokenJWT": "false",
         "filteredByClaim": "false",
         "backchannelSupported": "false",
         "caseSensitiveOriginalUsername": "false",
-        "issuer": "http://keycloak-peeru.dev.localhost:8080/realms/admin",
+        "issuer": "http://localhost:8080/realms/admin",
         "loginHint": "false",
         "clientAuthMethod": "client_secret_post",
         "syncMode": "LEGACY",
         "clientSecret": "**********",
         "requiresShortStateParameter": "false",
         "allowedClockSkew": "0",
-        "userInfoUrl": "http://keycloak-peeru.dev.localhost:8080/realms/admin/protocol/openid-connect/userinfo",
+        "userInfoUrl": "http://localhost:8080/realms/admin/protocol/openid-connect/userinfo",
         "validateSignature": "true",
         "clientId": "student-realm-broker",
         "uiLocales": "false",
@@ -2710,9 +2710,9 @@
         "sendClientIdOnLogout": "false",
         "pkceEnabled": "false",
         "metadataDescriptorUrl": "http://localhost:8080/realms/admin/.well-known/openid-configuration",
-        "authorizationUrl": "http://keycloak-peeru.dev.localhost:8080/realms/admin/protocol/openid-connect/auth",
+        "authorizationUrl": "http://localhost:8080/realms/admin/protocol/openid-connect/auth",
         "disableUserInfo": "false",
-        "logoutUrl": "http://keycloak-peeru.dev.localhost:8080/ealms/admin/protocol/openid-connect/logout",
+        "logoutUrl": "http://ocalhost:8080/ealms/admin/protocol/openid-connect/logout",
         "sendIdTokenOnLogout": "true",
         "passMaxAge": "false",
         "disableTypeClaimCheck": "false"
@@ -2776,14 +2776,14 @@
         "subComponents": {},
         "config": {
           "allowed-protocol-mapper-types": [
-            "saml-user-property-mapper",
             "oidc-full-name-mapper",
-            "saml-role-list-mapper",
-            "oidc-usermodel-attribute-mapper",
             "oidc-sha256-pairwise-sub-mapper",
             "saml-user-attribute-mapper",
             "oidc-address-mapper",
-            "oidc-usermodel-property-mapper"
+            "oidc-usermodel-attribute-mapper",
+            "saml-user-property-mapper",
+            "oidc-usermodel-property-mapper",
+            "saml-role-list-mapper"
           ]
         }
       },
@@ -2810,13 +2810,13 @@
         "subComponents": {},
         "config": {
           "allowed-protocol-mapper-types": [
-            "saml-user-attribute-mapper",
-            "oidc-usermodel-property-mapper",
-            "oidc-usermodel-attribute-mapper",
-            "saml-user-property-mapper",
             "oidc-address-mapper",
             "saml-role-list-mapper",
+            "saml-user-attribute-mapper",
+            "saml-user-property-mapper",
             "oidc-full-name-mapper",
+            "oidc-usermodel-property-mapper",
+            "oidc-usermodel-attribute-mapper",
             "oidc-sha256-pairwise-sub-mapper"
           ]
         }
@@ -2848,6 +2848,18 @@
         "subType": "anonymous",
         "subComponents": {},
         "config": {}
+      }
+    ],
+    "org.keycloak.userprofile.UserProfileProvider": [
+      {
+        "id": "c60af0e2-6a51-49f1-8c4f-9086495b0833",
+        "providerId": "declarative-user-profile",
+        "subComponents": {},
+        "config": {
+          "kc.user.profile.config": [
+            "{\"attributes\":[{\"name\":\"username\",\"displayName\":\"${username}\",\"validations\":{\"length\":{\"min\":3,\"max\":255},\"username-prohibited-characters\":{},\"up-username-not-idn-homograph\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"email\",\"displayName\":\"${email}\",\"validations\":{\"email\":{},\"length\":{\"max\":255}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"firstName\",\"displayName\":\"${firstName}\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"annotations\":{},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"lastName\",\"displayName\":\"${lastName}\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"annotations\":{},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false}],\"groups\":[{\"name\":\"user-metadata\",\"displayHeader\":\"User metadata\",\"displayDescription\":\"Attributes, which refer to user metadata\"}]}"
+          ]
+        }
       }
     ],
     "org.keycloak.keys.KeyProvider": [
