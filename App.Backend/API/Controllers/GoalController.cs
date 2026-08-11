@@ -43,13 +43,19 @@ public class GoalController(
     [EndpointSummary("Query all goals")]
     [EndpointDescription("Retrieve a paginated list of all goals")]
     public async Task<ActionResult<IEnumerable<GoalDO>>> GetAll(
+        [FromQuery(Name = "filter[id]")] Guid? id,
         [FromQuery(Name = "filter[name]")] string? name,
+        [FromQuery(Name = "filter[slug]")] string? slug,
+        [FromQuery(Name = "filter[workspace_id]")] Guid? workspace,
         [FromQuery] Sorting sorting,
         [FromQuery] Pagination pagination,
         CancellationToken token
     )
     {
         var page = await goalService.GetAllAsync(sorting, pagination, token,
+            id is null ? null : n => n.Id == id,
+            workspace is null ? null : n => n.WorkspaceId == workspace,
+            string.IsNullOrWhiteSpace(slug) ? null : n => n.Slug == slug,
             string.IsNullOrWhiteSpace(name) ? null : g => EF.Functions.ILike(g.Name, $"%{name}%")
         );
         page.AppendHeaders(Response.Headers);

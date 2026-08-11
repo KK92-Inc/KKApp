@@ -13,6 +13,7 @@ const PageSchema = v.object({
 	id: v.optional(Filters.id),
 	name: v.optional(v.string()),
 	slug: v.optional(v.string()),
+	workspaceId: v.optional(Filters.id),
 	...Filters.sort,
 	...Filters.pagination
 });
@@ -47,6 +48,7 @@ export const getPage = query(PageSchema, async (params) => {
 	const { response, data, error } = await locals.api.GET('/cursus', {
 		params: {
 			query: {
+				'filter[workspace_id]': params.workspaceId,
 				'filter[id]': params.id,
 				'filter[name]': params.name,
 				'filter[slug]': params.slug,

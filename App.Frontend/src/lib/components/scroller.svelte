@@ -1,11 +1,11 @@
 <script lang="ts" generics="T">
 	import type { Paginated } from '$lib/api';
 	import * as Empty from '$lib/components/empty';
-	import { Loader } from '@lucide/svelte';
 	import { tick, type Snippet } from 'svelte';
 	import type { ClassValue } from 'svelte/elements';
 	import Button from './button/button.svelte';
 	import ScrollArea from './scroll-area/scroll-area.svelte';
+	import Loader from './loader.svelte';
 
 	interface Props {
 		class?: ClassValue;
@@ -100,7 +100,7 @@
 					<span class="text-sm text-destructive">Couldn't load more. {JSON.stringify(error)}</span>
 					<button class="text-sm underline" onclick={more}>Retry</button>
 				{:else if loading}
-					<Loader class="h-5 w-5 animate-spin" />
+					<Loader />
 					<span class="text-sm">Loading...</span>
 				{/if}
 			</div>

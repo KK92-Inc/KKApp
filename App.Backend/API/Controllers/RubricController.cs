@@ -39,7 +39,7 @@ public class RubricController(
         [FromQuery(Name = "filter[name]")] string? name,
         [FromQuery(Name = "filter[slug]")] string? slug,
         [FromQuery(Name = "filter[enabled]")] bool? enabled,
-        [FromQuery(Name = "filter[public]")] bool? isPublic,
+        [FromQuery(Name = "filter[workspace_id]")] Guid? workspace,
         [FromQuery(Name = "filter[creator_id]")] Guid? creatorId,
         [FromQuery] Sorting sorting,
         [FromQuery] Pagination pagination,
@@ -48,10 +48,10 @@ public class RubricController(
     {
         var page = await service.GetAllAsync(sorting, pagination, token,
             id is null ? null : r => r.Id == id,
+            workspace is null ? null : n => n.WorkspaceId == workspace,
             string.IsNullOrWhiteSpace(name) ? null : r => EF.Functions.ILike(r.Name, $"%{name}%"),
             string.IsNullOrWhiteSpace(slug) ? null : r => r.Slug == slug,
             enabled is null ? null : r => r.Enabled == enabled,
-            isPublic is null ? null : r => r.Public == isPublic,
             creatorId is null ? null : r => r.CreatorId == creatorId
         );
 

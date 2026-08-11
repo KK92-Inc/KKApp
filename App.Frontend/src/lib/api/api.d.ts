@@ -692,6 +692,7 @@ export interface paths {
             parameters: {
                 query?: {
                     "filter[id]"?: string;
+                    "filter[workspace_id]"?: string;
                     "filter[name]"?: string;
                     "filter[slug]"?: string;
                     /** @description The name of the property to use for sorting. */
@@ -1735,7 +1736,10 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
+                    "filter[id]"?: string;
                     "filter[name]"?: string;
+                    "filter[slug]"?: string;
+                    "filter[workspace_id]"?: string;
                     /** @description The name of the property to use for sorting. */
                     "sort[by]"?: string;
                     /** @description The sort direction. */
@@ -2177,6 +2181,7 @@ export interface paths {
             parameters: {
                 query?: {
                     "filter[id]"?: string;
+                    "filter[workspace_id]"?: string;
                     "filter[name]"?: string;
                     "filter[slug]"?: string;
                     /** @description The name of the property to use for sorting. */
@@ -4104,6 +4109,118 @@ export interface paths {
                 };
             };
         };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/system": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PostUserRequestDTO"];
+                    "text/json": components["schemas"]["PostUserRequestDTO"];
+                    "application/*+json": components["schemas"]["PostUserRequestDTO"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;

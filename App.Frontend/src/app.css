@@ -3,6 +3,21 @@
 @import 'katex/dist/katex.min.css';
 
 @custom-variant dark (&:is(.dark *));
+@keyframes pixel {
+		0%,
+		to {
+			opacity: 0.15;
+		}
+
+		18%,
+		42% {
+			opacity: 1;
+		}
+
+		62% {
+			opacity: 0.15;
+		}
+	}
 
 :root {
 	--header-height: 70px;

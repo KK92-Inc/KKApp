@@ -72,7 +72,6 @@
 <!-- Header settings -->
 <div class="flex items-center justify-between gap-4 pb-2">
 	<h1 class="text-xl font-bold">Account Settings</h1>
-	{JSON.stringify(page.data.session.permissions)}
 	<Separator class="flex-1" />
 	<ButtonGroup.Root class="items-center">
 		<ButtonGroup.Root>

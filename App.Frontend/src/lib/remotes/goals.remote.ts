@@ -12,6 +12,7 @@ import { Filters, paginate, Problem } from '$lib/api';
 const PageSchema = v.object({
 	...Filters.pagination,
 	...Filters.sort,
+	workspaceId: v.optional(Filters.id),
 	name: v.optional(v.string()),
 });
 
@@ -39,6 +40,7 @@ export const getPage = query(PageSchema, async (params) => {
 	const { response, data, error } = await locals.api.GET("/goals", {
 		params: {
 			query: {
+				"filter[workspace_id]": params.workspaceId,
 				"filter[name]": params.name,
 				"page[index]": params.page,
 				"page[size]": params.size,

@@ -47,6 +47,7 @@ public class CursusController(
     [EndpointDescription("Retrieve a paginated list of all cursus")]
     public async Task<ActionResult<IEnumerable<CursusDO>>> GetAll(
         [FromQuery(Name = "filter[id]")] Guid? id,
+        [FromQuery(Name = "filter[workspace_id]")] Guid? workspace,
         [FromQuery(Name = "filter[name]")] string? name,
         [FromQuery(Name = "filter[slug]")] string? slug,
         [FromQuery] Sorting sorting,
@@ -56,6 +57,7 @@ public class CursusController(
     {
         var page = await cursusService.GetAllAsync(sorting, pagination, token,
             id is null ? null : n => n.Id == id,
+            workspace is null ? null : n => n.WorkspaceId == workspace,
             string.IsNullOrWhiteSpace(name) ? null : n => EF.Functions.ILike(n.Name, $"%{name}%"),
             string.IsNullOrWhiteSpace(slug) ? null : n => n.Slug == slug
         );
