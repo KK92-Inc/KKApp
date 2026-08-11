@@ -14,9 +14,19 @@ namespace App.Backend.Core.Services.Interface;
 public interface IUserService : IDomainService<User>
 {
     /// <summary>
+    /// Creates a new user with a randomly generated temporary password.
+    /// Once they log in via the IDP they are forced to update it.
+    /// </summary>
+    /// <param name="user">The entity to create.</param>
+    /// <param name="token">Cancellation token.</param>
+    /// <returns></returns>
+    public Task<(User User, string TempPassword)> CreateUserAsync(User user, CancellationToken token = default);
+
+    /// <summary>
     /// Find the user by its login.
     /// </summary>
     /// <param name="login">The login.</param>
+    /// <param name="token">Cancellation token.</param>
     /// <returns>The user.</returns>
     public Task<User?> FindByLoginAsync(string login, CancellationToken token = default);
 
@@ -24,6 +34,7 @@ public interface IUserService : IDomainService<User>
     /// Find the user by its display name.
     /// </summary>
     /// <param name="displayName">The Display name</param>
+    /// <param name="token">Cancellation token.</param>
     /// <returns>The user.</returns>
     public Task<User?> FindByNameAsync(string displayName, CancellationToken token = default);
 

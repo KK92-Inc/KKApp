@@ -33,7 +33,7 @@ public class WorkspaceService(DatabaseContext ctx, IGitService git) : BaseServic
         var result = await base.CreateAsync(entity, token);
         if (result.Ownership is not EntityOwnership.Organization)
         {
-            _context.Members.Add(new()
+            await _context.Members.AddAsync(new()
             {
                 EntityId = result.Id,
                 UserId = result.OwnerId ?? throw new ServiceException(500, "User-owned workspace must have an owner ID"),

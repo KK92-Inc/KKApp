@@ -93,33 +93,31 @@ public class SystemService(
                     },
                 }, ct);
 
-                var mine = await context.Workspaces.AddAsync(new()
+                // NOTE(W2): Adds membership automatically
+                await context.Workspaces.AddAsync(new()
                 {
                     OwnerId = id,
                     Ownership = EntityOwnership.User,
                 }, ct);
 
+                // NOTE(W2): Unlike here because root / orgs shouldn't be
+                // owned by a single user.
+                // TODO: In the future we might want to add EntityOwnership.Root
+                // to disguish it from organizations.
                 var space = await context.Workspaces.AddAsync(new()
                 {
                     Ownership = EntityOwnership.Organization,
                 }, ct);
 
-                await context.Members.AddRangeAsync([
+                await context.Members.AddAsync(
                     new()
                     {
                         EntityId = space.Entity.Id,
                         EntityType = MemberEntityType.Workspace,
                         Role = MemberRole.Member,
                         UserId = id,
-                    },
-                    new()
-                    {
-                        EntityId = mine.Entity.Id,
-                        EntityType = MemberEntityType.Workspace,
-                        Role = MemberRole.Leader,
-                        UserId = id,
-                    },
-                ], ct);
+                    }
+                , ct);
 
                 await context.System.AddAsync(new(), ct);
                 await context.SaveChangesAsync(ct);

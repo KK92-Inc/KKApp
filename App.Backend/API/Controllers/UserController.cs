@@ -122,53 +122,38 @@ It will also let you know if a user is for example eligible to user a rubric.
     }
 
 
-    [HttpPost]
-    [Authorize(Policy = "staff")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
-    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [EndpointSummary("Create a user")]
-    [EndpointDescription("Provision a new user, creates a keycloak account for them.")]
-    public async Task<ActionResult<UserDO>> CreateUser(
-        [FromBody] PostUserRequestDTO request,
-        CancellationToken token)
+[HttpPost]
+[Authorize(Policy = "staff")]
+[ProducesResponseType(StatusCodes.Status200OK)]
+[ProducesResponseType(StatusCodes.Status409Conflict)]
+[ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+[ProducesResponseType(StatusCodes.Status404NotFound)]
+[ProducesErrorResponseType(typeof(ProblemDetails))]
+[EndpointSummary("Create a user")]
+[EndpointDescription("Provision a new user and create a Keycloak account for them.")]
+public async Task<ActionResult<UserDO>> CreateUser(
+    [FromBody] PostUserRequestDTO request,
+    CancellationToken token)
+{
+    var conflict = await users.FindByLoginAsync(request.Login, token);
+    if (conflict is not null) return Conflict();
+
+    var (account, password) = await users.CreateUserAsync(new()
     {
-        var conflict = await users.FindByLoginAsync(request.Login, token);
-        if (conflict is not null) return Conflict();
-
-        var id = Guid.CreateVersion7();
-        await keycloak.Admin.Realms["student"].Users.PostAsync(new()
+        Login = request.Login,
+        Display = request.Login,
+        Details = new()
         {
-            Id = id.ToString(),
-            Username = request.Login,
             Email = request.Email,
-            Enabled = true,
-            EmailVerified = false,
-            RealmRoles = ["student"],
-            // TODO: Force 2FA at all times, configure it ?
-            RequiredActions = ["UPDATE_PASSWORD"],
-        }, null, token);
+            FirstName = request.FirstName,
+            LastName = request.LastName,
+        },
+    }, token);
 
-        var account = await users.CreateAsync(new()
-        {
-            Id = id,
-            Login = request.Login,
-            Display = request.Login,
-            Details = new()
-            {
-                UserId = id,
-                Email = request.Email,
-                FirstName = request.FirstName,
-                LastName = request.LastName,
-            },
-        }, token);
-
-        await workspaces.CreateAsync(new() { OwnerId = id, Ownership = EntityOwnership.User }, token);
-        await bus.PublishAsync(new WelcomeUserNotification(account!));
-        return Ok(new UserDO(account));
-    }
+    await bus.PublishAsync(new WelcomeUserNotification(account!));
+    Response.Headers.TryAdd("X-Password", password);
+    return Ok(new UserDO(account));
+}
 
     [HttpPatch("{userId:guid}")]
     [RequireScope("user")]
