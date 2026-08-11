@@ -19,53 +19,51 @@
 	const dialog = useDialog();
 	const user = await Account.get();
 
-	const read = $derived(page.data.session.permissions.includes('user:profile:read'));
+	// Reading is always permitted; only writes are gated.
 	const write = $derived(page.data.session.permissions.includes('user:profile:write'));
+	const writeAvatar = $derived(page.data.session.permissions.includes('user:profile:avatar:write'));
 
 	let errors = $state<ValidationErrors>({});
-	let avatar = $state<File | string | null>(user.avatarUrl);
+	let payload = $state({
+		displayName: user.displayName ?? '',
+		avatar: user.avatarUrl as File | string | null,
+		details: {
+			firstName: user.details?.firstName ?? '',
+			lastName: user.details?.lastName ?? '',
+			markdown: user.details?.markdown ?? '',
+			websiteUrl: user.details?.websiteUrl ?? '',
+			githubUrl: user.details?.githubUrl ?? '',
+			linkedinUrl: user.details?.linkedinUrl ?? '',
+			redditUrl: user.details?.redditUrl ?? ''
+		}
+	});
+
 	async function clearCache() {
-		const confirm = await dialog.confirm(
-			'Clear cache ?',
+		const confirmed = await dialog.confirm(
+			'Clear cache?',
 			'This action is non-destructive and clears local storage only.'
 		);
 
-		if (confirm) localStorage.clear();
+		if (confirmed) localStorage.clear();
 	}
-
-	function normalize(value?: string | null): string | null {
-		const trimmed = value?.trim();
-		return trimmed ? trimmed : null;
-	}
-
-	let details = $state({
-		firstName: user.details?.firstName ?? '',
-		lastName: user.details?.lastName ?? '',
-		markdown: user.details?.markdown ?? '',
-		websiteUrl: user.details?.websiteUrl ?? '',
-		githubUrl: user.details?.githubUrl ?? '',
-		linkedinUrl: user.details?.linkedinUrl ?? '',
-		redditUrl: user.details?.redditUrl ?? ''
-	});
 
 	async function submit() {
-		await Problem.try(async () => {
-			await User.update({
-				userId: user.id,
-				avatarUrl: avatar,
-				details: {
-					firstName: normalize(details.firstName),
-					lastName: normalize(details.lastName),
-					markdown: normalize(details.markdown),
-					websiteUrl: normalize(details.websiteUrl),
-					githubUrl: normalize(details.githubUrl),
-					linkedinUrl: normalize(details.linkedinUrl),
-					redditUrl: normalize(details.redditUrl)
-				}
-			});
+		errors = {};
+		await Problem.try(
+			async () => {
+				const data = await User.update({
+					userId: user.id,
+					displayName: payload.displayName,
+					avatarUrl: payload.avatar,
+					details: payload.details
+				});
 
-			toast.success('Profile Updated!');
-		});
+				payload.avatar = data.avatarUrl;
+
+				toast.success('Profile updated!');
+			},
+			{ onValidation: (fields) => (errors = fields) }
+		);
 	}
 </script>
 
@@ -106,7 +104,7 @@
 	<Field.Group class="grid grid-cols-[auto_1fr] gap-2">
 		<Field.Field>
 			<Field.Label>Thumbnail</Field.Label>
-			<Thumbnail size={256} bind:value={avatar} readonly={!write} />
+			<Thumbnail size={256} bind:value={payload.avatar} readonly={!writeAvatar} />
 			<Field.Description>Your profile picture</Field.Description>
 			<Field.Error />
 		</Field.Field>
@@ -131,24 +129,24 @@
 			</Field.Field>
 
 			<Field.Field>
-				<Field.Label>Display</Field.Label>
-				<Input disabled={!write} value={user.displayName} />
-				<Field.Description>Used to publicly display a alternative name</Field.Description>
-				<Field.Error />
+				<Field.Label for="displayName">Display</Field.Label>
+				<Input id="displayName" disabled={!write} bind:value={payload.displayName} />
+				<Field.Description>Used to publicly display an alternative name</Field.Description>
+				<Field.Error errors={errors['DisplayName']} />
 			</Field.Field>
 
 			<Field.Field>
 				<Field.Label>First Name</Field.Label>
-				<Input disabled={!write} bind:value={details.firstName} />
+				<Input disabled={!write} bind:value={payload.details.firstName} />
 				<Field.Description>Display your first name</Field.Description>
-				<Field.Error />
+				<Field.Error errors={errors['details.FirstName']} />
 			</Field.Field>
 
 			<Field.Field>
 				<Field.Label>Last Name</Field.Label>
-				<Input disabled={!write} bind:value={details.lastName} />
+				<Input disabled={!write} bind:value={payload.details.lastName} />
 				<Field.Description>Display your last name</Field.Description>
-				<Field.Error />
+				<Field.Error errors={errors['details.LastName']} />
 			</Field.Field>
 		</Field.Group>
 
@@ -162,68 +160,52 @@
 				<Field.Label for="website">Website</Field.Label>
 				<Input
 					id="website"
-					readonly={!write}
-					bind:value={details.websiteUrl}
+					disabled={!write}
+					bind:value={payload.details.websiteUrl}
 					placeholder="https://example.com"
 					autocomplete="off"
 					autocorrect="off"
 				/>
-				{#if errors['details.WebsiteUrl']}
-					<Field.Error errors={errors['details.WebsiteUrl']} class="text-xs" />
-				{:else}
-					<Field.Description class="text-xs">Personal or project website URL</Field.Description>
-				{/if}
+				<Field.Error errors={errors['details.WebsiteUrl']} class="text-xs" />
 			</Field.Field>
 
 			<Field.Field>
 				<Field.Label for="github">GitHub</Field.Label>
 				<Input
 					id="github"
-					readonly={!write}
-					bind:value={details.githubUrl}
+					disabled={!write}
+					bind:value={payload.details.githubUrl}
 					placeholder="https://github.com/username"
 					autocomplete="off"
 					autocorrect="off"
 				/>
-				{#if errors['details.GithubUrl']}
-					<Field.Error errors={errors['details.GithubUrl']} class="text-xs" />
-				{:else}
-					<Field.Description class="text-xs">Link to your GitHub profile</Field.Description>
-				{/if}
+				<Field.Error errors={errors['details.GithubUrl']} class="text-xs" />
 			</Field.Field>
 
 			<Field.Field>
 				<Field.Label for="linkedin">LinkedIn</Field.Label>
 				<Input
 					id="linkedin"
-					readonly={!write}
-					bind:value={details.linkedinUrl}
+					disabled={!write}
+					bind:value={payload.details.linkedinUrl}
 					placeholder="https://linkedin.com/in/username"
 					autocomplete="off"
 					autocorrect="off"
 				/>
-				{#if errors['details.LinkedinUrl']}
-					<Field.Error errors={errors['details.LinkedinUrl']} class="text-xs" />
-				{:else}
-					<Field.Description class="text-xs">Link to your LinkedIn profile</Field.Description>
-				{/if}
+				<Field.Error errors={errors['details.LinkedinUrl']} class="text-xs" />
 			</Field.Field>
 
 			<Field.Field>
 				<Field.Label for="reddit">Reddit</Field.Label>
 				<Input
 					id="reddit"
-					readonly={!write}
-					bind:value={details.redditUrl}
+					disabled={!write}
+					bind:value={payload.details.redditUrl}
 					placeholder="https://reddit.com/user/username"
 					autocomplete="off"
 					autocorrect="off"
 				/>
-				{#if errors['details.RedditUrl']}
-					<Field.Error errors={errors['details.RedditUrl']} class="text-xs" />
-				{:else}
-					<Field.Description class="text-xs">Link to your Reddit profile or user page</Field.Description>
-				{/if}
+				<Field.Error errors={errors['details.RedditUrl']} class="text-xs" />
 			</Field.Field>
 		</Field.Group>
 
@@ -231,7 +213,7 @@
 		<Field.Field class="col-span-full">
 			<Field.Label for="login">Biography</Field.Label>
 			<Field.Description class="text-xs">You can write a small biography about yourself.</Field.Description>
-			<MarkdownTextarea bind:value={details.markdown} maxlength={2000} />
+			<MarkdownTextarea bind:value={payload.details.markdown} maxlength={2000} disabled={!write} />
 			<Field.Error errors={errors['details.Markdown']} class="text-xs" />
 		</Field.Field>
 	</Field.Group>

@@ -20,7 +20,7 @@
 	import teleport from '$lib/hooks/teleport.svelte';
 	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
 
-	const { params }: PageProps = $props();
+	const { params, data }: PageProps = $props();
 	const states = ['Any', ...EntityObjectState.options];
 	const belongs = $derived(page.data.session.userId === params.userId);
 
@@ -192,6 +192,7 @@
 		{:else}
 			<svelte:boundary>
 				{@const page = await Projects.getPage({
+					workspaceId: data.workspace.id,
 					page: index.value,
 					name: search.value
 				})}

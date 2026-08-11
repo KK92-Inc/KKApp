@@ -6,21 +6,9 @@
 	import type { LayoutProps } from './$types';
 	import { TooltipProvider } from '$lib/components/tooltip';
 	import { DialogProvider } from '$lib/components/dialog';
-	import { goto } from '$app/navigation';
-	import { isHttpError } from '@sveltejs/kit';
 
 	let { children }: LayoutProps = $props();
 </script>
-
-<svelte:window
-	onunhandledrejection={async (e) => {
-		// We're being told to GTFO, so let's leave.
-		if (isHttpError(e.reason, 401)) {
-			e.preventDefault()
-			await goto('/auth');
-		}
-	}}
-/>
 
 <svelte:head>
 	<title>KKApp</title>

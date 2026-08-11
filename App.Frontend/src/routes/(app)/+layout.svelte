@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { LayoutProps } from './$types';
-	import { afterNavigate } from '$app/navigation';
+	import { afterNavigate, goto } from '$app/navigation';
 	import * as Header from '$lib/components/header';
 	import Button from '$lib/components/button/button.svelte';
 	import { EventSourceContext, init } from '$lib/contexts/events.svelte';
@@ -8,6 +8,7 @@
 	import { page } from '$app/state';
 	import Separator from '$lib/components/separator/separator.svelte';
 	import { toast } from 'svelte-sonner';
+	import { isHttpError } from '@sveltejs/kit';
 
 	let open = $state(false);
 	let { children }: LayoutProps = $props();
@@ -27,6 +28,16 @@
 
 	afterNavigate(() => (open = false));
 </script>
+
+<svelte:window
+	onunhandledrejection={async (e) => {
+		// We're being told to GTFO, so let's leave.
+		if (isHttpError(e.reason, 401)) {
+			e.preventDefault()
+			await goto('/auth');
+		}
+	}}
+/>
 
 <div class="relative z-10 flex min-h-svh flex-col bg-background">
 	<header class="sticky top-0 z-50 w-full border-b bg-background px-5">

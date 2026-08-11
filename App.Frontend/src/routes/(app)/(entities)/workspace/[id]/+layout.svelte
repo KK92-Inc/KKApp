@@ -2,22 +2,16 @@
 	import { page } from '$app/state'; // Import SvelteKit's page state
 	import Layout from '$lib/components/layout.svelte';
 	import * as Workspace from '$lib/remotes/workspace.remote';
-	import * as InputGroup from '$lib/components/input-group';
 	import * as Field from '$lib/components/field';
 	import * as Tabs from '$lib/components/tabs';
 	import type { LayoutProps, PageProps } from './$types';
 	import Navgroup from '$lib/components/navgroup.svelte';
-	import Loader from '$lib/components/loader.svelte';
 
 	const { params, children, data }: LayoutProps = $props();
-	const roles = $derived(data.session.roles);
-	const isStaff = $derived(roles.includes('staff'));
 
-	// Fetch user workspace always; only fetch root workspace if NOT staff
 	const user = await Workspace.current();
-	const root = $derived(isStaff ? null : await Workspace.root());
-
-	// Preserve subpath when switching workspace
+	const roles = $derived(data.session.roles);
+	const staff = $derived(roles.includes('staff'));
 	const subpath = $derived(page.url.pathname.replace(`/workspace/${params.id}`, '') + page.url.search);
 </script>
 
@@ -34,10 +28,10 @@
 									<a href="/workspace/{user.id}{subpath}" {...props}>My Workspace</a>
 								{/snippet}
 							</Tabs.Trigger>
-							{#if root}
-								<Tabs.Trigger value={root.id} class="flex-1">
+							{#if staff}
+								<Tabs.Trigger value={data.workspace.id} class="flex-1">
 									{#snippet child({ props })}
-										<a href="/workspace/{root.id}{subpath}" {...props}>Staff Workspace</a>
+										<a href="/workspace/{data.workspace.id}{subpath}" {...props}>Staff Workspace</a>
 									{/snippet}
 								</Tabs.Trigger>
 							{/if}
@@ -46,7 +40,6 @@
 				</Field.Field>
 
 				<Field.Field>
-					<Loader />
 					{#key params.id}
 						<Navgroup
 							title="Entities"

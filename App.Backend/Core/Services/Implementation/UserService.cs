@@ -28,6 +28,19 @@ public class UserService(
 {
     private readonly DatabaseContext _context = ctx;
 
+    public override async Task<User?> FindByIdAsync(Guid id, CancellationToken token = default)
+    {
+        return await _dbSet.Include(u => u.Details).FirstOrDefaultAsync(u => u.Id == id, token);
+    }
+
+    public override async Task UpdateAsync(User entity, CancellationToken token = default)
+    {
+        if (entity.Details is not null && _context.Entry(entity.Details).State is EntityState.Detached)
+            _context.Add(entity.Details);
+
+        await base.UpdateAsync(entity, token);
+    }
+
     public async Task<User?> FindByLoginAsync(string login, CancellationToken token = default)
     {
         return await _dbSet.FirstOrDefaultAsync(u => u.Login == login, cancellationToken: token);

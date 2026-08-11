@@ -292,7 +292,7 @@
 										<Item.Title>{scope.label}</Item.Title>
 										<Badge variant="outline" class="font-normal text-muted-foreground">Read & write</Badge>
 									</div>
-									<Item.Description>{scope.desc}</Item.Description>
+									<Item.Description class="text-xs">{scope.desc}</Item.Description>
 								</Item.Content>
 								<Item.Actions>
 									<Switch

@@ -52,7 +52,7 @@ public abstract class BaseService<T>(DatabaseContext context) : IDomainService<T
     /// <returns></returns>
     public virtual async Task UpdateAsync(T entity, CancellationToken token = default)
     {
-        _dbSet.Update(entity);
+        context.Update(entity);
         await context.SaveChangesAsync(token);
     }
 

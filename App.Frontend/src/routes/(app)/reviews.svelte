@@ -2,9 +2,10 @@
 	import * as Reviews from '$lib/remotes/review.remote';
 	import * as Avatar from '$lib/components/avatar/';
 	import * as Item from '$lib/components/item/';
+	import * as Empty from '$lib/components/empty';
 	import Button from '$lib/components/button/button.svelte';
 	import Separator from '$lib/components/separator/separator.svelte';
-	import { ArrowRight, Bot, CalendarDaysIcon, Globe, User, Users } from '@lucide/svelte';
+	import { ArrowRight, Bot, CalendarDaysIcon, Globe, HeartHandshake, User, Users } from '@lucide/svelte';
 	import { Skeleton } from '$lib/components/skeleton';
 	import { DateFormatter } from '@internationalized/date';
 	import { page } from '$app/state';
@@ -31,6 +32,12 @@
 		Async: 1 << 2,
 		Auto: 1 << 3
 	} as const;
+
+	const reviews = await Reviews.getPage({
+		sort: 'Descending',
+		sortBy: 'CreatedAt',
+		size: 5
+	});
 </script>
 
 <div class="grid grid-rows-[auto_1fr]">
@@ -41,11 +48,6 @@
 	</span>
 	<Item.Group class="gap-2">
 		<svelte:boundary>
-			{@const reviews = await Reviews.getPage({
-				sort: 'Descending',
-				sortBy: 'CreatedAt',
-				size: 5
-			})}
 
 			{#snippet pending()}
 				<Skeleton class="h-16 w-full" />
@@ -106,16 +108,16 @@
 												</Avatar.Root>
 
 												<div class="flex-1 space-y-3">
-														<h4 class="text-sm leading-none font-bold">
-															{item.reviewer.displayName}
-															<span class="ml-1 text-xs font-normal text-muted-foreground">
-																@{item.reviewer.login}
-															</span>
-														</h4>
-														<div class="flex items-center text-xs text-muted-foreground">
-															<CalendarDaysIcon class="me-1.5 size-3.5 opacity-70" />
-															<span>Joined {reviewerFormatter.format(new Date(item.reviewer.createdAt))}</span>
-														</div>
+													<h4 class="text-sm leading-none font-bold">
+														{item.reviewer.displayName}
+														<span class="ml-1 text-xs font-normal text-muted-foreground">
+															@{item.reviewer.login}
+														</span>
+													</h4>
+													<div class="flex items-center text-xs text-muted-foreground">
+														<CalendarDaysIcon class="me-1.5 size-3.5 opacity-70" />
+														<span>Joined {reviewerFormatter.format(new Date(item.reviewer.createdAt))}</span>
+													</div>
 												</div>
 											</div>
 										</HoverCard.Content>
@@ -163,6 +165,16 @@
 						</Button>
 					</Item.Content>
 				</Item.Root>
+			{:else}
+				<Empty.Root class="border-2 border-dashed">
+					<Empty.Header>
+						<Empty.Media variant="icon">
+							<HeartHandshake />
+						</Empty.Media>
+						<Empty.Title>No Reviews</Empty.Title>
+						<Empty.Description>You're all caught up. Recent reviews will appear here.</Empty.Description>
+					</Empty.Header>
+				</Empty.Root>
 			{/each}
 		</svelte:boundary>
 	</Item.Group>

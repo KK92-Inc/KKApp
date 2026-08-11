@@ -102,7 +102,7 @@
 									{/snippet}
 								</Item.Root>
 								{#if i !== socials.length - 1}
-									<Item.Separator />
+									<Item.Separator class="my-1"/>
 								{/if}
 							{/each}
 						</Item.Group>

@@ -60,7 +60,6 @@ export const getPage = query(PageSchema, async (params) => {
 				'filter[id]': params.id,
 				'filter[name]': params.name,
 				'filter[slug]': params.slug,
-				'filter[enabled]': params.enabled,
 				'filter[creator_id]': params.creatorId,
 				'sort[by]': params.sortBy,
 				'sort[order]': params.sort,

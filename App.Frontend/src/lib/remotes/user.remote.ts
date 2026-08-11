@@ -11,6 +11,45 @@ import { avatars } from '$lib/s3';
 import { env } from '$env/dynamic/public';
 
 // ============================================================================
+// Schemas
+// ============================================================================
+
+const AvatarInput = v.union([
+	v.pipe(
+		v.instance(File),
+		v.minSize(1, 'File is empty'),
+		v.maxSize(5 * 1024 * 1024, 'File too large'),
+		v.mimeType(['image/png', 'image/jpeg', 'image/gif'], 'Invalid file type')
+	),
+	v.pipe(v.string(), v.url())
+]);
+
+const OptionalText = v.optional(
+	v.pipe(
+		v.string(),
+		v.transform((value) => value.trim()),
+		v.transform((value) => (value.length > 0 ? value : null))
+	)
+);
+
+const DetailsSchema = v.object({
+	markdown: OptionalText,
+	firstName: OptionalText,
+	lastName: OptionalText,
+	// TODO: This will require a lot more work that I don't have time for.
+	// enabledNotifications: v.optional(v.nullable(v.number())),
+	githubUrl: OptionalText,
+	linkedinUrl: OptionalText,
+	redditUrl: OptionalText,
+	websiteUrl: OptionalText
+});
+
+const UpdateSchema = v.object({
+	userId: Filters.id,
+	displayName: OptionalText,
+	avatarUrl: v.optional(v.nullable(AvatarInput)),
+	details: v.optional(v.nullable(DetailsSchema))
+});
 
 const PageSchema = v.object({
 	login: v.optional(v.string()),
@@ -18,6 +57,21 @@ const PageSchema = v.object({
 	...Filters.sort,
 	...Filters.pagination
 });
+
+const EligiblePageSchema = v.object({
+	login: v.optional(v.string()),
+	display: v.optional(v.string()),
+	userId: v.optional(Filters.id),
+	type: EntityType,
+	id: Filters.id,
+	...Filters.sort,
+	...Filters.pagination
+});
+
+// ============================================================================
+// Queries & Commands
+// ============================================================================
+
 /** Paginated response for all users */
 export const getPage = query(PageSchema, async (params) => {
 	const { locals } = getRequestEvent();
@@ -38,18 +92,7 @@ export const getPage = query(PageSchema, async (params) => {
 	return paginate(data, response);
 });
 
-// ============================================================================
-
-const EligiblePageSchema = v.object({
-	login: v.optional(v.string()),
-	display: v.optional(v.string()),
-	userId: v.optional(Filters.id),
-	type: EntityType,
-	id: Filters.id,
-	...Filters.sort,
-	...Filters.pagination
-});
-/** Paginated response for all users */
+/** Paginated response for all eligible users */
 export const getEligiblePage = query(EligiblePageSchema, async (params) => {
 	const { locals } = getRequestEvent();
 	const { response, error, data } = await locals.api.GET('/users/eligible', {
@@ -72,8 +115,6 @@ export const getEligiblePage = query(EligiblePageSchema, async (params) => {
 	return paginate(data, response);
 });
 
-// ============================================================================
-
 /** Get a single user */
 export const get = query(Filters.id, async (userId) => {
 	const { locals } = getRequestEvent();
@@ -85,35 +126,6 @@ export const get = query(Filters.id, async (userId) => {
 	return data;
 });
 
-const UrlField = v.optional(v.nullable(v.string()));
-const DetailsSchema = v.object({
-	markdown: v.optional(v.nullable(v.string())),
-	firstName: v.optional(v.nullable(v.string())),
-	lastName: v.optional(v.nullable(v.string())),
-	enabledNotifications: v.optional(v.nullable(v.number())),
-	githubUrl: UrlField,
-	linkedinUrl: UrlField,
-	redditUrl: UrlField,
-	websiteUrl: UrlField
-});
-
-const AvatarInput = v.union([
-	v.pipe(
-		v.instance(File),
-		v.minSize(1, 'File is empty'),
-		v.maxSize(5 * 1024 * 1024, 'File too large'),
-		v.mimeType(['image/png', 'image/jpeg', 'image/gif'], 'Invalid file type')
-	),
-	v.pipe(v.string(), v.url()) // unchanged — existing avatar URL passed back as-is
-]);
-
-const UpdateSchema = v.object({
-	userId: Filters.id,
-	displayName: v.optional(v.string()),
-	avatarUrl: v.optional(v.nullable(AvatarInput)),
-	details: v.optional(v.nullable(DetailsSchema))
-});
-
 /** Update a user's profile */
 export const update = command(UpdateSchema, async (params) => {
 	const { locals } = getRequestEvent();
@@ -123,12 +135,12 @@ export const update = command(UpdateSchema, async (params) => {
 
 	if (avatarUrl instanceof File) {
 		await avatars.write(userId, avatarUrl);
-		avatar = `${env.PUBLIC_S3_ENDPOINT}/avatars/${userId}`; // stable, no expiry
+		avatar = `${env.PUBLIC_S3_ENDPOINT}/avatars/${userId}?v=${Date.now()}`;
 	} else if (typeof avatarUrl === 'string') {
 		avatar = avatarUrl;
 	} else if (avatarUrl === null) {
 		avatar = null;
-		await avatars.delete(userId).catch(() => {});
+		await avatars.delete(userId).catch(() => { });
 	}
 
 	const { error, data } = await locals.api.PATCH('/users/{userId}', {

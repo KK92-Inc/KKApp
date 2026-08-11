@@ -8,7 +8,7 @@
 
 import type { Session } from '$lib/auth';
 import type { Client } from 'openapi-fetch';
-import type { paths } from '$lib/api/api';
+import type { components, paths } from '$lib/api/api';
 
 declare global {
 	namespace App {
@@ -19,8 +19,10 @@ declare global {
 			locale: string;
 		}
 		interface PageData {
-			session: Session;
 			tz: string;
+			session: Session;
+			/** The root workspace instance. */
+			workspace: components['schemas']['WorkspaceDO'];
 			locale: string;
 		}
 		interface Error {
