@@ -113,16 +113,20 @@ jobs:
         include:
           - name: kk-frontend
             context: ./App.Frontend
-            dockerfile: ./App.Frontend/Dockerfile
+            source_dockerfile: ./App.Frontend/Dockerfile
+            needs_copy: false
           - name: kk-keycloak
-            context: ./Configurations
-            dockerfile: ./Docker/Files/Dockerfile.auth
+            context: ./Configurations/Keycloak
+            source_dockerfile: ./Docker/Files/Dockerfile.auth
+            needs_copy: true
           - name: kk-git-api
             context: ./App.Repository
-            dockerfile: ./Docker/Files/Dockerfile.api
+            source_dockerfile: ./Docker/Files/Dockerfile.api
+            needs_copy: true
           - name: kk-git-ssh
             context: ./App.Repository
-            dockerfile: ../Docker/Files/Dockerfile.ssh
+            source_dockerfile: ./Docker/Files/Dockerfile.ssh
+            needs_copy: true
 
     steps:
       - name: Checkout repository
@@ -154,11 +158,15 @@ jobs:
         if: matrix.name == 'kk-frontend'
         run: cp ./App.Frontend/.env.ci ./App.Frontend/.env
 
+      - name: Stage Dockerfile into build context
+        if: matrix.needs_copy
+        run: cp ${{ matrix.source_dockerfile }} ${{ matrix.context }}/Dockerfile
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.context }}
-          file: ${{ matrix.dockerfile }}
+          file: Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
