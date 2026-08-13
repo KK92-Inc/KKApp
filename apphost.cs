@@ -103,18 +103,21 @@ var api = builder.AddDockerfile("git-api", "./App.Repository", "Dockerfile.api")
 
 var ssh = builder.AddDockerfile("git-ssh", "./App.Repository", "Dockerfile.ssh")
     .WithVolume("git-repos", "/home/git/repos")
-    .WithBindMount("./App.Repository/config/keys", "/etc/ssh/keys")
     .WithEndpoint(targetPort: 22, scheme: "tcp", name: "ssh")
     .WithReference(database)
     .WaitFor(database)
     .WaitFor(api)
     .WithLifetime(ContainerLifetime.Persistent);
 
-if (!isPublish)
+if (isPublish)
 {
-    // Pin to a consistent host port so we don't fill our authorized_hosts
-    // with garbage
-    ssh.WithEndpoint("ssh", e => e.Port = 2222);
+    // Some envs blocks bind mounts with a host path it can't resolve ahead of time.
+    ssh.WithVolume("git-ssh-keys", "/etc/ssh/keys");
+}
+else
+{
+    // Locally, a bind mount lets you inspect/reuse the generated key on disk.
+    ssh.WithBindMount("./App.Repository/config/keys", "/etc/ssh/keys");
 }
 
 // Keycloak
@@ -123,17 +126,23 @@ if (!isPublish)
 var keycloak = builder.AddKeycloakContainer("keycloak")
     .WithDataVolume()
     .WithEnvironment("KC_HTTP_ENABLED", "true")
-    .WithImport("./Configurations/student-realm.json")
-    .WithImport("./Configurations/admin-realm.json")
     .WithExternalHttpEndpoints();
 
 if (isPublish)
 {
-    // Production: keycloak sits behind a reverse proxy
+    // Some envs blocks bind mounts with a host path it can't resolve ahead of time.
     keycloak
+        .WithImageRegistry("ghcr.io")
+        .WithImage("kk92-inc/kk-keycloak", "latest")
         .WithEnvironment("KC_PROXY_HEADERS", "xforwarded")
         .WithEnvironment("KC_HOSTNAME_STRICT", "false")
         .WithEnvironment("KC_HOSTNAME", kcOrigin!);
+}
+else
+{
+    keycloak
+        .WithImport("./Configurations/student-realm.json")
+        .WithImport("./Configurations/admin-realm.json");
 }
 
 var realm = keycloak.AddRealm("student");

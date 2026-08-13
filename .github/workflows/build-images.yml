@@ -114,6 +114,9 @@ jobs:
           - name: kk-frontend
             context: ./App.Frontend
             dockerfile: ./App.Frontend/Dockerfile
+          - name: kk-keycloak
+            context: ./Configurations
+            dockerfile: ./Configurations/Dockerfile.keycloak
           - name: kk-git-api
             context: ./App.Repository
             dockerfile: ./App.Repository/Dockerfile.api

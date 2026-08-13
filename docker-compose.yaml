@@ -97,9 +97,9 @@ services:
         target: "/home/git/repos"
         source: "git-repos"
         read_only: false
-      - type: "bind"
+      - type: "volume"
         target: "/etc/ssh/keys"
-        source: "${GIT_SSH_BINDMOUNT_0}"
+        source: "git-ssh-keys"
         read_only: false
     depends_on:
       database:
@@ -109,7 +109,7 @@ services:
     networks:
       - "aspire"
   keycloak:
-    image: "quay.io/keycloak/keycloak:26.3.3"
+    image: "ghcr.io/kk92-inc/kk-keycloak:latest"
     command:
       - "start"
       - "--import-realm"
@@ -126,14 +126,6 @@ services:
       - type: "volume"
         target: "/opt/keycloak/data"
         source: "apphost-48ef807faa-keycloak-data"
-        read_only: false
-      - type: "bind"
-        target: "/opt/keycloak/data/import/student-realm.json"
-        source: "${KEYCLOAK_BINDMOUNT_0}"
-        read_only: false
-      - type: "bind"
-        target: "/opt/keycloak/data/import/admin-realm.json"
-        source: "${KEYCLOAK_BINDMOUNT_1}"
         read_only: false
     networks:
       - "aspire"
@@ -246,6 +238,8 @@ volumes:
   rustfs-volume:
     driver: "local"
   git-repos:
+    driver: "local"
+  git-ssh-keys:
     driver: "local"
   apphost-48ef807faa-keycloak-data:
     driver: "local"
