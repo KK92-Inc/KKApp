@@ -1,4 +1,4 @@
-FROM oven/bun:1 AS build
+FROM oven/bun:1-alpine AS build
 WORKDIR /app
 
 # Install dependencies with Bun and build
@@ -7,7 +7,7 @@ RUN bun install --frozen-lockfile
 COPY . .
 RUN bun run build
 
-FROM oven/bun:1 AS final
+FROM oven/bun:1-alpine AS final
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=8000
