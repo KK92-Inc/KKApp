@@ -116,13 +116,13 @@ jobs:
             dockerfile: ./App.Frontend/Dockerfile
           - name: kk-keycloak
             context: ./Configurations
-            dockerfile: ./Configurations/Dockerfile.keycloak
+            dockerfile: ./Docker/Files/Dockerfile.auth
           - name: kk-git-api
             context: ./App.Repository
-            dockerfile: ./App.Repository/Dockerfile.api
+            dockerfile: ./Docker/Files/Dockerfile.api
           - name: kk-git-ssh
             context: ./App.Repository
-            dockerfile: ./App.Repository/Dockerfile.ssh
+            dockerfile: ../Docker/Files/Dockerfile.ssh
 
     steps:
       - name: Checkout repository
