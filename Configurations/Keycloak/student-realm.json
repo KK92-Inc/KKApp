@@ -347,7 +347,6 @@
           "attributes": {}
         }
       ],
-      "w2id-workspacetest-019fa7d6368d": [],
       "account": [
         {
           "id": "c0f3255e-1f1b-4a13-b6e2-6c868f42ff02",
@@ -532,22 +531,6 @@
           "manage-account"
         ]
       },
-      "notBefore": 0,
-      "groups": []
-    },
-    {
-      "id": "699f4d8c-f63a-46ca-b819-d2f73687a552",
-      "username": "service-account-w2id-workspacetest-019fa7d6368d",
-      "emailVerified": false,
-      "enabled": true,
-      "createdTimestamp": 1785227261600,
-      "totp": false,
-      "serviceAccountClientId": "w2id-workspacetest-019fa7d6368d",
-      "disableableCredentialTypes": [],
-      "requiredActions": [],
-      "realmRoles": [
-        "default-roles-student"
-      ],
       "notBefore": 0,
       "groups": []
     }
@@ -777,17 +760,16 @@
       "clientId": "intra",
       "name": "Intra",
       "description": "",
-      "rootUrl": "http://localhost*",
-      "adminUrl": "http://localhost*",
-      "baseUrl": "http://localhost*",
+      "rootUrl": "${FE_URL}",
+      "adminUrl": "",
+      "baseUrl": "",
       "surrogateAuthRequired": false,
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
-      "secret": "**********",
+      "secret": "${KC_STUDENT_INTRA_SECRET}",
       "redirectUris": [
-        "http://localhost*",
-        "https://intra.kk92.net/*"
+        "${FE_REDIRECT_URL}"
       ],
       "webOrigins": [
         "+"
@@ -808,7 +790,7 @@
         "client.introspection.response.allow.jwt.claim.enabled": "false",
         "standard.token.exchange.enabled": "false",
         "login_theme": "keycloak.v2",
-        "post.logout.redirect.uris": "http://localhost*",
+        "post.logout.redirect.uris": "${FE_URL}*",
         "frontchannel.logout.session.required": "true",
         "oauth2.device.authorization.grant.enabled": "false",
         "use.jwks.url": "false",
@@ -1768,59 +1750,6 @@
         "offline_access",
         "microprofile-jwt"
       ]
-    },
-    {
-      "id": "019fa7d6-368d-726e-8b9d-4daedd4f1eb9",
-      "clientId": "w2id-workspacetest-019fa7d6368d",
-      "name": "WorkspaceTest",
-      "description": "1",
-      "surrogateAuthRequired": false,
-      "enabled": true,
-      "alwaysDisplayInConsole": false,
-      "clientAuthenticatorType": "client-secret",
-      "secret": "**********",
-      "redirectUris": [
-        "http://localhost:5000/callback"
-      ],
-      "webOrigins": [
-        "http://localhost:5000"
-      ],
-      "notBefore": 0,
-      "bearerOnly": false,
-      "consentRequired": true,
-      "standardFlowEnabled": true,
-      "implicitFlowEnabled": false,
-      "directAccessGrantsEnabled": true,
-      "serviceAccountsEnabled": true,
-      "publicClient": false,
-      "frontchannelLogout": false,
-      "protocol": "openid-connect",
-      "attributes": {
-        "realm_client": "false",
-        "client.secret.creation.time": "1785229284",
-        "backchannel.logout.session.required": "true",
-        "post.logout.redirect.uris": "+",
-        "pkce.code.challenge.method": "S256",
-        "backchannel.logout.revoke.offline.tokens": "false"
-      },
-      "authenticationFlowBindingOverrides": {},
-      "fullScopeAllowed": false,
-      "nodeReRegistrationTimeout": -1,
-      "defaultClientScopes": [
-        "service_account",
-        "web-origins",
-        "acr",
-        "roles",
-        "profile",
-        "basic",
-        "email"
-      ],
-      "optionalClientScopes": [
-        "evaluation",
-        "workspace",
-        "repository",
-        "user"
-      ]
     }
   ],
   "clientScopes": [
@@ -2687,21 +2616,21 @@
       "linkOnly": false,
       "hideOnLogin": false,
       "config": {
-        "tokenUrl": "http://localhost:8080/realms/admin/protocol/openid-connect/token",
+        "tokenUrl": "http://127.0.0.1:8080/realms/admin/protocol/openid-connect/token",
         "acceptsPromptNoneForwardFromClient": "false",
-        "jwksUrl": "http://localhost:8080/realms/admin/protocol/openid-connect/certs",
+        "jwksUrl": "http://127.0.0.1:8080/realms/admin/protocol/openid-connect/certs",
         "isAccessTokenJWT": "false",
         "filteredByClaim": "false",
         "backchannelSupported": "false",
         "caseSensitiveOriginalUsername": "false",
-        "issuer": "http://localhost:8080/realms/admin",
+        "issuer": "${KC_HOSTNAME}/realms/admin",
         "loginHint": "false",
         "clientAuthMethod": "client_secret_post",
         "syncMode": "LEGACY",
-        "clientSecret": "**********",
+        "clientSecret": "${KC_ADMIN_BROKER_SECRET}",
         "requiresShortStateParameter": "false",
         "allowedClockSkew": "0",
-        "userInfoUrl": "http://localhost:8080/realms/admin/protocol/openid-connect/userinfo",
+        "userInfoUrl": "http://127.0.0.1:8080/realms/admin/protocol/openid-connect/userinfo",
         "validateSignature": "true",
         "clientId": "student-realm-broker",
         "uiLocales": "false",
@@ -2709,10 +2638,10 @@
         "useJwksUrl": "true",
         "sendClientIdOnLogout": "false",
         "pkceEnabled": "false",
-        "metadataDescriptorUrl": "http://localhost:8080/realms/admin/.well-known/openid-configuration",
-        "authorizationUrl": "http://localhost:8080/realms/admin/protocol/openid-connect/auth",
+        "metadataDescriptorUrl": "${KC_HOSTNAME}/realms/admin/.well-known/openid-configuration",
+        "authorizationUrl": "${KC_HOSTNAME}/realms/admin/protocol/openid-connect/auth",
         "disableUserInfo": "false",
-        "logoutUrl": "http://ocalhost:8080/ealms/admin/protocol/openid-connect/logout",
+        "logoutUrl": "http://127.0.0.1:8080/realms/admin/protocol/openid-connect/logout",
         "sendIdTokenOnLogout": "true",
         "passMaxAge": "false",
         "disableTypeClaimCheck": "false"

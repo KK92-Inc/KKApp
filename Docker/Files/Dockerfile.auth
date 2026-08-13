@@ -1,0 +1,13 @@
+# ============================================================================
+# Copyright (c) 2026 - W2Inc, All Rights Reserved.
+# See README.md in the project root for license information.
+# ============================================================================
+# Running keycloak directly via docker container due to:
+# - Avoid Dynamic Bind mounts as some platforms don't support it (security).
+# - Future Possibility to run Keycloakify to fully customize keycloak
+# ============================================================================
+
+FROM quay.io/keycloak/keycloak:26.3.3
+
+COPY student-realm.json /opt/keycloak/data/import/student-realm.json
+COPY admin-realm.json /opt/keycloak/data/import/admin-realm.json

@@ -5,7 +5,7 @@
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": true,
-      "applicationUrl": "https://peeru.dev.localhost:17071;http://peeru.dev.localhost:15241",
+      "applicationUrl": "https://w2inc.dev.localhost:17071;http://w2inc.dev.localhost:15241",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "DOTNET_ENVIRONMENT": "Development",
@@ -18,7 +18,7 @@
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": true,
-      "applicationUrl": "http://peeru.dev.localhost:15241",
+      "applicationUrl": "http://w2inc.dev.localhost:15241",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "DOTNET_ENVIRONMENT": "Development",

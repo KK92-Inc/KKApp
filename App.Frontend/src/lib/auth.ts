@@ -361,6 +361,7 @@ function signIn(): never {
 		code_challenge_method: 'S256'
 	});
 
+	Log.dbg(`${KC_ORIGIN}/realms/${KC_REALM}/protocol/openid-connect`)
 	redirect(303, `${AUTH_URL()}?${params}`);
 }
 

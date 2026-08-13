@@ -1,3 +1,0 @@
-FROM quay.io/keycloak/keycloak:26.3.3
-COPY student-realm.json /opt/keycloak/data/import/student-realm.json
-COPY admin-realm.json /opt/keycloak/data/import/admin-realm.json

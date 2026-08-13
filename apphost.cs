@@ -1,4 +1,4 @@
-﻿// ============================================================================
+// ============================================================================
 // Copyright (c) 2026 - W2Inc, All Rights Reserved.
 // See README.md in the project root for license information.
 // ============================================================================
@@ -6,102 +6,100 @@
 #:sdk Aspire.AppHost.Sdk@13.4.6
 #:package Scalar.Aspire@0.8.45
 #:package Aspire.Npgsql@13.4.6
-#:package Aspire.Hosting.JavaScript@13.4.6
 #:package Aspire.Hosting.Docker@13.4.6
 #:package Aspire.Hosting.Valkey@13.4.6
 #:package Aspire.Hosting.PostgreSQL@13.4.6
-#:package CommunityToolkit.Aspire.Hosting.Bun@*
-#:package Keycloak.AuthServices.Aspire.Hosting@0.2.0
-// Project references
+#:package Aspire.Hosting.JavaScript@13.4.6
 #:project App.Migrations/Migrations.csproj
 #:project App.Backend/API/App.Backend.API.csproj
 
-using Aspire.Hosting.JavaScript;
 using Scalar.Aspire;
 
-// Setup
 // ============================================================================
 
 var builder = DistributedApplication.CreateBuilder(args);
 builder.AddDockerComposeEnvironment("env").WithDashboard(false);
-var isPublish = builder.ExecutionContext.IsPublishMode;
 
-// Parameters
-// ============================================================================
-
-// S3 Storage credentials
-var s3Key = builder.AddParameter("s3-access-key-id", true);
-var s3Password = builder.AddParameter("s3-secret-access-key", true);
-
-// Keycloak settings
-var kcId = builder.AddParameter("kc-id", "intra");
-var kcRealm = builder.AddParameter("kc-realm", "student");
-var kcAdminSecret = builder.AddParameter("kc-admin-secret", true);
-var kcStudentSecret = builder.AddParameter("kc-student-secret", true);
-var kcCookie = builder.AddParameter("kc-cookie", "kc.session");
-
-// Resend email token
+// The main domain this app is running under.
+// Propregates to services which resolve to their own hardcoded subdomains.
+var domain = builder.AddParameter("domain", "localhost");
+// Object Storage Key.
+var key = builder.AddParameter("s3-access-key-id", true);
+// Object Storage Password.
+var password = builder.AddParameter("s3-secret-access-key", true);
+// Secret for the main application intra client on the admin realm.
+var adminIntraSecret = builder.AddParameter("kc-admin-intra-secret", secret: true);
+// Secret for the login broker that lets staff login to the student realm.
+var adminBrokerSecret = builder.AddParameter("kc-admin-broker-secret", secret: true);
+// Secret for the main application intra client on the student realm.
+var studentIntraSecret = builder.AddParameter("kc-student-intra-secret", secret: true);
+// Secret for using resend (i.e: SendGrid) for inbound email transport.
 var resendToken = builder.AddParameter("be-resend-token", true);
 
-// Production-only: external origin overrides
-var kcOrigin = isPublish ? builder.AddParameter("kc-origin", true) : null;
-var feOrigin = isPublish ? builder.AddParameter("fe-origin", true) : null;
-
-// Storage
 // ============================================================================
 
-var postgres = builder.AddPostgres("database")
+var feUrl = builder.ExecutionContext.IsPublishMode
+    ? ReferenceExpression.Create($"https://intra.{domain}")
+    : ReferenceExpression.Create($"http://frontend-w2inc.dev.{domain}:5173");
+
+var feRedirect = builder.ExecutionContext.IsPublishMode
+    ? ReferenceExpression.Create($"https://intra.{domain}/auth/callback")
+    : ReferenceExpression.Create($"http://frontend-w2inc.dev.{domain}:5173/auth/callback");
+
+var kcExternalUrl = builder.ExecutionContext.IsPublishMode
+    ? ReferenceExpression.Create($"https://auth.{domain}")
+    : ReferenceExpression.Create($"http://keycloak-w2inc.dev.{domain}:8080");
+
+// ============================================================================
+// Database + Cache
+// - Here we configure the database along with the redis compatible cache
+// ============================================================================
+
+var postgres = builder.AddPostgres("database", port: 5432)
     .WithImageTag("17")
-    .WithDataVolume(name: "database-volume")
+    .WithDataVolume(name: "pg-volume")
     .WithLifetime(ContainerLifetime.Persistent);
 
-if (!isPublish)
-{
-    // Pin to a consistent host port for tools to avoid reconfiguration
-    postgres.WithEndpoint("tcp", e => e.Port = 5432);
-}
-
-var cache = builder.AddValkey("valkey")
+var cache = builder.AddValkey("valkey", port: 6379)
     .WithDataVolume(name: "cache-volume")
     .WithLifetime(ContainerLifetime.Persistent);
 
 var database = postgres.AddDatabase("db");
 
-var rustfs = builder.AddContainer("rustfs", "rustfs/rustfs", "latest")
+// ============================================================================
+// S3 Object Storage
+// - We self host our own S3 Object storage to avoid costs
+// ============================================================================
+
+var storage = builder.AddContainer("rustfs", "rustfs/rustfs", "latest")
     .WithArgs("/data")
     .WithVolume("rustfs-volume", "/data")
-    .WithEnvironment("RUSTFS_ACCESS_KEY", s3Key)
-    .WithEnvironment("RUSTFS_SECRET_KEY", s3Password)
     .WithEnvironment("RUSTFS_CONSOLE_ENABLE", "true")
+    .WithEnvironment("RUSTFS_ACCESS_KEY", key)
+    .WithEnvironment("RUSTFS_SECRET_KEY", password)
     .WithHttpEndpoint(targetPort: 9000, name: "s3")
     .WithHttpEndpoint(targetPort: 9001, name: "console")
     .WithHttpHealthCheck("/health", endpointName: "s3")
     .WithLifetime(ContainerLifetime.Persistent);
 
-if (!isPublish)
+// Pin to consistent host ports for `mc`/S3 clients
+if (!builder.ExecutionContext.IsPublishMode)
 {
-    // Pin to consistent host ports for `mc`/S3 clients to avoid reconfiguration
-    rustfs.WithEndpoint("s3", e => e.Port = 9000);
-    rustfs.WithEndpoint("console", e => e.Port = 9001);
+    storage.WithEndpoint("s3", e => e.Port = 9000);
+    storage.WithEndpoint("console", e => e.Port = 9001);
 }
 
-// Migration
+// ============================================================================
+// Repository
+// - For repository projects such as the Git API and SSH Shell
 // ============================================================================
 
-var migration = builder.AddProject<Projects.Migrations>("migration-job")
-    .WithReference(database)
-    .WaitFor(postgres);
-
-// Git Services
-// ============================================================================
-
-var api = builder.AddDockerfile("git-api", "./App.Repository", "Dockerfile.api")
-    // .WithHttpHealthCheck("/health", endpointName: "http")
+var api = builder.AddDockerfile("git-api", "./App.Repository", "../Docker/Files/Dockerfile.api")
     .WithVolume("git-repos", "/home/git/repos")
     .WithHttpEndpoint(targetPort: 3000, name: "http")
     .WithLifetime(ContainerLifetime.Persistent);
 
-var ssh = builder.AddDockerfile("git-ssh", "./App.Repository", "Dockerfile.ssh")
+var ssh = builder.AddDockerfile("git-ssh", "./App.Repository", "../Docker/Files/Dockerfile.ssh")
     .WithVolume("git-repos", "/home/git/repos")
     .WithEndpoint(targetPort: 22, scheme: "tcp", name: "ssh")
     .WithReference(database)
@@ -109,7 +107,7 @@ var ssh = builder.AddDockerfile("git-ssh", "./App.Repository", "Dockerfile.ssh")
     .WaitFor(api)
     .WithLifetime(ContainerLifetime.Persistent);
 
-if (isPublish)
+if (builder.ExecutionContext.IsPublishMode)
 {
     // Some envs blocks bind mounts with a host path it can't resolve ahead of time.
     ssh.WithVolume("git-ssh-keys", "/etc/ssh/keys");
@@ -120,78 +118,91 @@ else
     ssh.WithBindMount("./App.Repository/config/keys", "/etc/ssh/keys");
 }
 
-// Keycloak
+// ============================================================================
+// Migrations
+// - Handles backend migrations
 // ============================================================================
 
-var keycloak = builder.AddKeycloakContainer("keycloak")
-    .WithDataVolume()
+var migration = builder.AddProject<Projects.Migrations>("migration-job")
+    .WithReference(database)
+    .WaitFor(postgres);
+
+// ============================================================================
+// Identity Provider / Authentication (Keycloak)
+// - Keycloak starts FIRST (no WaitFor on FE/BE needed)
+// ============================================================================
+
+var auth = builder.AddDockerfile("keycloak", "./Configurations/Keycloak", "../../Docker/Files/Dockerfile.auth")
+    .WithVolume("keycloak-volume", "/opt/keycloak/data")
+    .WithHttpEndpoint(port: 8080, targetPort: 8080, name: "http")
+    .WithLifetime(ContainerLifetime.Persistent)
+    .WithEnvironment("KC_BOOTSTRAP_ADMIN_USERNAME", "admin")
+    .WithEnvironment("KC_BOOTSTRAP_ADMIN_PASSWORD", "admin")
+    .WithEnvironment("KC_ADMIN_INTRA_SECRET", adminIntraSecret)
+    .WithEnvironment("KC_ADMIN_BROKER_SECRET", adminBrokerSecret)
+    .WithEnvironment("KC_STUDENT_INTRA_SECRET", studentIntraSecret)
+    .WithEnvironment("FE_URL", feUrl)
+    .WithEnvironment("FE_REDIRECT_URL", feRedirect)
+    .WithEnvironment("KC_HOSTNAME", kcExternalUrl)
+    .WithArgs(builder.ExecutionContext.IsPublishMode
+        ? ["start", "--verbose", "--import-realm"]
+        : ["start-dev", "--verbose", "--import-realm"]
+    );
+
+if (builder.ExecutionContext.IsPublishMode)
+    auth // All of it will sit behind a reverse proxy on prod
     .WithEnvironment("KC_HTTP_ENABLED", "true")
-    .WithExternalHttpEndpoints();
+    .WithEnvironment("KC_PROXY_HEADERS", "xforwarded")
+    .WithEnvironment("KC_HOSTNAME_STRICT_HTTPS", "false");
 
-if (isPublish)
-{
-    // Some envs blocks bind mounts with a host path it can't resolve ahead of time.
-    keycloak
-        .WithImageRegistry("ghcr.io")
-        .WithImage("kk92-inc/kk-keycloak", "latest")
-        .WithEnvironment("KC_PROXY_HEADERS", "xforwarded")
-        .WithEnvironment("KC_HOSTNAME_STRICT", "false")
-        .WithEnvironment("KC_HOSTNAME", kcOrigin!);
-}
-else
-{
-    keycloak
-        .WithImport("./Configurations/student-realm.json")
-        .WithImport("./Configurations/admin-realm.json");
-}
-
-var realm = keycloak.AddRealm("student");
-
+// ============================================================================
 // Backend
+// - Backend waits for DB, Migrations, and Keycloak
 // ============================================================================
 
 var backend = builder.AddProject<Projects.App_Backend_API>("backend")
     .WithHttpHealthCheck("/health")
     .WithReference(database)
     .WithReference(cache)
-    .WithReference(keycloak)
+    .WithEnvironment("KeycloakAdmin__credentials__secret", adminIntraSecret)
+    .WithEnvironment("KeycloakAdmin__auth-server-url", auth.GetEndpoint("http"))
+    .WithEnvironment("KeycloakStudent__credentials__secret", studentIntraSecret)
+    .WithEnvironment("KeycloakStudent__auth-server-url", auth.GetEndpoint("http"))
     .WithEnvironment("Resend__Secret", resendToken)
-    .WithEnvironment("KeycloakAdmin__Credentials__Secret", kcAdminSecret)
-    .WithEnvironment("KeycloakStudent__Credentials__Secret", kcStudentSecret)
     .WithEnvironment("Git__BaseUrl", api.GetEndpoint("http"))
     .WaitFor(migration)
     .WaitFor(postgres)
     .WaitFor(cache)
-    .WaitFor(keycloak)
+    .WaitFor(auth)
     .WaitFor(api);
 
+// ============================================================================
 // Frontend
+// - Frontend waits for Backend & Keycloak
 // ============================================================================
 
-var frontendBuilder = builder.AddViteApp("frontend", "./App.Frontend")
+var frontend = builder.AddViteApp("frontend", "./App.Frontend")
     .WithHttpHealthCheck("/health")
-    .WaitFor(cache)
+    .WithEnvironment("KC_SECRET", studentIntraSecret)
+    .WithEnvironment("KC_ORIGIN", kcExternalUrl)
+    .WithEnvironment("S3_ACCESS_KEY_ID", key)
+    .WithEnvironment("S3_SECRET_ACCESS_KEY", password)
+    .WithEnvironment("PUBLIC_API_URL", backend.GetEndpoint("http"))
+    .WithEnvironment("PUBLIC_S3_ENDPOINT", storage.GetEndpoint("s3"))
+    .WithEnvironment("ORIGIN", feUrl)
+    .WithReference(backend)
     .WithReference(cache)
     .WaitFor(backend)
-    .WithReference(backend)
-    .WaitFor(keycloak)
-    .WithReference(realm)
-    .WithReference(rustfs.GetEndpoint("s3"))
-    .WithEnvironment("KC_ID", kcId)
-    .WithEnvironment("KC_REALM", kcRealm)
-    .WithEnvironment("KC_SECRET", kcStudentSecret)
-    .WithEnvironment("KC_COOKIE", kcCookie)
-    .WithEnvironment("S3_ACCESS_KEY_ID", s3Key)
-    .WithEnvironment("S3_SECRET_ACCESS_KEY", s3Password)
-    .WithEnvironment("PUBLIC_S3_ENDPOINT", rustfs.GetEndpoint("s3"))
+    .WaitFor(auth)
+    .WaitFor(cache)
     .WithBun();
 
-if (isPublish)
+if (!builder.ExecutionContext.IsPublishMode)
+    // Pin so frontend on 5173 is real, not guessed
+    frontend.WithEndpoint("http", e => e.Port = 5173);
+else
 {
-    // Production: behind a reverse proxy, set explicit origins and proxy headers
-    frontendBuilder
-        .WithEnvironment("ORIGIN", feOrigin!)
-        .WithEnvironment("KC_ORIGIN", kcOrigin!)
+    frontend // On prod will sit behind a reverse proxy
         .WithEnvironment("XFF_DEPTH", "1")
         .WithEnvironment("PROTOCOL_HEADER", "x-forwarded-proto")
         .WithEnvironment("HOST_HEADER", "x-forwarded-host")
@@ -199,11 +210,11 @@ if (isPublish)
         .WithEnvironment("ADDRESS_HEADER", "True-Client-IP");
 }
 
+// ============================================================================
 // Scalar API Reference
 // ============================================================================
 
 builder.AddScalarApiReference("scalar", o => o.WithTheme(ScalarTheme.Saturn))
-    .WithReference(keycloak)
     .WithReference(backend)
     .WithApiReference(backend, o =>
     {

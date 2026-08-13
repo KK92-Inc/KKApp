@@ -158,7 +158,7 @@ services:
       KeycloakAdmin__auth-server-url: "http://keycloak:8080"
       KeycloakStudent__credentials__secret: "${KC_STUDENT_INTRA_SECRET}"
       KeycloakStudent__auth-server-url: "http://keycloak:8080"
-      Resend__Secret: "${BE_RESEND_TOKEN}"
+      Resend__Secret: "${RESEND_SECRET}"
       Git__BaseUrl: "http://git-api:3000"
     expose:
       - "${BACKEND_PORT}"
@@ -182,6 +182,7 @@ services:
       PORT: "8000"
       KC_SECRET: "${KC_STUDENT_INTRA_SECRET}"
       KC_ORIGIN: "https://auth.${DOMAIN}"
+      KC_URL: "https://auth.${DOMAIN}"
       S3_ACCESS_KEY_ID: "${S3_ACCESS_KEY_ID}"
       S3_SECRET_ACCESS_KEY: "${S3_SECRET_ACCESS_KEY}"
       PUBLIC_API_URL: "http://backend:${BACKEND_PORT}"
