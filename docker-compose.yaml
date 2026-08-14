@@ -108,6 +108,7 @@ services:
         condition: "service_started"
     networks:
       - "aspire"
+    restart: "no"
   keycloak:
     image: "${KEYCLOAK_IMAGE}"
     command:

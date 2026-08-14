@@ -125,7 +125,11 @@ else
 
 var migration = builder.AddProject<Projects.Migrations>("migration-job")
     .WithReference(database)
-    .WaitFor(postgres);
+    .WaitFor(postgres)
+    .PublishAsDockerComposeService((resource, service) =>
+    {
+        service.Restart = "no";
+    });
 
 // ============================================================================
 // Identity Provider / Authentication (Keycloak)
