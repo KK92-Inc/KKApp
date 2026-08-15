@@ -1,6 +1,6 @@
 services:
   database:
-    image: "docker.io/library/postgres:17"
+    image: "${DATABASE_IMAGE}"
     environment:
       POSTGRES_HOST_AUTH_METHOD: "scram-sha-256"
       POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
@@ -10,7 +10,7 @@ services:
       - "5432"
     volumes:
       - type: "volume"
-        target: "/var/lib/postgresql/data"
+        target: "/var/lib/postgresql"
         source: "pg-volume"
         read_only: false
     networks:

@@ -56,7 +56,7 @@ var kcExternalUrl = builder.ExecutionContext.IsPublishMode
 // ============================================================================
 
 var postgres = builder.AddPostgres("database", port: 5432)
-    .WithImageTag("17")
+    .WithDockerfile("./Configurations/Postgres/", "../../Docker/Files/Dockerfile.pg")
     .WithDataVolume(name: "pg-volume")
     .WithLifetime(ContainerLifetime.Persistent);
 
