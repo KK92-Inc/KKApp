@@ -142,6 +142,7 @@ var auth = builder.AddDockerfile("keycloak", "./Configurations/Keycloak", "../..
     .WithHttpEndpoint(port: 8080, targetPort: 8080, name: "http")
     .WithLifetime(ContainerLifetime.Persistent)
     .WithReference(postgres)
+    .WaitFor(postgres)
     .WithEnvironment("KC_BOOTSTRAP_ADMIN_USERNAME", "admin")
     .WithEnvironment("KC_BOOTSTRAP_ADMIN_PASSWORD", "admin")
     .WithEnvironment("KC_ADMIN_INTRA_SECRET", adminIntraSecret)

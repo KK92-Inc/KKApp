@@ -147,6 +147,9 @@ services:
         target: "/opt/keycloak/data"
         source: "keycloak-volume"
         read_only: false
+    depends_on:
+      database:
+        condition: "service_started"
     networks:
       - "aspire"
   backend:
