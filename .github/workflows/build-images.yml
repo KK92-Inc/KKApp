@@ -15,6 +15,8 @@ on:
       - 'App.Frontend/**'
       - 'App.Migrations/**'
       - 'App.Repository/**'
+      - 'Configurations/**'
+      - 'Docker/**'
       - '.github/workflows/build-images.yml'
   pull_request:
     branches: [main, master]
@@ -126,6 +128,10 @@ jobs:
           - name: kk-git-ssh
             context: ./App.Repository
             source_dockerfile: ./Docker/Files/Dockerfile.ssh
+            needs_copy: true
+          - name: kk-postgres
+            context: ./Configurations/Postgres
+            source_dockerfile: ./Docker/Files/Dockerfile.pg
             needs_copy: true
 
     steps:
