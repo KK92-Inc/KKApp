@@ -64,7 +64,8 @@ var cache = builder.AddValkey("valkey", port: 6379)
     .WithDataVolume(name: "cache-volume")
     .WithLifetime(ContainerLifetime.Persistent);
 
-var database = postgres.AddDatabase("db");
+var backendDb = postgres.AddDatabase("db");
+var keycloakDb = postgres.AddDatabase("keycloak-db");
 
 // ============================================================================
 // S3 Object Storage
@@ -101,9 +102,9 @@ var api = builder.AddDockerfile("git-api", "./App.Repository", "../Docker/Files/
 
 var ssh = builder.AddDockerfile("git-ssh", "./App.Repository", "../Docker/Files/Dockerfile.ssh")
     .WithVolume("git-repos", "/home/git/repos")
-    .WithEndpoint(targetPort: 22, scheme: "tcp", name: "ssh")
-    .WithReference(database)
-    .WaitFor(database)
+    .WithEndpoint(port: 22, targetPort: 22, scheme: "tcp", name: "ssh")
+    .WithReference(backendDb)
+    .WaitFor(backendDb)
     .WaitFor(api)
     .WithLifetime(ContainerLifetime.Persistent);
 
@@ -124,7 +125,7 @@ else
 // ============================================================================
 
 var migration = builder.AddProject<Projects.Migrations>("migration-job")
-    .WithReference(database)
+    .WithReference(backendDb)
     .WaitFor(postgres)
     .PublishAsDockerComposeService((resource, service) =>
     {
@@ -140,6 +141,7 @@ var auth = builder.AddDockerfile("keycloak", "./Configurations/Keycloak", "../..
     .WithVolume("keycloak-volume", "/opt/keycloak/data")
     .WithHttpEndpoint(port: 8080, targetPort: 8080, name: "http")
     .WithLifetime(ContainerLifetime.Persistent)
+    .WithReference(postgres)
     .WithEnvironment("KC_BOOTSTRAP_ADMIN_USERNAME", "admin")
     .WithEnvironment("KC_BOOTSTRAP_ADMIN_PASSWORD", "admin")
     .WithEnvironment("KC_ADMIN_INTRA_SECRET", adminIntraSecret)
@@ -148,6 +150,10 @@ var auth = builder.AddDockerfile("keycloak", "./Configurations/Keycloak", "../..
     .WithEnvironment("FE_URL", feUrl)
     .WithEnvironment("FE_REDIRECT_URL", feRedirect)
     .WithEnvironment("KC_HOSTNAME", kcExternalUrl)
+    .WithEnvironment("KC_DB", "postgres")
+    .WithEnvironment("KC_DB_URL", "jdbc:postgresql://database:5432/keycloak-db")
+    .WithEnvironment("KC_DB_USERNAME", "postgres")
+    .WithEnvironment("KC_DB_PASSWORD", postgres.Resource.PasswordParameter!)
     .WithArgs(builder.ExecutionContext.IsPublishMode
         ? ["start", "--verbose", "--import-realm"]
         : ["start-dev", "--verbose", "--import-realm"]
@@ -155,9 +161,12 @@ var auth = builder.AddDockerfile("keycloak", "./Configurations/Keycloak", "../..
 
 if (builder.ExecutionContext.IsPublishMode)
     auth // All of it will sit behind a reverse proxy on prod
-    .WithEnvironment("KC_HTTP_ENABLED", "true")
-    .WithEnvironment("KC_PROXY_HEADERS", "xforwarded")
-    .WithEnvironment("KC_HOSTNAME_STRICT_HTTPS", "false");
+        .WithEnvironment("KC_HTTP_ENABLED", "true")
+        .WithEnvironment("KC_PROXY_HEADERS", "xforwarded")
+        .WithEnvironment("KC_HOSTNAME_STRICT", "false")
+        .WithEnvironment("KC_HOSTNAME_STRICT_HTTPS", "false")
+        // Allows internal docker-to-docker requests
+        .WithEnvironment("KC_HOSTNAME_BACKCHANNEL_DYNAMIC", "true");
 
 // ============================================================================
 // Backend
@@ -166,7 +175,7 @@ if (builder.ExecutionContext.IsPublishMode)
 
 var backend = builder.AddProject<Projects.App_Backend_API>("backend")
     .WithHttpHealthCheck("/health")
-    .WithReference(database)
+    .WithReference(backendDb)
     .WithReference(cache)
     .WithEnvironment("KeycloakAdmin__credentials__secret", adminIntraSecret)
     .WithEnvironment("KeycloakAdmin__auth-server-url", auth.GetEndpoint("http"))
