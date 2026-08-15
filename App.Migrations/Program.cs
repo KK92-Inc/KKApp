@@ -17,7 +17,11 @@ builder.Services.AddHostedService<Initializer>();
 builder.Services.AddDbContextPool<DatabaseContext>(options =>
 {
     var connection = builder.Configuration.GetConnectionString("db");
-    options.UseNpgsql(connection, o => o.MigrationsAssembly("Migrations"));
+    options.UseNpgsql(connection, o => 
+        o
+        .MigrationsAssembly("Migrations")
+        .EnableRetryOnFailure(maxRetryCount: 10, maxRetryDelay: TimeSpan.FromSeconds(5), errorCodesToAdd: null)
+    );
     if (builder.Environment.IsDevelopment())
         options.EnableSensitiveDataLogging();
 });

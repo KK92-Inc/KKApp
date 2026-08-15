@@ -9,3 +9,4 @@
 
 FROM docker.io/library/postgres:17
 COPY ./init /docker-entrypoint-initdb.d
+HEALTHCHECK --interval=3s --timeout=3s --retries=20 --start-period=10s CMD pg_isready -U postgres || exit 1
