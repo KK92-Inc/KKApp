@@ -20,9 +20,12 @@
 	import { Input } from '$lib/components/input';
 	import { Label } from '$lib/components/label';
 	import Badge from '$lib/components/badge/badge.svelte';
+	import { goto } from '$app/navigation';
 
 	const dialog = Dialog.useDialog();
 	const context = Page.getContext();
+
+	const base = `/users/${context.userId()}/projects/${context.projectId()}`;
 	const session = $derived(
 		await UserProject.getByUserAndProject({
 			userId: context.userId(),
@@ -57,7 +60,8 @@
 {/snippet}
 
 <div class="flex items-center gap-2">
-	<Tabs.Root bind:value={context.view} class="w-max">
+	<!-- NOTE(W2): Reset to the root url to avoid bug by mixing paths between sub and ass -->
+	<Tabs.Root bind:value={context.view} class="w-max" onValueChange={() => goto(base)}>
 		<Tabs.List>
 			<Tabs.Trigger disabled={!session} value="submission">Submission</Tabs.Trigger>
 			<Tabs.Trigger value="assignment">Assignment</Tabs.Trigger>
