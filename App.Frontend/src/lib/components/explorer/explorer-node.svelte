@@ -15,11 +15,11 @@
 
 <Table.Row class="border-t pl-4 text-left">
 	<Table.Cell class="font-medium">
-		<Button variant="link" class="text-primary-foreground" {href}>
+		<Button variant="link" class="text-foreground" {href}>
 			{#if node.type === '-'}
-				<File fill="" />
+				<File />
 			{:else}
-				<Folder fill="currentColor" />
+				<Folder />
 			{/if}
 			{node.name}
 		</Button>

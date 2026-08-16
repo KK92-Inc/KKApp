@@ -35,8 +35,8 @@
 			{#if dotdotHref}
 				<Table.Row class="border-t pl-4 text-left">
 					<Table.Cell class="font-medium">
-						<Button variant="link" class="text-primary-foreground" href={dotdotHref}>
-							<Folder fill="currentColor" />
+						<Button variant="link" class="text-foreground" href={dotdotHref}>
+							<Folder />
 							<span class="tracking-widest">..</span>
 						</Button>
 					</Table.Cell>

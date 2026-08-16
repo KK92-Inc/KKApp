@@ -34,14 +34,14 @@
 		</div>
 
 		<!-- Reserved for future actions (rename, download, ...) -->
-		<div class="flex shrink-0 items-center gap-1">
+		<!-- <div class="flex shrink-0 items-center gap-1">
 			<Button variant="ghost" size="icon" disabled aria-label="Rename (coming soon)">
 				<Pencil class="size-4" />
 			</Button>
 			<Button variant="ghost" size="icon" disabled aria-label="Download (coming soon)">
 				<Download class="size-4" />
 			</Button>
-		</div>
+		</div> -->
 	</div>
 
 	<div class="max-h-128 overflow-auto">
