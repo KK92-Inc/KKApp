@@ -4,6 +4,9 @@
 // ============================================================================
 
 import Root from "./explorer.svelte";
+import NodeTree from "./explorer-node-tree.svelte";
+import Node from "./explorer-node.svelte";
+import FileView from "./explorer-file.svelte";
 
 // ============================================================================
 
@@ -35,5 +38,8 @@ export function parseGitTree(input: string, path?: string): FileNode[] {
 export {
 	Root,
 	//
-	Root as Browser
+	Root as Browser,
+	NodeTree as ExplorerNodeTree,
+	Node as ExplorerNode,
+	FileView as ExplorerFile
 };

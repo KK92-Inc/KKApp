@@ -26,6 +26,7 @@ using App.Backend.Models.Requests.Users;
 using Keycloak.AuthServices.Sdk.Kiota.Admin;
 using App.Backend.API.Notifications.Variants;
 using Keycloak.AuthServices.Sdk.Kiota.Admin.Models;
+using App.Backend.Models.Requests.SshKeys;
 
 // ============================================================================
 
@@ -47,9 +48,9 @@ public class SystemController(ISystemService service, IMessageBus bus) : Control
     [HttpPost]
     [AllowAnonymous]
     [ExcludeFromDescription]
-    public async Task<IActionResult> Bootstrap([FromBody] PostUserRequestDTO body, CancellationToken token)
+    public async Task<IActionResult> Bootstrap([FromBody] SystemInitDTO body, CancellationToken token)
     {
-        var account = await service.InitializeAsync(body.Login, body.Email, token);
+        var account = await service.InitializeAsync(body.Login, body.Password, body.Email, token);
         await bus.PublishAsync(new WelcomeUserNotification(account!));
         return NoContent();
     }

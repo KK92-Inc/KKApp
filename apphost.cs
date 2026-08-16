@@ -24,21 +24,24 @@ builder.AddDockerComposeEnvironment("env").WithDashboard(false);
 // Propregates to services which resolve to their own hardcoded subdomains.
 var domain = builder.AddParameter("domain", "localhost");
 // Object Storage Key.
-var key = builder.AddParameter("s3-access-key-id", true);
+var s3key = builder.AddParameter("s3-access-key-id", true);
 // Object Storage Password.
-var password = builder.AddParameter("s3-secret-access-key", true);
+var s3pwd = builder.AddParameter("s3-secret-access-key", true);
 // Secret for the main application intra client on the admin realm.
-var adminIntraSecret = builder.AddParameter("kc-admin-intra-secret", secret: true);
+var adminIntraSecret = builder.AddParameter("kc-admin-intra-secret", true);
 // Secret for the login broker that lets staff login to the student realm.
-var adminBrokerSecret = builder.AddParameter("kc-admin-broker-secret", secret: true);
+var adminBrokerSecret = builder.AddParameter("kc-admin-broker-secret", true);
 // Secret for the main application intra client on the student realm.
-var studentIntraSecret = builder.AddParameter("kc-student-intra-secret", secret: true);
+var studentIntraSecret = builder.AddParameter("kc-student-intra-secret", true);
 // Secret for using resend (i.e: SendGrid) for inbound email transport.
 var resendToken = builder.AddParameter("be-resend-token", true);
-
+// Object Storage Key.
+var kcLogin = builder.AddParameter("kc-master-login", "admin", true);
+// Object Storage Password.
+var kcPassword = builder.AddParameter("kc-master-password", "admin", true);
 // ============================================================================
 
-var feUrl = builder.ExecutionContext.IsPublishMode
+var feHostname = builder.ExecutionContext.IsPublishMode
     ? ReferenceExpression.Create($"https://intra.{domain}")
     : ReferenceExpression.Create($"http://frontend-w2inc.dev.{domain}:5173");
 
@@ -46,7 +49,7 @@ var feRedirect = builder.ExecutionContext.IsPublishMode
     ? ReferenceExpression.Create($"https://intra.{domain}/auth/callback")
     : ReferenceExpression.Create($"http://frontend-w2inc.dev.{domain}:5173/auth/callback");
 
-var kcExternalUrl = builder.ExecutionContext.IsPublishMode
+var kcHostname = builder.ExecutionContext.IsPublishMode
     ? ReferenceExpression.Create($"https://auth.{domain}")
     : ReferenceExpression.Create($"http://keycloak-w2inc.dev.{domain}:8080");
 
@@ -76,8 +79,8 @@ var storage = builder.AddContainer("rustfs", "rustfs/rustfs", "latest")
     .WithArgs("/data")
     .WithVolume("rustfs-volume", "/data")
     .WithEnvironment("RUSTFS_CONSOLE_ENABLE", "true")
-    .WithEnvironment("RUSTFS_ACCESS_KEY", key)
-    .WithEnvironment("RUSTFS_SECRET_KEY", password)
+    .WithEnvironment("RUSTFS_ACCESS_KEY", s3key)
+    .WithEnvironment("RUSTFS_SECRET_KEY", s3pwd)
     .WithHttpEndpoint(targetPort: 9000, name: "s3")
     .WithHttpEndpoint(targetPort: 9001, name: "console")
     .WithHttpHealthCheck("/health", endpointName: "s3")
@@ -148,9 +151,9 @@ var auth = builder.AddDockerfile("keycloak", "./Configurations/Keycloak", "../..
     .WithEnvironment("KC_ADMIN_INTRA_SECRET", adminIntraSecret)
     .WithEnvironment("KC_ADMIN_BROKER_SECRET", adminBrokerSecret)
     .WithEnvironment("KC_STUDENT_INTRA_SECRET", studentIntraSecret)
-    .WithEnvironment("FE_URL", feUrl)
+    .WithEnvironment("FE_URL", feHostname)
     .WithEnvironment("FE_REDIRECT_URL", feRedirect)
-    .WithEnvironment("KC_HOSTNAME", kcExternalUrl)
+    .WithEnvironment("KC_HOSTNAME", kcHostname)
     .WithEnvironment("KC_DB", "postgres")
     .WithEnvironment("KC_DB_URL", "jdbc:postgresql://database:5432/keycloak-db")
     .WithEnvironment("KC_DB_USERNAME", "postgres")
@@ -198,12 +201,12 @@ var backend = builder.AddProject<Projects.App_Backend_API>("backend")
 var frontend = builder.AddViteApp("frontend", "./App.Frontend")
     .WithHttpHealthCheck("/health")
     .WithEnvironment("KC_SECRET", studentIntraSecret)
-    .WithEnvironment("KC_ORIGIN", kcExternalUrl)
-    .WithEnvironment("S3_ACCESS_KEY_ID", key)
-    .WithEnvironment("S3_SECRET_ACCESS_KEY", password)
+    .WithEnvironment("KC_ORIGIN", kcHostname)
+    .WithEnvironment("S3_ACCESS_KEY_ID", s3key)
+    .WithEnvironment("S3_SECRET_ACCESS_KEY", s3pwd)
     .WithEnvironment("PUBLIC_API_URL", backend.GetEndpoint("http"))
     .WithEnvironment("PUBLIC_S3_ENDPOINT", storage.GetEndpoint("s3"))
-    .WithEnvironment("ORIGIN", feUrl)
+    .WithEnvironment("ORIGIN", feHostname)
     .WithReference(backend)
     .WithReference(cache)
     .WaitFor(backend)

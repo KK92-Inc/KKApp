@@ -26,5 +26,5 @@ public interface ISystemService
     /// Bootstrap the entire application process to create the necessary stuff.
     /// </summary>
     /// <param name="token">The Cancellation Token to abort the request.</param>
-     Task<User> InitializeAsync(string Login, string Email, CancellationToken token = default);
+    Task<User> InitializeAsync(string Login, string Password, string Email, CancellationToken token = default);
 }

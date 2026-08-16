@@ -11,7 +11,14 @@ export const bootstrapSchema = v.object({
 	login: v.pipe(
 		v.string(),
 		v.trim(),
-		v.minLength(4, 'Must be at least 4 characters'),
+		v.minLength(1, 'Must be at least 1 characters'),
+		v.maxLength(255, 'Must be 255 characters or fewer'),
+		v.regex(/^[a-zA-Z0-9_-]+$/, 'Only letters, numbers, underscores, and dashes allowed')
+	),
+	_password: v.pipe(
+		v.string(),
+		v.trim(),
+		v.minLength(6, 'Must be at least 6 characters'),
 		v.maxLength(255, 'Must be 255 characters or fewer'),
 		v.regex(/^[a-zA-Z0-9_-]+$/, 'Only letters, numbers, underscores, and dashes allowed')
 	),
@@ -19,7 +26,7 @@ export const bootstrapSchema = v.object({
 		v.string(),
 		v.trim(),
 		v.email('Enter a valid email address'),
-		v.maxLength(100, 'Must be 100 characters or fewer')
+		v.maxLength(255, 'Must be 255 characters or fewer')
 	)
 });
 

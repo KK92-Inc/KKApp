@@ -26,9 +26,6 @@
 	<AlertDialog.Content class="min-w-xl">
 		<AlertDialog.Header>
 			<AlertDialog.Title>KKApp — Bootstrap</AlertDialog.Title>
-			<AlertDialog.Description>
-				<p>Welcome to the bootstrap process.</p>
-			</AlertDialog.Description>
 		</AlertDialog.Header>
 
 		<form {...bootstrap.preflight(bootstrapSchema)} oninput={() => bootstrap.validate()}>
@@ -40,6 +37,8 @@
 
 				<Stepper.Content>
 					<Stepper.Panel value={1}>
+						<p>Welcome to the bootstrapping process of the KK92 App.</p>
+						<Separator class="my-2"/>
 						<Alert.Root variant="warning">
 							<CircleAlert />
 							<Alert.Title>Before you continue</Alert.Title>
@@ -48,6 +47,7 @@
 								this instance can create the first admin account.
 							</Alert.Description>
 						</Alert.Root>
+
 					</Stepper.Panel>
 
 					<Stepper.Panel value={2}>
@@ -59,31 +59,42 @@
 									first login.
 								</Field.Description>
 								<Field.Group>
+									<Field.Field class="col-span-2">
+										<Field.Label for="email">Email*</Field.Label>
+										<Input
+											id="email"
+											placeholder="lde-la-h@kkapp.dev"
+											{...bootstrap.fields.email.as('email')}
+										/>
+										<Field.Description>Enter your work email.</Field.Description>
+										<Field.Error errors={bootstrap.fields.email.issues()} />
+									</Field.Field>
+
 									<Field.Field>
 										<Field.Label for="login">Login*</Field.Label>
 										<Input id="login" placeholder="lde-la-h" {...bootstrap.fields.login.as('text')} />
 										<Field.Description>Enter your account login handle.</Field.Description>
 										<Field.Error errors={bootstrap.fields.login.issues()} />
 									</Field.Field>
-									<!-- <div class="grid grid-cols-2 gap-4"> -->
-										<Field.Field class="col-span-2">
-											<Field.Label for="email">Email*</Field.Label>
-											<Input
-												id="email"
-												placeholder="lde-la-h@kkapp.dev"
-												{...bootstrap.fields.email.as('email')}
-											/>
-											<Field.Description>Enter your work email.</Field.Description>
-											<Field.Error errors={bootstrap.fields.email.issues()} />
-										</Field.Field>
-									<!-- </div> -->
+
+									<Field.Field>
+										<Field.Label for="password">Password*</Field.Label>
+										<Input id="password" {...bootstrap.fields._password.as('password')} />
+										<Field.Description>Enter your login password.</Field.Description>
+										<Field.Error errors={bootstrap.fields._password.issues()} />
+									</Field.Field>
 								</Field.Group>
 							</Field.Set>
 						</Field.Group>
 					</Stepper.Panel>
 				</Stepper.Content>
 
-				<Stepper.Controls {disabled} finishLabel="Create admin & finish" loading={!!bootstrap.pending} onfinish={bootstrap.submit}/>
+				<Stepper.Controls
+					{disabled}
+					finishLabel="Create admin & finish"
+					loading={!!bootstrap.pending}
+					onfinish={bootstrap.submit}
+				/>
 			</Stepper.Root>
 		</form>
 	</AlertDialog.Content>

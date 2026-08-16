@@ -37,7 +37,7 @@ public class SystemService(
     }
 
     /// <inheritdoc />
-    public async Task<User> InitializeAsync(string login, string email, CancellationToken token = default)
+    public async Task<User> InitializeAsync(string login, string password, string email, CancellationToken token = default)
     {
         if (await context.System.AsNoTracking().AnyAsync(token))
             throw new ServiceException(403, "System is already initialized.");
@@ -58,11 +58,10 @@ public class SystemService(
                 new CredentialRepresentation
                 {
                     Type = "password",
-                    Value = "admin",
-                    Temporary = true,
+                    Value = password,
+                    Temporary = false,
                 }
             ],
-            RequiredActions = ["UPDATE_PASSWORD"],
         }, null, token);
 
         var lookup = await keycloak.Admin.Realms[realm].Users.GetAsync(cfg =>

@@ -9,7 +9,7 @@ import { BACKEND_URI } from '$lib/config';
 import { bootstrapSchema } from './schema';
 import type { components } from '$lib/api/api';
 
-type PostUserRequestDTO = components['schemas']['PostUserRequestDTO'];
+type SystemInitDTO = components['schemas']['SystemInitDTO'];
 
 // ============================================================================
 
@@ -21,7 +21,8 @@ export const bootstrap = form(bootstrapSchema, async (data) => {
 		body: JSON.stringify({
 			login: data.login,
 			email: data.email,
-		} satisfies PostUserRequestDTO)
+			password: data._password
+		} satisfies SystemInitDTO)
 	});
 
 	if (!response.ok) {
