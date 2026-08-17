@@ -75,7 +75,7 @@ var keycloakDb = postgres.AddDatabase("keycloak-db");
 // - We self host our own S3 Object storage to avoid costs
 // ============================================================================
 
-var storage = builder.AddContainer("rustfs", "rustfs/rustfs", "latest")
+var storage = builder.AddContainer("rustfs", "rustfs/rustfs", "rc")
     .WithArgs("/data")
     .WithVolume("rustfs-volume", "/data")
     .WithEnvironment("RUSTFS_CONSOLE_ENABLE", "true")
@@ -105,7 +105,6 @@ var api = builder.AddDockerfile("git-api", "./App.Repository", "../Docker/Files/
 
 var ssh = builder.AddDockerfile("git-ssh", "./App.Repository", "../Docker/Files/Dockerfile.ssh")
     .WithVolume("git-repos", "/home/git/repos")
-    .WithEndpoint(port: 22, targetPort: 22, scheme: "tcp", name: "ssh")
     .WithReference(backendDb)
     .WaitFor(backendDb)
     .WaitFor(api)
@@ -113,13 +112,15 @@ var ssh = builder.AddDockerfile("git-ssh", "./App.Repository", "../Docker/Files/
 
 if (builder.ExecutionContext.IsPublishMode)
 {
-    // Some envs blocks bind mounts with a host path it can't resolve ahead of time.
-    ssh.WithVolume("git-ssh-keys", "/etc/ssh/keys");
+    ssh // Avoid Dynamic bind mounts for security reasons. Attach to Port 22.
+        .WithEndpoint(port: 22, targetPort: 22, scheme: "tcp", name: "ssh", isExternal: true)
+        .WithVolume("git-ssh-keys", "/etc/ssh/keys");
 }
 else
 {
-    // Locally, a bind mount lets you inspect/reuse the generated key on disk.
-    ssh.WithBindMount("./App.Repository/config/keys", "/etc/ssh/keys");
+    ssh // Locally, dynamic bind mount lets you inspect/reuse the generated key on disk.
+        .WithEndpoint(port: 2222, targetPort: 22, scheme: "tcp", name: "ssh", isExternal: true)
+        .WithBindMount("./App.Repository/config/keys", "/etc/ssh/keys");
 }
 
 // ============================================================================
@@ -132,6 +133,7 @@ var migration = builder.AddProject<Projects.Migrations>("migration-job")
     .WaitFor(postgres)
     .PublishAsDockerComposeService((resource, service) =>
     {
+        // Avoid crash-looping, this service only runs once per deploy
         service.Restart = "no";
     });
 
