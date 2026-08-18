@@ -12,12 +12,12 @@
 
 		<div class="space-y-6 p-6">
 			<div class="space-y-2">
-				{#if page.error?.message}
+				<!-- {#if page.error?.message}
 					<p class="flex animate-pulse items-center gap-1 text-destructive">
 						<TriangleAlert size={16} />
 						{page.error.message}
 					</p>
-				{/if}
+				{/if} -->
 				<!-- <p class="text-muted-foreground">
 					{#if page.status >= 500}
 						<span class="font-medium">Silly cats!</span> Rest assured this issue has been logged & reported.

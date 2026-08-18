@@ -3,31 +3,10 @@
 // See README in the root project for more information.
 // ============================================================================
 
-import * as v from 'valibot';
 import { command, getRequestEvent } from '$app/server';
-import type { components } from '$lib/api/api';
 import { Filters, Problem } from '$lib/api';
 import { Log } from '$lib/log';
-
-// ============================================================================
-
-const CreateSchema = v.object({
-	name: v.string(),
-	workspace: Filters.id,
-	description: v.string(),
-	active: v.optional(v.boolean()),
-	public: v.optional(v.boolean()),
-	projects: v.array(v.string())
-}) satisfies v.GenericSchema<components['schemas']['PostGoalRequestDTO']>
-
-const UpdateSchema = v.object({
-	id: Filters.id,
-	name: v.string(),
-	description: v.string(),
-	active: v.optional(v.boolean()),
-	public: v.optional(v.boolean()),
-	projects: v.array(v.string())
-}) satisfies v.GenericSchema<components['schemas']['PatchGoalRequestDTO']>
+import { CreateSchema, UpdateSchema } from './context.svelte';
 
 // ============================================================================
 
@@ -36,7 +15,7 @@ export const create = command(CreateSchema, async (body) => {
 	const { locals } = getRequestEvent();
 	const { workspace, ...rest } = body;
 	Log.dbg(JSON.stringify({ ...rest }));
-	const { error, data } = await locals.api.POST("/workspace/{workspace}/goal", {
+	const { error, data } = await locals.api.POST("/workspace/{workspace}/project", {
 		params: { path: { workspace } },
 		body: { ...rest }
 	});
@@ -52,7 +31,7 @@ export const create = command(CreateSchema, async (body) => {
 export const update = command(UpdateSchema, async (body) => {
 	const { locals } = getRequestEvent();
 	const { id, ...rest } = body;
-	const { error, data } = await locals.api.PATCH("/goals/{id}", {
+	const { error, data } = await locals.api.PATCH("/projects/{id}", {
 		params: { path: { id } },
 		body: { ...rest }
 	});
@@ -67,7 +46,7 @@ export const update = command(UpdateSchema, async (body) => {
 /** Deprecate the goal */
 export const deprecate = command(Filters.id, async (id) => {
 	const { locals } = getRequestEvent();
-	const { error } = await locals.api.DELETE("/goals/{id}", {
+	const { error } = await locals.api.DELETE("/projects/{id}", {
 		params: { path: { id } },
 	});
 

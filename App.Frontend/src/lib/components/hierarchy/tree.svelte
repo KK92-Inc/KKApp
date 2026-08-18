@@ -1,5 +1,6 @@
 <script lang="ts" generics="T">
 	import type { Snippet } from 'svelte';
+	import { cn } from '$lib/utils';
 	import { createTreeState, type TreeAdapter } from './state.svelte';
 	import Tree from './tree.svelte';
 
@@ -114,18 +115,14 @@
 			ondragover={handleDragOver}
 			ondragleave={handleDragLeave}
 			ondrop={handleDrop}
-			class="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 transition-all duration-150
-				{canDrag(item, depth) ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}
-				{isDragging ? 'border-dashed border-primary/50 bg-primary/5 opacity-40' : ''}
-				{isSelfOrSubtreeOfDragged && !isDragging
-				? 'pointer-events-none cursor-not-allowed border-border/40 bg-muted/30 opacity-35 grayscale'
-				: ''}
-				{!isDragging && !isSelfOrSubtreeOfDragged
-				? 'bg-card text-card-foreground shadow-xs hover:border-primary'
-				: ''}
-				{isOver && !isInvalidTarget
-				? 'scale-[1.02] border-primary bg-primary/10 ring-2 ring-primary/20'
-				: 'border-border'}"
+			class={cn(
+				'inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 transition-all duration-150',
+				canDrag(item, depth) ? 'cursor-grab active:cursor-grabbing' : 'cursor-default',
+				isDragging && 'border-dashed border-primary/50 bg-primary/5 opacity-40',
+				isSelfOrSubtreeOfDragged && !isDragging && 'pointer-events-none cursor-not-allowed border-border/40 bg-muted/30 opacity-35 grayscale',
+				!isDragging && !isSelfOrSubtreeOfDragged && 'bg-card text-card-foreground shadow-xs hover:border-primary',
+				isOver && !isInvalidTarget ? 'scale-[1.02] border-primary bg-primary/10 ring-2 ring-primary/20' : 'border-border'
+			)}
 		>
 			{@render node({ item, depth, isDragging, isOver, isInvalidTarget })}
 		</div>

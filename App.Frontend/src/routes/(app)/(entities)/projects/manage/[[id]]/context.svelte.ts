@@ -6,92 +6,111 @@
 import { createContext } from "svelte";
 import * as Workspace from "$lib/remotes/workspace.remote";
 import * as Project from "$lib/remotes/projects.remote";
+import * as Action from "./action.remote"
+import * as v from 'valibot';
 import type { components } from "$lib/api/api";
+import { toast } from "svelte-sonner";
+import { Problem, type ValidationErrors } from "$lib/api";
 
 // ============================================================================
 
-/** The fields shared by both project creation and project updates. */
-type ProjectFields = Omit<components['schemas']['PostProjectRequestDTO'], 'files'>;
+export const FileSchema = v.object({
+	path: v.string(),
+	content: v.string(),
+	encoding: v.picklist(["UTF8", "Base64"]),
+});
 
-/** A single seed file — only meaningful while creating a project. */
-type ProjectFile = components['schemas']['ProjectInitialFilesRequestDTO'];
+export const CreateSchema = v.object({
+	name: v.string(),
+	workspace: v.string(),
+	description: v.string(),
+	active: v.boolean(),
+	public: v.boolean(),
+	maxMembers: v.union([v.string(), v.number()]),
+	files: v.array(FileSchema),
+}) satisfies v.GenericSchema<components['schemas']['PostProjectRequestDTO']>;
+
+export const UpdateSchema = v.object({
+	id: v.string(),
+	name: v.optional(v.nullable(v.string())),
+	description: v.optional(v.nullable(v.string())),
+	active: v.optional(v.nullable(v.boolean())),
+	public: v.optional(v.nullable(v.boolean())),
+	maxMembers: v.optional(v.nullable(v.union([v.string(), v.number()]))),
+}) satisfies v.GenericSchema<components['schemas']['PatchProjectRequestDTO']>;
 
 // ============================================================================
 
 export class Context {
-	/** The project id we're editing, or undefined when creating a new one. */
-	public readonly id: string | undefined;
+	constructor(public readonly projectId: () => string | undefined) { }
 
-	constructor(id?: string) {
-		this.id = id;
-	}
-
-	/** Derived once from `id` — this is the single source of truth for "which mode are we in". */
-	get mode(): 'create' | 'edit' {
-		return this.id ? 'edit' : 'create';
-	}
-
-	public workspace = $state<"personal" | "internal">("personal");
-
-	public project = $state<ProjectFields>({
+	public errors = $state<ValidationErrors>({});
+	public workspace = $state<"user" | "root">("user");
+	public fields = $state({
 		name: "",
 		description: "",
 		active: false,
 		public: false,
-		maxMembers: 0,
+		maxMembers: 1,
 	});
 
-	/**
-	 * Seed files for the initial commit. Only relevant in "create" mode — the
-	 * update endpoint has no concept of files, so this is simply never sent
-	 * or rendered when `mode === 'edit'`.
-	 */
-	public files = $state<ProjectFile[]>([
+	public files = $state.raw<v.InferOutput<typeof FileSchema>[]>([
 		{
+			encoding: "UTF8",
 			path: "README.md",
 			content: "# Project Initialization\n\nDefine your project structure here."
 		}
-	]);
+	])
 
-	get workspaces() {
-		return Workspace.current();
-	}
+	/** Hydrate the context */
+	public async hydrate() {
+		const id = this.projectId();
+		if (!id) return;
 
-	/**
-	 * Hydrate `project` from the server when editing an existing project.
-	 * Resolves immediately (no request) in "create" mode. Call this once,
-	 * right after construction, and gate rendering on it in edit mode so the
-	 * form doesn't flash empty fields before the fetch resolves.
-	 */
-	public async load() {
-		if (this.mode !== "edit") return;
-
-		const existing = await Project.get(this.id!);
-		this.project = {
-			name: existing.name,
-			description: existing.description,
-			active: existing.active,
-			public: existing.public,
-			maxMembers: Number(existing.maxMembers)
+		const project = await Project.get(id);
+		this.fields = {
+			name: project.name,
+			active: project.active,
+			public: project.public,
+			description: project.description,
+			maxMembers: Number(project.maxMembers)
 		};
 	}
 
+	/** Submit a deprecation request */
+	public async deprecate() {
+		// const id = this.goalId();
+		// if (!id) return toast.error("Unable to deprecate non-existent goal");
+
+		// try {
+		// 	await Action.deprecate(id);
+		// 	toast.success("Goal has been deprecated.");
+		// } catch (e) {
+		// 	this.handleErr(e);
+		// }
+	}
+
+	/** Submit the overall request for create or update */
 	public async submit() {
-		if (this.mode === "edit") {
-			return await Project.update({ id: this.id!, ...this.project });
-		}
+		// this.errors = {};
+		// const id = this.goalId();
+		// const projects = this.projects.map((p) => p.id);
 
-		if (this.workspace === "internal") {
-			throw new Error("TODO");
-		}
+		// try {
+		// 	if (id) {
+		// 		return await Action
+		// 			.update({ id, projects, ...this.fields })
+		// 			.updates(Goal.get(id), Goal.getProjects(id));
+		// 	}
 
-		const myspace = await this.workspaces;
-		return await Workspace.createProject({
-			workspace: myspace.id,
-			...this.project,
-			files: this.files
-		});
+		// 	const target = this.workspace === "root" ? await Workspace.root() : await Workspace.current();
+		// 	await Action.create({ workspace: target.id, ...this.fields, projects });
+		// } catch (e) {
+		// 	this.handleErr(e);
+		// }
 	}
 }
+
+// ============================================================================
 
 export const [getContext, setContext] = createContext<Context>();

@@ -7,6 +7,7 @@ import * as v from 'valibot';
 import { command, getRequestEvent } from '$app/server';
 import type { components } from '$lib/api/api';
 import { Filters, Problem } from '$lib/api';
+import { Log } from '$lib/log';
 
 // ============================================================================
 
@@ -34,6 +35,7 @@ const UpdateSchema = v.object({
 export const create = command(CreateSchema, async (body) => {
 	const { locals } = getRequestEvent();
 	const { workspace, ...rest } = body;
+	Log.dbg(JSON.stringify({ ...rest }));
 	const { error, data } = await locals.api.POST("/workspace/{workspace}/goal", {
 		params: { path: { workspace } },
 		body: { ...rest }

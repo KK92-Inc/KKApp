@@ -18,8 +18,8 @@
 		Box,
 		ListTree,
 		CircleAlert,
-		PlayCircle,
-		CirclePlay
+		CirclePlay,
+		GitGraph
 	} from '@lucide/svelte';
 	import * as Field from '$lib/components/field';
 	import * as Card from '$lib/components/card';
@@ -42,9 +42,12 @@
 	import * as Alert from '$lib/components/alert';
 
 	const { params }: PageProps = $props();
+	const context = Page.setContext(new Page.Context(() => params.id));
+	await context.hydrate();
 
-	let trackData = $state(sampleCursusTrack());
+
 	let view = $state<'schema' | 'render'>('schema');
+	let trackData = $state(sampleCursusTrack());
 	const previewTrack = $derived<Track>({
 		cursusId: params.id ?? 'preview-cursus',
 		variant: 'Static',
@@ -54,10 +57,6 @@
 
 	const renderer = new GalaxyRenderer<TrackNode>();
 	const tree = $derived(Adapter.construct(previewTrack));
-
-	const context = Page.setContext(new Page.Context(() => params.id));
-	await context.hydrate();
-
 	const render = (tree: GalaxyNode<TrackNode>): Attachment<SVGElement> => {
 		return (element) => renderer.mount(element, tree);
 	};
@@ -261,6 +260,19 @@
 		</div>
 
 		<Tabs.Root id="view" bind:value={view}>
+			<Alert.Root variant="default">
+				<GitGraph />
+				<Alert.Title>What is Persistence Graph Meshing ?</Alert.Title>
+				<Alert.Description class="text-xs">
+					<p>Cursi implement a mechanism named "Persistence Graph Meshing", the idea is straight forward: Subscribers keep their progress.</p>
+
+					<p>
+						When you update the schematic in the future, existing students
+						keep credit for completed or active steps while seamlessly transitioning to the new requirements for goals they have yet to reach.
+					</p>
+				</Alert.Description>
+			</Alert.Root>
+
 			<Tabs.List class="w-auto">
 				<Tabs.Trigger value="schema">View Schematic <ListTree /></Tabs.Trigger>
 				<Tabs.Trigger value="render">View Render <Box /></Tabs.Trigger>

@@ -1,8 +1,15 @@
+// ============================================================================
+// W2Inc, 2025, All Rights Reserved.
+// See README in the root project for more information.
+// ============================================================================
+
 export interface TreeAdapter<T> {
 	id: (item: T) => string;
 	children: (item: T) => T[] | undefined;
 	createChild?: (parent: T) => T;
 }
+
+// ============================================================================
 
 export function removeNodeById<T>(root: T, adapter: TreeAdapter<T>, targetId: string): boolean {
 	const children = adapter.children(root);
@@ -15,7 +22,8 @@ export function removeNodeById<T>(root: T, adapter: TreeAdapter<T>, targetId: st
 	}
 
 	for (const child of children) {
-		if (removeNodeById(child, adapter, targetId)) return true;
+		if (removeNodeById(child, adapter, targetId))
+			return true;
 	}
 	return false;
 }
@@ -25,9 +33,9 @@ export function addChildToNode<T>(parent: T, adapter: TreeAdapter<T>): T | null 
 	const children = adapter.children(parent);
 	if (!children) return null;
 
-	const newChild = adapter.createChild(parent);
-	children.push(newChild);
-	return newChild;
+	const child = adapter.createChild(parent);
+	children.push(child);
+	return child;
 }
 
 export function createTreeState<T>(adapter: TreeAdapter<T>) {
@@ -54,11 +62,11 @@ export function createTreeState<T>(adapter: TreeAdapter<T>) {
 		const target = findById(root, targetId);
 		if (!source || !target || isDescendant(source, targetId)) return;
 
-		const targetChildren = adapter.children(target);
-		if (!targetChildren) return;
+		const targets = adapter.children(target);
+		if (!targets) return;
 
 		removeNodeById(root, adapter, sourceId);
-		targetChildren.push(source);
+		targets.push(source);
 	}
 
 	function dragstartHandler(ev: DragEvent, item: T) {
