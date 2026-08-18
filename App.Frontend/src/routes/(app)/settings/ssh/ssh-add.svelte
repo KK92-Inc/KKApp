@@ -16,7 +16,6 @@
 	import { page } from '$app/state';
 	import * as Kbd from '$lib/components/kbd';
 	import * as Alert from '$lib/components/alert';
-	import { env } from '$env/dynamic/public';
 	import { ensure } from '$lib/utils';
 
 	let open = $state(false);
@@ -27,11 +26,10 @@
 	let fields = $state({ title: '', publicKey: '' });
 	// svelte-ignore state_referenced_locally
 	const original = $state.snapshot(fields);
-
 	const keygen = $derived(
 		os !== 'nt'
-			? `curl -fsSL ${env.PUBLIC_DOMAIN}/key | bash`
-			: `powershell -c "irm ${env.PUBLIC_DOMAIN}/key.ps1|iex"`
+			? `curl -fsSL ${page.url.origin}/key | bash`
+			: `powershell -c "irm ${page.url.origin}/key.ps1|iex"`
 	);
 
 	async function submit() {
@@ -76,15 +74,6 @@
 		<Separator />
 
 		<Item.Group class="mt-2 grid grid-rows-[auto_auto] gap-3">
-			<!-- <Alert.Root variant="default">
-				<TriangleAlert class="h-4 w-4" />
-				<Alert.Title>Please try and read the instructions</Alert.Title>
-				<Alert.Description class="font-normal text-wrap">
-					If you're unfamiliar with terminals or shells this might be confusing. Make sure to read everything
-					so you understand whats going on.
-				</Alert.Description>
-			</Alert.Root> -->
-
 			<Item.Root variant="muted" size="sm" class="items-start">
 				<Item.Media variant="icon"><KeyRound class="size-4 text-primary" /></Item.Media>
 				<Item.Content>

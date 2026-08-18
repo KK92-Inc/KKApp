@@ -36,16 +36,7 @@
 	import { Slider } from '$lib/components/slider';
 	import Tree from '$lib/components/hierarchy/tree.svelte';
 
-	import {
-		treeAdapter,
-		buildTreeFromFlatFiles,
-		flattenTreeToFiles,
-		findNodeInTree,
-		findNodeByPath,
-		parentPathOf,
-		getFirstFile,
-		type FileTreeNode
-	} from './files.svelte';
+	import { Adapter, type FileTreeNode } from '../../../shared/files.svelte';
 	import { dev } from '$app/env';
 
 	const { params }: PageProps = $props();
@@ -60,16 +51,16 @@
 	let folderDialogOpen = $state(false);
 
 	// Reactive Tree State
-	let treeData = $state<FileTreeNode>(buildTreeFromFlatFiles(context.files));
+	let treeData = $state<FileTreeNode>(Adapter.read(context.files));
 	let selectedPath = $state<string | null>('README.md');
 
 	// Active selected file node inside the tree structure
-	const activeFile = $derived(findNodeInTree(treeData, selectedPath) ?? getFirstFile(treeData));
+	const activeFile = $derived(Adapter.find(treeData, selectedPath) ?? Adapter.first(treeData));
 
 	// Flatten the tree back into context.files only when actually submitting,
 	// instead of syncing on every keystroke via $effect.
 	async function submit() {
-		context.files = flattenTreeToFiles(treeData);
+		context.files = Adapter.write(treeData);
 		await context.submit();
 	}
 
@@ -84,7 +75,7 @@
 		if (!name) return;
 
 		const fullPath = targetParentPath === '/' || !targetParentPath ? name : `${targetParentPath}/${name}`;
-		const parent = findNodeByPath(treeData, targetParentPath);
+		const parent = Adapter.find(treeData, targetParentPath);
 		if (!parent) return;
 
 		parent.children = parent.children || [];
@@ -109,7 +100,7 @@
 		const input = event.target as HTMLInputElement;
 		if (!input.files) return;
 
-		const parent = findNodeByPath(treeData, targetDir);
+		const parent = Adapter.find(treeData, targetDir);
 		if (!parent) return;
 		parent.children = parent.children || [];
 
@@ -119,7 +110,7 @@
 
 			reader.onload = () => {
 				const raw = reader.result as string;
-				const encoding = isBinary ? 'Base64' : 'UTF8' as const;
+				const encoding = isBinary ? 'Base64' : ('UTF8' as const);
 				const content = isBinary ? raw.split(',')[1] : raw;
 				const path = targetDir === '/' || !targetDir ? file.name : `${targetDir}/${file.name}`;
 				const node: FileTreeNode = {
@@ -150,7 +141,7 @@
 	function handleDeleteNode(item: FileTreeNode) {
 		if (item.path === '/') return;
 
-		const parent = findNodeByPath(treeData, parentPathOf(item.path));
+		const parent = Adapter.find(treeData, Adapter.parent(item.path));
 		const idx = parent?.children?.findIndex((c) => c.id === item.id) ?? -1;
 		if (parent?.children && idx !== -1) {
 			parent.children.splice(idx, 1);
@@ -436,13 +427,7 @@
 				</div>
 
 				<div class="min-h-0 flex-1 overflow-y-auto">
-					<Tree
-						bind:item={treeData}
-						root={treeData}
-						adapter={treeAdapter}
-						node={node}
-						actions={actions}
-					/>
+					<Tree bind:item={treeData} root={treeData} adapter={Adapter.instance} {node} {actions} />
 				</div>
 			</div>
 

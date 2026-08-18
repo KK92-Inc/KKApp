@@ -56,10 +56,12 @@ export const getPageByUser = query(PageByUserSchema, async ({ userId, ...params 
 /** Get a user's subscription to a specific goal */
 export const getByUser = query(ByUserSchema, async ({ userId, goalId }) => {
 	const { locals } = getRequestEvent();
-	const { error, data } = await locals.api.GET('/users/{userId}/goals/{goalId}', {
+	const { error, data, response } = await locals.api.GET('/users/{userId}/goals/{goalId}', {
 		params: { path: { userId, goalId } }
 	});
 
-	if (error) Problem.throw(error);
+	// NOTE(W2): No page found just means that there is no instance.
+	if (error && response.status !== 404)
+		Problem.throw(error);
 	return data;
 });
