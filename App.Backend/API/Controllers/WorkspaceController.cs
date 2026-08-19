@@ -244,7 +244,7 @@ such as official cursi, projects or rubrics.
         return Ok(new ProjectDO(project));
     }
 
-    [HttpPost("{id:guid}/rubric")]
+    [HttpPost("{workspace:guid}/rubric")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -253,9 +253,9 @@ such as official cursi, projects or rubrics.
     [ProtectedResource("workspaces", "workspaces:write")]
     [EndpointSummary("Create a new rubric")]
     [EndpointDescription("Create a new rubric to be added to the workspace")]
-    public async Task<ActionResult<RubricDO>> AddRubric(Guid id, [FromBody] PostRubricRequestDTO body, CancellationToken token)
+    public async Task<ActionResult<RubricDO>> AddRubric(Guid workspace, [FromBody] PostRubricRequestDTO body, CancellationToken token)
     {
-        var space = await service.FindByIdAsync(id, token);
+        var space = await service.FindByIdAsync(workspace, token);
         if (space is null)
             return NotFound();
 
@@ -269,29 +269,23 @@ such as official cursi, projects or rubrics.
         if (await rubricService.FindBySlugAsync(body.Name.ToSlug(), token) is not null)
             return Conflict();
 
-        var rubric = await service.AddRubricAsync(space.Id, new()
+        var rubric = new Rubric
         {
             Name = body.Name,
             Slug = body.Name.ToSlug(),
-            CreatorId = userId,
             Public = body.Public,
             Enabled = body.Enabled,
-        }, token);
-
-        if (body.Variants is not null && body.Variants.Any())
-        {
-            rubric = await rubricService.SetVariantsAsync(
-                rubric.Id,
-                body.Variants.Select(v => new RubricVariant()
+            Variants = [.. body.Variants
+                .Where(v => v.Required > 0)
+                .Select(v => new RubricVariant
                 {
                     Kind = v.Kind,
                     Count = v.Required
-                }),
-                token
-            );
-        }
+                })]
+        };
 
-        return Ok(new RubricDO(rubric));
+        var created = await service.AddRubricAsync(space.Id, rubric, token);
+        return Ok(new RubricDO(created));
     }
 
     [Tags("Application")]

@@ -4,6 +4,7 @@
 // ============================================================================
 
 using App.Backend.Domain.Entities.Reviews;
+using App.Backend.Models.Requests;
 using System.ComponentModel.DataAnnotations;
 
 // ============================================================================
@@ -32,9 +33,6 @@ public class RubricDO(Rubric rubric) : BaseEntityDO<Rubric>(rubric)
 
     [Required]
     public Guid? ProjectId { get; set; } = rubric.ProjectId;
-
-    [Required]
-    public UserLightDO Creator { get; set; } = rubric.Creator;
 
     [Required]
     public GitDO? GitInfo { get; set; } = rubric.GitInfo;

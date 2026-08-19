@@ -49,6 +49,7 @@ using Microsoft.Kiota.Abstractions.Authentication;
 using KeycloakAdminClientOptions = Keycloak.AuthServices.Sdk.KeycloakAdminClientOptions;
 using App.Backend.Core.Services.Persistence.Implementation;
 using App.Backend.Core.Services.Persistence.Interface;
+using App.Backend.Models;
 
 // ============================================================================
 
@@ -96,6 +97,7 @@ public static class Services
         }).AddJsonOptions(o =>
         {
             o.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+            o.JsonSerializerOptions.AddOptionalSupport();       // <-- new
         });
 
         builder.Services.AddHttpClient<GitService>();
@@ -152,10 +154,17 @@ public static class Services
     {
         builder.Services.AddOpenApi(o =>
         {
+            var defaultReferenceId = o.CreateSchemaReferenceId;
+            o.CreateSchemaReferenceId = typeInfo =>
+                typeInfo.Type.IsGenericType && typeInfo.Type.GetGenericTypeDefinition() == typeof(Optional<>)
+                    ? null
+                    : defaultReferenceId(typeInfo);
+
             o.AddDocumentTransformer<InfoDocumentTransformer>();
             o.AddDocumentTransformer<BearerDocumentTransformer>();
             o.AddSchemaTransformer<RequiredDiscriminatorTransformer>();
             o.AddSchemaTransformer<BreakRuleCircularRefTransformer>();
+            o.AddSchemaTransformer<OptionalSchemaTransformer>();
             o.AddOperationTransformer<BasicResponsesOperationTransformer>();
 
             // Register the Keycloak OAuth2 security scheme.

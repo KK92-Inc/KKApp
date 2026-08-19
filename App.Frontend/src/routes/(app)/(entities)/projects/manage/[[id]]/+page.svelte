@@ -36,7 +36,7 @@
 	import { Slider } from '$lib/components/slider';
 	import Tree from '$lib/components/hierarchy/tree.svelte';
 
-	import { Adapter, type FileTreeNode } from '../../../shared/files.svelte';
+	import { Adapter, type FileTreeNode } from '../../../shared/files.component.svelte';
 	import { dev } from '$app/env';
 
 	const { params }: PageProps = $props();

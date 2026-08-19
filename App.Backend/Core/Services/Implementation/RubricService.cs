@@ -31,6 +31,22 @@ public class RubricService(DatabaseContext ctx, IGitService git) : BaseService<R
         return UpdateAsync(entity, token);
     }
 
+    public override async Task<Rubric> UpdateAsync(Rubric entity, CancellationToken token = default)
+    {
+        // If variants were updated on the entity, handle existing variants cleanup
+        var existingVariants = await _context.RubricsVariants
+            .Where(rv => rv.RubricId == entity.Id)
+            .ToListAsync(token);
+
+        _context.RubricsVariants.RemoveRange(existingVariants);
+        if (entity.Variants.Count > 0)
+            _context.RubricsVariants.AddRange(entity.Variants);
+
+        _context.Rubrics.Update(entity);
+        await _context.SaveChangesAsync(token);
+        return entity;
+    }
+
     public async Task<Rubric?> FindByProjectId(Guid projectId, CancellationToken token = default)
     {
         return await _context.Rubrics
@@ -48,42 +64,25 @@ public class RubricService(DatabaseContext ctx, IGitService git) : BaseService<R
     public async Task<IEnumerable<RubricVariant>?> GetVariantsAsync(Guid rubricId, CancellationToken token = default)
     {
         return await _context.RubricsVariants
-            .AsNoTracking() // <-- Bypasses the change tracker for read-only speed
+            .AsNoTracking()
             .Where(rv => rv.RubricId == rubricId)
             .ToListAsync(token);
     }
 
-    public async Task<Rubric> SetVariantsAsync(
-        Guid rubricId,
-        IEnumerable<RubricVariant> variants,
-        CancellationToken token = default)
+    public async Task<Rubric> SetVariantsAsync(IEnumerable<RubricVariant> variants, CancellationToken token = default)
     {
-        var rubric = await _context.Rubrics.FirstOrDefaultAsync(r => r.Id == rubricId, token)
+        var variantList = variants.Where(v => v.Count > 0).ToList();
+        var rubricId = variantList.FirstOrDefault()?.RubricId
+            ?? throw new ArgumentException("Variants must contain a valid RubricId", nameof(variants));
+
+        var rubric = await _context.Rubrics
+            .Include(r => r.Variants)
+            .FirstOrDefaultAsync(r => r.Id == rubricId, token)
             ?? throw new ServiceException(404, "Rubric not found");
 
-        await using var transaction = await _context.Database.BeginTransactionAsync(token);
-        var existing = await _context.RubricsVariants
-            .Where(rv => rv.RubricId == rubricId)
-            .ToListAsync(token);
-
-        _context.RubricsVariants.RemoveRange(existing);
-        var newVariants = variants
-            .Where(v => v.Count > 0)
-            .Select(v => new RubricVariant
-            {
-                RubricId = rubricId,
-                Kind = v.Kind,
-                Count = v.Count,
-            })
-            .ToList();
-
-        if (newVariants.Count > 0)
-            _context.RubricsVariants.AddRange(newVariants);
-
+        _context.RubricsVariants.RemoveRange(rubric.Variants);
+        rubric.Variants = variantList;
         await _context.SaveChangesAsync(token);
-        await transaction.CommitAsync(token);
-
-        rubric.Variants = newVariants;
         return rubric;
     }
 }

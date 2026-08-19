@@ -3447,9 +3447,7 @@ export interface paths {
                     "filter[id]"?: string;
                     "filter[name]"?: string;
                     "filter[slug]"?: string;
-                    "filter[enabled]"?: boolean;
                     "filter[workspace_id]"?: string;
-                    "filter[creator_id]"?: string;
                     /** @description The name of the property to use for sorting. */
                     "sort[by]"?: string;
                     /** @description The sort direction. */
@@ -3659,9 +3657,7 @@ export interface paths {
          */
         patch: {
             parameters: {
-                query?: {
-                    "param[branch]"?: string;
-                };
+                query?: never;
                 header?: never;
                 path: {
                     id: string;
@@ -3736,87 +3732,6 @@ export interface paths {
                 };
             };
         };
-        trace?: never;
-    };
-    "/rubrics/{id}/variants": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * Set rubric variant configuration
-         * @description Replaces the review kind composition for a rubric. Omitted kinds are disabled.
-         */
-        put: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["PutRubricVariantsRequestDTO"];
-                    "text/json": components["schemas"]["PutRubricVariantsRequestDTO"];
-                    "application/*+json": components["schemas"]["PutRubricVariantsRequestDTO"];
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["RubricDO"];
-                        "application/json": components["schemas"]["RubricDO"];
-                        "text/json": components["schemas"]["RubricDO"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ProblemDetails"];
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "text/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
         trace?: never;
     };
     "/subscribe/{userId}/cursus/{cursusId}": {
@@ -6822,7 +6737,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/workspace/{id}/rubric": {
+    "/workspace/{workspace}/rubric": {
         parameters: {
             query?: never;
             header?: never;
@@ -6840,7 +6755,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    id: string;
+                    workspace: string;
                 };
                 cookie?: never;
             };
@@ -7996,14 +7911,14 @@ export interface components {
             maxMembers?: null | number | string;
         };
         PatchRubricRequestDTO: {
-            /** @description The name of the rubric. */
-            name?: null | string;
-            /** @description Optional markdown documentation for the rubric. */
-            markdown?: null | string;
-            /** @description Indicates whether the rubric is publicly visible. */
-            public?: null | boolean;
-            /** @description Indicates whether the rubric is enabled. */
-            enabled?: null | boolean;
+            name?: string;
+            description?: string;
+            public?: boolean;
+            enabled?: boolean;
+            /** Format: uuid */
+            projectId?: null | string;
+            /** @description Indicates the variations of the rubric */
+            variants: components["schemas"]["RubricVariantDTO"][];
         };
         PatchUserDetailsRequestDTO: {
             /** @description Optional markdown biography or about text. */
@@ -8117,21 +8032,14 @@ export interface components {
             ref: string;
         };
         PostRubricRequestDTO: {
-            /** @description The name of the rubric. */
             name: string;
-            /** @description Optional markdown documentation for the rubric. */
-            markdown?: null | string;
-            /** @description Indicates whether the rubric is publicly visible. */
-            public?: boolean;
-            /**
-             * Format: uuid
-             * @description Optional project ID this rubric is associated with.
-             */
-            projectId?: null | string;
-            /** @description Indicates whether the rubric is enabled. */
-            enabled?: boolean;
-            /** @description The list of review variant requirements for this rubric. */
+            description: string;
+            public: boolean;
+            enabled: boolean;
+            /** Format: uuid */
+            projectId: null | string;
             variants: components["schemas"]["RubricVariantDTO"][];
+            files: components["schemas"]["CommitFile"][];
         };
         PostSshKeyRequestDTO: {
             /** @description A user-friendly name for the SSH key (e.g., 'Work Laptop'). */
@@ -8215,10 +8123,6 @@ export interface components {
              */
             maxMembers: number | string;
         };
-        PutRubricVariantsRequestDTO: {
-            /** @description The list of review variant requirements for this rubric. */
-            variants: components["schemas"]["RubricVariantDTO"][];
-        };
         ReviewDO: {
             /** Format: uuid */
             id: string;
@@ -8262,7 +8166,6 @@ export interface components {
             variants: components["schemas"]["RubricVariantDO"][];
             /** Format: uuid */
             projectId: null | string;
-            creator: components["schemas"]["UserLightDO"];
             gitInfo: null | components["schemas"]["GitDO"];
         };
         RubricLightDO: {

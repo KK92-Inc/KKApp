@@ -127,45 +127,43 @@ public class WorkspaceService(DatabaseContext ctx, IGitService git) : BaseServic
         return await strategy.ExecuteAsync(async (ct) =>
         {
             await using var transaction = await _context.Database.BeginTransactionAsync(ct);
-            var workspace = await FindByIdAsync(workspaceId, ct) ?? throw new ServiceException(404, "Workspace not found");
+            var workspace = await FindByIdAsync(workspaceId, ct)
+                ?? throw new ServiceException(404, "Workspace not found");
+
             var owner = workspace.Owner?.Login ?? "root";
+            var slug = rubric.Name.ToSlug();
 
             try
             {
-                var name = rubric.Name.ToSlug();
-                if (!await git.CreateAsync(owner, name, ct))
+                if (!await git.CreateAsync(owner, slug, ct))
                     throw new ServiceException(409, "Repository for such rubric already exists");
 
-                var repo = await _context.GitInfo.AddAsync(new()
+                rubric.WorkspaceId = workspace.Id;
+                rubric.GitInfo = new()
                 {
                     Owner = owner,
-                    Name = name,
+                    Name = slug,
                     Ownership = workspace.Owner is null ? EntityOwnership.Organization : EntityOwnership.User
-                }, ct);
+                };
 
-                await _context.SaveChangesAsync(ct);
-
-                rubric.GitInfoId = repo.Entity.Id;
-                rubric.WorkspaceId = workspace.Id;
-                var output = await _context.Rubrics.AddAsync(rubric, ct);
-                await _context.SaveChangesAsync(ct);
-
-                // Add a default variant for the rubric as a bare minimum configuration
-                await _context.RubricsVariants.AddAsync(new()
+                // Ensure fallback default variant if caller passed none
+                if (rubric.Variants == null || rubric.Variants.Count == 0)
                 {
-                    RubricId = output.Entity.Id,
-                    Kind = ReviewKinds.Self,
-                    Count = 1
-                }, ct);
+                    rubric.Variants =
+                    [
+                        new() { Kind = ReviewKinds.Self, Count = 1 }
+                    ];
+                }
 
+                await _context.Rubrics.AddAsync(rubric, ct);
                 await _context.SaveChangesAsync(ct);
                 await transaction.CommitAsync(ct);
-                return output.Entity;
+                return rubric;
             }
-            catch (Exception e)
+            catch (Exception e) when (e is not ServiceException)
             {
                 await transaction.RollbackAsync(ct);
-                await git.DeleteAsync(owner, rubric.Name, ct);
+                await git.DeleteAsync(owner, slug, ct);
                 throw new ServiceException(500, $"Something went wrong: {e.Message}");
             }
         }, token);

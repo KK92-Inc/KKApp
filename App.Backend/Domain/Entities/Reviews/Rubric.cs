@@ -29,9 +29,6 @@ public class Rubric : BaseEntity
         Enabled = false;
         Deprecated = false;
 
-        CreatorId = Guid.Empty;
-        Creator = null!;
-
         GitInfoId = null;
         GitInfo = null;
 
@@ -87,12 +84,6 @@ public class Rubric : BaseEntity
     public ICollection<Rule> RevieweeRules { get; set; }
 
     /// <summary>
-    /// The user who created this rubric.
-    /// </summary>
-    [Column("creator_id")]
-    public Guid CreatorId { get; set; }
-
-    /// <summary>
     /// The project this rubric targets. If null it will be treated as a wildcard rubric.
     /// </summary>
     [Column("project_id")]
@@ -109,9 +100,6 @@ public class Rubric : BaseEntity
 
 
     // Relations //
-
-    [ForeignKey(nameof(CreatorId))]
-    public virtual User Creator { get; set; }
 
     [ForeignKey(nameof(GitInfoId))]
     public virtual Git? GitInfo { get; set; }

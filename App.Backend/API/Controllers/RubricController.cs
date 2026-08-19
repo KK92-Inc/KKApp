@@ -38,9 +38,8 @@ public class RubricController(
         [FromQuery(Name = "filter[id]")] Guid? id,
         [FromQuery(Name = "filter[name]")] string? name,
         [FromQuery(Name = "filter[slug]")] string? slug,
-        [FromQuery(Name = "filter[enabled]")] bool? enabled,
+        // [FromQuery(Name = "filter[enabled]")] bool? enabled,
         [FromQuery(Name = "filter[workspace_id]")] Guid? workspace,
-        [FromQuery(Name = "filter[creator_id]")] Guid? creatorId,
         [FromQuery] Sorting sorting,
         [FromQuery] Pagination pagination,
         CancellationToken token
@@ -50,9 +49,8 @@ public class RubricController(
             id is null ? null : r => r.Id == id,
             workspace is null ? null : n => n.WorkspaceId == workspace,
             string.IsNullOrWhiteSpace(name) ? null : r => EF.Functions.ILike(r.Name, $"%{name}%"),
-            string.IsNullOrWhiteSpace(slug) ? null : r => r.Slug == slug,
-            enabled is null ? null : r => r.Enabled == enabled,
-            creatorId is null ? null : r => r.CreatorId == creatorId
+            string.IsNullOrWhiteSpace(slug) ? null : r => r.Slug == slug
+            // enabled is null ? null : r => r.Enabled == enabled,
         );
 
         page.AppendHeaders(Response.Headers);
@@ -83,69 +81,34 @@ public class RubricController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Update a rubric")]
     [EndpointDescription("Update rubric information")]
-    public async Task<ActionResult<RubricDO>> Update(
-        Guid id,
-        [FromQuery(Name = "param[branch]")] string branch,
-        [FromBody] PatchRubricRequestDTO body,
-        CancellationToken token
-    )
+    public async Task<ActionResult<RubricDO>> Update(Guid id, [FromBody] PatchRubricRequestDTO body, CancellationToken token)
     {
-        var isStaff = await auth.AuthorizeAsync(User, "staff");
         var rubric = await service.FindByIdAsync(id, token);
-        if (rubric is null)
-            return NotFound();
+        if (rubric is null) return NotFound();
 
+        var isStaff = await auth.AuthorizeAsync(User, "staff");
         if (!isStaff.Succeeded)
         {
             var member = await memberService.FindByEntityAndUserId(rubric.WorkspaceId, User.GetSID(), token);
             if (member is null) return Forbid();
         }
 
-        rubric.Name = body.Name ?? rubric.Name;
-        rubric.Public = body.Public ?? rubric.Public;
-        rubric.Enabled = body.Enabled ?? rubric.Enabled;
+        rubric.Name = body.Name.GetValueOrDefault(rubric.Name);
+        rubric.Public = body.Public.GetValueOrDefault(rubric.Public);
+        rubric.Enabled = body.Enabled.GetValueOrDefault(rubric.Enabled);
+        if (body.Variants is not null)
+        {
+            rubric.Variants = [.. body.Variants
+                .Where(v => v.Required > 0)
+                .Select(v => new RubricVariant
+                {
+                    RubricId = id,
+                    Kind = v.Kind,
+                    Count = v.Required
+                })];
+        }
 
         await service.UpdateAsync(rubric, token);
-        return Ok(new RubricDO(rubric));
-    }
-
-    [HttpPut("{id:guid}/variants")]
-    [RequireScope("workspace")]
-    [ProtectedResource("rubrics", "rubrics:write")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [EndpointSummary("Set rubric variant configuration")]
-    [EndpointDescription("Replaces the review kind composition for a rubric. Omitted kinds are disabled.")]
-    public async Task<ActionResult<RubricDO>> PutRubricVariants(
-        Guid id,
-        [FromBody] PutRubricVariantsRequestDTO body,
-        CancellationToken token
-    )
-    {
-        var isStaff = await auth.AuthorizeAsync(User, "staff");
-        var rubric = await service.FindByIdAsync(id, token);
-        if (rubric is null)
-            return NotFound();
-
-        if (!isStaff.Succeeded)
-        {
-            var member = await memberService.FindByEntityAndUserId(rubric.WorkspaceId, User.GetSID(), token);
-            if (member is null) return Forbid();
-        }
-
-        rubric = await service.SetVariantsAsync(
-            id,
-            body.Variants.Select(v => new RubricVariant()
-            {
-                Kind = v.Kind,
-                Count = v.Required
-            }),
-            token
-        );
-
-
-        if (rubric is null)
-            return NotFound();
         return Ok(new RubricDO(rubric));
     }
 
@@ -161,13 +124,11 @@ public class RubricController(
     [EndpointDescription("Delete a rubric")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken token)
     {
-        var isStaff = (await auth.AuthorizeAsync(User, "staff")).Succeeded;
-
         var rubric = await service.FindByIdAsync(id, token);
-        if (rubric is null)
-            return NotFound();
+        if (rubric is null) return NotFound();
 
-        if (!isStaff)
+        var isStaff = await auth.AuthorizeAsync(User, "staff");
+        if (!isStaff.Succeeded)
         {
             var member = await memberService.FindByEntityAndUserId(rubric.WorkspaceId, User.GetSID(), token);
             if (member is null) return Forbid();
