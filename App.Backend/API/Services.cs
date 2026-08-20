@@ -154,6 +154,8 @@ public static class Services
     {
         builder.Services.AddOpenApi(o =>
         {
+            // Optional<T> should never become its own named component
+            // TODO: Move this some place else for now it's ok.
             var defaultReferenceId = o.CreateSchemaReferenceId;
             o.CreateSchemaReferenceId = typeInfo =>
                 typeInfo.Type.IsGenericType && typeInfo.Type.GetGenericTypeDefinition() == typeof(Optional<>)
@@ -280,7 +282,7 @@ public static class Services
     {
         // Infrastructure
         builder.Services.AddScoped<ISystemService, SystemService>();
-        builder.Services.AddTransient<ICursusSnapshotTracker, CursusSnapshotTracker>();
+        builder.Services.AddTransient<ICursusSnapshot, CursusSnapshot>();
         builder.Services.AddTransient<IPersistenceGraphMesher, PersistenceGraphMesher>();
         builder.Services.AddScoped<IGitService, GitService>();
         builder.Services.AddScoped<INotificationService, NotificationService>();

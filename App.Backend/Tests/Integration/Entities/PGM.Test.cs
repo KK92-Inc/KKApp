@@ -59,7 +59,7 @@ public class PersistenceGraphMeshingTests
         return new Tree(cursus, a, ab, ac, ad, da, ae);
     }
 
-    private static async Task PutTrackAsync(HttpClient client, Guid cursusId, List<CursusTrackNodeDTO> nodes)
+    private static async Task PutTrackAsync(HttpClient client, Guid cursusId, List<Models.Requests.Cursus.CursusTrackNodeDO> nodes)
     {
         var response = await client.PostAsJsonAsync($"/cursus/{cursusId}/track",
             new PostCursusTrackRequestDTO { Nodes = nodes }, JsonOptions.Default);

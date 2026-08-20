@@ -129,7 +129,7 @@ public class WorkspaceIntegrationTests2
         Assert.Equal(name, rubric.Name);
         Assert.NotNull(rubric.GitInfo);
         Assert.Single(rubric.Variants);
-        Assert.Equal(2, rubric.Variants.First().Requires);
+        Assert.Equal(2, rubric.Variants.First().Required);
         Assert.Equal(ReviewKinds.Peer, rubric.Variants.First().Kind);
     }
 

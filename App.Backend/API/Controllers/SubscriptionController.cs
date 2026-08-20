@@ -8,8 +8,8 @@ using Microsoft.AspNetCore.Authorization;
 using App.Backend.Core.Services.Interface;
 using App.Backend.Models.Responses.Entities;
 using App.Backend.Models.Responses.Entities.Projects;
-using App.Backend.Models.Responses.Entities.Cursus;
 using App.Backend.API.Utils;
+using App.Backend.Models.Responses.Entities.Cursus;
 
 // ============================================================================
 

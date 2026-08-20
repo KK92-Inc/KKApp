@@ -5,7 +5,6 @@
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using App.Backend.Core.Services.Interface;
 using Microsoft.Extensions.Options;
 using Resend;
 using App.Backend.Core.Services.Options;
@@ -22,7 +21,6 @@ namespace App.Backend.API.Controllers.Infra;
 
 [AllowAnonymous, ApiController, Route("webhooks"), Tags("Webhook")]
 public class EmailController(
-    IUserService users,
     IResend resend,
     IOptions<WebhookOptions> options,
     ILogger<EmailController> logger,
@@ -31,7 +29,7 @@ public class EmailController(
 {
     [HttpPost("email/inbound")]
     [AllowAnonymous]
-    public async Task<IActionResult> Receive([FromBody] JsonDocument json, CancellationToken ct)
+    public async Task<IActionResult> Receive(CancellationToken ct)
     {
         Request.EnableBuffering();
         using var reader = new StreamReader(Request.Body, leaveOpen: true);
@@ -55,11 +53,8 @@ public class EmailController(
         }
 
         var evt = JsonSerializer.Deserialize<EmailReceived>(payload)!;
-        if (evt.Type != "email.received")
-            return Ok();
+        if (evt.Type != "email.received") return Ok();
 
-
-        logger.LogDebug("{evt}", evt);
         foreach (var recipient in evt.Data.To)
         {
             var email = await resend.EmailRetrieveAsync(evt.Data.EmailId, ct);

@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using App.Backend.Domain;
 using App.Backend.Domain.Enums;
+using App.Backend.Models.Validators;
 
 namespace App.Backend.Models.Requests.Rubrics;
 
@@ -17,17 +18,17 @@ namespace App.Backend.Models.Requests.Rubrics;
 /// </summary>
 public class PatchRubricRequestDTO
 {
-    [StringLength(256, MinimumLength = 1)]
+    [OptionalStringLength(256, MinimumLength = 1)]
     public Optional<string> Name { get; init; }
 
-    [StringLength(2048, MinimumLength = 1)]
+    [OptionalStringLength(2048, MinimumLength = 1)]
     public Optional<string> Description { get; init; }
 
     public Optional<bool> Public { get; init; }
 
     public Optional<bool> Enabled { get; init; }
     
-    public Optional<Guid?> ProjectId { get; init; }
+    public Guid? ProjectId { get; init; }
 
     [Description("Indicates the variations of the rubric")]
     public required IEnumerable<RubricVariantDTO> Variants { get; init; }

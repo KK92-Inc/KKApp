@@ -21,10 +21,10 @@
 
 	// Tree state constructed from initial prop
 	let treeData = $state<FileTreeNode>(Adapter.read(files));
-	let selectedPath = $state<string | null>('README.md');
+	let selected = $state<string | null>('README.md');
 
 	// Active selected file node inside the tree structure
-	const active = $derived(Adapter.find(treeData, selectedPath) ?? Adapter.first(treeData));
+	const active = $derived(Adapter.find(treeData, selected) ?? Adapter.first(treeData));
 
 	// Keep parent `files` prop updated when `treeData` mutates
 	$effect(() => {
@@ -92,7 +92,7 @@
 				path: fullPath,
 				isDirectory: false,
 				content,
-				encoding: isBinary ? 'Base64' : 'UTF8'
+				encoding: isBinary ? 'Binary' : 'Text'
 			};
 
 			if (existingIdx >= 0) {
@@ -102,7 +102,7 @@
 			}
 
 			// Automatically focus newly uploaded file
-			selectedPath = fullPath;
+			selected = fullPath;
 		}
 	}
 
@@ -115,9 +115,9 @@
 		if (!parent || !parent.children) return;
 
 		parent.children = parent.children.filter((child) => child.path !== item.path);
-		if (selectedPath && (selectedPath === item.path || selectedPath.startsWith(`${item.path}/`))) {
+		if (selected && (selected === item.path || selected.startsWith(`${item.path}/`))) {
 			const fallback = Adapter.first(treeData);
-			selectedPath = fallback ? fallback.path : null;
+			selected = fallback ? fallback.path : null;
 		}
 	}
 
@@ -174,19 +174,19 @@
 {#snippet node({ item }: { item: FileTreeNode })}
 	<button
 		type="button"
-		class="flex items-center gap-2 px-1 text-left hover:text-primary {selectedPath === item.path
+		class="flex max-w-38 items-center gap-2 px-1 text-left hover:text-primary {selected === item.path
 			? 'font-bold text-primary'
 			: ''}"
 		onclick={() => {
-			if (!item.isDirectory) selectedPath = item.path;
+			if (!item.isDirectory) selected = item.path;
 		}}
 	>
 		{#if item.isDirectory}
-			<Folder class="size-4 text-amber-500" />
+			<Folder class="size-4 shrink-0 text-amber-500" />
 		{:else}
-			<FileIcon class="size-4 text-blue-500" />
+			<FileIcon class="size-4 shrink-0 text-blue-500" />
 		{/if}
-		<span>{item.name}</span>
+		<span class="truncate">{item.name}</span>
 	</button>
 {/snippet}
 
@@ -281,14 +281,14 @@
 				{/if}
 			</div>
 
-			{#if active.encoding === 'Base64'}
+			{#if active.encoding === 'Binary'}
 				<div class="flex flex-1 items-center justify-center rounded-lg border border-dashed p-8">
 					<Empty.Root>
 						<Empty.Media>
 							<FileCode2 class="size-10 text-muted-foreground" />
 						</Empty.Media>
 						<Empty.Header>
-							<Empty.Title>Binary File Detected</Empty.Title>
+							<Empty.Title>Binary File</Empty.Title>
 							<Empty.Description>
 								This is a binary file and currently not supported to be viewed in the browser.
 							</Empty.Description>

@@ -16,4 +16,9 @@ public class GitServiceOptions
     /// The base URL of the Bun repository REST API (e.g. "http://localhost:3000").
     /// </summary>
     public required string BaseUrl { get; set; }
+
+    /// <summary>
+    /// The default to branch to use when creating one.
+    /// </summary>
+    public required string DefaultBranch { get; set; } = "master";
 }

@@ -6,60 +6,34 @@
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using App.Backend.Domain.Enums;
+using App.Backend.Models.Responses.Entities.Cursus;
 
 namespace App.Backend.Models.Requests.Cursus;
 
 // ============================================================================
 
-/// <summary>
-/// Request DTO for creating a new cursus.
-/// </summary>
-public record PostCursusRequestDTO
+public class PostCursusRequestDTO
 {
-    /// <summary>
-    /// The name of the cursus.
-    /// </summary>
     [Required, StringLength(256, MinimumLength = 1)]
-    public required string Name { get; init; }
+    public string Name { get; init; }
 
-    // /// <summary>
-    // /// The unique slug for the cursus.
-    // /// </summary>
-    // [Required, StringLength(256, MinimumLength = 1)]
-    // [RegularExpression(@"^[a-z0-9]+(?:-[a-z0-9]+)*$",
-    //     ErrorMessage = "Slug must be lowercase alphanumeric with hyphens only")]
-    // public required string Slug { get; init; }
-
-    /// <summary>
-    /// Optional description of the cursus.
-    /// </summary>
     [Required, StringLength(16384)]
     [Description("Optional description of the cursus.")]
-    public required string Description { get; init; }
+    public string Description { get; init; }
 
-    /// <summary>
-    /// Whether the cursus is active.
-    /// </summary>
-    [Description("Indicates whether the cursus is currently active.")]
-    public bool Active { get; init; } = true;
+    [Required, Description("Indicates whether the cursus is currently active.")]
+    public bool Active { get; init; }
 
-    /// <summary>
-    /// Whether the project is public.
-    /// </summary>
-    [Description("Indicates whether the cursus is publicly visible.")]
-    public bool Public { get; init; } = false;
+    [Required, Description("Indicates whether the cursus is publicly visible.")]
+    public bool Public { get; init; }
 
-    /// <summary>
-    /// The cursus variant (Fixed track or Dynamic free-roam).
-    /// Defaults to Fixed.
-    /// </summary>
-    [Description("The cursus variant: Static (fixed track) or Dynamic (free-roam).")]
-    public CursusVariant Variant { get; init; } = CursusVariant.Static;
+    [Required, MinLength(1)]
+    [Description("The flat list of track nodes forming the cursus hierarchy.")]
+    public required IList<CursusTrackNodeDO> Nodes { get; init; }
 
-    /// <summary>
-    /// How users progress through the track: level-by-level (Ring) or
-    /// branch-independent (FreeStyle). Defaults to Ring.
-    /// </summary>
-    [Description("How users progress through the track: Ring (level-by-level) or FreeStyle (branch-independent).")]
-    public CompletionMode CompletionMode { get; init; } = CompletionMode.Ring;
+    [Required, Description("The cursus variant: Static (fixed track) or Dynamic (free-roam).")]
+    public CursusVariant Variant { get; init; }
+
+    [Required, Description("How users progress through the track: Ring (level-by-level) or FreeStyle (branch-independent).")]
+    public CompletionMode CompletionMode { get; init; }
 }

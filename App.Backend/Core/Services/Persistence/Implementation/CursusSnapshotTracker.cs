@@ -14,9 +14,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace App.Backend.Core.Services.Persistence.Implementation;
 
-public class CursusSnapshotTracker(DatabaseContext ctx, IPersistenceGraphMesher mesher) : ICursusSnapshotTracker
+public class CursusSnapshot(DatabaseContext ctx, IPersistenceGraphMesher mesher) : ICursusSnapshot
 {
-    public async Task AdvanceTrackAsync(Guid userId, Guid cursusId, Guid userCursusId, CancellationToken token = default)
+    public async Task SyncTrackAsync(Guid userId, Guid cursusId, Guid userCursusId, CancellationToken token = default)
     {
         var masterTrack = await ctx.CursusGoal
             .Where(cg => cg.CursusId == cursusId)

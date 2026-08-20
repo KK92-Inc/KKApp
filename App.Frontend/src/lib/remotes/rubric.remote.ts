@@ -20,23 +20,6 @@ const PageSchema = v.object({
 	...Filters.sort,
 });
 
-const UpdateSchema = v.object({
-	id: Filters.id,
-	name: v.optional(v.string()),
-	markdown: v.optional(v.string()),
-	public: v.optional(v.boolean()),
-	enabled: v.optional(v.boolean())
-});
-
-const VariantSchema = v.object({
-	kind: v.number(), // Flag
-	required: v.pipe(v.number(), v.minValue(0), v.maxValue(100))
-});
-
-const SetVariantsSchema = v.object({
-	id: Filters.id,
-	variants: v.pipe(v.array(VariantSchema), v.minLength(1))
-});
 
 // ============================================================================
 
@@ -60,7 +43,6 @@ export const getPage = query(PageSchema, async (params) => {
 				'filter[id]': params.id,
 				'filter[name]': params.name,
 				'filter[slug]': params.slug,
-				'filter[creator_id]': params.creatorId,
 				'sort[by]': params.sortBy,
 				'sort[order]': params.sort,
 				'page[index]': params.page,
@@ -73,26 +55,3 @@ export const getPage = query(PageSchema, async (params) => {
 	return data;
 });
 
-/** Update a rubric's own fields (use setVariants to change its variants) */
-export const update = command(UpdateSchema, async ({ id, ...rest }) => {
-	const { locals } = getRequestEvent();
-	const { error, data } = await locals.api.PATCH('/rubrics/{id}', {
-		params: { path: { id } },
-		body: rest
-	});
-
-	if (error || !data) Problem.throw(error);
-	return data;
-});
-
-/** Replace the review variant requirements for a rubric */
-export const setVariants = command(SetVariantsSchema, async ({ id, variants }) => {
-	const { locals } = getRequestEvent();
-	const { error, data } = await locals.api.PUT('/rubrics/{id}/variants', {
-		params: { path: { id } },
-		body: { variants }
-	});
-
-	if (error || !data) Problem.throw(error);
-	return data;
-});

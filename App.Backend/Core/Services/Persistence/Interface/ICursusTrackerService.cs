@@ -14,7 +14,7 @@ namespace App.Backend.Core.Services.Persistence.Interface;
 /// and what lets a reactivated subscription catch up on however many edits it
 /// missed while inactive, in one pass.
 /// </summary>
-public interface ICursusSnapshotTracker
+public interface ICursusSnapshot
 {
-    Task AdvanceTrackAsync(Guid userId, Guid cursusId, Guid userCursusId, CancellationToken token = default);
+    Task SyncTrackAsync(Guid userId, Guid cursusId, Guid userCursusId, CancellationToken token = default);
 }

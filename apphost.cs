@@ -75,7 +75,7 @@ var keycloakDb = postgres.AddDatabase("keycloak-db");
 // - We self host our own S3 Object storage to avoid costs
 // ============================================================================
 
-var storage = builder.AddContainer("rustfs", "rustfs/rustfs", "rc")
+var storage = builder.AddContainer("rustfs", "rustfs/rustfs", "latest")
     .WithArgs("/data")
     .WithVolume("rustfs-volume", "/data")
     .WithEnvironment("RUSTFS_CONSOLE_ENABLE", "true")

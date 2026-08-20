@@ -4,6 +4,7 @@
 // ============================================================================
 
 using App.Backend.Domain.Values.Misc;
+using App.Backend.Models.Validators;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
@@ -14,26 +15,23 @@ namespace App.Backend.Models.Requests.Rubrics;
 /// <summary>
 /// Request DTO for creating a new rubric entity.
 /// </summary>
-public record PostRubricRequestDTO
+public class PostRubricRequestDTO
 {
     [Required, StringLength(256, MinimumLength = 1)]
     public required string Name { get; init; }
 
-    [Required, StringLength(2048, MinimumLength = 1)]
-    public required string Description { get; init; }
+    [Required]
+    public bool Public { get; init; }
 
     [Required]
-    public bool Public { get; init; } = false;
+    public bool Enabled { get; init; }
 
-    [Required]
-    public bool Enabled { get; init; } = false;
+    public required Guid? ProjectId { get; init; }
 
-    [Required]
-    public Guid? ProjectId { get; init; } = null;
-
-    [Required, MinLength(1)]
+    [Required, MinLength(1, ErrorMessage = "Requires at least 1 variant to be defined.")]
     public required IEnumerable<RubricVariantDTO> Variants { get; init; }
 
-    [Required, MinLength(1)]
+    [RequiresFile("README.md", ErrorMessage = "You need to provide a file 'README.md' which is used as the rubric.")]
+    [Required, MinLength(1, ErrorMessage = "Requires at least 1 file to be defined.")]
     public required IEnumerable<CommitFile> Files { get; init; }
 }

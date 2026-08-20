@@ -22,7 +22,7 @@ public class SubscriptionService(
     IGitService git,
     TimeProvider time,
     IEligibilityService eligibilityService,
-    ICursusSnapshotTracker snapshotTracker,
+    ICursusSnapshot snapshotTracker,
     IOptions<SubscriptionOptions> options
 ) : ISubscriptionService
 {
@@ -32,15 +32,12 @@ public class SubscriptionService(
 
     public async Task<UserCursus> SubscribeToCursusAsync(Guid userId, Guid cursusId, CancellationToken token = default)
     {
-        // 1. Run read-only eligibility checks first (throws ServiceException if ineligible)
         await eligibilityService.EligibleForCursusAsync(userId, cursusId, token);
-
         var existing = await context.UserCursi.FirstOrDefaultAsync(
             uc => uc.UserId == userId && uc.CursusId == cursusId,
             token
         );
 
-        // 2. Reactivate inactive subscription
         if (existing is not null)
         {
             existing.State = EntityObjectState.Active;
@@ -56,7 +53,7 @@ public class SubscriptionService(
             // so anything the user was mid-progress on before unsubscribing is
             // correctly seen as locked-in and stays frozen rather than getting
             // swept up by a track change that happened in the meantime.
-            await snapshotTracker.AdvanceTrackAsync(userId, cursusId, existing.Id, token);
+            await snapshotTracker.SyncTrackAsync(userId, cursusId, existing.Id, token);
 
             return existing;
         }
@@ -88,9 +85,7 @@ public class SubscriptionService(
 
     public async Task<UserGoal> SubscribeToGoalAsync(Guid userId, Guid goalId, CancellationToken token = default)
     {
-        // 1. Run read-only eligibility checks outside the transaction
         await eligibilityService.EligibleForGoalAsync(userId, goalId, token);
-
         return await context.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
         {
             await using var transaction = await context.Database.BeginTransactionAsync(ct);
@@ -100,7 +95,6 @@ public class SubscriptionService(
                 ct
             );
 
-            // 2. Reactivate inactive subscription
             if (existing is not null)
             {
                 existing.State = EntityObjectState.Active;
@@ -114,7 +108,6 @@ public class SubscriptionService(
                 return existing;
             }
 
-            // 3. Create fresh subscription & calculate initial completion state
             var total = await context.GoalProject.CountAsync(gp => gp.GoalId == goalId, ct);
             var completed = await context.GoalProject
                 .Where(gp => gp.GoalId == goalId)
@@ -144,9 +137,7 @@ public class SubscriptionService(
 
     public async Task<UserProject> SubscribeToProjectAsync(Guid userId, Guid projectId, CancellationToken token = default)
     {
-        // 1. Run read-only eligibility checks outside the transaction
         await eligibilityService.EligibleForProjectAsync(userId, projectId, token);
-
         return await context.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
         {
             await using var transaction = await context.Database.BeginTransactionAsync(ct);
@@ -161,7 +152,6 @@ public class SubscriptionService(
                 )
             ).FirstOrDefaultAsync(ct);
 
-            // 2. Reactivate inactive subscription & unlock Git repo
             if (existing is not null)
             {
                 existing.State = EntityObjectState.Active;
@@ -195,7 +185,6 @@ public class SubscriptionService(
                 return existing;
             }
 
-            // 3. Setup fresh session, create Git repository, and assign leader role
             var up = new UserProject
             {
                 ProjectId = projectId,
@@ -263,8 +252,7 @@ public class SubscriptionService(
             await using var transaction = await context.Database.BeginTransactionAsync(ct);
 
             existing.State = EntityObjectState.Inactive;
-            // TODO: Reactive
-            // existing.UnlocksAt = time.GetUtcNow().Add(_config.Cooldown);
+            existing.UnlocksAt = time.GetUtcNow().Add(_config.Cooldown);
             context.UserProjects.Update(existing);
 
             await context.UserProjectTransactions.AddAsync(new()
@@ -315,7 +303,7 @@ public class SubscriptionService(
                 .ToListAsync(ct);
 
             foreach (var uc in affectedCursi)
-                await snapshotTracker.AdvanceTrackAsync(userId, uc.CursusId, uc.Id, ct);
+                await snapshotTracker.SyncTrackAsync(userId, uc.CursusId, uc.Id, ct);
 
             await transaction.CommitAsync(ct);
             return existing;

@@ -11,7 +11,7 @@ namespace App.Backend.Domain.Enums;
 /// Flags enum representing the types of reviews a rubric supports.
 /// A rubric can support multiple review types.
 /// </summary>
-[Flags]
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum ReviewKinds
 {
     /// <summary>

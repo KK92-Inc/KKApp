@@ -79,6 +79,9 @@ export function paginate<T>(data: Array<T> | undefined, r: Response): Paginated<
 
 // ============================================================================
 
+/** For CRUD usually there are common fields in the way / no need to be defined. */
+export type Fields<T> = Omit<T, | "id" | "createdAt" | "updatedAt">
+
 /**
  * Commonly used valibot validators and small schemas reused across forms.
  *
@@ -90,6 +93,7 @@ const id = v.pipe(v.string(), v.uuid());
 export const Order = v.picklist(['Ascending', 'Descending']);
 export const EntityObjectState = v.picklist(['Inactive', 'Active', 'Awaiting', 'Completed']);
 export const ReviewState = v.picklist(['Pending', 'InProgress', 'Finished', 'Cancelled']);
+export const ReviewKind = v.picklist(["Self", "Peer", "Async", "Auto"]);
 export const CursusVariant = v.picklist(['Dynamic', 'Static', 'Partial']);
 export const EntityType = v.picklist(['Project', 'Cursus', 'Goal', 'Rubric']);
 export const CompletionMode = v.picklist(['Ring', 'FreeStyle']);

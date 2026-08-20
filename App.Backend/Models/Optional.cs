@@ -15,7 +15,7 @@ namespace App.Backend.Models;
 /// recognize an <see cref="Optional{T}"/> property without needing to know
 /// its generic argument up front.
 /// </summary>
-internal interface IOptional
+public interface IOptional
 {
     bool HasValue { get; }
     object? BoxedValue { get; }
@@ -36,13 +36,10 @@ public readonly struct Optional<T>(T value) : IOptional, IEquatable<Optional<T>>
     public bool HasValue { get; } = true;
 
     /// <summary>
-    /// The value, if present. Throws if <see cref="HasValue"/> is false,
-    /// check <see cref="HasValue"/> first, or use <see cref="TryGetValue"/> /
-    /// <see cref="IfPresent"/> instead.
+    /// The underlying value. Returns default(T) if HasValue is false to prevent 
+    /// framework reflection (like ASP.NET Core ValidationVisitor) from throwing.
     /// </summary>
-    public T Value => HasValue
-        ? _value
-        : throw new InvalidOperationException($"Optional<{typeof(T).Name}> has no value; check HasValue first.");
+    public T Value => _value;
 
     /// <summary>The "not present" value. Equivalent to <c>default</c>.</summary>
     public static Optional<T> None => default;
@@ -60,7 +57,7 @@ public readonly struct Optional<T>(T value) : IOptional, IEquatable<Optional<T>>
         return HasValue;
     }
 
-    object? IOptional.BoxedValue => _value;
+    object? IOptional.BoxedValue => HasValue ? _value : null;
     Type IOptional.ValueType => typeof(T);
 
     public bool Equals(Optional<T> other) =>

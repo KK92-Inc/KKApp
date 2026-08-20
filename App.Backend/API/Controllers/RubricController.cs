@@ -13,6 +13,7 @@ using App.Backend.Models.Responses.Entities.Reviews;
 using App.Backend.Models.Requests.Rubrics;
 using App.Backend.Domain.Entities.Reviews;
 using App.Backend.API.Utils;
+using App.Backend.Domain.Enums;
 
 // ============================================================================
 
@@ -38,8 +39,9 @@ public class RubricController(
         [FromQuery(Name = "filter[id]")] Guid? id,
         [FromQuery(Name = "filter[name]")] string? name,
         [FromQuery(Name = "filter[slug]")] string? slug,
-        // [FromQuery(Name = "filter[enabled]")] bool? enabled,
+        [FromQuery(Name = "filter[enabled]")] bool? enabled,
         [FromQuery(Name = "filter[workspace_id]")] Guid? workspace,
+        [FromQuery(Name = "filter[project_id]")] Guid? projectId,
         [FromQuery] Sorting sorting,
         [FromQuery] Pagination pagination,
         CancellationToken token
@@ -48,9 +50,10 @@ public class RubricController(
         var page = await service.GetAllAsync(sorting, pagination, token,
             id is null ? null : r => r.Id == id,
             workspace is null ? null : n => n.WorkspaceId == workspace,
+            !projectId.HasValue ? null : n => n.ProjectId == projectId,
             string.IsNullOrWhiteSpace(name) ? null : r => EF.Functions.ILike(r.Name, $"%{name}%"),
-            string.IsNullOrWhiteSpace(slug) ? null : r => r.Slug == slug
-            // enabled is null ? null : r => r.Enabled == enabled,
+            string.IsNullOrWhiteSpace(slug) ? null : r => r.Slug == slug,
+            enabled is null ? null : r => r.Enabled == enabled
         );
 
         page.AppendHeaders(Response.Headers);
@@ -96,19 +99,12 @@ public class RubricController(
         rubric.Name = body.Name.GetValueOrDefault(rubric.Name);
         rubric.Public = body.Public.GetValueOrDefault(rubric.Public);
         rubric.Enabled = body.Enabled.GetValueOrDefault(rubric.Enabled);
-        if (body.Variants is not null)
-        {
-            rubric.Variants = [.. body.Variants
-                .Where(v => v.Required > 0)
-                .Select(v => new RubricVariant
-                {
-                    RubricId = id,
-                    Kind = v.Kind,
-                    Count = v.Required
-                })];
-        }
 
-        await service.UpdateAsync(rubric, token);
+        List<(ReviewKinds Kind, int Count)>? variants = body.Variants is not null
+            ? body.Variants.Where(v => v.Required > 0).Select(v => (v.Kind, v.Required)).ToList()
+            : null;
+
+        await service.UpdateRubricAsync(rubric, variants, token);
         return Ok(new RubricDO(rubric));
     }
 

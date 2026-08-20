@@ -13,7 +13,7 @@ namespace App.Backend.Models.Requests.Cursus;
 /// <summary>
 /// Request DTO for updating a cursus (partial update).
 /// </summary>
-public record PatchCursusRequestDTO
+public class PatchCursusRequestDTO
 {
     /// <summary>
     /// Optional name update.

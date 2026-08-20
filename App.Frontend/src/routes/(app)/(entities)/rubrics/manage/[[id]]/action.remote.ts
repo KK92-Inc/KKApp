@@ -3,21 +3,20 @@
 // See README in the root project for more information.
 // ============================================================================
 
-import { command, getRequestEvent } from '$app/server';
 import { Filters, Problem } from '$lib/api';
-import { Log } from '$lib/log';
-import { CreateSchema, UpdateSchema } from './context.svelte';
+import { command, getRequestEvent } from '$app/server';
+import type { components } from '$lib/api/api';
 
 // ============================================================================
 
-/** Create the goal */
-export const create = command(CreateSchema, async (body) => {
+// NOTE(W2): Validation happens on the BE.
+type CreateRubric = { workspace: string; } & components['schemas']['PostRubricRequestDTO'];
+export const create = command('unchecked', async (body: CreateRubric) => {
 	const { locals } = getRequestEvent();
 	const { workspace, ...rest } = body;
-	Log.dbg(JSON.stringify({ ...rest }));
-	const { error, data } = await locals.api.POST("/workspace/{workspace}/rubric", {
+	const { error, data } = await locals.api.POST('/workspace/{workspace}/rubric', {
 		params: { path: { workspace } },
-		body: { ...rest }
+		body: rest
 	});
 
 	if (error || !data) {
@@ -27,13 +26,14 @@ export const create = command(CreateSchema, async (body) => {
 	return data;
 });
 
-/** Update the goal */
-export const update = command(UpdateSchema, async (body) => {
-	const { locals } = getRequestEvent();
+// NOTE(W2): Validation happens on the BE.
+type UpdateRubric = { id: string; } & components['schemas']['PatchRubricRequestDTO'];
+export const update = command('unchecked', async (body: UpdateRubric) => {
 	const { id, ...rest } = body;
+	const { locals } = getRequestEvent();
 	const { error, data } = await locals.api.PATCH("/rubrics/{id}", {
 		params: { path: { id } },
-		body: { ...rest }
+		body: rest
 	});
 
 	if (error || !data) {
@@ -43,10 +43,9 @@ export const update = command(UpdateSchema, async (body) => {
 	return data;
 });
 
-/** Deprecate the goal */
 export const deprecate = command(Filters.id, async (id) => {
 	const { locals } = getRequestEvent();
-	const { error } = await locals.api.DELETE("/projects/{id}", {
+	const { error } = await locals.api.DELETE("/rubrics/{id}", {
 		params: { path: { id } },
 	});
 

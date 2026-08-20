@@ -14,7 +14,7 @@ export interface FileTreeNode {
 	path: string;
 	isDirectory: boolean;
 	content?: string;
-	encoding?: 'UTF8' | 'Base64';
+	encoding?: 'Text' | 'Binary';
 	children?: FileTreeNode[];
 }
 
@@ -25,7 +25,7 @@ export type FlatFile = v.InferInput<typeof FileSchema>;
 export const FileSchema = v.object({
 	path: v.string(),
 	content: v.string(),
-	encoding: v.picklist(["UTF8", "Base64"]),
+	encoding: v.picklist(["Text", "Binary"]),
 });
 
 const instance: TreeAdapter<FileTreeNode> = {
@@ -40,7 +40,7 @@ const instance: TreeAdapter<FileTreeNode> = {
 			path,
 			isDirectory: false,
 			content: '',
-			encoding: 'UTF8'
+			encoding: 'Text'
 		};
 	}
 };
@@ -62,7 +62,7 @@ export const Adapter = {
 				results.push({
 					path: curr.path.startsWith('/') ? curr.path.slice(1) : curr.path,
 					content: curr.content ?? '',
-					encoding: curr.encoding ?? 'UTF8'
+					encoding: curr.encoding ?? 'Text'
 				});
 				return;
 			}

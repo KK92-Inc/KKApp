@@ -5,6 +5,8 @@
 
 using App.Backend.Domain.Entities;
 using App.Backend.Domain.Entities.Reviews;
+using App.Backend.Domain.Relations;
+using App.Backend.Domain.Values.Misc;
 
 // ============================================================================
 
@@ -28,7 +30,7 @@ public interface IWorkspaceService : IDomainService<Workspace>, IUserQueryable<W
     /// <param name="project"></param>
     /// <param name="token"></param>
     /// <returns></returns>
-    public Task<Project> AddProjectAsync(Guid workspaceId, Project project, CancellationToken token = default);
+    public Task<Project> AddProjectAsync(Guid workspaceId, Project project, Commit commit, CancellationToken token = default);
 
     /// <summary>
     ///
@@ -46,7 +48,7 @@ public interface IWorkspaceService : IDomainService<Workspace>, IUserQueryable<W
     /// <param name="project"></param>
     /// <param name="token"></param>
     /// <returns></returns>
-    public Task<Cursus> AddCursusAsync(Guid workspaceId, Cursus cursus, CancellationToken token = default);
+    public Task<Cursus> AddCursusAsync(Guid workspaceId, Cursus cursus, IEnumerable<CursusGoal> nodes, CancellationToken token = default);
 
     /// <summary>
     /// Creates a new rubric with an associated git repository into the specified workspace.
@@ -56,5 +58,5 @@ public interface IWorkspaceService : IDomainService<Workspace>, IUserQueryable<W
     /// <param name="creatorId">The creator user ID.</param>
     /// <param name="token">The cancellation token.</param>
     /// <returns>The created rubric.</returns>
-    public Task<Rubric> AddRubricAsync(Guid workspaceId, Rubric rubric, CancellationToken token = default);
+    public Task<Rubric> AddRubricAsync(Guid workspaceId, Rubric rubric, Commit commit, CancellationToken token = default);
 }

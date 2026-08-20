@@ -28,11 +28,10 @@ namespace App.Backend.API.Controllers;
 [Route("goals")]
 [ProtectedResource("goals"), Authorize]
 public class GoalController(
-    ILogger<GoalController> log,
-    IGoalService goalService,
-    IProjectService projectService,
-    IWorkspaceService workspace,
-    ISubscriptionService subscriptions
+    IAuthorizationService auth,
+    IGoalService goals,
+    IMemberService members,
+    IProjectService projects
 ) : Controller
 {
     [HttpGet]
@@ -52,7 +51,7 @@ public class GoalController(
         CancellationToken token
     )
     {
-        var page = await goalService.GetAllAsync(sorting, pagination, token,
+        var page = await goals.GetAllAsync(sorting, pagination, token,
             id is null ? null : n => n.Id == id,
             workspace is null ? null : n => n.WorkspaceId == workspace,
             string.IsNullOrWhiteSpace(slug) ? null : n => n.Slug == slug,
@@ -72,12 +71,19 @@ public class GoalController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Delete a goal")]
     [EndpointDescription("Delete a goal and its associations")]
-    public async Task<IActionResult> Delete(Guid id)
+    public async Task<IActionResult> Delete(Guid id, CancellationToken token)
     {
-        var goal = await goalService.FindByIdAsync(id);
-        if (goal is null)
-            return NotFound();
-        await goalService.DeleteAsync(goal);
+        var goal = await goals.FindByIdAsync(id);
+        if (goal is null) return NotFound();
+        
+        var isStaff = await auth.AuthorizeAsync(User, "staff");
+        if (!isStaff.Succeeded)
+        {
+            var member = await members.FindByEntityAndUserId(goal.WorkspaceId, User.GetSID(), token);
+            if (member is null) return Forbid();
+        }
+
+        await goals.DeleteAsync(goal);
         return NoContent();
     }
 
@@ -90,9 +96,9 @@ public class GoalController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Query a goal")]
     [EndpointDescription("Retrieve a specific goal by ID")]
-    public async Task<ActionResult<GoalDO>> GetById(Guid id)
+    public async Task<ActionResult<GoalDO>> GetById(Guid id, CancellationToken token)
     {
-        var goal = await goalService.FindByIdAsync(id);
+        var goal = await goals.FindByIdAsync(id, token);
         return goal is null ? NotFound() : Ok(new GoalDO(goal));
     }
 
@@ -106,17 +112,21 @@ public class GoalController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Update a goal")]
     [EndpointDescription("Update goal and project associations")]
-    public async Task<ActionResult<GoalDO>> Update(Guid id, [FromBody] PatchGoalRequestDTO request)
+    public async Task<ActionResult<GoalDO>> Update(Guid id, [FromBody] PatchGoalRequestDTO request, CancellationToken token)
     {
-        var goal = await goalService.FindByIdAsync(id);
-        if (goal is null)
-            return NotFound();
+        var goal = await goals.FindByIdAsync(id, token);
+        if (goal is null) return NotFound();
 
+        var isStaff = await auth.AuthorizeAsync(User, "staff");
+        if (!isStaff.Succeeded)
+        {
+            var member = await members.FindByEntityAndUserId(goal.WorkspaceId, User.GetSID(), token);
+            if (member is null) return Forbid();
+        }
 
         goal.Name = request.Name ?? goal.Name;
         goal.Description = request.Description ?? goal.Description;
-        // goal.Slug = request.Name?.ToSlug() ?? goal.Slug;
-        await goalService.UpdateAsync(goal);
+        await goals.UpdateAsync(goal, token);
         return Ok(new GoalDO(goal));
     }
 
@@ -129,13 +139,13 @@ public class GoalController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Get goal projects")]
     [EndpointDescription("Retrieve projects associated with a goal")]
-    public async Task<ActionResult<IEnumerable<ProjectDO>>> GetGoalProjects(Guid id)
+    public async Task<ActionResult<IEnumerable<ProjectDO>>> GetProjects(Guid id, CancellationToken token)
     {
-        var projects = await goalService.GetProjectsAsync(id);
+        var projects = await goals.GetProjectsAsync(id, token);
         return Ok(projects.Select(p => new ProjectDO(p)));
     }
 
-    [HttpPost("{id:guid}/projects")]
+    [HttpPut("{id:guid}/projects")]
     [RequireScope("workspace")]
     [ProtectedResource("goals", "goals:write")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -143,20 +153,17 @@ public class GoalController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Add projects to a goal")]
     [EndpointDescription("Add projects to be part of a goal")]
-    public async Task<ActionResult> AddGoalProjects(
-        Guid id,
-        [FromBody] IEnumerable<Guid> projectIds,
-        CancellationToken token
+    public async Task<ActionResult> SetProjects(Guid id, [FromBody] IEnumerable<Guid> ids, CancellationToken token
     )
     {
         // TODO: Configurable somehow, maybe we want a goal to have 20 ?
         const int MAX_PROJECT = 5;
-        if (projectIds.Count() > MAX_PROJECT)
+        if (ids.Count() > MAX_PROJECT)
             return UnprocessableEntity($"Too many projects, max: {MAX_PROJECT}");
-        if (!await projectService.ExistsAsync(projectIds, token))
+        if (!await projects.ExistsAsync(ids, token))
             return UnprocessableEntity("One or more projects not found");
 
-        var goal = await goalService.SetProjectsAsync(id, projectIds, token);
+        var goal = await goals.SetProjectsAsync(id, ids, token);
         if (goal is null)
             return NotFound();
         return NoContent();

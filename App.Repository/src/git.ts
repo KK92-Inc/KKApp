@@ -18,7 +18,7 @@ import { HTTPError } from "./utilities";
 
 // ============================================================================
 
-export type FileContentEncoding = "utf-8" | "base64";
+export type FileContentEncoding = "Text" | "Binary";
 
 export interface CommitAuthor {
 	name: string;
@@ -70,7 +70,7 @@ async function build(entity: string, baseRef: string, files: CommitFile[]): Prom
 				throw new HTTPError(400, `Bad Request: invalid path ${file.path}`);
 			}
 
-			const buffer = Buffer.from(file.content, file.encoding === "base64" ? "base64" : "utf-8");
+			const buffer = Buffer.from(file.content, file.encoding === "Binary" ? "base64" : "utf-8");
 			const blobSha = (await $`git hash-object -w --stdin < ${buffer}`.quiet().env(env)).text().trim();
 			await $`git --git-dir=${entity} update-index --add --cacheinfo 100644,${blobSha},${file.path}`.quiet().env(env);
 		}

@@ -14,4 +14,4 @@ namespace App.Backend.Domain.Values;
 /// </summary>
 /// <param name="Comment">The comment associated with the annotation.</param>
 /// <param name="Range">The range of text to be annotated.</param>
-public sealed record TextAnnotationData(string Comment, TextRange Range) : AnnotationData;
+public sealed record TextAnnotationData(string Comment, int Start, int End) : AnnotationData;

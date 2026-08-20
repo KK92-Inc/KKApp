@@ -11,5 +11,5 @@ namespace App.Backend.Domain.Values.Misc;
 public record CommitFile(
     [property: JsonPropertyName("path")] string Path,
     [property: JsonPropertyName("content")] string Content,
-    [property: JsonPropertyName("encoding")] FileEncoding Encoding
+    [property: JsonPropertyName("encoding")] FileType Encoding
 );

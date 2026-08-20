@@ -13,17 +13,11 @@ namespace App.Backend.Domain.Enums;
 /// Represents the encoding of a file, e.g: A File to be commited.
 /// </summary>
 [JsonConverter(typeof(JsonStringEnumConverter))]
-public enum FileEncoding
+public enum FileType
 {
-    /// <summary>
-    /// This file is UTF-8 Encoded,
-    /// </summary>
-    [JsonPropertyName(nameof(UTF8))]
-    UTF8 = 0,
+    [JsonPropertyName(nameof(Text))]
+    Text = 0,
 
-    /// <summary>
-    /// This file is Base64 Encoded,
-    /// </summary>
-    [JsonPropertyName(nameof(Base64))]
-    Base64 = 1,
+    [JsonPropertyName(nameof(Binary))]
+    Binary = 1,
 }

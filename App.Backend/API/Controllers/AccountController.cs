@@ -33,12 +33,7 @@ namespace App.Backend.API.Controllers;
 [ApiController]
 [Route("account"), Tags("Account")]
 [Authorize]
-public class AccountController(
-    ILogger<AccountController> log,
-    IUserService users,
-    INotificationService notifications,
-    ISpotlightService spotlights
-) : Controller
+public class AccountController(IUserService users, INotificationService notifications, ISpotlightService spotlights) : Controller
 {
     [HttpGet]
     [RequireScope("user")]
@@ -153,7 +148,6 @@ public class AccountController(
     [EndpointDescription("Mark a spotlight notification as dismissed so it won't be shown again.")]
     public async Task<IActionResult> DismissSpotlight(Guid id, CancellationToken cancellationToken)
     {
-        // TODO: Implement spotlights service
         var spotlight = await spotlights.FindByIdAsync(id, cancellationToken);
         if (spotlight is null) return NotFound();
         await spotlights.Dismiss(spotlight, User.GetSID(), cancellationToken);

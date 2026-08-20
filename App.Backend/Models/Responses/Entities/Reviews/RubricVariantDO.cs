@@ -18,5 +18,5 @@ public class RubricVariantDO(RubricVariant variant)
     public ReviewKinds Kind { get; set; } = variant.Kind;
 
     [Required, Description("How many reviews of this kind are required.")]
-    public int Requires { get; set; } = variant.Count;
+    public int Required { get; set; } = variant.Count;
 }

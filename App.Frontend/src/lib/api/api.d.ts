@@ -2097,12 +2097,11 @@ export interface paths {
                 };
             };
         };
-        put?: never;
         /**
          * Add projects to a goal
          * @description Add projects to be part of a goal
          */
-        post: {
+        put: {
             parameters: {
                 query?: never;
                 header?: never;
@@ -2160,6 +2159,7 @@ export interface paths {
                 };
             };
         };
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3447,7 +3447,9 @@ export interface paths {
                     "filter[id]"?: string;
                     "filter[name]"?: string;
                     "filter[slug]"?: string;
+                    "filter[enabled]"?: boolean;
                     "filter[workspace_id]"?: string;
+                    "filter[project_id]"?: string;
                     /** @description The name of the property to use for sorting. */
                     "sort[by]"?: string;
                     /** @description The sort direction. */
@@ -7610,13 +7612,7 @@ export interface paths {
                 path?: never;
                 cookie?: never;
             };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["JsonDocument"];
-                    "text/json": components["schemas"]["JsonDocument"];
-                    "application/*+json": components["schemas"]["JsonDocument"];
-                };
-            };
+            requestBody?: never;
             responses: {
                 /** @description OK */
                 200: {
@@ -7665,24 +7661,15 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        AnnotationData: components["schemas"]["AnnotationDataTextAnnotationData"] | components["schemas"]["AnnotationDataDrawingAnnotationData"] | components["schemas"]["AnnotationDataSuggestionAnnotationData"];
-        AnnotationDataDrawingAnnotationData: {
-            /** @enum {string} */
-            kind?: "Drawing";
-            color: string;
-            points: components["schemas"]["Point2D"][];
-        };
-        AnnotationDataSuggestionAnnotationData: {
-            /** @enum {string} */
-            kind?: "Suggestion";
-            replacement: string;
-            textRange: components["schemas"]["TextRange"];
-        };
+        AnnotationData: components["schemas"]["AnnotationDataTextAnnotationData"];
         AnnotationDataTextAnnotationData: {
             /** @enum {string} */
             kind?: "Text";
             comment: string;
-            range: components["schemas"]["TextRange"];
+            /** Format: int32 */
+            start: number | string;
+            /** Format: int32 */
+            end: number | string;
         };
         AnnotationDO: {
             /** Format: uuid */
@@ -7722,7 +7709,7 @@ export interface components {
         CommitFile: {
             path: string;
             content: string;
-            encoding: components["schemas"]["FileEncoding"];
+            encoding: components["schemas"]["FileType"];
         };
         /** @enum {unknown} */
         CompletionMode: "Ring" | "FreeStyle";
@@ -7748,12 +7735,6 @@ export interface components {
             nodes?: components["schemas"]["CursusTrackNodeDO"][];
         };
         CursusTrackNodeDO: {
-            goal: components["schemas"]["GoalLightDO"];
-            /** Format: uuid */
-            choiceGroup?: null | string;
-            children?: components["schemas"]["CursusTrackNodeDO"][];
-        };
-        CursusTrackNodeDTO: {
             /**
              * Format: uuid
              * @description The goal ID this node represents.
@@ -7779,7 +7760,7 @@ export interface components {
         /** @enum {unknown} */
         EntityType: "Project" | "Goal" | "Cursus" | "Rubric";
         /** @enum {unknown} */
-        FileEncoding: "UTF8" | "Base64";
+        FileType: "Text" | "Binary";
         GitDO: {
             /** Format: uuid */
             id: string;
@@ -7818,7 +7799,6 @@ export interface components {
             active: boolean;
             deprecated: boolean;
         };
-        JsonDocument: unknown;
         MemberDO: {
             /** Format: uuid */
             id: string;
@@ -7959,12 +7939,6 @@ export interface components {
             avatarUrl?: null | string;
             details?: null | components["schemas"]["PatchUserDetailsRequestDTO"];
         };
-        Point2D: {
-            /** Format: double */
-            x: number | string;
-            /** Format: double */
-            y: number | string;
-        };
         PostApplicationRequestDTO: {
             /** @description The name of the application. */
             name: string;
@@ -7982,17 +7956,19 @@ export interface components {
             /** @description Optional description of the cursus. */
             description: string;
             /** @description Indicates whether the cursus is currently active. */
-            active?: boolean;
+            active: boolean;
             /** @description Indicates whether the cursus is publicly visible. */
-            public?: boolean;
+            public: boolean;
+            /** @description The flat list of track nodes forming the cursus hierarchy. */
+            nodes: components["schemas"]["CursusTrackNodeDO"][];
             /** @description The cursus variant: Static (fixed track) or Dynamic (free-roam). */
-            variant?: components["schemas"]["CursusVariant"];
+            variant: components["schemas"]["CursusVariant"];
             /** @description How users progress through the track: Ring (level-by-level) or FreeStyle (branch-independent). */
-            completionMode?: components["schemas"]["CompletionMode"];
+            completionMode: components["schemas"]["CompletionMode"];
         };
         PostCursusTrackRequestDTO: {
             /** @description The flat list of track nodes forming the cursus hierarchy. */
-            nodes: components["schemas"]["CursusTrackNodeDTO"][];
+            nodes: components["schemas"]["CursusTrackNodeDO"][];
         };
         PostGoalRequestDTO: {
             name: string;
@@ -8033,7 +8009,6 @@ export interface components {
         };
         PostRubricRequestDTO: {
             name: string;
-            description: string;
             public: boolean;
             enabled: boolean;
             /** Format: uuid */
@@ -8136,7 +8111,8 @@ export interface components {
             reviewer: null | components["schemas"]["UserLightDO"];
             rubric: components["schemas"]["RubricLightDO"];
         };
-        ReviewKinds: number;
+        /** @enum {unknown} */
+        ReviewKinds: "Self" | "Peer" | "Async" | "Auto";
         ReviewProgressDO: {
             rubric: components["schemas"]["RubricLightDO"];
             variants: components["schemas"]["ReviewVariantProgressDO"][];
@@ -8188,7 +8164,7 @@ export interface components {
              * Format: int32
              * @description How many reviews of this kind are required.
              */
-            requires: number | string;
+            required: number | string;
         };
         RubricVariantDTO: {
             /** @description The review kind this variant applies to. */
@@ -8227,16 +8203,6 @@ export interface components {
             login: string;
             password: string;
             email: string;
-        };
-        TextRange: {
-            /** Format: int32 */
-            startLine: number | string;
-            /** Format: int32 */
-            startColumn: number | string;
-            /** Format: int32 */
-            endLine: number | string;
-            /** Format: int32 */
-            endColumn: number | string;
         };
         UserCursusDO: {
             /** Format: uuid */

@@ -15,6 +15,6 @@ namespace App.Backend.Domain.Values;
 /// </summary>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "kind")]
 [JsonDerivedType(typeof(TextAnnotationData), nameof(AnnotationKind.Text))]
-[JsonDerivedType(typeof(DrawingAnnotationData), nameof(AnnotationKind.Drawing))]
-[JsonDerivedType(typeof(SuggestionAnnotationData), nameof(AnnotationKind.Suggestion))]
+// [JsonDerivedType(typeof(DrawingAnnotationData), nameof(AnnotationKind.Drawing))]
+// [JsonDerivedType(typeof(SuggestionAnnotationData), nameof(AnnotationKind.Suggestion))]
 public abstract record AnnotationData;

@@ -19,7 +19,12 @@
 		ListTree,
 		CircleAlert,
 		CirclePlay,
-		GitGraph
+		GitGraph,
+		TrendingUpDown,
+		LocateFixed,
+		Blend,
+		Unlink,
+		Link
 	} from '@lucide/svelte';
 	import * as Field from '$lib/components/field';
 	import * as Card from '$lib/components/card';
@@ -44,7 +49,6 @@
 	const { params }: PageProps = $props();
 	const context = Page.setContext(new Page.Context(() => params.id));
 	await context.hydrate();
-
 
 	let view = $state<'schema' | 'render'>('schema');
 	let trackData = $state(sampleCursusTrack());
@@ -162,11 +166,25 @@
 							<Field.Label for="mode">Completion Mode</Field.Label>
 							<Tabs.Root id="mode" bind:value={context.fields.mode}>
 								<Tabs.List class="w-auto">
-									<Tabs.Trigger value="free">Freestyle</Tabs.Trigger>
-									<Tabs.Trigger value="ring">Ring Based</Tabs.Trigger>
+									<Tabs.Trigger value="free">Freestyle <Unlink /></Tabs.Trigger>
+									<Tabs.Trigger value="ring">Ring Based <Link /></Tabs.Trigger>
 								</Tabs.List>
 							</Tabs.Root>
+							<Field.Description>Determines the cursus progression style.</Field.Description>
 							<Field.Error errors={context.errors.mode} />
+						</Field.Field>
+
+						<Field.Field>
+							<Field.Label for="variant">Cursus Variant</Field.Label>
+							<Tabs.Root id="variant" value="static">
+								<Tabs.List class="w-auto">
+									<Tabs.Trigger disabled value="dynamic">Dynamic <TrendingUpDown /></Tabs.Trigger>
+									<Tabs.Trigger value="static">Static <LocateFixed /></Tabs.Trigger>
+									<Tabs.Trigger disabled value="hybrid">Hybrid <Blend /></Tabs.Trigger>
+								</Tabs.List>
+							</Tabs.Root>
+							<Field.Description>Determines the overall cursus structure.</Field.Description>
+							<Field.Error errors={[]} />
 						</Field.Field>
 					{/if}
 
@@ -180,6 +198,7 @@
 							bind:value={context.fields.description}
 						/>
 						<Field.Error errors={context.errors.description} />
+						<Field.Description>Short and readable description about the cursus.</Field.Description>
 					</Field.Field>
 				</Card.Content>
 			</Card.Root>
@@ -264,11 +283,14 @@
 				<GitGraph />
 				<Alert.Title>What is Persistence Graph Meshing ?</Alert.Title>
 				<Alert.Description class="text-xs">
-					<p>Cursi implement a mechanism named "Persistence Graph Meshing", the idea is straight forward: Subscribers keep their progress.</p>
+					<p>
+						Cursi implement a mechanism named "Persistence Graph Meshing", the idea is straight forward:
+						Subscribers keep their progress.
+					</p>
 
 					<p>
-						When you update the schematic in the future, existing students
-						keep credit for completed or active steps while seamlessly transitioning to the new requirements for goals they have yet to reach.
+						When you update the schematic in the future, existing students keep credit for completed or active
+						steps while seamlessly transitioning to the new requirements for goals they have yet to reach.
 					</p>
 				</Alert.Description>
 			</Alert.Root>
@@ -310,7 +332,7 @@
 
 						{#snippet actions({ item })}
 							<ButtonGroup.Root>
-								{#if !item.choiceGroup && (item.children?.length ?? 0) < 4}
+								{#if !item.group && (item.children?.length ?? 0) < 4}
 									<!-- Add Standard Goal -->
 									<Button
 										size="sm"
