@@ -30,7 +30,7 @@
 	import * as Alert from '$lib/components/alert';
 	import * as InputGroup from '$lib/components/input-group';
 	import * as DropdownMenu from '$lib/components/dropdown-menu';
-	import { PUBLIC_GIT_URL } from '$env/static/public';
+	import { env } from '$env/dynamic/public';
 	import Badge from '$lib/components/badge/badge.svelte';
 
 	const { params }: PageProps = $props();
@@ -214,7 +214,7 @@
 					<Files bind:files={context.files} />
 					<Field.Error errors={context.errors.files} class="justify-center" />
 				{:else}
-					{@const value = `${PUBLIC_GIT_URL}/rubric/${params.id}`}
+					{@const value = `${env.PUBLIC_GIT_URL}/rubric/${params.id}`}
 					<Alert.Root>
 						<CircleAlert />
 						<Alert.Title>Unable to update files via browser.</Alert.Title>

@@ -13,7 +13,7 @@
 	import Separator from '$lib/components/separator/separator.svelte';
 	import * as UserProject from '$lib/remotes/user-project.remote';
 	import * as Projects from '$lib/remotes/projects.remote';
-	import { PUBLIC_GIT_URL } from '$env/static/public';
+	import { env } from '$env/dynamic/public';
 
 	const context = Page.getContext();
 	const project = await Projects.get(context.projectId());
@@ -24,7 +24,7 @@
 		})
 	);
 
-	const repoUrl = $derived(`${PUBLIC_GIT_URL}/${project.id}/${session!.id}`);
+	const repoUrl = $derived(`${env.PUBLIC_GIT_URL}/${project.id}/${session!.id}`);
 	const mirror = $derived(
 		`
 		git remote add origin ${repoUrl}
