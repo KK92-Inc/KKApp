@@ -13,6 +13,7 @@
 	import Separator from '$lib/components/separator/separator.svelte';
 	import * as UserProject from '$lib/remotes/user-project.remote';
 	import * as Projects from '$lib/remotes/projects.remote';
+	import { PUBLIC_GIT_URL } from '$env/static/public';
 
 	const context = Page.getContext();
 	const project = await Projects.get(context.projectId());
@@ -23,7 +24,7 @@
 		})
 	);
 
-	const repoUrl = $derived(`ssh://git@localhost:2222/${project.id}/${session!.id}`);
+	const repoUrl = $derived(`${PUBLIC_GIT_URL}/${project.id}/${session!.id}`);
 	const mirror = $derived(
 		`
 		git remote add origin ${repoUrl}
@@ -86,12 +87,12 @@
 	</Card.Header>
 
 	<Card.Content class="space-y-4 p-4">
-		<Tabs.Root value="browser">
+		<Tabs.Root value="terminal">
 			<Tabs.List class="w-full">
-				<Tabs.Trigger value="browser">Browser</Tabs.Trigger>
+				<Tabs.Trigger disabled value="browser">Browser</Tabs.Trigger>
 				<Tabs.Trigger value="terminal">Terminal</Tabs.Trigger>
 			</Tabs.List>
-			<Tabs.Content value="browser">
+			<Tabs.Content value="terminal">
 				<Alert.Root>
 					<GitBranch />
 					<Alert.Title>Initializing the repository</Alert.Title>

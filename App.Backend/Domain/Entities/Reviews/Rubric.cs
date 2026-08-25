@@ -29,9 +29,6 @@ public class Rubric : BaseEntity
         Enabled = false;
         Deprecated = false;
 
-        GitInfoId = null;
-        GitInfo = null;
-
         // ReviewVariant = ReviewKinds.Self;
         RevieweeRules = [];
         ReviewerRules = [];
@@ -93,7 +90,7 @@ public class Rubric : BaseEntity
     /// Optional Git repository containing additional rubric resources (tests, scripts).
     /// </summary>
     [Column("git_info_id")]
-    public Guid? GitInfoId { get; set; }
+    public Guid GitInfoId { get; set; }
 
     [Column("workspace_id")]
     public Guid WorkspaceId { get; set; }
@@ -102,7 +99,7 @@ public class Rubric : BaseEntity
     // Relations //
 
     [ForeignKey(nameof(GitInfoId))]
-    public virtual Git? GitInfo { get; set; }
+    public virtual Git GitInfo { get; set; }
 
     [ForeignKey(nameof(ProjectId))]
     public virtual Project? Project { get; set; }

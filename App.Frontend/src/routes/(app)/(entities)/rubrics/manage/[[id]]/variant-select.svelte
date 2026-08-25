@@ -121,7 +121,7 @@
 				<div class="mt-3">
 					<Slider
 						type="single"
-						disabled={item.wip}
+						disabled={item.wip || ctx.fields.deprecated}
 						{value}
 						onValueChange={(val) => set(item.kind, val)}
 						min={0}

@@ -47,7 +47,7 @@ export const getPage = query(PageSchema, async (params) => {
 				'filter[user_project_id]': params.userProjectId,
 				'filter[reviewer_id]': params.reviewerId,
 				'filter[rubric_id]': params.rubricId,
-				'filter[kind]': params.kind,
+				// 'filter[kind]': params.kind,
 				'filter[status]': params.status,
 				'sort[by]': params.sortBy,
 				'sort[order]': params.sort,

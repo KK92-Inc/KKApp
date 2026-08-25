@@ -38,9 +38,7 @@ public enum CursusVariant
     ///
     /// E.g: The core cursus is made up of 3 goals. Afterwards the user can branch out in
     /// any way they see fit.
-    ///
-    /// TODO: Implement this at a later stage
     /// </summary>
-    [JsonPropertyName(nameof(Partial))]
-    Partial,
+    [JsonPropertyName(nameof(Hybrid))]
+    Hybrid,
 }

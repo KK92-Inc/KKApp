@@ -49,8 +49,8 @@ public class UserCursusService(DatabaseContext ctx) : BaseService<UserCursus>(ct
 
         var unlocked = cursus.CompletionMode switch
         {
-            CompletionMode.FreeStyle => ComputeFreestyleUnlocked(snapshot, completed),
-            CompletionMode.Ring => ComputeRingUnlocked(snapshot, completed),
+            CursusMode.FreeStyle => ComputeFreestyleUnlocked(snapshot, completed),
+            CursusMode.Ring => ComputeRingUnlocked(snapshot, completed),
             _ => throw new ArgumentOutOfRangeException(nameof(cursus.CompletionMode))
         };
 

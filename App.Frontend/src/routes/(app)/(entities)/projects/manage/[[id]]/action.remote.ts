@@ -3,21 +3,19 @@
 // See README in the root project for more information.
 // ============================================================================
 
-import { command, getRequestEvent } from '$app/server';
 import { Filters, Problem } from '$lib/api';
-import { Log } from '$lib/log';
-import { CreateSchema, UpdateSchema } from './context.svelte';
+import { command, getRequestEvent } from '$app/server';
+import type { components } from '$lib/api/api';
 
 // ============================================================================
 
-/** Create the goal */
-export const create = command(CreateSchema, async (body) => {
+type CreateProject = { workspace: string; } & components['schemas']['PostProjectRequestDTO'];
+export const create = command('unchecked', async (body: CreateProject) => {
 	const { locals } = getRequestEvent();
 	const { workspace, ...rest } = body;
-	Log.dbg(JSON.stringify({ ...rest }));
 	const { error, data } = await locals.api.POST("/workspace/{workspace}/project", {
 		params: { path: { workspace } },
-		body: { ...rest }
+		body: rest
 	});
 
 	if (error || !data) {
@@ -27,13 +25,13 @@ export const create = command(CreateSchema, async (body) => {
 	return data;
 });
 
-/** Update the goal */
-export const update = command(UpdateSchema, async (body) => {
+type UpdateProject = { id: string; } & components['schemas']['PatchProjectRequestDTO'];
+export const update = command('unchecked', async (body: UpdateProject) => {
 	const { locals } = getRequestEvent();
 	const { id, ...rest } = body;
 	const { error, data } = await locals.api.PATCH("/projects/{id}", {
 		params: { path: { id } },
-		body: { ...rest }
+		body: rest
 	});
 
 	if (error || !data) {

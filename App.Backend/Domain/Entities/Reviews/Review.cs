@@ -74,6 +74,22 @@ public class Review : BaseEntity
     [Column("ref")]
     public string Ref { get; set; }
 
+    /// <summary>
+    /// When the reviewer has committed to carrying out the review.
+    /// For Async reviews this is "now" or up to 2 hours out; for Peer reviews
+    /// this is a time today or tomorrow. Null for reviews that don't go through
+    /// the self-service "give a review" flow (e.g. Self, Auto, staff-assigned).
+    /// </summary>
+    [Column("scheduled_at")]
+    public DateTimeOffset? ScheduledAt { get; set; }
+
+    /// <summary>
+    /// When a still-pending review should be considered stale and eligible for
+    /// automatic cancellation. Currently only set for Async reviews.
+    /// </summary>
+    [Column("expires_at")]
+    public DateTimeOffset? ExpiresAt { get; set; }
+
     // Relations //
 
     [ForeignKey(nameof(ReviewerId))]

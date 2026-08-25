@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-KEY_PRIV="$HOME/.ssh/id_ed25519_tmp"
-KEY_PUB="$HOME/.ssh/id_ed25519_tmp.pub"
+KEY_PRIV="$HOME/.ssh/id_ed25519"
+KEY_PUB="$HOME/.ssh/id_ed25519.pub"
 
 copy_to_clipboard() {
   if command -v pbcopy &>/dev/null; then

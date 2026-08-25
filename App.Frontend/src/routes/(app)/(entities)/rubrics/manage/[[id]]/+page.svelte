@@ -31,6 +31,7 @@
 	import * as InputGroup from '$lib/components/input-group';
 	import * as DropdownMenu from '$lib/components/dropdown-menu';
 	import { PUBLIC_GIT_URL } from '$env/static/public';
+	import Badge from '$lib/components/badge/badge.svelte';
 
 	const { params }: PageProps = $props();
 	const context = Page.setContext(new Page.Context(() => params.id));
@@ -46,16 +47,18 @@
 
 			<Separator class="flex-1" />
 			<ButtonGroup.Root>
-				{#if params.id}
+				{#if params.id && !context.fields.deprecated}
 					<Button variant="outline" type="button" onclick={() => context.deprecate()}>
 						Deprecate <Trash />
 					</Button>
+				{:else if !context.fields.deprecated}
+					<Button disabled={context.fields.deprecated} onclick={() => context.submit()}>
+						{params.id ? 'Save Rubric' : 'Create Rubric'}
+						<CirclePlay />
+					</Button>
+				{:else}
+					<Badge variant="destructive">Deprecated</Badge>
 				{/if}
-
-				<Button onclick={() => context.submit()}>
-					{params.id ? 'Save Rubric' : 'Create Rubric'}
-					<CirclePlay />
-				</Button>
 			</ButtonGroup.Root>
 		</div>
 
@@ -75,14 +78,24 @@
 					<Card.Content class="flex flex-col gap-3 p-4">
 						<Field.Field>
 							<Field.Label for="name">Name</Field.Label>
-							<Input id="name" maxlength={255} bind:value={context.fields.name} placeholder="Rubric name" />
+							<Input
+								disabled={context.fields.deprecated}
+								id="name"
+								maxlength={255}
+								bind:value={context.fields.name}
+								placeholder="Rubric name"
+							/>
 							<Field.Error errors={context.errors.name} class="justify-center" />
 						</Field.Field>
 
 						{#if !params.id}
 							<Field.Field>
 								<Field.Label for="workspace">Workspace</Field.Label>
-								<Tabs.Root id="workspace" bind:value={context.workspace}>
+								<Tabs.Root
+									id="workspace"
+									bind:value={context.workspace}
+									onValueChange={() => (context.fields.projectId = null)}
+								>
 									<Tabs.List class="w-auto">
 										<Tabs.Trigger value="user">My Workspace</Tabs.Trigger>
 										{#if page.data.session.roles.includes('staff')}
@@ -126,7 +139,11 @@
 										</Field.Description>
 										<Field.Error errors={context.errors.public} />
 									</Field.Content>
-									<Switch id="cursus-public" bind:checked={context.fields.public} />
+									<Switch
+										disabled={context.fields.deprecated}
+										id="cursus-public"
+										bind:checked={context.fields.public}
+									/>
 								</Field.Field>
 
 								<Field.Field orientation="horizontal" class="items-center">
@@ -144,7 +161,11 @@
 										</Field.Description>
 										<Field.Error errors={context.errors.active} />
 									</Field.Content>
-									<Switch id="cursus-enabled" bind:checked={context.fields.enabled} />
+									<Switch
+										disabled={context.fields.deprecated}
+										id="cursus-enabled"
+										bind:checked={context.fields.enabled}
+									/>
 								</Field.Field>
 							</Field.Group>
 						</Field.Set>

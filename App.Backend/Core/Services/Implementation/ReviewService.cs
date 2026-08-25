@@ -17,7 +17,7 @@ using System.Linq.Expressions;
 
 namespace App.Backend.Core.Services.Implementation;
 
-public class ReviewService(DatabaseContext context, IRuleService rules) : BaseService<Review>(context), IReviewService
+public class ReviewService(DatabaseContext context, IRuleService rules, IGitService git) : BaseService<Review>(context), IReviewService
 {
     // ============================================================================
     // Public API (Core Actions)
@@ -37,7 +37,7 @@ public class ReviewService(DatabaseContext context, IRuleService rules) : BaseSe
             .PaginateAsync(pagination, token);
     }
 
-    public async Task<IEnumerable<Review>> RequestReviewAsync(Guid userProjectId, Guid initiatorId, string @ref, CancellationToken token = default)
+    public async Task<IEnumerable<Review>> PullReviewAsync(Guid userProjectId, Guid initiatorId, CancellationToken token = default)
     {
         return await context.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
         {
@@ -57,7 +57,11 @@ public class ReviewService(DatabaseContext context, IRuleService rules) : BaseSe
             if (userProject.State is EntityObjectState.Active)
                 userProject.State = EntityObjectState.Awaiting;
 
-            // 2. Resolve rubric
+            // 2. Resolve the ref: always the project's default (master) branch.
+            var @ref = await git.GetDefaultBranchAsync(userProject.GitInfo!.Owner, userProject.GitInfo.Name, ct)
+                ?? throw new ServiceException(404, "Could not determine the project's default branch.");
+
+            // 3. Resolve rubric
             var rubric = await context.Rubrics
                 .Include(r => r.Variants)
                 .Where(r => r.Enabled && (r.ProjectId == userProject.ProjectId || r.ProjectId == null))
@@ -65,16 +69,16 @@ public class ReviewService(DatabaseContext context, IRuleService rules) : BaseSe
                 .FirstOrDefaultAsync(ct)
                 ?? throw new ServiceException(404, "No rubric available for this project.");
 
-            var activeVariants = rubric.Variants.Where(v => v.Count > 0).ToList();
-            ServiceException.ThrowIf(activeVariants.Count == 0, "Rubric has no active review kinds configured.");
+            var variants = rubric.Variants.Where(v => v.Count > 0).ToList();
+            ServiceException.ThrowIf(variants.Count == 0, "Rubric has no active review kinds configured.");
 
-            // 3. Preconditions & Membership Checks
+            // 4. Preconditions & Membership Checks
             var member = await context.Members
                 .FirstOrDefaultAsync(m => m.EntityType == MemberEntityType.UserProject && m.EntityId == userProjectId && m.UserId == initiatorId && m.LeftAt == null, ct);
 
             var isLeader = member?.Role is MemberRole.Leader;
 
-            foreach (var variant in activeVariants)
+            foreach (var variant in variants)
             {
                 if (variant.Kind is ReviewKinds.Self && member is null)
                     throw new ServiceException(422, "Only project members can request a self review.");
@@ -83,7 +87,7 @@ public class ReviewService(DatabaseContext context, IRuleService rules) : BaseSe
                     throw new ServiceException(422, "Only team leaders can request a peer or async review.");
             }
 
-            // 4. Business Rules
+            // 5. Business Rules
             var initiator = await context.Users.FirstOrDefaultAsync(u => u.Id == initiatorId, ct)
                 ?? throw new ServiceException(404, "Initiator not found.");
 
@@ -91,8 +95,8 @@ public class ReviewService(DatabaseContext context, IRuleService rules) : BaseSe
             if (!ruleResult.IsSuccess)
                 throw new ServiceException(string.Join("; ", ruleResult.Reasons));
 
-            // 5. Generate Reviews
-            var reviews = activeVariants
+            // 6. Generate Reviews
+            var reviews = variants
                 .SelectMany(variant => Enumerable.Range(0, variant.Count).Select(_ => new Review
                 {
                     RubricId = rubric.Id,
@@ -109,6 +113,94 @@ public class ReviewService(DatabaseContext context, IRuleService rules) : BaseSe
             await transaction.CommitAsync(ct);
 
             return reviews;
+        }, token);
+    }
+
+    public async Task<Review> PushReviewAsync(Guid userProjectId, Guid reviewerId, ReviewKinds kind, DateTimeOffset scheduledAt, CancellationToken token = default)
+    {
+        if (kind is not (ReviewKinds.Peer or ReviewKinds.Async))
+            throw new ServiceException(422, $"{kind} reviews cannot be given directly; only Peer and Async are supported.");
+
+        return await context.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
+        {
+            await using var transaction = await context.Database.BeginTransactionAsync(ct);
+
+            // 1. Verify project state
+            var userProject = await context.UserProjects
+                .Include(up => up.GitInfo)
+                .FirstOrDefaultAsync(up => up.Id == userProjectId, ct)
+                ?? throw new ServiceException(404, "User project not found.");
+
+            ServiceException.ThrowIf(userProject.GitInfo is null, "Project has nothing submitted for review.");
+
+            // 2. Resolve rubric & validate the requested kind is supported
+            var rubric = await context.Rubrics
+                .Include(r => r.Variants)
+                .Where(r => r.Enabled && (r.ProjectId == userProject.ProjectId || r.ProjectId == null))
+                .OrderByDescending(r => r.ProjectId != null)
+                .FirstOrDefaultAsync(ct)
+                ?? throw new ServiceException(404, "No rubric available for this project.");
+
+            ServiceException.ThrowIf(
+                !rubric.Variants.Any(v => v.Kind == kind && v.Count > 0),
+                422, $"Rubric does not support {kind} reviews."
+            );
+
+            // 3. Resolve reviewer & enforce the one hard rule: you can't evaluate as a member.
+            // NOTE(W2): Beyond that, anyone can give a review on anyone's project, at any time.
+            var reviewerExists = await context.Users.AnyAsync(u => u.Id == reviewerId, ct);
+            ServiceException.ThrowIf(!reviewerExists, 404, "Reviewer not found.");
+
+            var isMember = await context.Members
+                .AnyAsync(m => m.EntityType == MemberEntityType.UserProject && m.EntityId == userProjectId && m.UserId == reviewerId && m.LeftAt == null, ct);
+            ServiceException.ThrowIf(isMember, 422, "You can't evaluate a project you're a member of.");
+
+            // 4. Validate the scheduling window for the chosen kind.
+            var now = DateTimeOffset.UtcNow;
+            switch (kind)
+            {
+                case ReviewKinds.Async:
+                    ServiceException.ThrowIf(
+                        scheduledAt < now.AddMinutes(-5) || scheduledAt > now.AddHours(2),
+                        422, "Async reviews must be scheduled for now or within the next 2 hours."
+                    );
+                    break;
+                case ReviewKinds.Peer:
+                    var date = scheduledAt.UtcDateTime.Date;
+                    var today = now.UtcDateTime.Date;
+                    // TODO: Configurable via system.
+                    ServiceException.ThrowIf(
+                        date != today && date != today.AddDays(1),
+                        422, "Peer reviews must be scheduled for today or tomorrow."
+                    );
+                    break;
+            }
+
+            // 5. Resolve the ref: always the project's default (master) branch.
+            var @ref = await git.GetDefaultBranchAsync(userProject.GitInfo!.Owner, userProject.GitInfo.Name, ct)
+                ?? throw new ServiceException(404, "Could not determine the project's default branch.");
+
+            // 6. Create the review, pending and already assigned to the reviewer.
+            var review = new Review
+            {
+                RubricId = rubric.Id,
+                Kind = kind,
+                State = ReviewState.Pending,
+                UserProjectId = userProjectId,
+                Ref = @ref,
+                ReviewerId = reviewerId,
+                ScheduledAt = scheduledAt,
+                // TODO: Make configurable via system row.
+                // NOTE(W2): Only Async reviews auto-expire for now; Peer reviews are already
+                // pinned to a specific day so there's less risk of them being forgotten.
+                ExpiresAt = kind is ReviewKinds.Async ? scheduledAt.AddDays(3) : null,
+            };
+
+            _dbSet.Add(review);
+            await context.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+
+            return review;
         }, token);
     }
 

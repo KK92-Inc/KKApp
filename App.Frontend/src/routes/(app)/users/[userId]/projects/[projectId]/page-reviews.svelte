@@ -33,6 +33,8 @@
 	import * as UserProjects from '$lib/remotes/user-project.remote';
 	import * as Projects from '$lib/remotes/projects.remote';
 	import * as Reviews from '$lib/remotes/review.remote';
+	import * as Git from '$lib/remotes/git.remote';
+	import { toast } from 'svelte-sonner';
 
 	const context = Page.getContext();
 	let sort = $state<components['schemas']['Order']>('Descending');
@@ -42,6 +44,10 @@
 			userId: context.userId(),
 			projectId: context.projectId()
 		})
+	);
+
+		const git = $derived(
+		session?.gitInfo ? await Git.getBranches(session.gitInfo.id) : { master: undefined, branches: [] }
 	);
 
 	const formatter = new DateFormatter(page.data.locale, {
@@ -58,12 +64,12 @@
 		year: 'numeric'
 	});
 
-	const ReviewKind = {
-		Self: 1 << 0,
-		Peer: 1 << 1,
-		Async: 1 << 2,
-		Auto: 1 << 3
-	} as const;
+	async function requestReview() {
+		if (session && git.master)
+			await Reviews.create({ userProjectId: session.id, ref: git.master })
+		else
+			toast.error("There is no active session or nothing has been pushed yet.")
+	}
 </script>
 
 {#if session}
@@ -99,10 +105,15 @@
 					<ButtonGroup.Root>
 						{#if membership?.role === 'Leader' && session?.state !== 'Inactive'}
 							<!-- Only leader can request it -->
-							<Button size="sm" variant="outline">Request <Plus /></Button>
+							<Button size="sm" variant="outline" onclick={requestReview}>
+								Request <Plus />
+							</Button>
 						{:else if !membership}
 							<!-- Other user can review it -->
-							<Button size="sm" variant="outline">Review <TextSearch /></Button>
+							 <!-- TODO: Implement, for now only team leader can request it -->
+							<!-- <Button size="sm" variant="outline" onclick={provideReview}>
+								Review <TextSearch />
+							</Button> -->
 						{/if}
 						<Button
 							size="sm"
@@ -138,13 +149,13 @@
 					{#each reviews.data as item (item.id)}
 						<Item.Root variant="outline" class="items-center gap-3 p-3">
 							<Item.Media variant="image" class="shrink-0 border">
-								{#if (item.kind & ReviewKind.Self) !== 0}
+								{#if (item.kind === "Self")}
 									<User class="size-5 text-muted-foreground" />
-								{:else if (item.kind & ReviewKind.Peer) !== 0}
+								{:else if (item.kind === "Peer")}
 									<Users class="size-5 text-muted-foreground" />
-								{:else if (item.kind & ReviewKind.Async) !== 0}
+								{:else if (item.kind === "Async")}
 									<Globe class="size-5 text-muted-foreground" />
-								{:else if (item.kind & ReviewKind.Auto) !== 0}
+								{:else if (item.kind === "Auto")}
 									<Bot class="size-5 text-muted-foreground" />
 								{:else}
 									<User class="size-5 text-muted-foreground" />
@@ -164,7 +175,7 @@
 										<span class="text-muted-foreground/40 select-none">•</span>
 										<span class="max-w-32 truncate">{project.name}</span>
 									{:else}
-										{#if (item.kind & ReviewKind.Self) !== 0}
+										{#if (item.kind === "Self")}
 											<span class="font-bold">You</span>
 										{:else if item.reviewer}
 											<HoverCard.Root>
@@ -212,7 +223,7 @@
 
 										{#if item.state === 'InProgress'}
 											<span class="text-muted-foreground">
-												{(item.kind & ReviewKind.Self) !== 0 ? 'are' : 'is'} reviewing
+												{(item.kind === "Self") ? 'are' : 'is'} reviewing
 											</span>
 										{:else}
 											<span class="text-muted-foreground">reviewed</span>
@@ -226,17 +237,7 @@
 									class="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground"
 								>
 									<Badge variant="outline" class="rounded-sm font-normal">
-										{#if (item.kind & ReviewKind.Self) !== 0}
-											Self
-										{:else if (item.kind & ReviewKind.Peer) !== 0}
-											Peer
-										{:else if (item.kind & ReviewKind.Async) !== 0}
-											Async
-										{:else if (item.kind & ReviewKind.Auto) !== 0}
-											Auto
-										{:else}
-											Unknown
-										{/if}
+										{item.kind}
 									</Badge>
 									<span class="text-muted-foreground/40 select-none">•</span>
 									<span class="shrink-0">

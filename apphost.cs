@@ -11,6 +11,7 @@
 #:package Aspire.Hosting.PostgreSQL@13.4.6
 #:package Aspire.Hosting.JavaScript@13.4.6
 #:project App.Migrations/Migrations.csproj
+#:project App.Git/App.Git.Http/App.Git.Http.csproj
 #:project App.Backend/API/App.Backend.API.csproj
 
 using Scalar.Aspire;
@@ -98,29 +99,46 @@ if (!builder.ExecutionContext.IsPublishMode)
 // - For repository projects such as the Git API and SSH Shell
 // ============================================================================
 
-var api = builder.AddDockerfile("git-api", "./App.Repository", "../Docker/Files/Dockerfile.api")
-    .WithVolume("git-repos", "/home/git/repos")
-    .WithHttpEndpoint(targetPort: 3000, name: "http")
-    .WithLifetime(ContainerLifetime.Persistent);
-
-var ssh = builder.AddDockerfile("git-ssh", "./App.Repository", "../Docker/Files/Dockerfile.ssh")
-    .WithVolume("git-repos", "/home/git/repos")
+var api = builder.AddProject<Projects.App_Git_Http>("git-api")
+    .WithHttpHealthCheck("/health")
     .WithReference(backendDb)
+    .WaitFor(backendDb);
+
+var ssh = builder.AddDockerfile("git-ssh", ".", "Docker/Files/Dockerfile.ssh")
+    .WithReference(backendDb)
+    .WithReference(cache)
     .WaitFor(backendDb)
+    .WaitFor(cache)
     .WaitFor(api)
     .WithLifetime(ContainerLifetime.Persistent);
 
 if (builder.ExecutionContext.IsPublishMode)
 {
-    ssh // Avoid Dynamic bind mounts for security reasons. Attach to Port 22.
+    api.WithEnvironment("REPOSITORY_DIRECTORY", "/home/git/repos")
+       .PublishAsDockerComposeService((resource, service) =>
+       {
+           service.Volumes.Add(new()
+           {
+               Name = "git-repos",
+               Target = "/home/git/repos",
+               Type = "volume"
+           });
+       });
+
+    ssh.WithEnvironment("REPOSITORY_DIRECTORY", "/home/git/repos")
         .WithEndpoint(port: 22, targetPort: 22, scheme: "tcp", name: "ssh", isExternal: true)
+        .WithVolume("git-repos", "/home/git/repos")
         .WithVolume("git-ssh-keys", "/etc/ssh/keys");
 }
 else
 {
-    ssh // Locally, dynamic bind mount lets you inspect/reuse the generated key on disk.
+    var dir = Path.Combine(builder.AppHostDirectory, "tmp", "repos");
+
+    api.WithEnvironment("REPOSITORY_DIRECTORY", dir);
+    ssh.WithEnvironment("REPOSITORY_DIRECTORY", "/home/git/repos") // container-side path, not host path
         .WithEndpoint(port: 2222, targetPort: 22, scheme: "tcp", name: "ssh", isExternal: true)
-        .WithBindMount("./App.Repository/config/keys", "/etc/ssh/keys");
+        .WithBindMount("./tmp/repos", "/home/git/repos")
+        .WithBindMount("./Configurations/Shell/Keys", "/etc/ssh/keys");
 }
 
 // ============================================================================

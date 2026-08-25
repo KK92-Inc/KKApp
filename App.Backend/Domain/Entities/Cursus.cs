@@ -52,7 +52,7 @@ public class Cursus : BaseEntity
     /// branch-independent (FreeStyle).
     /// </summary>
     [Column("completion")]
-    public CompletionMode CompletionMode { get; set; } = CompletionMode.Ring;
+    public CursusMode CompletionMode { get; set; } = CursusMode.Ring;
 
     [Column("workspace_id")]
     public Guid WorkspaceId { get; set; }

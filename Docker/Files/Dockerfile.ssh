@@ -1,35 +1,44 @@
-# ============================================================================
-# Copyright (c) 2026 - W2Inc, All Rights Reserved.
-# See README.md in the project root for license information.
-# ============================================================================
-FROM oven/bun:1-alpine AS builder
+FROM oven/bun:1-alpine AS build-auth
 
 WORKDIR /app
-COPY package.json tsconfig.json build.ts ./
-COPY src/ ./src/
-RUN bun run build.ts
+COPY App.Git/App.Git.Auth/package.json App.Git/App.Git.Auth/tsconfig.json ./
+RUN bun install --frozen-lockfile
+COPY App.Git/App.Git.Auth/ .
+RUN bun --bun build --compile --minify ./src/index.ts --outfile /app/output/auth
 
 # ============================================================================
+
+FROM oven/bun:1-alpine AS build-shell
+
+WORKDIR /app
+COPY App.Git/App.Git.Shell/package.json App.Git/App.Git.Shell/tsconfig.json ./
+RUN bun install --frozen-lockfile
+COPY App.Git/App.Git.Shell/ .
+RUN bun --bun build --compile --minify ./src/index.ts --outfile /app/output/shell
+
+# ============================================================================
+
 FROM oven/bun:1-alpine
 
 RUN apk add --no-cache openssh git ca-certificates \
     && adduser -D -h /home/git -s /bin/sh git \
     && passwd -d git \
+    && addgroup -S sshenv \
+    && addgroup git sshenv \
+    && addgroup nobody sshenv \
     && mkdir -p /var/run/sshd /home/git/repos \
     && git config --system safe.directory '*'
 
-COPY --from=builder /app/output/shell /home/git/shell
-COPY --from=builder /app/output/auth /usr/local/bin/auth
+COPY --from=build-shell /app/output/shell /home/git/shell
+COPY --from=build-auth  /app/output/auth  /usr/local/bin/auth
 
-COPY ./config/sshd_config /etc/ssh/sshd_config
-COPY ./config/entrypoint.shell.sh /usr/local/bin/entrypoint.sh
+COPY Configurations/Shell/sshd_config /etc/ssh/sshd_config
+COPY Configurations/Shell/entrypoint.sh /usr/local/bin/entrypoint.sh
 
-RUN chown root:root /usr/local/bin/auth \
+RUN chown root:root /usr/local/bin/auth /usr/local/bin/entrypoint.sh \
     && chown git:git /home/git/shell \
     && chmod 755 /usr/local/bin/auth /usr/local/bin/entrypoint.sh /home/git/shell \
-    && git config --system --add safe.directory '*'
-
-ENV REPOSITORY_DIRECTORY=/home/git/repos
+    && chmod 600 /etc/ssh/sshd_config
 
 EXPOSE 22
 VOLUME ["/home/git/repos"]

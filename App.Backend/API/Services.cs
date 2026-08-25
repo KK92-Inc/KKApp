@@ -100,6 +100,8 @@ public static class Services
             o.JsonSerializerOptions.AddOptionalSupport();       // <-- new
         });
 
+
+
         builder.Services.AddHttpClient<GitService>();
         builder.Services.Configure<GitServiceOptions>(
             builder.Configuration.GetSection(GitServiceOptions.SectionName));

@@ -17,7 +17,7 @@ public class CursusTrackDO
     public CursusVariant Variant { get; set; }
     
     [Required]
-    public CompletionMode CompletionMode { get; set; }
+    public CursusMode CompletionMode { get; set; }
 
     public IList<CursusTrackNodeDO> Nodes { get; set; } = [];
 }

@@ -61,54 +61,6 @@ public class WorkspaceService(DatabaseContext ctx, IGitService git, ICursusServi
         return root ?? throw new ServiceException(501, "Environment is missing a root workspace");
     }
 
-    public async Task<Project> AddProjectAsync(Guid workspaceId, Project project, Commit commit, CancellationToken token = default)
-    {
-        var strategy = ctx.Database.CreateExecutionStrategy();
-        return await strategy.ExecuteAsync(async (ct) =>
-        {
-            await using var transaction = await ctx.Database.BeginTransactionAsync(ct);
-            var workspace = await FindByIdAsync(workspaceId, ct) ?? throw new ServiceException(404, "Workspace not found");
-
-            try
-            {
-                project.WorkspaceId = workspace.Id;
-                var output = await ctx.Projects.AddAsync(project, ct);
-                await ctx.SaveChangesAsync(ct);
-
-                var owner = "project";
-                var name = project.Id.ToString();
-                if (!await git.CreateAsync(owner, name, ct))
-                    throw new ServiceException(409, "Repository for such project already exists");
-
-                var repo = await ctx.GitInfo.AddAsync(new()
-                {
-                    Owner = owner,
-                    Name = name,
-                    Ownership = workspace.Owner is null ? EntityOwnership.Organization : EntityOwnership.User
-                }, ct);
-
-                project.GitId = repo.Entity.Id;
-                await ctx.SaveChangesAsync(ct);
-
-                // Commit will assemble the branch on the other end.
-                if (!await git.Commit(owner, name, options.Value.DefaultBranch, commit, ct))
-                    throw new ServiceException(409, "Repository for such rubric");
-
-                await transaction.CommitAsync(ct);
-                return output.Entity;
-            }
-            catch (Exception e)
-            {
-                if (e is ServiceException se)
-                    throw se;
-
-                await transaction.RollbackAsync(ct);
-                await git.DeleteAsync("project", project.Id.ToString(), ct);
-                throw new ServiceException(500, $"Something went wrong: {e.Message}");
-            }
-        }, token);
-    }
-
     public async Task<Goal> AddGoalAsync(Guid workspaceId, Goal goal, CancellationToken token = default)
     {
         var workspace = await FindByIdAsync(workspaceId, token) ?? throw new ServiceException(404, "Workspace not found");
@@ -139,23 +91,33 @@ public class WorkspaceService(DatabaseContext ctx, IGitService git, ICursusServi
 
     public async Task<Rubric> AddRubricAsync(Guid workspaceId, Rubric rubric, Commit commit, CancellationToken token = default)
     {
-        if (await ctx.Rubrics.FirstOrDefaultAsync(r => r.ProjectId == null, token) is not null && rubric.ProjectId is null)
-            throw new ServiceException("Wildcard Rubric already exists, there can only ever be one wildcard rubric.");
+        var workspace = await FindByIdAsync(workspaceId, token) ?? throw new ServiceException(404, "Workspace not found");
+        if (rubric.ProjectId is null)
+        {
+            ServiceException.ThrowIf(workspace.OwnerId is not null, "Wildcard rubrics can only be created in the root workspace.");
+            var taken = await ctx.Rubrics.AnyAsync(r => r.ProjectId == null && r.WorkspaceId == workspaceId, token);
+            ServiceException.ThrowIf(taken, "Wildcard Rubric already exists, there can only ever be one wildcard rubric.");
+        }
+        else
+        {
+            var project = await ctx.Projects.FirstOrDefaultAsync(p => p.Id == rubric.ProjectId, token) ?? throw new ServiceException(404, "Project not found");
+            if (project.WorkspaceId != workspaceId)
+                throw new ServiceException(422, "Rubric project must belong to the target workspace");
+
+            var taken = await ctx.Rubrics.AnyAsync(r => r.ProjectId == rubric.ProjectId, token);
+            ServiceException.ThrowIf(taken, "A rubric for this project already exists");
+        }
 
         var strategy = ctx.Database.CreateExecutionStrategy();
         return await strategy.ExecuteAsync(async (ct) =>
         {
             await using var transaction = await ctx.Database.BeginTransactionAsync(ct);
-            var workspace = await FindByIdAsync(workspaceId, ct) ?? throw new ServiceException(404, "Workspace not found");
+
+            var owner = "rubric";
+            var name = rubric.Id.ToString();
 
             try
             {
-                rubric.WorkspaceId = workspace.Id;
-                var output = await ctx.Rubrics.AddAsync(rubric, ct);
-                await ctx.SaveChangesAsync(ct);
-
-                var owner = "rubric";
-                var name = rubric.Id.ToString();
                 if (!await git.CreateAsync(owner, name, ct))
                     throw new ServiceException(409, "Repository for such rubric already exists");
 
@@ -165,8 +127,11 @@ public class WorkspaceService(DatabaseContext ctx, IGitService git, ICursusServi
                     Name = name,
                     Ownership = workspace.Owner is null ? EntityOwnership.Organization : EntityOwnership.User
                 }, ct);
+                await ctx.SaveChangesAsync(ct);
 
+                rubric.WorkspaceId = workspace.Id;
                 rubric.GitInfoId = repo.Entity.Id;
+                var output = await ctx.Rubrics.AddAsync(rubric, ct);
                 await ctx.SaveChangesAsync(ct);
 
                 // Commit will assemble the branch on the other end.
@@ -182,7 +147,54 @@ public class WorkspaceService(DatabaseContext ctx, IGitService git, ICursusServi
                     throw se;
 
                 await transaction.RollbackAsync(ct);
-                await git.DeleteAsync("project", rubric.Id.ToString(), ct);
+                await git.DeleteAsync(owner, name, ct);
+                throw new ServiceException(500, $"Something went wrong: {e.Message}");
+            }
+        }, token);
+    }
+
+    public async Task<Project> AddProjectAsync(Guid workspaceId, Project project, Commit commit, CancellationToken token = default)
+    {
+        var strategy = ctx.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async (ct) =>
+        {
+            await using var transaction = await ctx.Database.BeginTransactionAsync(ct);
+            var workspace = await FindByIdAsync(workspaceId, ct) ?? throw new ServiceException(404, "Workspace not found");
+
+            var owner = "project";
+            var name = project.Id.ToString();
+
+            try
+            {
+                if (!await git.CreateAsync(owner, name, ct))
+                    throw new ServiceException(409, "Repository for such project already exists");
+
+                var repo = await ctx.GitInfo.AddAsync(new()
+                {
+                    Owner = owner,
+                    Name = name,
+                    Ownership = workspace.Owner is null ? EntityOwnership.Organization : EntityOwnership.User
+                }, ct);
+                await ctx.SaveChangesAsync(ct);
+
+                project.WorkspaceId = workspace.Id;
+                project.GitId = repo.Entity.Id;
+                var output = await ctx.Projects.AddAsync(project, ct);
+                await ctx.SaveChangesAsync(ct);
+
+                if (!await git.Commit(owner, name, options.Value.DefaultBranch, commit, ct))
+                    throw new ServiceException(409, "Repository for such project already exists");
+
+                await transaction.CommitAsync(ct);
+                return output.Entity;
+            }
+            catch (Exception e)
+            {
+                if (e is ServiceException se)
+                    throw se;
+
+                await transaction.RollbackAsync(ct);
+                await git.DeleteAsync(owner, name, ct);
                 throw new ServiceException(500, $"Something went wrong: {e.Message}");
             }
         }, token);

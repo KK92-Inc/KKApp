@@ -29,7 +29,7 @@ public class CursusDO(Domain.Entities.Cursus cursus) : BaseEntityDO<Domain.Entit
     public CursusVariant Variant { get; set; } = cursus.Variant;
 
     [Required]
-    public CompletionMode CompletionMode { get; set; } = cursus.CompletionMode;
+    public CursusMode CompletionMode { get; set; } = cursus.CompletionMode;
 
     [Required]
     public WorkspaceDO Workspace { get; set; } = cursus.Workspace;

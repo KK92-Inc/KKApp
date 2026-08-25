@@ -11,7 +11,7 @@ namespace App.Backend.Domain.Enums;
 /// Determines how a user progresses through a cursus track.
 /// </summary>
 [JsonConverter(typeof(JsonStringEnumConverter))]
-public enum CompletionMode
+public enum CursusMode
 {
     /// <summary>
     /// Level-ordered progression: the user must complete all goals at depth N

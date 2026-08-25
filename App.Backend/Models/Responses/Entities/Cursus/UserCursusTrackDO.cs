@@ -21,7 +21,7 @@ public class UserCursusTrackDO
     public string Name { get; set; } = string.Empty;
     
     [Required]
-    public CompletionMode CompletionMode { get; set; }
+    public CursusMode CompletionMode { get; set; }
 
     [Required]
     public IList<UserCursusTrackNodeDO> Nodes { get; set; } = [];

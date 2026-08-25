@@ -34,13 +34,14 @@ export class Context {
 	public fields = $state<Variables>({
 		name: "",
 		slug: "",
+		deprecated: false,
 		public: false,
 		enabled: false,
 		projectId: null,
 		variants: [],
 	});
 
-	private get target() {
+	public get target() {
 		return this.workspace === "root"
 			? Workspace.root()
 			: Workspace.current();
@@ -55,6 +56,7 @@ export class Context {
 		this.fields = {
 			name: rubric.name,
 			slug: rubric.slug,
+			deprecated: rubric.deprecated,
 			public: rubric.public,
 			enabled: rubric.enabled,
 			projectId: rubric.projectId,

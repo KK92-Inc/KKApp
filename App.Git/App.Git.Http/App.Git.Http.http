@@ -1,0 +1,81 @@
+@App.Git.Http_HostAddress = http://localhost:5063
+
+@owner = project
+@name = replace-with-repository-id
+@branch = main
+@child = feature/example
+@target = renamed-repository
+
+### Health
+GET {{App.Git.Http_HostAddress}}/health
+Accept: application/json
+
+###
+
+# Repository CRUD
+
+### Check whether a repository exists
+GET {{App.Git.Http_HostAddress}}/repo/{{owner}}/{{name}}/
+Accept: application/json
+
+### Create a repository
+POST {{App.Git.Http_HostAddress}}/repo/{{owner}}/{{name}}/
+
+### Delete a repository
+DELETE {{App.Git.Http_HostAddress}}/repo/{{owner}}/{{name}}/
+
+### Rename a repository
+POST {{App.Git.Http_HostAddress}}/repo/{{owner}}/{{name}}/rename/{{target}}
+
+###
+# Branches
+
+### List branches
+GET {{App.Git.Http_HostAddress}}/repo/{{owner}}/{{name}}/branches/
+Accept: application/json
+
+### Create a branch from an existing ref
+POST {{App.Git.Http_HostAddress}}/repo/{{owner}}/{{name}}/branches/{{branch}}/{{child}}
+
+### Delete a branch
+DELETE {{App.Git.Http_HostAddress}}/repo/{{owner}}/{{name}}/branches/{{child}}
+
+###
+# Trees and blobs
+
+### List the repository root tree
+GET {{App.Git.Http_HostAddress}}/repo/{{owner}}/{{name}}/tree/{{branch}}/
+Accept: application/json
+
+### List a tree below a path
+GET {{App.Git.Http_HostAddress}}/repo/{{owner}}/{{name}}/tree/{{branch}}/src
+Accept: application/json
+
+### Read a file blob
+GET {{App.Git.Http_HostAddress}}/repo/{{owner}}/{{name}}/blob/{{branch}}/README.md
+Accept: application/octet-stream
+
+###
+# Commits
+
+### Commit files to a branch
+PUT {{App.Git.Http_HostAddress}}/repo/{{owner}}/{{name}}/commit/{{branch}}
+Content-Type: application/json
+
+{
+	"author": "Developer",
+	"email": "developer@example.com",
+	"message": "Initial commit",
+	"files": {
+		"README.md": "IyBFeGFtcGxlIFJlcG9zaXRvcnkK"
+	}
+}
+
+###
+# Repository hooks
+
+### Lock a repository
+POST {{App.Git.Http_HostAddress}}/repo/{{owner}}/{{name}}/lock
+
+### Unlock a repository
+POST {{App.Git.Http_HostAddress}}/repo/{{owner}}/{{name}}/unlock

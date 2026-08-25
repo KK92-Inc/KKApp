@@ -138,6 +138,22 @@ public class GitService : IGitService
     }
 
     /// <inheritdoc />
+    public async Task<string?> GetDefaultBranchAsync(string owner, string name, CancellationToken token = default)
+    {
+        // NOTE(W2): Lines come from `git branch --format="%(if)%(HEAD)%(then)*%(end)%(refname:short)"`,
+        // so the current HEAD/default branch is the one line prefixed with a leading '*'.
+        var raw = await GetBranchesAsync(owner, name, token);
+        if (string.IsNullOrWhiteSpace(raw))
+            return null;
+
+        var master = raw
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .FirstOrDefault(b => b.StartsWith('*'));
+
+        return master?.TrimStart('*').Trim() is { Length: > 0 } branch ? branch : null;
+    }
+
+    /// <inheritdoc />
     public async Task<bool> CreateBranchAsync(string owner, string name, string @ref, string child, CancellationToken token = default)
     {
         var response = await _http.PostAsync($"repo/{owner}/{name}/branches/{@ref}/{child}", null, token);

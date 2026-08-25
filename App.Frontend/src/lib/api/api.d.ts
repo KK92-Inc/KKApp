@@ -8139,6 +8139,7 @@ export interface components {
             slug: string;
             public: boolean;
             enabled: boolean;
+            deprecated: boolean;
             variants: components["schemas"]["RubricVariantDO"][];
             /** Format: uuid */
             projectId: null | string;

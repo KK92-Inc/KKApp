@@ -29,6 +29,9 @@ public class RubricDO(Rubric rubric) : BaseEntityDO<Rubric>(rubric)
     public bool Enabled { get; set; } = rubric.Enabled;
 
     [Required]
+    public bool Deprecated { get; set; } = rubric.Deprecated;
+
+    [Required]
     public IEnumerable<RubricVariantDO> Variants { get; set; } = rubric.Variants.Select(v => new RubricVariantDO(v));
 
     [Required]

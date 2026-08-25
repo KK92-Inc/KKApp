@@ -9,6 +9,7 @@ using App.Backend.Core.Query;
 using App.Backend.Domain;
 using App.Backend.Database;
 using Microsoft.EntityFrameworkCore;
+using App.Backend.Domain.Entities.Users;
 
 // ============================================================================
 

@@ -15,11 +15,11 @@ namespace App.Backend.Models.Requests.Cursus;
 public class PostCursusRequestDTO
 {
     [Required, StringLength(256, MinimumLength = 1)]
-    public string Name { get; init; }
+    public required string Name { get; init; }
 
-    [Required, StringLength(16384)]
-    [Description("Optional description of the cursus.")]
-    public string Description { get; init; }
+    [Required, StringLength(16384, MinimumLength = 1)]
+    [Description("Description of the cursus.")]
+    public required string Description { get; init; }
 
     [Required, Description("Indicates whether the cursus is currently active.")]
     public bool Active { get; init; }
@@ -27,13 +27,13 @@ public class PostCursusRequestDTO
     [Required, Description("Indicates whether the cursus is publicly visible.")]
     public bool Public { get; init; }
 
-    [Required, MinLength(1)]
-    [Description("The flat list of track nodes forming the cursus hierarchy.")]
-    public required IList<CursusTrackNodeDO> Nodes { get; init; }
-
     [Required, Description("The cursus variant: Static (fixed track) or Dynamic (free-roam).")]
     public CursusVariant Variant { get; init; }
 
     [Required, Description("How users progress through the track: Ring (level-by-level) or FreeStyle (branch-independent).")]
-    public CompletionMode CompletionMode { get; init; }
+    public CursusMode Mode { get; init; }
+
+    [Required, MinLength(1)]
+    [Description("The flat list of track nodes forming the cursus hierarchy.")]
+    public required PostCursusTrackRequestDTO Track { get; init; }
 }

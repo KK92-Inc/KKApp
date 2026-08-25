@@ -134,12 +134,12 @@ such as official cursi, projects or rubrics.
             Description = body.Description,
             Slug = body.Name.ToSlug(),
             Variant = body.Variant,
-            CompletionMode = body.CompletionMode,
+            CompletionMode = body.Mode,
             Active = body.Active,
             Public = body.Public
         };
 
-        var nodes = body.Nodes.Select(n => new CursusGoal
+        var nodes = body.Track.Nodes.Select(n => new CursusGoal
         {
             CursusId = cursus.Id,
             GoalId = n.GoalId,
@@ -272,6 +272,7 @@ such as official cursi, projects or rubrics.
         {
             Name = body.Name,
             Slug = body.Name.ToSlug(),
+            ProjectId = body.ProjectId,
             Public = body.Public,
             Enabled = body.Enabled,
             Variants = [.. body.Variants

@@ -10,43 +10,28 @@ import * as Action from "./action.remote"
 import * as v from 'valibot';
 import type { components } from "$lib/api/api";
 import { toast } from "svelte-sonner";
-import { Problem, type ValidationErrors } from "$lib/api";
+import { Problem, type Fields, type ValidationErrors } from "$lib/api";
+import type { FlatFile } from "../../../shared/files.svelte";
+import { goto } from "$app/navigation";
 
 // ============================================================================
 
-export const FileSchema = v.object({
-	path: v.string(),
-	content: v.string(),
-	encoding: v.picklist(["UTF8", "Base64"]),
-});
-
-export const CreateSchema = v.object({
-	name: v.string(),
-	workspace: v.string(),
-	description: v.string(),
-	active: v.boolean(),
-	public: v.boolean(),
-	maxMembers: v.union([v.string(), v.number()]),
-	files: v.array(FileSchema),
-}) satisfies v.GenericSchema<components['schemas']['PostProjectRequestDTO']>;
-
-export const UpdateSchema = v.object({
-	id: v.string(),
-	name: v.optional(v.nullable(v.string())),
-	description: v.optional(v.nullable(v.string())),
-	active: v.optional(v.nullable(v.boolean())),
-	public: v.optional(v.nullable(v.boolean())),
-	maxMembers: v.optional(v.nullable(v.union([v.string(), v.number()]))),
-}) satisfies v.GenericSchema<components['schemas']['PatchProjectRequestDTO']>;
+type Variables = Omit<Fields<components['schemas']['ProjectDO']>, "gitInfo" | "workspace" | "slug" | "deprecated">
 
 // ============================================================================
 
 export class Context {
 	constructor(public readonly projectId: () => string | undefined) { }
 
-	public errors = $state<ValidationErrors>({});
 	public workspace = $state<"user" | "root">("user");
-	public fields = $state({
+	public files = $state.raw<FlatFile[]>([{
+		content: "# Project Rubric",
+		encoding: "Text",
+		path: "README.md"
+	}]);
+
+	public errors = $state<ValidationErrors>({});
+	public fields = $state<Variables>({
 		name: "",
 		description: "",
 		active: false,
@@ -54,13 +39,11 @@ export class Context {
 		maxMembers: 1,
 	});
 
-	public files = $state.raw<v.InferOutput<typeof FileSchema>[]>([
-		{
-			encoding: "UTF8",
-			path: "README.md",
-			content: "# Project Initialization\n\nDefine your project structure here."
-		}
-	])
+	private get target() {
+		return this.workspace === "root"
+			? Workspace.root()
+			: Workspace.current();
+	}
 
 	/** Hydrate the context */
 	public async hydrate() {
@@ -73,41 +56,52 @@ export class Context {
 			active: project.active,
 			public: project.public,
 			description: project.description,
-			maxMembers: Number(project.maxMembers)
+			maxMembers: project.maxMembers,
 		};
 	}
 
 	/** Submit a deprecation request */
 	public async deprecate() {
-		// const id = this.goalId();
-		// if (!id) return toast.error("Unable to deprecate non-existent goal");
+		const id = this.projectId();
+		if (!id) return;
 
-		// try {
-		// 	await Action.deprecate(id);
-		// 	toast.success("Goal has been deprecated.");
-		// } catch (e) {
-		// 	this.handleErr(e);
-		// }
+		await Problem.try(async () => {
+			await Action.deprecate(id);
+			toast.success("Project has been deprecated.");
+		});
 	}
 
 	/** Submit the overall request for create or update */
 	public async submit() {
-		// this.errors = {};
-		// const id = this.goalId();
-		// const projects = this.projects.map((p) => p.id);
+		this.errors = {};
+		const id = this.projectId();
 
-		// try {
-		// 	if (id) {
-		// 		return await Action
-		// 			.update({ id, projects, ...this.fields })
-		// 			.updates(Goal.get(id), Goal.getProjects(id));
-		// 	}
+		await Problem.try(async () => {
+			if (id) {
+				await Action.update({
+					id,
+					name: this.fields.name,
+					public: this.fields.public,
+					active: this.fields.active,
+				});
+				toast.success("Rubric has been updated.");
+				return;
+			}
 
-		// 	const target = this.workspace === "root" ? await Workspace.root() : await Workspace.current();
-		// 	await Action.create({ workspace: target.id, ...this.fields, projects });
-		// } catch (e) {
-		// 	this.handleErr(e);
-		// }
+			const space = await this.target;
+			const project = await Action.create({
+				workspace: space.id,
+				name: this.fields.name,
+				public: this.fields.public,
+				active: this.fields.active,
+				files: this.files,
+				description: this.fields.description,
+				maxMembers: this.fields.maxMembers
+			});
+
+			toast.success("Project has been created.");
+			await goto(`/projects/manage/${project.id}`);
+		}, { onValidation: (fields) => this.errors = fields });
 	}
 }
 

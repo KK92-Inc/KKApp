@@ -244,7 +244,7 @@
 <div class="grid h-150 grid-cols-1 overflow-hidden rounded-xl border bg-background lg:grid-cols-[280px_1fr]">
 	<div class="flex h-full min-h-0 flex-col gap-4 border-r bg-muted/20 p-4">
 		<div class="flex shrink-0 items-center justify-between border-b pb-2">
-			<span class="text-sm font-semibold">Project Files</span>
+			<span class="text-sm font-semibold">Files</span>
 			<div class="flex items-center gap-1">
 				<button
 					type="button"

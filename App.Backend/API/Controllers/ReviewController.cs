@@ -129,19 +129,18 @@ public class ReviewController(
 
     [HttpPost]
     [RequireScope("evaluation")]
-    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Request a review for a user project")]
-    [EndpointDescription("Creates review entries for the specified kinds. Self reviews are auto-assigned to the requesting user.")]
-    public async Task<ActionResult<IEnumerable<ReviewDO>>> RequestReviews([FromBody] PostReviewRequestDTO dto, CancellationToken token)
+    [EndpointDescription("Creates review entries for the specified kinds. Self reviews are auto-assigned to the requesting user. The reviewed ref is always the project's default branch.")]
+    public async Task<ActionResult<IEnumerable<ReviewDO>>> PullReview([FromBody] PostPullReviewRequestDTO dto, CancellationToken token)
     {
         var requester = User.GetSID();
-        var reviews = await service.RequestReviewAsync(
+        var reviews = await service.PullReviewAsync(
             dto.UserProjectId,
             requester,
-            dto.Ref,
             token
         );
 
@@ -152,14 +151,46 @@ public class ReviewController(
                 ReviewKinds.Self => new RequestSelfReview(review.Id, dto.UserProjectId, requester),
                 ReviewKinds.Peer => new RequestPeerReview(review.Id, dto.UserProjectId),
                 ReviewKinds.Async => new RequestAsyncReview(review.Id, dto.UserProjectId),
-                // TODO: Implement auto review flow and remove this case
-                // ReviewKinds.Auto => new RequestAutoReview(review.Id, dto.UserProjectId),
+                ReviewKinds.Auto => new RequestAutoReview(review.Id, dto.UserProjectId),
                 _ => throw new ServiceException(500, $"Unhandled review kind: {review.Kind}")
             };
             await bus.PublishAsync(message);
         }
 
         return Ok(reviews.Select(r => new ReviewDO(r)));
+    }
+
+    [HttpPost("give")]
+    [RequireScope("evaluation")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Give a review for a user project")]
+    [EndpointDescription("Claims a Peer or Async review slot for a user project, scheduled for a specific time, without waiting to be assigned. The reviewed ref is always the project's default branch. Submits as the requesting user unless a different reviewer is specified, which requires staff.")]
+    public async Task<ActionResult<ReviewDO>> PushReview([FromBody] PostPushReviewRequestDTO dto, CancellationToken token)
+    {
+        var actorId = User.GetSID();
+        var reviewerId = dto.ReviewerId ?? actorId;
+
+        // NOTE(W2): You can always give a review as yourself but not someone else, unless you're staff.
+        if (reviewerId != actorId)
+        {
+            var result = await auth.AuthorizeAsync(User, "staff");
+            if (!result.Succeeded) return Forbid();
+        }
+
+        var review = await service.PushReviewAsync(dto.UserProjectId, reviewerId, dto.Kind, dto.ScheduledAt, token);
+        object message = review.Kind switch
+        {
+            ReviewKinds.Peer => new RequestPeerReview(review.Id, dto.UserProjectId),
+            ReviewKinds.Async => new RequestAsyncReview(review.Id, dto.UserProjectId),
+            _ => throw new ServiceException(500, $"Unhandled review kind: {review.Kind}")
+        };
+        await bus.PublishAsync(message);
+        return CreatedAtAction(nameof(PushReview), new { reviewId = review.Id }, new ReviewDO(review));
     }
 
     [HttpGet("user-project/{userProjectId:guid}/status")]
@@ -263,7 +294,7 @@ public class ReviewController(
     {
         var review = await service.FindByIdAsync(reviewId, token);
         if (review is null) return NotFound();
-        
+
         var actorId = User.GetSID();
 
         var isLeader = false;

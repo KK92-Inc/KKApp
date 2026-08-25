@@ -22,16 +22,44 @@ public interface IReviewService : IDomainService<Review>
     /// - The rubric supports the requested review kind
     /// - No duplicate review of the same kind exists
     /// - The reviewee meets the rubric's eligibility requirements
+    /// The reviewed ref is always the project's default (master) branch, resolved server-side.
     /// </summary>
     /// <param name="userProjectId">The user project to be reviewed.</param>
-    /// <param name="rubricId">The rubric to use for evaluation.</param>
     /// <param name="initiatorId">The user requesting the review.</param>
     /// <param name="token">Cancellation token.</param>
     /// <returns>The created reviews based on the variants that the rubric supports.</returns>
-    public Task<IEnumerable<Review>> RequestReviewAsync(
+    public Task<IEnumerable<Review>> PullReviewAsync(
         Guid userProjectId,
         Guid initiatorId,
-        string @ref,
+        CancellationToken token = default
+    );
+
+    /// <summary>
+    /// Directly gives (claims) a review slot for a user project as the specified reviewer.
+    /// Unlike <see cref="PullReviewAsync"/>, this skips the open request/assignment step:
+    /// the reviewer is attached immediately and the review is created
+    /// <see cref="Enums.ReviewState.Pending"/>, ready to be started via the normal
+    /// start/complete lifecycle once the scheduled time arrives.
+    /// Only <see cref="Enums.ReviewKinds.Peer"/> and <see cref="Enums.ReviewKinds.Async"/>
+    /// are supported. The reviewed ref is always the project's default (master) branch.
+    /// Validates that:
+    /// - The user project exists and has something submitted for review
+    /// - The rubric supports the requested review kind
+    /// - The reviewer is not a member of the project being reviewed
+    /// - <paramref name="scheduledAt"/> falls within the allowed window for the kind
+    ///   (Async: now or within 2 hours; Peer: today or tomorrow)
+    /// </summary>
+    /// <param name="userProjectId">The user project being reviewed.</param>
+    /// <param name="reviewerId">The user giving the review.</param>
+    /// <param name="kind">The kind of review being given (Peer or Async).</param>
+    /// <param name="scheduledAt">When the reviewer commits to doing the review.</param>
+    /// <param name="token">Cancellation token.</param>
+    /// <returns>The created, pending review.</returns>
+    public Task<Review> PushReviewAsync(
+        Guid userProjectId,
+        Guid reviewerId,
+        ReviewKinds kind,
+        DateTimeOffset scheduledAt,
         CancellationToken token = default
     );
 

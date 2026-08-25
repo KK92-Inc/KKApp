@@ -570,6 +570,10 @@ namespace Migrations.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<DateTimeOffset?>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
                     b.Property<int>("Kind")
                         .HasColumnType("integer")
                         .HasColumnName("kind");
@@ -586,6 +590,10 @@ namespace Migrations.Migrations
                     b.Property<Guid>("RubricId")
                         .HasColumnType("uuid")
                         .HasColumnName("rubric_id");
+
+                    b.Property<DateTimeOffset?>("ScheduledAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("scheduled_at");
 
                     b.Property<int>("State")
                         .HasColumnType("integer")
@@ -630,7 +638,7 @@ namespace Migrations.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("enabled");
 
-                    b.Property<Guid?>("GitInfoId")
+                    b.Property<Guid>("GitInfoId")
                         .HasColumnType("uuid")
                         .HasColumnName("git_info_id");
 
@@ -1380,7 +1388,9 @@ namespace Migrations.Migrations
                 {
                     b.HasOne("App.Backend.Domain.Entities.Git", "GitInfo")
                         .WithMany("Rubrics")
-                        .HasForeignKey("GitInfoId");
+                        .HasForeignKey("GitInfoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("App.Backend.Domain.Entities.Project", "Project")
                         .WithMany()

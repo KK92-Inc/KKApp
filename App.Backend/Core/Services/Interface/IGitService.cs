@@ -109,6 +109,17 @@ public interface IGitService
     public Task<string> GetBranchesAsync(string owner, string name, CancellationToken token = default);
 
     /// <summary>
+    /// Gets the name of the repository's default (master/main) branch.
+    /// Parses the output of <see cref="GetBranchesAsync"/>, which prefixes the
+    /// current HEAD branch with a leading '*'.
+    /// </summary>
+    /// <param name="owner">The owner of the repository.</param>
+    /// <param name="name">The name of the repository.</param>
+    /// <param name="token">The cancellation token.</param>
+    /// <returns>The default branch name, or null if it could not be determined.</returns>
+    public Task<string?> GetDefaultBranchAsync(string owner, string name, CancellationToken token = default);
+
+    /// <summary>
     /// Locks the repository by adding a pre-receive hook that rejects all pushes.
     /// </summary>
     /// <param name="owner">The owner of the repository.</param>
