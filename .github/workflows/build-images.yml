@@ -117,16 +117,20 @@ jobs:
         include:
           - name: kk-frontend
             context: ./App.Frontend
-            dockerfile: ./App.Frontend/Dockerfile
+            source_dockerfile: ./App.Frontend/Dockerfile
+            needs_copy: false
           - name: kk-keycloak
             context: ./Configurations/Keycloak
-            dockerfile: ./Docker/Files/Dockerfile.auth
+            source_dockerfile: ./Docker/Files/Dockerfile.auth
+            needs_copy: true
           - name: kk-git-ssh
-            context: .
-            dockerfile: ./Docker/Files/Dockerfile.ssh
+            context: ./
+            source_dockerfile: ./Docker/Files/Dockerfile.ssh
+            needs_copy: true
           - name: kk-postgres
             context: ./Configurations/Postgres
-            dockerfile: ./Docker/Files/Dockerfile.pg
+            source_dockerfile: ./Docker/Files/Dockerfile.pg
+            needs_copy: true
 
     steps:
       - name: Checkout repository
