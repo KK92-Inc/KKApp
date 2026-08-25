@@ -39,7 +39,6 @@ namespace App.Backend.API.Controllers;
 [ApiController]
 [Route("workspace")]
 public class WorkspaceController(
-    ILogger<WorkspaceController> log,
     IAuthorizationService auth,
     IWorkspaceService service,
     IApplicationService applicationService,
@@ -47,10 +46,7 @@ public class WorkspaceController(
     IGoalService goalService,
     IUserService userService,
     ICursusService cursusService,
-    IRubricService rubricService,
-    IMemberService memberService,
-    IGitService gitService,
-    IMessageBus bus
+    IRubricService rubricService
 ) : Controller
 {
     [HttpGet("current")]
@@ -227,7 +223,7 @@ such as official cursi, projects or rubrics.
             Files = body.Commit.Files,
             Message = body.Commit.Message,
             Author = user.Login,
-            Email = "N/A"
+            Email = user.Details?.Email ?? "N/A"
         };
 
         var project = await service.AddProjectAsync(space.Id, new()
@@ -293,7 +289,7 @@ such as official cursi, projects or rubrics.
             Files = body.Commit.Files,
             Message = body.Commit.Message,
             Author = user.Login,
-            Email = "N/A"
+            Email = user.Details?.Email ?? "N/A"
         };
 
         var created = await service.AddRubricAsync(space.Id, rubric, commit, token);

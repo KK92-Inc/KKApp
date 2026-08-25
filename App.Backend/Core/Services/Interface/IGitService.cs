@@ -22,7 +22,7 @@ public interface IGitService
     /// </summary>
     /// <param name="id">The ID.</param>
     /// <returns>The entity found by that ID or null if not found.</returns>
-    public Task<Domain.Entities.GitInfo?> FindByIdAsync(Guid id, CancellationToken token = default);
+    public Task<GitInfo?> FindByIdAsync(Guid id, CancellationToken token = default);
 
     /// <summary>
     /// Checks whether a repository exists.
@@ -69,7 +69,7 @@ public interface IGitService
     /// <param name="path">The path of the tree to update.</param>
     /// <param name="token">The cancellation token.</param>
     /// <returns>The tree entries, or null if not found.</returns>
-    public Task<TreeDTO?> GetTreeAsync(string owner, string name, string branch, string path = "", CancellationToken token = default);
+    public Task<TreeDTO[]?> GetTreeAsync(string owner, string name, string branch, string path = "", CancellationToken token = default);
 
     /// <summary>
     /// Gets the content of a file (git blob) at a given branch/path.

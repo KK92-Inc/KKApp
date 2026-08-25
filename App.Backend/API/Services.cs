@@ -175,21 +175,17 @@ public static class Services
             // Uses Authorization Code + PKCE instead of Implicit so that Scalar
             // can automatically refresh expired tokens without re-authenticating.
             o.AddDocumentTransformer((document, context, cancellationToken) =>
-            {
-                document.Components ??= new OpenApiComponents();
-
-                var options = builder.Configuration.GetKeycloakOptions<KeycloakAuthenticationOptions>(configSectionName: "KeycloakStudent");
-                if (options?.KeycloakUrlRealm is not null)
                 {
-                    document.Components.SecuritySchemes!.TryAdd("OAuth2", new OpenApiSecurityScheme
+                    document.Components ??= new OpenApiComponents();
+                    document.Components.SecuritySchemes?.TryAdd("OAuth2", new OpenApiSecurityScheme
                     {
-                        Name = "Keycloak Server",
-                        OpenIdConnectUrl = new Uri($"{options.KeycloakUrlRealm}protocol/openid-connect"),
                         Type = SecuritySchemeType.OAuth2,
                         Flows = new OpenApiOAuthFlows
                         {
                             Implicit = new OpenApiOAuthFlow
                             {
+                                TokenUrl = new Uri("http://keycloak-w2inc.dev.localhost:8080/realms/student/protocol/openid-connect/token"),
+                                AuthorizationUrl = new Uri("http://keycloak-w2inc.dev.localhost:8080/realms/student/protocol/openid-connect/auth"),
                                 Scopes = new Dictionary<string, string>
                                 {
                                     { "openid", "Authenticate using Keycloak" },
@@ -201,17 +197,13 @@ public static class Services
                                     { "subscription", "Access subscription related endpoints" },
                                     { "repository", "Access repository related endpoints" },
                                     { "user", "Access basic user profile information" }
-                                },
-                                AuthorizationUrl = new Uri($"{options.KeycloakUrlRealm}protocol/openid-connect/auth"),
-                                TokenUrl = new Uri($"{options.KeycloakUrlRealm}protocol/openid-connect/token"),
-                                RefreshUrl = new Uri($"{options.KeycloakUrlRealm}protocol/openid-connect/token"),
+                                }
                             }
                         }
                     });
-                }
 
-                return Task.CompletedTask;
-            });
+                    return Task.CompletedTask;
+                });
         });
     }
 

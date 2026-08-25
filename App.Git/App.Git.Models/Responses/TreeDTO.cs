@@ -9,7 +9,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace App.Git.Models.Responses;
 
-public class TreeDTO(string Path, bool Directory, long Size, CommitDTO Last)
+public class TreeDTO(string Path, bool Directory, long Size, CommitDTO Commit)
 {
     [Required]
     public string Path { get; init; } = Path;
@@ -21,5 +21,5 @@ public class TreeDTO(string Path, bool Directory, long Size, CommitDTO Last)
     public long Size { get; init; } = Size;
 
     [Required]
-    public CommitDTO Commit { get; init; } = Last;
+    public CommitDTO Commit { get; init; } = Commit;
 }

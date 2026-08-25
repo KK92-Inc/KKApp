@@ -46,8 +46,7 @@ public class GitController(IMemberService memberService, IGitService git, IUserS
     [EndpointDescription("Retrieves the file tree at the given branch and path in the git repository associated with this entity.")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<TreeDTO>> GetTree(
-        Guid id, string branch, string? path, CancellationToken token)
+    public async Task<ActionResult<TreeDTO[]>> GetTree(Guid id, string branch, string? path, CancellationToken token)
     {
         var entity = await git.FindByIdAsync(id, token);
         if (entity is null) return NotFound();

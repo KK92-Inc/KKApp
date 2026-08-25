@@ -38,7 +38,7 @@ public class GitService : IGitService
 
     // ========================================================================
 
-    public async Task<Domain.Entities.GitInfo?> FindByIdAsync(Guid id, CancellationToken token = default)
+    public async Task<GitInfo?> FindByIdAsync(Guid id, CancellationToken token = default)
     {
         return await _ctx.GitInfo.FirstOrDefaultAsync(g => g.Id == id, token);
     }
@@ -90,14 +90,14 @@ public class GitService : IGitService
     }
 
     /// <inheritdoc />
-    public async Task<TreeDTO?> GetTreeAsync(string owner, string name, string branch, string path = "", CancellationToken token = default)
+    public async Task<TreeDTO[]?> GetTreeAsync(string owner, string name, string branch, string path = "", CancellationToken token = default)
     {
         var response = await _http.GetAsync($"repo/{owner}/{name}/tree/{branch}/{path}", token);
         if (response.StatusCode is HttpStatusCode.NotFound)
             return null;
 
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<TreeDTO>(token)
+        return await response.Content.ReadFromJsonAsync<TreeDTO[]>(token)
             ?? throw new ServiceException(500, "Failed to get Tree.");
     }
 
