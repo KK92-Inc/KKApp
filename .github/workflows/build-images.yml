@@ -11,10 +11,10 @@ on:
   push:
     branches: [main, master]
     paths:
+      - 'App.Git/**'
       - 'App.Backend/**'
       - 'App.Frontend/**'
       - 'App.Migrations/**'
-      - 'App.Repository/**'
       - 'Configurations/**'
       - 'Docker/**'
       - '.github/workflows/build-images.yml'
@@ -40,6 +40,8 @@ jobs:
         include:
           - name: kk-backend
             project: App.Backend/API/App.Backend.API.csproj
+          - name: kk-git-api
+            project: App.Git/App.Git.Http/App.Git.Http.csproj
           - name: kk-migration
             project: App.Migrations/Migrations.csproj
 
@@ -115,24 +117,16 @@ jobs:
         include:
           - name: kk-frontend
             context: ./App.Frontend
-            source_dockerfile: ./App.Frontend/Dockerfile
-            needs_copy: false
+            dockerfile: ./App.Frontend/Dockerfile
           - name: kk-keycloak
             context: ./Configurations/Keycloak
-            source_dockerfile: ./Docker/Files/Dockerfile.auth
-            needs_copy: true
-          - name: kk-git-api
-            context: ./App.Repository
-            source_dockerfile: ./Docker/Files/Dockerfile.api
-            needs_copy: true
+            dockerfile: ./Docker/Files/Dockerfile.auth
           - name: kk-git-ssh
-            context: ./App.Repository
-            source_dockerfile: ./Docker/Files/Dockerfile.ssh
-            needs_copy: true
+            context: .
+            dockerfile: ./Docker/Files/Dockerfile.ssh
           - name: kk-postgres
             context: ./Configurations/Postgres
-            source_dockerfile: ./Docker/Files/Dockerfile.pg
-            needs_copy: true
+            dockerfile: ./Docker/Files/Dockerfile.pg
 
     steps:
       - name: Checkout repository
