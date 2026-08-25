@@ -17,6 +17,8 @@ using App.Backend.Domain.Entities;
 using Wolverine;
 using App.Backend.API.Utils;
 using App.Backend.Models.Requests.Cursus;
+using System.Linq.Expressions;
+using App.Backend.Database;
 
 // ============================================================================
 
@@ -24,7 +26,12 @@ namespace App.Backend.API.Controllers;
 
 [Route("cursus")]
 [ApiController, Authorize]
-public class CursusController(IAuthorizationService auth, ICursusService service, IMemberService members) : Controller
+public class CursusController(
+    IAuthorizationService auth,
+    ICursusService service,
+    IMemberService members,
+    DatabaseContext ctx
+) : Controller
 {
     [HttpGet]
     [RequireScope("workspace")]
@@ -44,11 +51,25 @@ public class CursusController(IAuthorizationService auth, ICursusService service
         CancellationToken token
     )
     {
+        // TODO: Delete this nasty escape hatch.
+
+        var userId = User.GetSID();
+        var staff = await auth.AuthorizeAsync(User, "staff");
+        Expression<Func<Cursus, bool>>? visibility = staff.Succeeded
+            ? null
+            : c => c.Public || ctx.Members.Any(m =>
+                m.EntityType == MemberEntityType.Workspace &&
+                m.EntityId == c.WorkspaceId &&
+                m.UserId == userId &&
+                m.LeftAt == null
+            );
+
         var page = await service.GetAllAsync(sorting, pagination, token,
             id is null ? null : n => n.Id == id,
             workspace is null ? null : n => n.WorkspaceId == workspace,
             string.IsNullOrWhiteSpace(name) ? null : n => EF.Functions.ILike(n.Name, $"%{name}%"),
-            string.IsNullOrWhiteSpace(slug) ? null : n => n.Slug == slug
+            string.IsNullOrWhiteSpace(slug) ? null : n => n.Slug == slug,
+            visibility
         );
 
         page.AppendHeaders(Response.Headers);
@@ -56,16 +77,15 @@ public class CursusController(IAuthorizationService auth, ICursusService service
     }
 
     [Tags("Workspace")]
-    [HttpDelete("{id:guid}")]
+    [HttpPost("{id:guid}/deprecate")]
     [RequireScope("workspace")]
     [ProtectedResource("cursus", "cursus:delete")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [EndpointSummary("Delete a cursus")]
-    [EndpointDescription("Delete a cursus and its user instances")]
-    public async Task<IActionResult> Delete(Guid id, CancellationToken token)
+    [EndpointSummary("Deprecate a cursus")]
+    public async Task<IActionResult> Deprecate(Guid id, CancellationToken token)
     {
         var cursus = await service.FindByIdAsync(id, token);
         if (cursus is null) return NotFound();
@@ -77,7 +97,34 @@ public class CursusController(IAuthorizationService auth, ICursusService service
             if (member is null) return Forbid();
         }
 
-        await service.DeleteAsync(cursus, token);
+        cursus.Deprecated = true;
+        await service.UpdateAsync(cursus, token);
+        return NoContent();
+    }
+
+    [Tags("Workspace")]
+    [HttpPost("{id:guid}/undeprecate")]
+    [RequireScope("workspace")]
+    [ProtectedResource("cursus", "cursus:write")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Undeprecate a cursus")]
+    public async Task<IActionResult> Undeprecate(Guid id, CancellationToken token)
+    {
+        var cursus = await service.FindByIdAsync(id, token);
+        if (cursus is null) return NotFound();
+
+        var isStaff = await auth.AuthorizeAsync(User, "staff");
+        if (!isStaff.Succeeded)
+        {
+            var member = await members.FindByEntityAndUserId(cursus.WorkspaceId, User.GetSID(), token);
+            if (member is null) return Forbid();
+        }
+
+        cursus.Deprecated = false;
+        await service.UpdateAsync(cursus, token);
         return NoContent();
     }
 

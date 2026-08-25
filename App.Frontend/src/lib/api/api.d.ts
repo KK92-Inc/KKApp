@@ -1080,9 +1080,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": string;
-                        "application/json": string;
-                        "text/json": string;
+                        "text/plain": components["schemas"]["BranchDTO"][];
+                        "application/json": components["schemas"]["BranchDTO"][];
+                        "text/json": components["schemas"]["BranchDTO"][];
                     };
                 };
                 /** @description Unauthorized */
@@ -1156,9 +1156,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": string;
-                        "application/json": string;
-                        "text/json": string;
+                        "text/plain": components["schemas"]["TreeDTO"][];
+                        "application/json": components["schemas"]["TreeDTO"][];
+                        "text/json": components["schemas"]["TreeDTO"][];
                     };
                 };
                 /** @description Unauthorized */
@@ -1233,9 +1233,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": string;
-                        "application/json": string;
-                        "text/json": string;
+                        "text/plain": components["schemas"]["TreeDTO"][];
+                        "application/json": components["schemas"]["TreeDTO"][];
+                        "text/json": components["schemas"]["TreeDTO"][];
                     };
                 };
                 /** @description Unauthorized */
@@ -1309,11 +1309,7 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content: {
-                        "text/plain": string;
-                        "application/json": string;
-                        "text/json": string;
-                    };
+                    content?: never;
                 };
                 /** @description Unauthorized */
                 401: {
@@ -1381,9 +1377,9 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["CommitDTO"];
-                    "text/json": components["schemas"]["CommitDTO"];
-                    "application/*+json": components["schemas"]["CommitDTO"];
+                    "application/json": components["schemas"]["PostCommitDTO"];
+                    "text/json": components["schemas"]["PostCommitDTO"];
+                    "application/*+json": components["schemas"]["PostCommitDTO"];
                 };
             };
             responses: {
@@ -2747,7 +2743,7 @@ export interface paths {
         put?: never;
         /**
          * Request a review for a user project
-         * @description Creates review entries for the specified kinds. Self reviews are auto-assigned to the requesting user.
+         * @description Creates review entries for the specified kinds. Self reviews are auto-assigned to the requesting user. The reviewed ref is always the project's default branch.
          */
         post: {
             parameters: {
@@ -2758,14 +2754,14 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["PostReviewRequestDTO"];
-                    "text/json": components["schemas"]["PostReviewRequestDTO"];
-                    "application/*+json": components["schemas"]["PostReviewRequestDTO"];
+                    "application/json": components["schemas"]["PostPullReviewRequestDTO"];
+                    "text/json": components["schemas"]["PostPullReviewRequestDTO"];
+                    "application/*+json": components["schemas"]["PostPullReviewRequestDTO"];
                 };
             };
             responses: {
-                /** @description Created */
-                201: {
+                /** @description OK */
+                200: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -3097,6 +3093,111 @@ export interface paths {
             };
         };
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reviews/give": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Give a review for a user project
+         * @description Claims a Peer or Async review slot for a user project, scheduled for a specific time, without waiting to be assigned. The reviewed ref is always the project's default branch. Submits as the requesting user unless a different reviewer is specified, which requires staff.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PostPushReviewRequestDTO"];
+                    "text/json": components["schemas"]["PostPushReviewRequestDTO"];
+                    "application/*+json": components["schemas"]["PostPushReviewRequestDTO"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ReviewDO"];
+                        "application/json": components["schemas"]["ReviewDO"];
+                        "text/json": components["schemas"]["ReviewDO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -7700,19 +7801,23 @@ export interface components {
             /** Format: uuid */
             workspaceId: string;
         };
+        BranchDTO: {
+            name: string;
+            head: boolean;
+        };
         CommitDTO: {
-            /** @description The commit message */
+            sha: string;
             message: string;
-            /** @description The files to commit */
-            files: components["schemas"]["CommitFile"][];
+            author: string;
+            /** Format: date-time */
+            updatedAt: string;
         };
-        CommitFile: {
+        CommitFileDTO: {
+            /** @description Relative file path, e.g. src/Program.cs */
             path: string;
+            /** @description Base64 encoded file content. */
             content: string;
-            encoding: components["schemas"]["FileType"];
         };
-        /** @enum {unknown} */
-        CompletionMode: "Ring" | "FreeStyle";
         CursusDO: {
             /** Format: uuid */
             id: string;
@@ -7724,14 +7829,16 @@ export interface components {
             description: string;
             slug: string;
             variant: components["schemas"]["CursusVariant"];
-            completionMode: components["schemas"]["CompletionMode"];
+            completionMode: components["schemas"]["CursusMode"];
             workspace: components["schemas"]["WorkspaceDO"];
         };
+        /** @enum {unknown} */
+        CursusMode: "Ring" | "FreeStyle";
         CursusTrackDO: {
             /** Format: uuid */
             cursusId: string;
             variant: components["schemas"]["CursusVariant"];
-            completionMode: components["schemas"]["CompletionMode"];
+            completionMode: components["schemas"]["CursusMode"];
             nodes?: components["schemas"]["CursusTrackNodeDO"][];
         };
         CursusTrackNodeDO: {
@@ -7752,15 +7859,13 @@ export interface components {
             group?: null | string;
         };
         /** @enum {unknown} */
-        CursusVariant: "Dynamic" | "Static" | "Partial";
+        CursusVariant: "Dynamic" | "Static" | "Hybrid";
         /** @enum {unknown} */
         EntityObjectState: "Inactive" | "Active" | "Awaiting" | "Completed";
         /** @enum {unknown} */
         EntityOwnership: "User" | "Organization";
         /** @enum {unknown} */
         EntityType: "Project" | "Goal" | "Cursus" | "Rubric";
-        /** @enum {unknown} */
-        FileType: "Text" | "Binary";
         GitDO: {
             /** Format: uuid */
             id: string;
@@ -7951,20 +8056,26 @@ export interface components {
             /** @description List of allowed redirect URIs after authentication. */
             redirectUris?: string[];
         };
+        PostCommitDTO: {
+            /** @description Message accompanying the commit. */
+            message: string;
+            /** @description Files included in this commit. */
+            files: components["schemas"]["CommitFileDTO"][];
+        };
         PostCursusRequestDTO: {
             name: string;
-            /** @description Optional description of the cursus. */
+            /** @description Description of the cursus. */
             description: string;
             /** @description Indicates whether the cursus is currently active. */
             active: boolean;
             /** @description Indicates whether the cursus is publicly visible. */
             public: boolean;
-            /** @description The flat list of track nodes forming the cursus hierarchy. */
-            nodes: components["schemas"]["CursusTrackNodeDO"][];
             /** @description The cursus variant: Static (fixed track) or Dynamic (free-roam). */
             variant: components["schemas"]["CursusVariant"];
             /** @description How users progress through the track: Ring (level-by-level) or FreeStyle (branch-independent). */
-            completionMode: components["schemas"]["CompletionMode"];
+            mode: components["schemas"]["CursusMode"];
+            /** @description The flat list of track nodes forming the cursus hierarchy. */
+            track: components["schemas"]["PostCursusTrackRequestDTO"];
         };
         PostCursusTrackRequestDTO: {
             /** @description The flat list of track nodes forming the cursus hierarchy. */
@@ -7995,17 +8106,34 @@ export interface components {
              * @description The maximum number of members allowed in the project.
              */
             maxMembers: number | string;
-            /** @description The list of files to initialize the project repository with. */
-            files: components["schemas"]["CommitFile"][];
+            /** @description The initial projet commit. */
+            commit: components["schemas"]["PostCommitDTO"];
         };
-        PostReviewRequestDTO: {
+        PostPullReviewRequestDTO: {
             /**
              * Format: uuid
              * @description The user project ID being reviewed.
              */
             userProjectId: string;
-            /** @description The SHA of the commit that this review is associated with, if applicable. */
-            ref: string;
+        };
+        PostPushReviewRequestDTO: {
+            /**
+             * Format: uuid
+             * @description The user project ID being reviewed.
+             */
+            userProjectId: string;
+            /** @description The kind of review being given. Only Peer and Async are supported. */
+            kind: components["schemas"]["ReviewKinds"];
+            /**
+             * Format: date-time
+             * @description When the reviewer commits to doing the review. Async: now or within 2 hours. Peer: today or tomorrow.
+             */
+            scheduledAt: string;
+            /**
+             * Format: uuid
+             * @description The user giving the review. Defaults to the caller; only staff may set this to another user.
+             */
+            reviewerId?: null | string;
         };
         PostRubricRequestDTO: {
             name: string;
@@ -8014,7 +8142,7 @@ export interface components {
             /** Format: uuid */
             projectId: null | string;
             variants: components["schemas"]["RubricVariantDTO"][];
-            files: components["schemas"]["CommitFile"][];
+            commit: components["schemas"]["PostCommitDTO"];
         };
         PostSshKeyRequestDTO: {
             /** @description A user-friendly name for the SSH key (e.g., 'Work Laptop'). */
@@ -8205,6 +8333,13 @@ export interface components {
             password: string;
             email: string;
         };
+        TreeDTO: {
+            path: string;
+            directory: boolean;
+            /** Format: int64 */
+            size: number | string;
+            commit: components["schemas"]["CommitDTO"];
+        };
         UserCursusDO: {
             /** Format: uuid */
             id: string;
@@ -8222,7 +8357,7 @@ export interface components {
             /** Format: uuid */
             cursusId: string;
             name: string;
-            completionMode: components["schemas"]["CompletionMode"];
+            completionMode: components["schemas"]["CursusMode"];
             nodes: components["schemas"]["UserCursusTrackNodeDO"][];
         };
         UserCursusTrackNodeDO: {

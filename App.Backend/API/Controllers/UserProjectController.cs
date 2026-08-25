@@ -39,8 +39,7 @@ namespace App.Backend.API.Controllers;
 public class UserProjectController(
     IUserProjectService service,
     IMemberService memberService,
-    IAuthorizationService auth,
-    IMessageBus bus
+    IAuthorizationService auth
 ) : Controller, IInviteController
 {
     private async Task<bool> Access(Guid entityId, CancellationToken token)

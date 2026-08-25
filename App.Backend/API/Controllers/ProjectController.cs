@@ -20,6 +20,10 @@ using App.Backend.Models.Responses.Entities.Projects;
 using App.Backend.Models.Requests.Projects;
 using App.Backend.Models.Responses.Entities.Reviews;
 using App.Backend.API.Utils;
+using App.Backend.Database;
+using System.Linq.Expressions;
+using App.Backend.Domain.Entities;
+using App.Backend.Domain.Enums;
 
 // ============================================================================
 
@@ -29,10 +33,10 @@ namespace App.Backend.API.Controllers;
 [Route("projects")]
 [ProtectedResource("projects"), Authorize]
 public class ProjectController(
-    ILogger<ProjectController> log,
     IProjectService service,
     IMemberService memberService,
     IAuthorizationService auth,
+    DatabaseContext ctx,
     IRubricService rubricService
 ) : Controller
 {
@@ -54,12 +58,25 @@ public class ProjectController(
         CancellationToken token
     )
     {
+        // TODO: Delete this nasty escape hatch.
+        var userId = User.GetSID();
+        var staff = await auth.AuthorizeAsync(User, "staff");
+        Expression<Func<Project, bool>>? visibility = staff.Succeeded
+            ? null
+            : p => p.Public || ctx.Members.Any(m =>
+                m.EntityType == MemberEntityType.Workspace &&
+                m.EntityId == p.WorkspaceId &&
+                m.UserId == userId &&
+                m.LeftAt == null
+            );
+
         var page = await service.GetAllAsync(sorting, pagination, token,
             id is null ? null : n => n.Id == id,
             enabled is null ? null : n => n.Active == enabled,
             workspace is null ? null : n => n.WorkspaceId == workspace,
             string.IsNullOrWhiteSpace(name) ? null : n => EF.Functions.ILike(n.Name, $"%{name}%"),
-            string.IsNullOrWhiteSpace(slug) ? null : n => n.Slug == slug
+            string.IsNullOrWhiteSpace(slug) ? null : n => n.Slug == slug,
+            visibility
         );
 
         page.AppendHeaders(Response.Headers);
@@ -67,16 +84,16 @@ public class ProjectController(
     }
 
     [Tags("Workspace")]
-    [HttpDelete("{id:guid}")]
+    [HttpPost("{id:guid}/deprecate")]
     [RequireScope("workspace")]
     [ProtectedResource("projects", "projects:delete")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [EndpointSummary("Delete a project")]
-    [EndpointDescription("Delete a project and its user instances")]
-    public async Task<IActionResult> Delete(Guid id, CancellationToken token)
+    [EndpointSummary("Deprecate a project")]
+    [EndpointDescription("Mark a project as deprecated")]
+    public async Task<IActionResult> Deprecate(Guid id, CancellationToken token)
     {
         var project = await service.FindByIdAsync(id, token);
         if (project is null) return NotFound();
@@ -88,7 +105,35 @@ public class ProjectController(
             if (member is null) return Forbid();
         }
 
-        await service.DeleteAsync(project, token);
+        project.Deprecated = true;
+        await service.UpdateAsync(project, token);
+        return NoContent();
+    }
+
+    [Tags("Workspace")]
+    [HttpPost("{id:guid}/undeprecate")]
+    [RequireScope("workspace")]
+    [ProtectedResource("projects", "projects:write")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Undeprecate a project")]
+    [EndpointDescription("Restore a project by setting deprecated to false")]
+    public async Task<IActionResult> Undeprecate(Guid id, CancellationToken token)
+    {
+        var project = await service.FindByIdAsync(id, token);
+        if (project is null) return NotFound();
+
+        var isStaff = await auth.AuthorizeAsync(User, "staff");
+        if (!isStaff.Succeeded)
+        {
+            var member = await memberService.FindByEntityAndUserId(project.WorkspaceId, User.GetSID(), token);
+            if (member is null) return Forbid();
+        }
+
+        project.Deprecated = false;
+        await service.UpdateAsync(project, token);
         return NoContent();
     }
 
@@ -151,7 +196,7 @@ public class ProjectController(
     public async Task<ActionResult<ProjectDO>> Update(Guid id, [FromBody] PatchProjectRequestDTO request, CancellationToken token)
     {
         // 1. Grab the .Succeeded boolean
-        var project = await service.FindByIdAsync(id);
+        var project = await service.FindByIdAsync(id, token);
         if (project is null) return NotFound();
 
         var isStaff = await auth.AuthorizeAsync(User, "staff");

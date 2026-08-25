@@ -14,6 +14,8 @@ using App.Backend.Models.Requests.Rubrics;
 using App.Backend.Domain.Entities.Reviews;
 using App.Backend.API.Utils;
 using App.Backend.Domain.Enums;
+using System.Linq.Expressions;
+using App.Backend.Database;
 
 // ============================================================================
 
@@ -25,6 +27,7 @@ namespace App.Backend.API.Controllers;
 public class RubricController(
     IRubricService service,
     IAuthorizationService auth,
+    DatabaseContext ctx,
     IMemberService memberService
 ) : Controller
 {
@@ -47,13 +50,27 @@ public class RubricController(
         CancellationToken token
     )
     {
+        // TODO: Delete this nasty escape hatch.
+
+        var userId = User.GetSID();
+        var staff = await auth.AuthorizeAsync(User, "staff");
+        Expression<Func<Rubric, bool>>? visibility = staff.Succeeded
+            ? null
+            : r => r.Public || ctx.Members.Any(m =>
+                m.EntityType == MemberEntityType.Workspace &&
+                m.EntityId == r.WorkspaceId &&
+                m.UserId == userId &&
+                m.LeftAt == null
+            );
+
         var page = await service.GetAllAsync(sorting, pagination, token,
             id is null ? null : r => r.Id == id,
             workspace is null ? null : n => n.WorkspaceId == workspace,
             !projectId.HasValue ? null : n => n.ProjectId == projectId,
             string.IsNullOrWhiteSpace(name) ? null : r => EF.Functions.ILike(r.Name, $"%{name}%"),
             string.IsNullOrWhiteSpace(slug) ? null : r => r.Slug == slug,
-            enabled is null ? null : r => r.Enabled == enabled
+            enabled is null ? null : r => r.Enabled == enabled,
+            visibility
         );
 
         page.AppendHeaders(Response.Headers);
@@ -109,16 +126,15 @@ public class RubricController(
     }
 
     [Tags("Workspace")]
-    [HttpDelete("{id:guid}")]
+    [HttpPost("{id:guid}/deprecate")]
     [RequireScope("workspace")]
     [ProtectedResource("rubrics", "rubrics:delete")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [EndpointSummary("Delete a rubric")]
-    [EndpointDescription("Delete a rubric")]
-    public async Task<IActionResult> Delete(Guid id, CancellationToken token)
+    [EndpointSummary("Deprecate a rubric")]
+    public async Task<IActionResult> Deprecate(Guid id, CancellationToken token)
     {
         var rubric = await service.FindByIdAsync(id, token);
         if (rubric is null) return NotFound();
@@ -130,7 +146,34 @@ public class RubricController(
             if (member is null) return Forbid();
         }
 
-        await service.DeleteAsync(rubric, token);
+        rubric.Deprecated = true;
+        await service.UpdateAsync(rubric, token);
+        return NoContent();
+    }
+
+    [Tags("Workspace")]
+    [HttpPost("{id:guid}/undeprecate")]
+    [RequireScope("workspace")]
+    [ProtectedResource("rubrics", "rubrics:write")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Undeprecate a rubric")]
+    public async Task<IActionResult> Undeprecate(Guid id, CancellationToken token)
+    {
+        var rubric = await service.FindByIdAsync(id, token);
+        if (rubric is null) return NotFound();
+
+        var isStaff = await auth.AuthorizeAsync(User, "staff");
+        if (!isStaff.Succeeded)
+        {
+            var member = await memberService.FindByEntityAndUserId(rubric.WorkspaceId, User.GetSID(), token);
+            if (member is null) return Forbid();
+        }
+
+        rubric.Deprecated = false;
+        await service.UpdateAsync(rubric, token);
         return NoContent();
     }
 }

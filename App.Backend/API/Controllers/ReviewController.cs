@@ -26,15 +26,10 @@ using App.Backend.API.Utils;
 
 namespace App.Backend.API.Controllers;
 
-/// <summary>
-/// Operations for the currently authenticated user.
-/// For general user operations (admin/staff), see <see cref="UserController"/>.
-/// </summary>
 [ApiController]
 [Route("reviews"), Tags("Reviews")]
 [Authorize]
 public class ReviewController(
-    ILogger<ReviewController> log,
     IReviewService service,
     IRubricService rubricService,
     IMemberService memberService,
@@ -68,8 +63,7 @@ public class ReviewController(
             r => !rubricId.HasValue || r.RubricId == rubricId.Value,
             r => !kind.HasValue || r.Kind == kind.Value,
             r => !status.HasValue || r.State == status.Value,
-            // NOTE(W2):TODO: In the future we might migrate this to a package.
-            // For now this works as a nice but disgustingly leaky escape hatch.
+            // TODO: Delete this nasty escape hatch.
             revieweeId.HasValue ? r => ctx.Members.Any(m =>
                   m.EntityType == MemberEntityType.UserProject &&
                   m.EntityId == r.UserProjectId &&
@@ -77,6 +71,7 @@ public class ReviewController(
                   m.LeftAt == null
             ) : null
         );
+
         page.AppendHeaders(Response.Headers);
         return Ok(page.Items.Select(r => new ReviewDO(r)));
     }

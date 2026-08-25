@@ -3,22 +3,20 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-using System.ComponentModel;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
-using App.Backend.Core.Query;
 using App.Backend.API.Params;
-using App.Backend.Core.Services.Implementation;
 using App.Backend.Core.Services.Interface;
-using App.Backend.Models;
 using Keycloak.AuthServices.Authorization;
 using App.Backend.Models.Responses.Entities;
 using App.Backend.Models.Requests.Goals;
 using App.Backend.Models.Responses.Entities.Projects;
-using App.Backend.Domain.Relations;
 using App.Backend.API.Utils;
+using App.Backend.Database;
+using System.Linq.Expressions;
+using App.Backend.Domain.Entities;
+using App.Backend.Domain.Enums;
 
 // ============================================================================
 
@@ -31,6 +29,7 @@ public class GoalController(
     IAuthorizationService auth,
     IGoalService goals,
     IMemberService members,
+    DatabaseContext ctx,
     IProjectService projects
 ) : Controller
 {
@@ -51,31 +50,45 @@ public class GoalController(
         CancellationToken token
     )
     {
+        // TODO: Delete this nasty escape hatch.
+
+        var userId = User.GetSID();
+        var staff = await auth.AuthorizeAsync(User, "staff");
+        Expression<Func<Goal, bool>>? visibility = staff.Succeeded
+            ? null
+            : g => g.Public || ctx.Members.Any(m =>
+                m.EntityType == MemberEntityType.Workspace &&
+                m.EntityId == g.WorkspaceId &&
+                m.UserId == userId &&
+                m.LeftAt == null
+            );
+
         var page = await goals.GetAllAsync(sorting, pagination, token,
             id is null ? null : n => n.Id == id,
             workspace is null ? null : n => n.WorkspaceId == workspace,
             string.IsNullOrWhiteSpace(slug) ? null : n => n.Slug == slug,
-            string.IsNullOrWhiteSpace(name) ? null : g => EF.Functions.ILike(g.Name, $"%{name}%")
+            string.IsNullOrWhiteSpace(name) ? null : g => EF.Functions.ILike(g.Name, $"%{name}%"),
+            visibility
         );
+
         page.AppendHeaders(Response.Headers);
         return Ok(page.Items.Select(g => new GoalDO(g)));
     }
 
     [Tags("Workspace")]
-    [HttpDelete("{id:guid}")]
+    [HttpPost("{id:guid}/deprecate")]
     [RequireScope("workspace")]
     [ProtectedResource("goals", "goals:delete")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [EndpointSummary("Delete a goal")]
-    [EndpointDescription("Delete a goal and its associations")]
-    public async Task<IActionResult> Delete(Guid id, CancellationToken token)
+    [EndpointSummary("Deprecate a goal")]
+    public async Task<IActionResult> Deprecate(Guid id, CancellationToken token)
     {
-        var goal = await goals.FindByIdAsync(id);
+        var goal = await goals.FindByIdAsync(id, token);
         if (goal is null) return NotFound();
-        
+
         var isStaff = await auth.AuthorizeAsync(User, "staff");
         if (!isStaff.Succeeded)
         {
@@ -83,7 +96,34 @@ public class GoalController(
             if (member is null) return Forbid();
         }
 
-        await goals.DeleteAsync(goal);
+        goal.Deprecated = true;
+        await goals.UpdateAsync(goal, token);
+        return NoContent();
+    }
+
+    [Tags("Workspace")]
+    [HttpPost("{id:guid}/undeprecate")]
+    [RequireScope("workspace")]
+    [ProtectedResource("goals", "goals:write")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Undeprecate a goal")]
+    public async Task<IActionResult> Undeprecate(Guid id, CancellationToken token)
+    {
+        var goal = await goals.FindByIdAsync(id, token);
+        if (goal is null) return NotFound();
+
+        var isStaff = await auth.AuthorizeAsync(User, "staff");
+        if (!isStaff.Succeeded)
+        {
+            var member = await members.FindByEntityAndUserId(goal.WorkspaceId, User.GetSID(), token);
+            if (member is null) return Forbid();
+        }
+
+        goal.Deprecated = false;
+        await goals.UpdateAsync(goal, token);
         return NoContent();
     }
 

@@ -40,9 +40,7 @@ namespace App.Backend.API.Controllers;
 public class UserController(
     IUserService users,
     IMessageBus bus,
-    IWorkspaceService workspaces,
-    IAuthorizationService auth,
-    [FromKeyedServices("student")] KeycloakAdminApiClient keycloak
+    IAuthorizationService auth
 ) : Controller
 {
     [HttpGet]
@@ -62,7 +60,7 @@ public class UserController(
     {
         var page = await users.GetAllAsync(sorting, pagination, token,
             string.IsNullOrWhiteSpace(login) ? null : u => EF.Functions.ILike(u.Login, $"%{login}%"),
-            string.IsNullOrWhiteSpace(display) ? null : u => EF.Functions.ILike(u.Display, $"%{display}%")
+            string.IsNullOrWhiteSpace(display) ? null : u => u.Display != null && EF.Functions.ILike(u.Display, $"%{display}%")
         );
         page.AppendHeaders(Response.Headers);
         return Ok(page.Items.Select(u => new UserDO(u)));
@@ -79,7 +77,7 @@ Retrieve a paginated list of all users who are elligible for a certain entity.
 For example this could be finding all users who can subscribe to a project, goal or cursus.
 Another one would be finding users eligible to be invited to a user project.
 
-It will also let you know if a user is for example eligible to user a rubric.
+In regards to rubrics it will evaluate if user is elligible to conduct a review with that rubric.
     ")]
     public async Task<ActionResult<IEnumerable<UserDO>>> GetEligible(
         [FromQuery(Name = "filter[login]")] string? login,
@@ -121,38 +119,36 @@ It will also let you know if a user is for example eligible to user a rubric.
     }
 
 
-[HttpPost]
-[Authorize(Policy = "staff")]
-[ProducesResponseType(StatusCodes.Status200OK)]
-[ProducesResponseType(StatusCodes.Status409Conflict)]
-[ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-[ProducesResponseType(StatusCodes.Status404NotFound)]
-[ProducesErrorResponseType(typeof(ProblemDetails))]
-[EndpointSummary("Create a user")]
-[EndpointDescription("Provision a new user and create a Keycloak account for them.")]
-public async Task<ActionResult<UserDO>> CreateUser(
-    [FromBody] PostUserRequestDTO request,
-    CancellationToken token)
-{
-    var conflict = await users.FindByLoginAsync(request.Login, token);
-    if (conflict is not null) return Conflict();
-
-    var (account, password) = await users.CreateUserAsync(new()
+    [HttpPost]
+    [Authorize(Policy = "staff")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Create a user")]
+    [EndpointDescription("Provision a new user and create a Keycloak account for them.")]
+    public async Task<ActionResult<UserDO>> CreateUser([FromBody] PostUserRequestDTO request, CancellationToken token)
     {
-        Login = request.Login,
-        Display = request.Login,
-        Details = new()
-        {
-            Email = request.Email,
-            FirstName = request.FirstName,
-            LastName = request.LastName,
-        },
-    }, token);
+        var existing = await users.FindByLoginAsync(request.Login, token);
+        if (existing is not null) return Conflict();
 
-    await bus.PublishAsync(new WelcomeUserNotification(account!));
-    Response.Headers.TryAdd("X-Password", password);
-    return Ok(new UserDO(account));
-}
+        var (user, password) = await users.CreateUserAsync(new()
+        {
+            Login = request.Login,
+            Display = request.Login,
+            Details = new()
+            {
+                Email = request.Email,
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+            },
+        }, token);
+
+        await bus.PublishAsync(new WelcomeUserNotification(user!));
+        Response.Headers.TryAdd("X-Password", password);
+        return Ok(new UserDO(user));
+    }
 
     [HttpPatch("{userId:guid}")]
     [RequireScope("user")]
