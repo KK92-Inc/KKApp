@@ -99,7 +99,7 @@ public class Rubric : BaseEntity
     // Relations //
 
     [ForeignKey(nameof(GitInfoId))]
-    public virtual Git GitInfo { get; set; }
+    public virtual GitInfo GitInfo { get; set; }
 
     [ForeignKey(nameof(ProjectId))]
     public virtual Project? Project { get; set; }

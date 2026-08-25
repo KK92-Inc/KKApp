@@ -4,7 +4,8 @@
 // ============================================================================
 
 using App.Backend.Domain.Entities;
-using App.Backend.Domain.Values.Misc;
+using App.Git.Models.Requests;
+using App.Git.Models.Responses;
 
 namespace App.Backend.Core.Services.Interface;
 
@@ -21,7 +22,7 @@ public interface IGitService
     /// </summary>
     /// <param name="id">The ID.</param>
     /// <returns>The entity found by that ID or null if not found.</returns>
-    public Task<Git?> FindByIdAsync(Guid id, CancellationToken token = default);
+    public Task<Domain.Entities.GitInfo?> FindByIdAsync(Guid id, CancellationToken token = default);
 
     /// <summary>
     /// Checks whether a repository exists.
@@ -61,21 +62,14 @@ public interface IGitService
 
     /// <summary>
     /// Gets the tree structure of a repository at a given branch/path.
-    /// 
-    /// Output matches that of the "git ls-tree" command, e.g.:
-    /// <c>
-    /// 100644 blob 3a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8	somefile.txt
-    /// 100644 blob 4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0	anotherfile.txt
-    /// 40000 tree 5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1	somedir
-    /// </c>
     /// </summary>
     /// <param name="owner">The owner of the repository.</param>
     /// <param name="name">The name of the repository.</param>
     /// <param name="branch">The branch to update.</param>
     /// <param name="path">The path of the tree to update.</param>
     /// <param name="token">The cancellation token.</param>
-    /// <returns>The tree structure, or null if not found.</returns>
-    public Task<string?> GetTreeAsync(string owner, string name, string branch, string path = "", CancellationToken token = default);
+    /// <returns>The tree entries, or null if not found.</returns>
+    public Task<TreeDTO?> GetTreeAsync(string owner, string name, string branch, string path = "", CancellationToken token = default);
 
     /// <summary>
     /// Gets the content of a file (git blob) at a given branch/path.
@@ -85,8 +79,8 @@ public interface IGitService
     /// <param name="branch">The branch to update.</param>
     /// <param name="path">The path of the file to update.</param>
     /// <param name="token">The cancellation token.</param>
-    /// <returns>The file content, or null if not found.</returns>
-    public Task<string?> GetBlobAsync(string owner, string name, string branch, string path, CancellationToken token = default);
+    /// <returns>The file content as raw bytes, or null if not found.</returns>
+    public Task<byte[]?> GetBlobAsync(string owner, string name, string branch, string path, CancellationToken token = default);
 
     /// <summary>
     /// Commits a commit to the remote.
@@ -97,7 +91,7 @@ public interface IGitService
     /// <param name="commit">The commit to submit.</param>
     /// <param name="token">The cancellation token.</param>
     /// <returns>True if the commit was processed, false if not found.</returns>
-    public Task<bool> Commit(string owner, string name, string branch, Commit commit, CancellationToken token = default);
+    public Task<bool> Commit(string owner, string name, string branch, PostCommitWithAuthorDTO commit, CancellationToken token = default);
 
     /// <summary>
     /// Gets the list of branches in the repository.
@@ -105,13 +99,12 @@ public interface IGitService
     /// <param name="owner"> The owner of the repository.</param>
     /// <param name="name">The name of the repository.</param>
     /// <param name="token">The cancellation token. </param>
-    /// <returns>The list of branch names.</returns>
-    public Task<string> GetBranchesAsync(string owner, string name, CancellationToken token = default);
+    /// <returns>The list of branches.</returns>
+    public Task<BranchDTO[]> GetBranchesAsync(string owner, string name, CancellationToken token = default);
 
     /// <summary>
     /// Gets the name of the repository's default (master/main) branch.
-    /// Parses the output of <see cref="GetBranchesAsync"/>, which prefixes the
-    /// current HEAD branch with a leading '*'.
+    /// Selects the branch marked as HEAD.
     /// </summary>
     /// <param name="owner">The owner of the repository.</param>
     /// <param name="name">The name of the repository.</param>

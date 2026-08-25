@@ -3,8 +3,8 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-using App.Backend.Domain.Values.Misc;
 using App.Backend.Models.Validators;
+using App.Git.Models.Requests;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
@@ -31,7 +31,7 @@ public class PostRubricRequestDTO
     [Required, MinLength(1, ErrorMessage = "Requires at least 1 variant to be defined.")]
     public required IEnumerable<RubricVariantDTO> Variants { get; init; }
 
+    [Required]
     [RequiresFile("README.md", ErrorMessage = "You need to provide a file 'README.md' which is used as the rubric.")]
-    [Required, MinLength(1, ErrorMessage = "Requires at least 1 file to be defined.")]
-    public required IEnumerable<CommitFile> Files { get; init; }
+    public required PostCommitDTO Commit { get; init; }
 }

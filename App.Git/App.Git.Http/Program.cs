@@ -78,7 +78,7 @@ repos.MapPost("/rename/{target}", (string owner, string name, string target) =>
     if (!Repository.IsValid(oldPath)) return Results.NotFound();
 
     Directory.Move(oldPath, newPath);
-    return Results.Ok();
+    return Results.NoContent();
 });
 
 // ============================================================================
@@ -213,7 +213,7 @@ repos.MapGet("/blob/{branch}/{**path}", (string owner, string name, string branc
 // Commits
 // ============================================================================
 
-repos.MapPut("/commit/{branch}", (string owner, string name, string branch, PostCommitDTO payload, HttpResponse response) =>
+repos.MapPut("/commit/{branch}", (string owner, string name, string branch, PostCommitWithAuthorDTO payload, HttpResponse response) =>
 {
     var dir = Path.Combine(root, owner, name);
     if (!Repository.IsValid(dir))
@@ -224,21 +224,23 @@ repos.MapPut("/commit/{branch}", (string owner, string name, string branch, Post
     var target = repo.Branches[branch];
     bool initial = repo.Info.IsHeadUnborn;
 
-    // If repo has commits, require that the target branch exists
     if (!initial && target is null)
         return Results.NotFound($"Branch '{branch}' does not exist.");
 
+    // Guard against duplicate paths — List<T> allows what Dictionary<K,V> silently prevented
+    var duplicate = payload.Files
+        .GroupBy(f => f.Path)
+        .FirstOrDefault(g => g.Count() > 1);
+
+    if (duplicate is not null)
+        return Results.UnprocessableEntity($"Duplicate path in commit: {duplicate.Key}");
+
     var definition = new TreeDefinition();
     var parents = initial ? Array.Empty<Commit>() : [target.Tip];
-
-    // Make sure there is no attempt in anyway to do directory traversals
-    var invalid = payload.Files.Keys.FirstOrDefault(p => p.Contains("..") || Path.IsPathRooted(p));
-    if (invalid is not null) return Results.UnprocessableEntity($"Invalid path: {invalid}");
-
-    foreach (var (path, content) in payload.Files)
+    foreach (var file in payload.Files)
     {
-        using var stream = new MemoryStream(Convert.FromBase64String(content));
-        definition.Add(path, repo.ObjectDatabase.CreateBlob(stream), Mode.NonExecutableFile);
+        using var stream = new MemoryStream(Convert.FromBase64String(file.Content));
+        definition.Add(file.Path, repo.ObjectDatabase.CreateBlob(stream), Mode.NonExecutableFile);
     }
 
     var tree = repo.ObjectDatabase.CreateTree(definition);
@@ -248,22 +250,18 @@ repos.MapPut("/commit/{branch}", (string owner, string name, string branch, Post
 
     if (initial)
     {
-        // Create the branch pointer
         repo.Refs.Add(refName, commit.Id);
-        // Use literal string "HEAD" so LibGit2Sharp updates HEAD itself, not its target
         repo.Refs.UpdateTarget("HEAD", refName);
     }
     else
     {
-        // Move the branch reference forward to the new commit
         repo.Refs.Add(refName, commit.Id, allowOverwrite: true);
-        // Self-heal: If HEAD points to an unborn/empty branch (e.g. legacy 'master'), point HEAD here
         if (repo.Head.Tip is null)
             repo.Refs.UpdateTarget("HEAD", refName);
     }
 
     response.Headers["x-sha"] = commit.Sha;
-    return Results.Ok(commit.Sha);
+    return Results.NoContent();
 }).WithTags("Commits");
 
 // ============================================================================

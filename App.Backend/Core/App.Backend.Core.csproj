@@ -8,18 +8,17 @@
 
     <ItemGroup>
     <PackageReference Include="Keycloak.AuthServices.Sdk.Kiota" Version="26.5.6" />
-    <PackageReference Include="LibGit2Sharp" Version="0.31.0" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.1" />
-    <PackageReference Include="SSH.NET" Version="2024.2.0" />
     <PackageReference Include="System.Linq.Dynamic.Core" Version="1.7.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../Domain/App.Backend.Domain.csproj" />
     <ProjectReference Include="../Models/App.Backend.Models.csproj" />
+    <ProjectReference Include="../../App.Git/App.Git.Models/App.Git.Models.csproj" />
     <ProjectReference Include="../Database/App.Backend.Database.csproj" />
   </ItemGroup>
 </Project>

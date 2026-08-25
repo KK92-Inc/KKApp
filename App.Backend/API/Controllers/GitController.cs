@@ -9,6 +9,8 @@ using App.Backend.Core.Services.Interface;
 using App.Backend.Models.Requests.SshKeys;
 using App.Backend.API.Utils;
 using Microsoft.AspNetCore.Authorization;
+using App.Git.Models.Responses;
+using App.Git.Models.Requests;
 
 // ============================================================================
 
@@ -27,13 +29,13 @@ public class GitController(IMemberService memberService, IGitService git, IUserS
     [EndpointDescription("Retrieves a list of branches in the git repository associated with this entity.")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<string>> GetBranches(Guid id, CancellationToken token)
+    public async Task<ActionResult<BranchDTO[]>> GetBranches(Guid id, CancellationToken token)
     {
         var entity = await git.FindByIdAsync(id, token);
         if (entity is null) return NotFound();
 
-        var tree = await git.GetBranchesAsync(entity.Owner, entity.Name, token);
-        return tree is null ? NotFound() : Content(tree, "text/plain");
+        var branches = await git.GetBranchesAsync(entity.Owner, entity.Name, token);
+        return Ok(branches);
     }
 
     [HttpGet("{id:guid}/tree/{branch}")]
@@ -44,7 +46,7 @@ public class GitController(IMemberService memberService, IGitService git, IUserS
     [EndpointDescription("Retrieves the file tree at the given branch and path in the git repository associated with this entity.")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<string>> GetTree(
+    public async Task<ActionResult<TreeDTO>> GetTree(
         Guid id, string branch, string? path, CancellationToken token)
     {
         var entity = await git.FindByIdAsync(id, token);
@@ -53,7 +55,7 @@ public class GitController(IMemberService memberService, IGitService git, IUserS
         var tree = await git.GetTreeAsync(entity.Owner, entity.Name, branch, path ?? string.Empty, token);
         if (tree is null) return NotFound();
 
-        return Content(tree, "text/plain");
+        return Ok(tree);
     }
 
     [HttpGet("{id:guid}/blob/{branch}/{*path}")]
@@ -63,16 +65,16 @@ public class GitController(IMemberService memberService, IGitService git, IUserS
     [EndpointDescription("Retrieves the content of a file in the git repository associated with this entity.")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<string>> GetBlob(
+    public async Task<ActionResult> GetBlob(
         Guid id, string branch, string path, CancellationToken token)
     {
         var entity = await git.FindByIdAsync(id, token);
         if (entity is null) return NotFound();
 
-        var text = await git.GetBlobAsync(entity.Owner, entity.Name, branch, path, token);
-        if (text is null) return NotFound();
+        var blob = await git.GetBlobAsync(entity.Owner, entity.Name, branch, path, token);
+        if (blob is null) return NotFound();
 
-        return Ok(text);
+        return File(blob, "application/octet-stream");
     }
 
     [HttpPut("{id:guid}/commit/{branch}")]
@@ -83,7 +85,7 @@ public class GitController(IMemberService memberService, IGitService git, IUserS
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> Commit(
-        Guid id, string branch, CommitDTO commit, CancellationToken token)
+        Guid id, string branch, PostCommitDTO commit, CancellationToken token)
     {
         var result = await auth.AuthorizeAsync(User, "staff");
         if (!result.Succeeded && !await Access(id, User.GetSID(), token))
@@ -97,9 +99,10 @@ public class GitController(IMemberService memberService, IGitService git, IUserS
 
         var success = await git.Commit(entity.Owner, entity.Name, branch, new()
         {
-            Files = commit.Files,
+            Author = user.Login,
+            Email = "N/A", // TODO: Get the domain in here.
             Message = commit.Message,
-            Author = new(user.Login, user.Details?.Email ?? "N/A")
+            Files = commit.Files,
         }, token);
 
         return success ? NoContent() : NotFound();

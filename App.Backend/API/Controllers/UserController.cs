@@ -38,7 +38,6 @@ namespace App.Backend.API.Controllers;
 [Route("users"), Tags("Users")]
 [Authorize]
 public class UserController(
-    ILogger<UserController> logger,
     IUserService users,
     IMessageBus bus,
     IWorkspaceService workspaces,

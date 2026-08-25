@@ -3,7 +3,6 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-using App.Backend.Domain.Values.Misc;
 using App.Backend.Models.Validators;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;

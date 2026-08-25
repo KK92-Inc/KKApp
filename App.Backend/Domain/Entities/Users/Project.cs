@@ -57,7 +57,7 @@ public class UserProject : BaseEntity
     public Guid GitInfoId { get; set; }
 
     [ForeignKey(nameof(GitInfoId))]
-    public virtual Git GitInfo { get; set; }
+    public virtual GitInfo GitInfo { get; set; }
 
     /// <summary>
     /// Transactions related to user activities within this project.

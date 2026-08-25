@@ -196,7 +196,7 @@ public class SubscriptionService(
             var success = await git.CreateAsync(owner, name, ct);
             ServiceException.ThrowIf(!success, "User repository already exists for project");
 
-            var gitInfo = await context.GitInfo.AddAsync(new Git
+            var gitInfo = await context.GitInfo.AddAsync(new Domain.Entities.GitInfo
             {
                 Name = name,
                 Owner = owner,

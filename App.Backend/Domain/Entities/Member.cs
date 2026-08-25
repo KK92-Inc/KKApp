@@ -36,7 +36,7 @@ public class Member : BaseEntity
     public Guid? GitId { get; set; }
 
     [ForeignKey(nameof(GitId))]
-    public virtual Git? Git { get; set; }
+    public virtual GitInfo? Git { get; set; }
 
     [Column("user_id")]
     public Guid UserId { get; set; }

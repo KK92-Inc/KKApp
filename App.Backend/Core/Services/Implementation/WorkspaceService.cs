@@ -20,8 +20,8 @@ using System.Text.Json;
 using System.Net.Http;
 using Microsoft.Extensions.Options;
 using App.Backend.Core.Services.Options;
-using App.Backend.Domain.Values.Misc;
 using App.Backend.Domain.Relations;
+using App.Git.Models.Requests;
 
 // ============================================================================
 
@@ -89,7 +89,7 @@ public class WorkspaceService(DatabaseContext ctx, IGitService git, ICursusServi
         }, token);
     }
 
-    public async Task<Rubric> AddRubricAsync(Guid workspaceId, Rubric rubric, Commit commit, CancellationToken token = default)
+    public async Task<Rubric> AddRubricAsync(Guid workspaceId, Rubric rubric, PostCommitWithAuthorDTO commit, CancellationToken token = default)
     {
         var workspace = await FindByIdAsync(workspaceId, token) ?? throw new ServiceException(404, "Workspace not found");
         if (rubric.ProjectId is null)
@@ -153,7 +153,7 @@ public class WorkspaceService(DatabaseContext ctx, IGitService git, ICursusServi
         }, token);
     }
 
-    public async Task<Project> AddProjectAsync(Guid workspaceId, Project project, Commit commit, CancellationToken token = default)
+    public async Task<Project> AddProjectAsync(Guid workspaceId, Project project, PostCommitWithAuthorDTO commit, CancellationToken token = default)
     {
         var strategy = ctx.Database.CreateExecutionStrategy();
         return await strategy.ExecuteAsync(async (ct) =>

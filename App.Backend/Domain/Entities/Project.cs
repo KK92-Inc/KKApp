@@ -56,7 +56,7 @@ public class Project : BaseEntity
     public Guid GitId { get; set; }
 
     [ForeignKey(nameof(GitId))]
-    public virtual Git Git { get; set; }
+    public virtual GitInfo Git { get; set; }
 
     [Column("workspace_id")]
     public Guid WorkspaceId { get; set; }

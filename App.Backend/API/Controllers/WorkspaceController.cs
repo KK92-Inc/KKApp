@@ -28,9 +28,9 @@ using Wolverine;
 using App.Backend.Domain.Entities.Reviews;
 using Keycloak.AuthServices.Sdk.Admin;
 using App.Backend.API.Params;
-using App.Backend.Domain.Values.Misc;
 using App.Backend.API.Utils;
 using App.Backend.Domain.Relations;
+using App.Git.Models.Requests;
 
 // ============================================================================
 
@@ -203,7 +203,7 @@ such as official cursi, projects or rubrics.
     [EndpointDescription("Directly create a new project to be added to the workspace")]
     public async Task<ActionResult<ProjectDO>> AddProject(
         Guid workspace,
-        [FromBody] PostProjectRequestDTO dto,
+        [FromBody] PostProjectRequestDTO body,
         CancellationToken token
     )
     {
@@ -216,28 +216,29 @@ such as official cursi, projects or rubrics.
             return Forbid();
         if (space.OwnerId is not null && space.OwnerId != id)
             return Forbid();
-        if (await projectService.FindBySlugAsync(dto.Name.ToSlug(), token) is not null)
+        if (await projectService.FindBySlugAsync(body.Name.ToSlug(), token) is not null)
             return Conflict();
 
         var user = await userService.FindByIdAsync(id, token);
         if (user is null) return Forbid();
 
-        var commit = new Commit()
+        var commit = new PostCommitWithAuthorDTO()
         {
-            Files = dto.Files.Select(f => new CommitFile(f.Path, f.Content, FileType.Text)),
-            Message = "Initial Commit",
-            Author = new(user.Login, user.Details?.Email ?? "Unknown")
+            Files = body.Commit.Files,
+            Message = body.Commit.Message,
+            Author = user.Login,
+            Email = "N/A"
         };
 
         var project = await service.AddProjectAsync(space.Id, new()
         {
-            Name = dto.Name,
+            Name = body.Name,
             WorkspaceId = workspace,
-            Description = dto.Description,
-            Slug = dto.Name.ToSlug(),
-            Active = dto.Active,
-            Public = dto.Public,
-            MaxMembers = dto.MaxMembers,
+            Description = body.Description,
+            Slug = body.Name.ToSlug(),
+            Active = body.Active,
+            Public = body.Public,
+            MaxMembers = body.MaxMembers,
         }, commit, token);
 
         return Ok(new ProjectDO(project));
@@ -287,13 +288,15 @@ such as official cursi, projects or rubrics.
         var user = await userService.FindByIdAsync(userId, token);
         if (user is null) return Forbid();
 
-        var created = await service.AddRubricAsync(space.Id, rubric, new()
+        var commit = new PostCommitWithAuthorDTO()
         {
-            Files = body.Files,
-            Message = "Initial Commit",
-            Author = new(user.Login, user.Details?.Email ?? "Unknown")
-        }, token);
+            Files = body.Commit.Files,
+            Message = body.Commit.Message,
+            Author = user.Login,
+            Email = "N/A"
+        };
 
+        var created = await service.AddRubricAsync(space.Id, rubric, commit, token);
         return Ok(new RubricDO(created));
     }
 

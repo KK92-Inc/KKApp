@@ -5,7 +5,8 @@
 
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
-using App.Backend.Domain.Values.Misc;
+using App.Backend.Models.Validators;
+using App.Git.Models.Requests;
 
 namespace App.Backend.Models.Requests.Projects;
 
@@ -49,7 +50,7 @@ public class PostProjectRequestDTO : RequestDTO
     [Description("The maximum number of members allowed in the project.")]
     public int MaxMembers { get; init; }
 
-    [Required, MinLength(1)]
-    [Description("The list of files to initialize the project repository with.")]
-    public required IEnumerable<CommitFile> Files { get; init; }
+    [Required, RequiresFile("readme.md", ErrorMessage = "README.md is required to be present.")]
+    [Description("The initial projet commit.")]
+    public required PostCommitDTO Commit { get; init; }
 }

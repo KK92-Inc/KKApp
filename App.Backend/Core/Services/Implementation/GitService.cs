@@ -9,7 +9,8 @@ using App.Backend.Core.Services.Interface;
 using App.Backend.Core.Services.Options;
 using App.Backend.Database;
 using App.Backend.Domain.Entities;
-using App.Backend.Domain.Values.Misc;
+using App.Git.Models.Requests;
+using App.Git.Models.Responses;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -37,7 +38,7 @@ public class GitService : IGitService
 
     // ========================================================================
 
-    public async Task<Git?> FindByIdAsync(Guid id, CancellationToken token = default)
+    public async Task<Domain.Entities.GitInfo?> FindByIdAsync(Guid id, CancellationToken token = default)
     {
         return await _ctx.GitInfo.FirstOrDefaultAsync(g => g.Id == id, token);
     }
@@ -82,75 +83,63 @@ public class GitService : IGitService
 
         return response.StatusCode switch
         {
-            HttpStatusCode.OK => true,
+            HttpStatusCode.NoContent => true,
             HttpStatusCode.NotFound or HttpStatusCode.Conflict => false,
             _ => throw new ServiceException(500, $"Unexpected status {response.StatusCode} renaming repo {owner}/{name} -> {newName}")
         };
     }
 
     /// <inheritdoc />
-    public async Task<string?> GetTreeAsync(string owner, string name, string branch, string path = "", CancellationToken token = default)
+    public async Task<TreeDTO?> GetTreeAsync(string owner, string name, string branch, string path = "", CancellationToken token = default)
     {
-        var url = string.IsNullOrEmpty(path)
-            ? $"repo/{owner}/{name}/tree/{branch}/"
-            : $"repo/{owner}/{name}/tree/{branch}/{path}";
-
-        var response = await _http.GetAsync(url, token);
+        var response = await _http.GetAsync($"repo/{owner}/{name}/tree/{branch}/{path}", token);
         if (response.StatusCode is HttpStatusCode.NotFound)
             return null;
 
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadAsStringAsync(token);
+        return await response.Content.ReadFromJsonAsync<TreeDTO>(token)
+            ?? throw new ServiceException(500, "Failed to get Tree.");
     }
 
     /// <inheritdoc />
-    public async Task<string?> GetBlobAsync(string owner, string name, string branch, string path, CancellationToken token = default)
+    public async Task<byte[]?> GetBlobAsync(string owner, string name, string branch, string path, CancellationToken token = default)
     {
         var response = await _http.GetAsync($"repo/{owner}/{name}/blob/{branch}/{path}", token);
         if (response.StatusCode is HttpStatusCode.NotFound)
             return null;
 
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadAsStringAsync(token);
+        return await response.Content.ReadAsByteArrayAsync(token);
     }
 
-    public async Task<bool> Commit(string owner, string name, string branch, Commit commit, CancellationToken token = default)
+    public async Task<bool> Commit(string owner, string name, string branch, PostCommitWithAuthorDTO commit, CancellationToken token = default)
     {
         var response = await _http.PutAsJsonAsync($"repo/{owner}/{name}/commit/{branch}", commit, token);
         return response.StatusCode switch
         {
-            HttpStatusCode.OK => true,
+            HttpStatusCode.NoContent => true,
             HttpStatusCode.NotFound => false,
             _ => throw new ServiceException(500, $"Unexpected status {response.StatusCode} setting blob {owner}/{name}/{branch}")
         };
     }
 
     /// <inheritdoc />
-    public async Task<string> GetBranchesAsync(string owner, string name, CancellationToken token = default)
+    public async Task<BranchDTO[]> GetBranchesAsync(string owner, string name, CancellationToken token = default)
     {
         var response = await _http.GetAsync($"repo/{owner}/{name}/branches", token);
         if (response.StatusCode is HttpStatusCode.NotFound)
-            return string.Empty;
+            return [];
 
         response.EnsureSuccessStatusCode();
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadAsStringAsync(token);
+        return await response.Content.ReadFromJsonAsync<BranchDTO[]>(token)
+            ?? throw new ServiceException(500, "Failed to retrieve branches.");
     }
 
     /// <inheritdoc />
     public async Task<string?> GetDefaultBranchAsync(string owner, string name, CancellationToken token = default)
     {
-        // NOTE(W2): Lines come from `git branch --format="%(if)%(HEAD)%(then)*%(end)%(refname:short)"`,
-        // so the current HEAD/default branch is the one line prefixed with a leading '*'.
-        var raw = await GetBranchesAsync(owner, name, token);
-        if (string.IsNullOrWhiteSpace(raw))
-            return null;
-
-        var master = raw
-            .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .FirstOrDefault(b => b.StartsWith('*'));
-
-        return master?.TrimStart('*').Trim() is { Length: > 0 } branch ? branch : null;
+        var branches = await GetBranchesAsync(owner, name, token);
+        return branches.FirstOrDefault(b => b.Head == true)?.Name;
     }
 
     /// <inheritdoc />

@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="10.0.0" />
+    <ProjectReference Include="../../App.Git/App.Git.Models/App.Git.Models.csproj" />
   </ItemGroup>
 
 </Project>

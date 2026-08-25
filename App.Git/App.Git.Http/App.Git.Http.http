@@ -66,9 +66,12 @@ Content-Type: application/json
 	"author": "Developer",
 	"email": "developer@example.com",
 	"message": "Initial commit",
-	"files": {
-		"README.md": "IyBFeGFtcGxlIFJlcG9zaXRvcnkK"
-	}
+	"files": [
+		{
+			"path": "README.md",
+			"content": "IyBFeGFtcGxlIFJlcG9zaXRvcnkK"
+		}
+	]
 }
 
 ###

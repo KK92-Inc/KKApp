@@ -5,8 +5,6 @@
 
 // ============================================================================
 
-using App.Backend.Domain.Values.Misc;
-
 namespace App.Backend.Domain.Values;
 
 /// <summary>

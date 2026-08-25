@@ -16,9 +16,9 @@ namespace App.Backend.Domain.Entities;
 
 [Table("tbl_git")]
 [Index(nameof(Name), nameof(Owner), IsUnique = true)]
-public class Git : BaseEntity
+public class GitInfo : BaseEntity
 {
-    public Git()
+    public GitInfo()
     {
         Name = string.Empty;
         Owner = string.Empty;

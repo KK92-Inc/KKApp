@@ -3,26 +3,22 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-using App.Backend.Domain.Values.Misc;
-using App.Backend.Models.Validators;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
-namespace App.Backend.Models.Requests.SshKeys;
-
 // ============================================================================
 
-/// <summary>
-/// Request to add a new SSH public key.
-/// </summary>
-public class CommitDTO : RequestDTO
+namespace App.Git.Models.Requests;
+
+public class PostCommitWithAuthorDTO : PostCommitDTO
 {
-
     [Required, StringLength(255, MinimumLength = 1)]
-    [Description("The commit message")]
-    public required string Message { get; init; }
+    [Description("Name of the commit author.")]
+    public required string Author { get; set; }
 
-    [Required, MinLength(1), MaxLength(10)]
-    [Description("The files to commit")]
-    public required IEnumerable<CommitFile> Files { get; init; }
+    [Required, EmailAddress, StringLength(255, MinimumLength = 1)]
+    [Description("Email of the commit author.")]
+    public required string Email { get; set; }
 }
+

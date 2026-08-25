@@ -6,7 +6,7 @@
 using App.Backend.Domain.Entities;
 using App.Backend.Domain.Entities.Reviews;
 using App.Backend.Domain.Relations;
-using App.Backend.Domain.Values.Misc;
+using App.Git.Models.Requests;
 
 // ============================================================================
 
@@ -30,7 +30,7 @@ public interface IWorkspaceService : IDomainService<Workspace>, IUserQueryable<W
     /// <param name="project"></param>
     /// <param name="token"></param>
     /// <returns></returns>
-    public Task<Project> AddProjectAsync(Guid workspaceId, Project project, Commit commit, CancellationToken token = default);
+    public Task<Project> AddProjectAsync(Guid workspaceId, Project project, PostCommitWithAuthorDTO commit, CancellationToken token = default);
 
     /// <summary>
     ///
@@ -58,5 +58,5 @@ public interface IWorkspaceService : IDomainService<Workspace>, IUserQueryable<W
     /// <param name="creatorId">The creator user ID.</param>
     /// <param name="token">The cancellation token.</param>
     /// <returns>The created rubric.</returns>
-    public Task<Rubric> AddRubricAsync(Guid workspaceId, Rubric rubric, Commit commit, CancellationToken token = default);
+    public Task<Rubric> AddRubricAsync(Guid workspaceId, Rubric rubric, PostCommitWithAuthorDTO commit, CancellationToken token = default);
 }

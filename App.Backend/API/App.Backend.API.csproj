@@ -22,7 +22,6 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
     <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="13.4.6" />
     <PackageReference Include="Bogus" Version="35.6.5" />
-    <PackageReference Include="MailKit" Version="4.14.1" />
     <PackageReference Include="Keycloak.AuthServices.Authentication" Version="2.7.0" />
     <PackageReference Include="Keycloak.AuthServices.Authorization" Version="2.7.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0" />
@@ -55,6 +54,7 @@
     <ProjectReference Include="../../App.Migrations/Migrations.csproj" />
     <ProjectReference Include="../Core/App.Backend.Core.csproj" />
     <ProjectReference Include="../Models/App.Backend.Models.csproj" />
+    <ProjectReference Include="../../App.Git/App.Git.Models/App.Git.Models.csproj" />
     <ProjectReference Include="../../App.ServiceDefaults/App.ServiceDefaults.csproj" />
   </ItemGroup>
 </Project>

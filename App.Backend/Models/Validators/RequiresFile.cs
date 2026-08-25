@@ -3,8 +3,8 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using App.Git.Models.Requests;
 using System.ComponentModel.DataAnnotations;
-using App.Backend.Domain.Values.Misc;
 
 // ============================================================================
 
@@ -26,14 +26,10 @@ public sealed class RequiresFileAttribute : ValidationAttribute
         if (value is null)
             return true;
             
-        if (value is not IEnumerable<CommitFile> files)
+        if (value is not PostCommitDTO commit)
             return false;
 
-        return files.Any(file =>
-        {
-            return file?.Path is not null &&
-                        string.Equals(NormalizePath(file.Path), _targetPath, StringComparison.OrdinalIgnoreCase);
-        });
+        return commit.Files.Exists(f => f.Path == _targetPath);
     }
 
     private static string NormalizePath(string path) =>
