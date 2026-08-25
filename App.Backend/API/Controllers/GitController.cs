@@ -99,7 +99,7 @@ public class GitController(IMemberService memberService, IGitService git, IUserS
         var success = await git.Commit(entity.Owner, entity.Name, branch, new()
         {
             Author = user.Login,
-            Email = "N/A", // TODO: Get the domain in here.
+            Email = user.Details?.Email ?? "N/A",
             Message = commit.Message,
             Files = commit.Files,
         }, token);

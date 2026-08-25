@@ -223,24 +223,24 @@ repos.MapPut("/commit/{branch}", (string owner, string name, string branch, Post
 
     var target = repo.Branches[branch];
     bool initial = repo.Info.IsHeadUnborn;
-
     if (!initial && target is null)
         return Results.NotFound($"Branch '{branch}' does not exist.");
 
-    // Guard against duplicate paths — List<T> allows what Dictionary<K,V> silently prevented
-    var duplicate = payload.Files
+    // Seed the TreeDefinition with existing files if this isn't an initial commit
+    var definition = (!initial && target?.Tip is not null)
+        ? TreeDefinition.From(target.Tip.Tree)
+        : new TreeDefinition();
+
+    var parents = initial ? Array.Empty<Commit>() : [target!.Tip];
+    var files = payload.Files // Deduplicate (Last File Wins)
         .GroupBy(f => f.Path)
-        .FirstOrDefault(g => g.Count() > 1);
+        .Select(g => g.Last());
 
-    if (duplicate is not null)
-        return Results.UnprocessableEntity($"Duplicate path in commit: {duplicate.Key}");
-
-    var definition = new TreeDefinition();
-    var parents = initial ? Array.Empty<Commit>() : [target.Tip];
-    foreach (var file in payload.Files)
+    foreach (var file in files)
     {
         using var stream = new MemoryStream(Convert.FromBase64String(file.Content));
-        definition.Add(file.Path, repo.ObjectDatabase.CreateBlob(stream), Mode.NonExecutableFile);
+        var blob = repo.ObjectDatabase.CreateBlob(stream);
+        definition.Add(file.Path, blob, Mode.NonExecutableFile);
     }
 
     var tree = repo.ObjectDatabase.CreateTree(definition);
