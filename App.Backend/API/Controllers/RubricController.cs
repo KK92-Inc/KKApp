@@ -125,7 +125,6 @@ public class RubricController(
         return Ok(new RubricDO(rubric));
     }
 
-    [Tags("Workspace")]
     [HttpPost("{id:guid}/deprecate")]
     [RequireScope("workspace")]
     [ProtectedResource("rubrics", "rubrics:delete")]
@@ -151,7 +150,6 @@ public class RubricController(
         return NoContent();
     }
 
-    [Tags("Workspace")]
     [HttpPost("{id:guid}/undeprecate")]
     [RequireScope("workspace")]
     [ProtectedResource("rubrics", "rubrics:write")]

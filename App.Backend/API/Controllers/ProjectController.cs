@@ -83,7 +83,6 @@ public class ProjectController(
         return Ok(page.Items.Select(c => new ProjectDO(c)));
     }
 
-    [Tags("Workspace")]
     [HttpPost("{id:guid}/deprecate")]
     [RequireScope("workspace")]
     [ProtectedResource("projects", "projects:delete")]
@@ -110,7 +109,6 @@ public class ProjectController(
         return NoContent();
     }
 
-    [Tags("Workspace")]
     [HttpPost("{id:guid}/undeprecate")]
     [RequireScope("workspace")]
     [ProtectedResource("projects", "projects:write")]

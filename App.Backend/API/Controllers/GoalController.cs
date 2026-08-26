@@ -75,7 +75,6 @@ public class GoalController(
         return Ok(page.Items.Select(g => new GoalDO(g)));
     }
 
-    [Tags("Workspace")]
     [HttpPost("{id:guid}/deprecate")]
     [RequireScope("workspace")]
     [ProtectedResource("goals", "goals:delete")]
@@ -101,7 +100,6 @@ public class GoalController(
         return NoContent();
     }
 
-    [Tags("Workspace")]
     [HttpPost("{id:guid}/undeprecate")]
     [RequireScope("workspace")]
     [ProtectedResource("goals", "goals:write")]

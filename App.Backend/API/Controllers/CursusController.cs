@@ -76,7 +76,6 @@ public class CursusController(
         return Ok(page.Items.Select(c => new CursusDO(c)));
     }
 
-    [Tags("Workspace")]
     [HttpPost("{id:guid}/deprecate")]
     [RequireScope("workspace")]
     [ProtectedResource("cursus", "cursus:delete")]
@@ -102,7 +101,6 @@ public class CursusController(
         return NoContent();
     }
 
-    [Tags("Workspace")]
     [HttpPost("{id:guid}/undeprecate")]
     [RequireScope("workspace")]
     [ProtectedResource("cursus", "cursus:write")]
