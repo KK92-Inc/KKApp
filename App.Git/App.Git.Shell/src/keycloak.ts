@@ -6,7 +6,7 @@
 // as memory is wiped per SSH command.
 // ============================================================================
 
-import { redis } from "bun";
+import { RedisClient } from "bun";
 
 // ============================================================================
 
@@ -19,6 +19,7 @@ interface Params {
 
 export function authorization({ realm, origin, id, secret }: Params) {
 	const CACHE_TTL_SECONDS = 120;
+	const redis = new RedisClient(process.env['VALKEY_URL'], { maxRetries: 2 });
 
 	async function token() {
 		const res = await fetch(`${origin}/realms/${realm}/protocol/openid-connect/token`, {
@@ -43,22 +44,11 @@ export function authorization({ realm, origin, id, secret }: Params) {
 		return users.find((u) => u.username.toLowerCase() === login.toLowerCase())?.id;
 	}
 
-	// NOTE(W2): Explicitly check for the role because it might be that
-	// you have a user in the staff realm withouth the actual role assigned.
-	// E.G: Onboarding or a former staff user.
-	// async function inRole(bearer: string, userId: string, role = "staff") {
-	// 	const url = `${origin}/admin/realms/${realm}/users/${userId}/role-mappings/realm`;
-	// 	const res = await fetch(url, { headers: { Authorization: `Bearer ${bearer}` } });
-	// 	if (!res.ok) throw new Error(`Role-mapping lookup failed: ${res.status} ${await res.text()}`);
-	// 	const roles = (await res.json()) as { name: string }[];
-	// 	return roles.some((r) => r.name === role);
-	// }
-
 	return async function priviliged(login: string) {
 		const key = `ssh-kc:${login}`;
 
 		try {
-			const cached = await redis.get(key); // lazily connects, no explicit .connect() needed
+			const cached = await redis.get(key);
 			if (cached) return cached === "1";
 		} catch (error) {
 			process.stderr.write(`[WARN] Redis read failed: ${error instanceof Error ? error.message : error}\n`);
@@ -67,9 +57,7 @@ export function authorization({ realm, origin, id, secret }: Params) {
 		let staff = false;
 		try {
 			const bearer = await token();
-			const userId = await getUserId(bearer, login);
-			staff = !!userId
-			// staff = userId ? await inRole(userId, "staff") : false;
+			staff = !!await getUserId(bearer, login);
 		} catch (error) {
 			process.stderr.write(`[WARN] Keycloak check failed for ${login}: ${error instanceof Error ? error.message : error}\n`);
 			return false;

@@ -5,10 +5,6 @@
 // Auth shell that checks the database if the desired key has been provided.
 // ============================================================================
 
-await Utils.sshenv();
-
-// ============================================================================
-
 import evaluate from "./access";
 import { spawn, sql } from "bun";
 import * as Utils from "./utilities";
@@ -31,6 +27,7 @@ if (!import.meta.main) {
 	process.exit(1);
 }
 
+await Utils.sshenv(); // NOTE(W2): Imports using proccess.env will break...
 const command = process.env["SSH_ORIGINAL_COMMAND"];
 const user = process.env["USER"] ?? Utils.fail("Access Denied: Unknown user.");
 const root = process.env["REPOSITORY_DIRECTORY"] ?? Utils.fail("REPOSITORY_DIRECTORY not set");
