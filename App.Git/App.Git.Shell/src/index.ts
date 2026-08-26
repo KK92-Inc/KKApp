@@ -5,11 +5,18 @@
 // Auth shell that checks the database if the desired key has been provided.
 // ============================================================================
 
-import { spawn, sql } from "bun";
-import * as Utils from "./utilities";
-import evaluate from "./access";
+await Utils.sshenv();
 
 // ============================================================================
+
+import evaluate from "./access";
+import { spawn, sql } from "bun";
+import * as Utils from "./utilities";
+
+// ============================================================================
+
+// Mirrors UserProjectTransactionVariant.cs enum types, must be kept in sync.
+const TRANSACTION_VARIANT_TYPE = { Commit: 3 } as const;
 
 const HEADER = `
 ░█░█░█░█░█▀▀░█░█░█▀▀░█░░░█░░
@@ -24,11 +31,9 @@ if (!import.meta.main) {
 	process.exit(1);
 }
 
-await Utils.sshenv();
 const command = process.env["SSH_ORIGINAL_COMMAND"];
 const user = process.env["USER"] ?? Utils.fail("Access Denied: Unknown user.");
 const root = process.env["REPOSITORY_DIRECTORY"] ?? Utils.fail("REPOSITORY_DIRECTORY not set");
-
 if (!command) {
 	process.stdout.write(HEADER);
 	process.stdout.write(`Hey ${user}, welcome to the KKShell server!\n`);
@@ -40,7 +45,7 @@ if (!command) {
 }
 
 // Now spawn the actual process since it's all good.
-const { action, path } = await evaluate(root, user, command);
+const { action, path, owner, name } = await evaluate(root, user, command);
 const child = spawn([action, path], {
 	stdin: "inherit",
 	stdout: "inherit",
@@ -49,7 +54,17 @@ const child = spawn([action, path], {
 
 const code = await child.exited;
 if (action === "git-receive-pack" && code === 0) {
-	process.stderr.write("We should track")
+	// TODO: This is a bit too simplistic, a simple useless git push would trigger it.
+	// Not the end of the world but checking if there is actual stuff in
+	// in the commit is also a lot of effort.
+	await sql`
+		INSERT INTO tbl_user_project_transactions (id, created_at, updated_at, user_project_id, user_id, type)
+		SELECT ${Bun.randomUUIDv7()}, NOW(), NOW(), up.id, u.id, ${TRANSACTION_VARIANT_TYPE.Commit}
+		FROM tbl_user u
+		JOIN tbl_git g ON g.owner = ${owner} AND g.name = ${name}
+		JOIN tbl_user_project up ON up.git_info_id = g.id
+		WHERE u.login = ${user}
+	`
 }
 
 process.exit(code);

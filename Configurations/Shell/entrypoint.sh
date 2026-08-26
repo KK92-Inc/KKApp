@@ -18,6 +18,8 @@ fi
 {
     printf 'DATABASE_URL=%s\n' "$DB_URI"
     printf 'VALKEY_URL=%s\n' "$VALKEY_URI"
+    printf 'KC_ORIGIN=%s\n' "$KC_ORIGIN"
+    printf 'KC_SECRET=%s\n' "$KC_SECRET"
     printf 'REPOSITORY_DIRECTORY=%s\n' "$REPOSITORY_DIRECTORY"
 } > /etc/sshenv
 

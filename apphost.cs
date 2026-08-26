@@ -95,53 +95,6 @@ if (!builder.ExecutionContext.IsPublishMode)
 }
 
 // ============================================================================
-// Repository
-// - For repository projects such as the Git API and SSH Shell
-// ============================================================================
-
-var api = builder.AddProject<Projects.App_Git_Http>("git-api")
-    .WithHttpHealthCheck("/health")
-    .WithReference(backendDb)
-    .WaitFor(backendDb);
-
-var ssh = builder.AddDockerfile("git-ssh", ".", "Docker/Files/Dockerfile.ssh")
-    .WithReference(backendDb)
-    .WithReference(cache)
-    .WaitFor(backendDb)
-    .WaitFor(cache)
-    .WaitFor(api)
-    .WithLifetime(ContainerLifetime.Persistent);
-
-if (builder.ExecutionContext.IsPublishMode)
-{
-    api.WithEnvironment("REPOSITORY_DIRECTORY", "/home/git/repos")
-       .PublishAsDockerComposeService((resource, service) =>
-       {
-           service.Volumes.Add(new()
-           {
-               Name = "git-repos",
-               Target = "/home/git/repos",
-               Type = "volume"
-           });
-       });
-
-    ssh.WithEnvironment("REPOSITORY_DIRECTORY", "/home/git/repos")
-        .WithEndpoint(port: 22, targetPort: 22, scheme: "tcp", name: "ssh", isExternal: true)
-        .WithVolume("git-repos", "/home/git/repos")
-        .WithVolume("git-ssh-keys", "/etc/ssh/keys");
-}
-else
-{
-    var dir = Path.Combine(builder.AppHostDirectory, "tmp", "repos");
-
-    api.WithEnvironment("REPOSITORY_DIRECTORY", dir);
-    ssh.WithEnvironment("REPOSITORY_DIRECTORY", "/home/git/repos") // container-side path, not host path
-        .WithEndpoint(port: 2222, targetPort: 22, scheme: "tcp", name: "ssh", isExternal: true)
-        .WithBindMount("./tmp/repos", "/home/git/repos")
-        .WithBindMount("./Configurations/Shell/Keys", "/etc/ssh/keys");
-}
-
-// ============================================================================
 // Migrations
 // - Handles backend migrations
 // ============================================================================
@@ -191,6 +144,56 @@ if (builder.ExecutionContext.IsPublishMode)
         .WithEnvironment("KC_HOSTNAME_STRICT_HTTPS", "false")
         // Allows internal docker-to-docker requests
         .WithEnvironment("KC_HOSTNAME_BACKCHANNEL_DYNAMIC", "true");
+
+// ============================================================================
+// Repository
+// - For repository projects such as the Git API and SSH Shell
+// ============================================================================
+
+var api = builder.AddProject<Projects.App_Git_Http>("git-api")
+    .WithHttpHealthCheck("/health")
+    .WithReference(backendDb)
+    .WaitFor(backendDb);
+
+var ssh = builder.AddDockerfile("git-ssh", ".", "Docker/Files/Dockerfile.ssh")
+    .WithReference(backendDb)
+    .WithReference(cache)
+    .WaitFor(backendDb)
+    .WaitFor(cache)
+    .WaitFor(api)
+    // TODO: Use WithRef instead maybe ?
+    .WithEnvironment("KC_ORIGIN", auth.GetEndpoint("http"))
+    .WithEnvironment("KC_SECRET", adminIntraSecret)
+    .WithLifetime(ContainerLifetime.Persistent);
+
+if (builder.ExecutionContext.IsPublishMode)
+{
+    api.WithEnvironment("REPOSITORY_DIRECTORY", "/home/git/repos")
+       .PublishAsDockerComposeService((resource, service) =>
+       {
+           service.Volumes.Add(new()
+           {
+               Name = "git-repos",
+               Target = "/home/git/repos",
+               Type = "volume"
+           });
+       });
+
+    ssh.WithEnvironment("REPOSITORY_DIRECTORY", "/home/git/repos")
+        .WithEndpoint(port: 22, targetPort: 22, scheme: "tcp", name: "ssh", isExternal: true)
+        .WithVolume("git-repos", "/home/git/repos")
+        .WithVolume("git-ssh-keys", "/etc/ssh/keys");
+}
+else
+{
+    var dir = Path.Combine(builder.AppHostDirectory, "tmp", "repos");
+    api.WithEnvironment("REPOSITORY_DIRECTORY", dir);
+    ssh.WithEnvironment("REPOSITORY_DIRECTORY", "/home/git/repos") // container-side path, not host path
+        .WithEndpoint(port: 2222, targetPort: 22, scheme: "tcp", name: "ssh", isExternal: true)
+        .WithBindMount("./tmp/repos", "/home/git/repos")
+        .WithBindMount("./Configurations/Shell/Keys", "/etc/ssh/keys");
+}
+
 
 // ============================================================================
 // Backend

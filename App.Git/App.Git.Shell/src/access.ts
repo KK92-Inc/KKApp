@@ -3,9 +3,10 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+import { sql } from "bun";
+import { authorization } from "./keycloak";
 import * as Path from "node:path";
 import * as Utils from "./utilities";
-import { sql } from "bun";
 
 // ============================================================================
 
@@ -18,9 +19,6 @@ const SUPPORTED = /^(git-upload-pack|git-receive-pack|git-upload-archive) '(.*)'
 
 // Mirrors MemberEntityType.cs enum types, must be kept in sync.
 const MEMBER_ENTITY_TYPE = { Workspace: 1, UserProject: 2 } as const;
-
-// Mirrors UserProjectTransactionVariant.cs enum types, must be kept in sync.
-const TRANSACTION_VARIANT_TYPE = { Commit: 3 } as const;
 
 // ============================================================================
 
@@ -180,8 +178,17 @@ export default async function evaluate(root: string, user: string, command: stri
 
 	const receive = action === "git-receive-pack";
 	const { path, owner, name } = sanitize(root, route);
-	const object = await entity(owner, name);
+	const priviliged = authorization({
+		id: "intra",
+		realm: "admin",
+		origin: process.env["KC_ORIGIN"] ?? Utils.fail("Missing KC_ORIGIN"),
+		secret: process.env["KC_SECRET"] ?? Utils.fail("Missing KC_SECRET"),
+	});
 
+	if (await priviliged(user)) // Full bypass if priviliged, i.e: Staff user
+		return { action, path, owner, name };
+
+	const object = await entity(owner, name);
 	if (object.kind === "project" || object.kind === "rubric") {
 		const access = await workspace(object.workspace, user);
 		if (receive && !access) {
@@ -196,5 +203,5 @@ export default async function evaluate(root: string, user: string, command: stri
 		}
 	}
 
-	return { action, path };
+	return { action, path, owner, name };
 }
