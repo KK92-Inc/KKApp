@@ -51,7 +51,7 @@ export function authorization({ realm, origin, id, secret }: Params) {
 			const cached = await redis.get(key);
 			if (cached) return cached === "1";
 		} catch (error) {
-			process.stderr.write(`[WARN] Redis read failed: ${error instanceof Error ? error.message : error}\n`);
+			process.stderr.write(`[BUG]: Redis read failed\n`);
 		}
 
 		let staff = false;
@@ -59,14 +59,14 @@ export function authorization({ realm, origin, id, secret }: Params) {
 			const bearer = await token();
 			staff = !!await getUserId(bearer, login);
 		} catch (error) {
-			process.stderr.write(`[WARN] Keycloak check failed for ${login}: ${error instanceof Error ? error.message : error}\n`);
+			process.stderr.write(`[BUG]: Keycloak check failed for ${login}\n`);
 			return false;
 		}
 
 		try {
 			await redis.set(key, staff ? "1" : "0", "EX", CACHE_TTL_SECONDS);
 		} catch (error) {
-			process.stderr.write(`[WARN] Redis write failed: ${error instanceof Error ? error.message : error}\n`);
+			process.stderr.write(`[BUG]: Redis write failed\n`);
 		}
 
 		return staff;

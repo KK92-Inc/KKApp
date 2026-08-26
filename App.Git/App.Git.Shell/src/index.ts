@@ -35,9 +35,10 @@ if (!command) {
 	process.stdout.write(HEADER);
 	process.stdout.write(`Hey ${user}, welcome to the KKShell server!\n`);
 	process.stdout.write(`You shall not pass, there is no Access.\n\nGoodbye!\n`);
-	for (const [key, value] of Object.entries(process.env)) {
-		process.stdout.write(`${key}=${value}\n`);
-	}
+	// Debug: Make sure that entrypoint forwards the variables...
+	// for (const [key, value] of Object.entries(process.env)) {
+	// 	process.stdout.write(`${key}=${value}\n`);
+	// }
 	process.exit(0);
 }
 
