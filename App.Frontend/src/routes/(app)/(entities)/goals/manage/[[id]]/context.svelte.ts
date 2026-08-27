@@ -62,22 +62,36 @@ export class Context {
 	public async deprecate() {
 		const id = this.goalId();
 		if (!id) return;
-		await Action.deprecate(id);
+
+		const confirmation = this.dialog.confirm(
+			"Deprecate goal?",
+			"Users will no longer be able to subscribe to this goal."
+		);
+
+		if (await confirmation)
+			await Action.deprecate(id);
 	}
 
 	/** Submit a undeprecation request */
 	public async undeprecate() {
 		const id = this.goalId();
 		if (!id) return;
-		await Action.undeprecate(id);
+
+		const confirmation = this.dialog.confirm(
+			"e-Activate goal?",
+			"Users will again be able to subscribe to this goal."
+		);
+
+		if (await confirmation)
+			await Action.undeprecate(id);
 	}
 
 	/** Submit for either creating or updating */
 	public async submit() {
 		const id = this.goalId();
 
-		// if (id && !await this.dialog.confirm("Update goal?")) return;
-		// else if (!await this.dialog.confirm("Create goal?")) return;
+		if (id && !await this.dialog.confirm("Update goal?")) return;
+		if (!id && !await this.dialog.confirm("Create goal?")) return;
 
 		await Problem.try(async () => {
 			const projects = this.projects.map((p) => p.id);

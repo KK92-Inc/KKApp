@@ -59,7 +59,9 @@
 	const { params }: PageProps = $props();
 
 	const context = Page.setContext(new Page.Context(() => params.id));
-	$effect(() => { context.hydrate(); });
+	$effect(() => {
+		context.hydrate();
+	});
 </script>
 
 <Layout class="px-4" classL="space-y-4" classR="px-0!">
@@ -166,7 +168,13 @@
 						<Item.Description>{project.description}</Item.Description>
 					</Item.Content>
 					<Item.Actions>
-						<Button variant="outline" size="sm">
+						<Button
+							variant="outline"
+							size="sm"
+							onclick={() => {
+								context.projects = context.projects.filter((p) => p.id !== project.id);
+							}}
+						>
 							Remove
 							<Trash />
 						</Button>
