@@ -171,7 +171,7 @@ such as official cursi, projects or rubrics.
         var id = User.GetSID();
         if (space.OwnerId is not null && space.OwnerId != id)
             return Forbid();
-        if (await goalService.FindBySlugAsync(body.Name.ToSlug()) is not null)
+        if (await goalService.FindBySlugAsync(body.Name.ToSlug(), token) is not null)
             return Conflict();
 
         var goal = await service.AddGoalAsync(space.Id, new()

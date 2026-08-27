@@ -59,7 +59,7 @@
 	const { params }: PageProps = $props();
 
 	const context = Page.setContext(new Page.Context(() => params.id));
-	await context.hydrate();
+	$effect(() => { context.hydrate(); });
 </script>
 
 <Layout class="px-4" classL="space-y-4" classR="px-0!">

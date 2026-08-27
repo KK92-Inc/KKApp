@@ -38,13 +38,6 @@ export class Context {
 
 	/** Hydrate the context */
 	public async hydrate() {
-		this.fields = {
-			name: "",
-			description: "",
-			active: false,
-			public: false,
-			deprecated: false
-		};
 		const id = this.goalId();
 		if (!id) return;
 
@@ -68,13 +61,15 @@ export class Context {
 	/** Submit a deprecation request */
 	public async deprecate() {
 		const id = this.goalId();
-		if (id) await Action.deprecate(id);
+		if (!id) return;
+		await Action.deprecate(id);
 	}
 
 	/** Submit a undeprecation request */
 	public async undeprecate() {
 		const id = this.goalId();
-		if (id) await Action.undeprecate(id);
+		if (!id) return;
+		await Action.undeprecate(id);
 	}
 
 	/** Submit for either creating or updating */
@@ -92,6 +87,7 @@ export class Context {
 					...this.fields,
 					projects
 				})
+				this.fields = { ...goal };
 				toast.success(`Project '${goal.name}' updated`);
 			} else {
 
