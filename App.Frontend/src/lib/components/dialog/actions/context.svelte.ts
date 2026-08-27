@@ -115,7 +115,7 @@ export class DialogActionContext {
 	 *   .cancel(() => console.log("cancelled"));
 	 * ```
 	 */
-	confirm(title: string = "Are you sure?", message: string = ""): DialogBuilder {
+	confirm(title: string = "Are you sure?", message: string = "Are you sure you want to continue ?"): DialogBuilder {
 		return new DialogBuilder(this, { type: "confirm", title, message });
 	}
 

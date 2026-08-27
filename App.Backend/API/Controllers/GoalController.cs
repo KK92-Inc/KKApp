@@ -164,6 +164,7 @@ public class GoalController(
 
         goal.Name = request.Name ?? goal.Name;
         goal.Description = request.Description ?? goal.Description;
+        await goals.SetProjectsAsync(goal.Id, request.Projects, token);
         await goals.UpdateAsync(goal, token);
         return Ok(new GoalDO(goal));
     }

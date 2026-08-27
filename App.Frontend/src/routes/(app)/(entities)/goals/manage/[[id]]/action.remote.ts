@@ -3,42 +3,20 @@
 // See README in the root project for more information.
 // ============================================================================
 
-import * as v from 'valibot';
-import { command, getRequestEvent } from '$app/server';
-import type { components } from '$lib/api/api';
 import { Filters, Problem } from '$lib/api';
-import { Log } from '$lib/log';
+import type { components } from '$lib/api/api';
+import * as Goal from "$lib/remotes/goals.remote";
+import { command, getRequestEvent } from '$app/server';
 
 // ============================================================================
 
-const CreateSchema = v.object({
-	name: v.string(),
-	workspace: Filters.id,
-	description: v.string(),
-	active: v.optional(v.boolean()),
-	public: v.optional(v.boolean()),
-	projects: v.array(v.string())
-}) satisfies v.GenericSchema<components['schemas']['PostGoalRequestDTO']>
-
-const UpdateSchema = v.object({
-	id: Filters.id,
-	name: v.string(),
-	description: v.string(),
-	active: v.optional(v.boolean()),
-	public: v.optional(v.boolean()),
-	projects: v.array(v.string())
-}) satisfies v.GenericSchema<components['schemas']['PatchGoalRequestDTO']>
-
-// ============================================================================
-
-/** Create the goal */
-export const create = command(CreateSchema, async (body) => {
+type CreateGoal = { workspace: string; } & components['schemas']['PostGoalRequestDTO'];
+export const create = command('unchecked', async (body: CreateGoal) => {
 	const { locals } = getRequestEvent();
 	const { workspace, ...rest } = body;
-	Log.dbg(JSON.stringify({ ...rest }));
 	const { error, data } = await locals.api.POST("/workspace/{workspace}/goal", {
 		params: { path: { workspace } },
-		body: { ...rest }
+		body: rest
 	});
 
 	if (error || !data) {
@@ -48,30 +26,47 @@ export const create = command(CreateSchema, async (body) => {
 	return data;
 });
 
-/** Update the goal */
-export const update = command(UpdateSchema, async (body) => {
+type UpdateGoal = { id: string; } & components['schemas']['PatchGoalRequestDTO'];
+export const update = command('unchecked', async (body: UpdateGoal) => {
 	const { locals } = getRequestEvent();
 	const { id, ...rest } = body;
 	const { error, data } = await locals.api.PATCH("/goals/{id}", {
 		params: { path: { id } },
-		body: { ...rest }
+		body: rest
 	});
 
 	if (error || !data) {
 		Problem.throw(error);
 	}
 
+	Goal.get(body.id).refresh();
 	return data;
 });
 
-/** Deprecate the goal */
+// ============================================================================
+
 export const deprecate = command(Filters.id, async (id) => {
 	const { locals } = getRequestEvent();
-	const { error } = await locals.api.DELETE("/goals/{id}", {
+	const { error } = await locals.api.POST("/goals/{id}/deprecate", {
 		params: { path: { id } },
 	});
 
 	if (error) {
 		Problem.throw(error);
 	}
+
+	Goal.get(id).refresh();
+});
+
+export const undeprecate = command(Filters.id, async (id) => {
+	const { locals } = getRequestEvent();
+	const { error } = await locals.api.POST("/goals/{id}/undeprecate", {
+		params: { path: { id } },
+	});
+
+	if (error) {
+		Problem.throw(error);
+	}
+
+	Goal.get(id).refresh();
 });

@@ -67,12 +67,12 @@ export const getProjects = query(Filters.id, async (id) => {
 
 
 export const setProjects = query(SetSchema, async ({ id, projects}) => {
-	const { locals } = getRequestEvent();
-	const { error, data } = await locals.api.POST("/goals/{id}/projects", {
-		params: { path: { id }},
-		body: projects
-	});
+	// const { locals } = getRequestEvent();
+	// const { error, data } = await locals.api.POST("/goals/{id}/projects", {
+	// 	params: { path: { id }},
+	// 	body: projects
+	// });
 
-	if (error || !data) Problem.throw(error)
-	return data;
+	// if (error || !data) Problem.throw(error)
+	// return data;
 });

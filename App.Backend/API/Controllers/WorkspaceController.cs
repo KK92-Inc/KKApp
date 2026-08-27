@@ -158,7 +158,7 @@ such as official cursi, projects or rubrics.
     [EndpointDescription("Directly create a new goal to be added to the workspace")]
     public async Task<ActionResult<GoalDO>> AddGoal(
         Guid workspace,
-        [FromBody] PostGoalRequestDTO dto,
+        [FromBody] PostGoalRequestDTO body,
         CancellationToken token
     )
     {
@@ -171,19 +171,20 @@ such as official cursi, projects or rubrics.
         var id = User.GetSID();
         if (space.OwnerId is not null && space.OwnerId != id)
             return Forbid();
-        if (await goalService.FindBySlugAsync(dto.Name.ToSlug()) is not null)
+        if (await goalService.FindBySlugAsync(body.Name.ToSlug()) is not null)
             return Conflict();
 
         var goal = await service.AddGoalAsync(space.Id, new()
         {
-            Name = dto.Name,
+            Name = body.Name,
             WorkspaceId = workspace,
-            Description = dto.Description,
-            Slug = dto.Name.ToSlug(),
-            Active = dto.Active,
-            Public = dto.Public,
+            Description = body.Description,
+            Slug = body.Name.ToSlug(),
+            Active = body.Active,
+            Public = body.Public,
         }, token);
 
+        await goalService.SetProjectsAsync(goal.Id, body.Projects, token);
         return Ok(new GoalDO(goal));
     }
 

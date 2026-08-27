@@ -11,34 +11,13 @@ import { Log } from '$lib/log';
 
 // ============================================================================
 
-const CreateSchema = v.object({
-	name: v.string(),
-	workspace: Filters.id,
-	description: v.string(),
-	active: v.optional(v.boolean()),
-	public: v.optional(v.boolean()),
-	projects: v.array(v.string())
-}) satisfies v.GenericSchema<components['schemas']['PostGoalRequestDTO']>
-
-const UpdateSchema = v.object({
-	id: Filters.id,
-	name: v.string(),
-	description: v.string(),
-	active: v.optional(v.boolean()),
-	public: v.optional(v.boolean()),
-	projects: v.array(v.string())
-}) satisfies v.GenericSchema<components['schemas']['PatchGoalRequestDTO']>
-
-// ============================================================================
-
-/** Create the goal */
-export const create = command(CreateSchema, async (body) => {
+type CreateCursus = { workspace: string; } & components['schemas']['PostCursusRequestDTO'];
+export const create = command('unchecked', async (body: CreateCursus) => {
 	const { locals } = getRequestEvent();
 	const { workspace, ...rest } = body;
-	Log.dbg(JSON.stringify({ ...rest }));
-	const { error, data } = await locals.api.POST("/workspace/{workspace}/goal", {
+	const { error, data } = await locals.api.POST("/workspace/{workspace}/cursus", {
 		params: { path: { workspace } },
-		body: { ...rest }
+		body: rest
 	});
 
 	if (error || !data) {
@@ -48,13 +27,13 @@ export const create = command(CreateSchema, async (body) => {
 	return data;
 });
 
-/** Update the goal */
-export const update = command(UpdateSchema, async (body) => {
+type UpdateCursus = { id: string; } & components['schemas']['PostCursusRequestDTO'];
+export const update = command('unchecked', async (body: UpdateCursus) => {
 	const { locals } = getRequestEvent();
 	const { id, ...rest } = body;
-	const { error, data } = await locals.api.PATCH("/goals/{id}", {
+	const { error, data } = await locals.api.PATCH("/projects/{id}", {
 		params: { path: { id } },
-		body: { ...rest }
+		body: rest
 	});
 
 	if (error || !data) {
@@ -67,7 +46,7 @@ export const update = command(UpdateSchema, async (body) => {
 /** Deprecate the goal */
 export const deprecate = command(Filters.id, async (id) => {
 	const { locals } = getRequestEvent();
-	const { error } = await locals.api.DELETE("/goals/{id}", {
+	const { error } = await locals.api.DELETE("/projects/{id}", {
 		params: { path: { id } },
 	});
 
