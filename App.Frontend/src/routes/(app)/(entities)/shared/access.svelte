@@ -8,9 +8,10 @@
 	interface Props {
 		visible: boolean;
 		enabled: boolean;
+		disabled?: boolean;
 	}
 
-	let { visible = $bindable(), enabled = $bindable() }: Props = $props();
+	let { visible = $bindable(), enabled = $bindable(), disabled = false }: Props = $props();
 </script>
 
 <Card.Root class="gap-2 py-4">
@@ -38,7 +39,7 @@
 							{/if}
 						</Field.Description>
 					</Field.Content>
-					<Switch id="cursus-public" bind:checked={visible} />
+					<Switch id="cursus-public" {disabled} bind:checked={visible} />
 				</Field.Field>
 
 				<Field.Field orientation="horizontal" class="items-center">
@@ -55,7 +56,7 @@
 							{/if}
 						</Field.Description>
 					</Field.Content>
-					<Switch id="cursus-enabled" bind:checked={enabled} />
+					<Switch id="cursus-enabled" {disabled} bind:checked={enabled} />
 				</Field.Field>
 			</Field.Group>
 		</Field.Set>

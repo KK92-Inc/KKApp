@@ -79,7 +79,13 @@
 					<!-- Name -->
 					<Field.Field>
 						<Field.Label for="name">Name</Field.Label>
-						<Input id="name" maxlength={255} bind:value={context.fields.name} placeholder="Entry into..." />
+						<Input
+							id="name"
+							maxlength={255}
+							bind:value={context.fields.name}
+							disabled={context.fields.deprecated}
+							placeholder="Entry into..."
+						/>
 						<Field.Description>The name of the goal.</Field.Description>
 						<Field.Error errors={context.errors.name} />
 					</Field.Field>
@@ -95,6 +101,7 @@
 						<Textarea
 							id="description"
 							rows={3}
+							disabled={context.fields.deprecated}
 							class="max-h-52 resize-y"
 							placeholder="This goal will teach you about..."
 							maxlength={255}
@@ -106,7 +113,7 @@
 
 					<!-- Workspace -->
 					<!-- NOTE(W2): For now only really staff can actually put this somewhere else... -->
-					{#if page.data.session.roles.includes('staff')}
+					{#if !params.id && page.data.session.roles.includes('staff')}
 						<Field.Field>
 							<Field.Label for="workspace">Workspace</Field.Label>
 							<Tabs.Root id="workspace" bind:value={context.workspace}>
@@ -123,7 +130,11 @@
 			</Card.Content>
 		</Card.Root>
 
-		<Access bind:visible={context.fields.public} bind:enabled={context.fields.active} />
+		<Access
+			bind:visible={context.fields.public}
+			bind:enabled={context.fields.active}
+			disabled={context.fields.deprecated}
+		/>
 
 		<div class="flex items-center justify-around gap-4">
 			<Separator class="flex-1" />
@@ -138,7 +149,7 @@
 					</Button>
 				{/if}
 
-				<Button onclick={() => context.submit()}>
+				<Button onclick={() => context.submit()} disabled={context.fields.deprecated}>
 					{params.id ? 'Save Changes' : 'Create Goal'}
 					<CirclePlay />
 				</Button>
@@ -168,16 +179,18 @@
 						<Item.Description>{project.description}</Item.Description>
 					</Item.Content>
 					<Item.Actions>
-						<Button
-							variant="outline"
-							size="sm"
-							onclick={() => {
-								context.projects = context.projects.filter((p) => p.id !== project.id);
-							}}
-						>
-							Remove
-							<Trash />
-						</Button>
+						{#if !context.fields.deprecated}
+							<Button
+								variant="outline"
+								size="sm"
+								onclick={() => {
+									context.projects = context.projects.filter((p) => p.id !== project.id);
+								}}
+							>
+								Remove
+								<Trash />
+							</Button>
+						{/if}
 					</Item.Actions>
 				</Item.Root>
 
@@ -208,7 +221,13 @@
 			{/each}
 
 			<!-- Controls for when projects already exist -->
-			{#if context.projects.length > 0}
+			{#if context.fields.deprecated}
+				<Alert.Root variant="destructive" class="mt-4">
+					<TriangleAlert />
+					<Alert.Title>Goal is deprecated</Alert.Title>
+					<Alert.Description>You are unable to edit this goal as it is deprecated.</Alert.Description>
+				</Alert.Root>
+			{:else if context.projects.length > 0}
 				{#if context.projects.length < 4}
 					<div class="mt-4">
 						<PageProject />

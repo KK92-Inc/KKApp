@@ -78,7 +78,7 @@ export class Context {
 		if (!id) return;
 
 		const confirmation = this.dialog.confirm(
-			"e-Activate goal?",
+			"Undeprecate goal?",
 			"Users will again be able to subscribe to this goal."
 		);
 
