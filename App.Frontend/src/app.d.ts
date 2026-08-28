@@ -22,7 +22,7 @@ declare global {
 			tz: string;
 			session: Session;
 			/** The root workspace instance. */
-			workspace: components['schemas']['WorkspaceDO'];
+			// workspace: components['schemas']['WorkspaceDO'];
 			locale: string;
 		}
 		interface Error {

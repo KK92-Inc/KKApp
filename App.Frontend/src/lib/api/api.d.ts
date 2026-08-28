@@ -920,7 +920,10 @@ export interface paths {
          */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description Additionally queries if the user has access. */
+                    "access[user_id]"?: string;
+                };
                 header?: never;
                 path: {
                     id: string;
@@ -2046,7 +2049,10 @@ export interface paths {
          */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description Additionally queries if the user has access. */
+                    "access[user_id]"?: string;
+                };
                 header?: never;
                 path: {
                     id: string;
@@ -2694,7 +2700,10 @@ export interface paths {
          */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description Additionally queries if the user has access. */
+                    "access[user_id]"?: string;
+                };
                 header?: never;
                 path: {
                     id: string;
@@ -3893,7 +3902,10 @@ export interface paths {
          */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description Additionally queries if the user has access. */
+                    "access[user_id]"?: string;
+                };
                 header?: never;
                 path: {
                     id: string;

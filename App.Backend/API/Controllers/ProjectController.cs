@@ -34,7 +34,7 @@ namespace App.Backend.API.Controllers;
 [ProtectedResource("projects"), Authorize]
 public class ProjectController(
     IProjectService service,
-    IMemberService memberService,
+    IMemberService members,
     IAuthorizationService auth,
     DatabaseContext ctx,
     IRubricService rubricService
@@ -100,7 +100,7 @@ public class ProjectController(
         var isStaff = await auth.AuthorizeAsync(User, "staff");
         if (!isStaff.Succeeded)
         {
-            var member = await memberService.FindByEntityAndUserId(project.WorkspaceId, User.GetSID(), token);
+            var member = await members.FindByEntityAndUserId(project.WorkspaceId, User.GetSID(), token);
             if (member is null) return Forbid();
         }
 
@@ -126,7 +126,7 @@ public class ProjectController(
         var isStaff = await auth.AuthorizeAsync(User, "staff");
         if (!isStaff.Succeeded)
         {
-            var member = await memberService.FindByEntityAndUserId(project.WorkspaceId, User.GetSID(), token);
+            var member = await members.FindByEntityAndUserId(project.WorkspaceId, User.GetSID(), token);
             if (member is null) return Forbid();
         }
 
@@ -143,10 +143,28 @@ public class ProjectController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Query a project")]
     [EndpointDescription("Retrieve a specific project by ID")]
-    public async Task<ActionResult<ProjectDO>> GetById(Guid id, CancellationToken token)
+    public async Task<ActionResult<ProjectDO>> GetById(
+        Guid id,
+        [FromQuery(Name = "access[user_id]"), Description("Additionally queries if the user has access.")]
+        Guid? userId,
+        CancellationToken token
+    )
     {
         var project = await service.FindByIdAsync(id, token);
-        return project is null ? NotFound() : Ok(new ProjectDO(project));
+        if (project is null) return NotFound();
+
+        if (userId.HasValue)
+        {
+            var isStaff = await auth.AuthorizeAsync(User, "staff");
+            if (!isStaff.Succeeded)
+            {
+                var member = await members.FindByEntityAndUserId(project.WorkspaceId, User.GetSID(), token);
+                if (member is null) return Forbid();
+            }
+
+        }
+        
+        return Ok(new ProjectDO(project));
     }
 
     [HttpGet("{id:guid}/rubric")]
@@ -200,7 +218,7 @@ public class ProjectController(
         var isStaff = await auth.AuthorizeAsync(User, "staff");
         if (!isStaff.Succeeded)
         {
-            var member = await memberService.FindByEntityAndUserId(project.WorkspaceId, User.GetSID(), token);
+            var member = await members.FindByEntityAndUserId(project.WorkspaceId, User.GetSID(), token);
             if (member is null) return Forbid();
         }
 

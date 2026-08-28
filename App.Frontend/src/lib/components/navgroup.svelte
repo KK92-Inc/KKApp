@@ -1,5 +1,5 @@
 <script lang="ts" generics="R extends readonly RouteId[]">
-	import { FileQuestionMark, Icon } from '@lucide/svelte';
+	import { FileQuestionMark, HeartCrack, Icon } from '@lucide/svelte';
 	import type { RouteId, RouteParams } from '$app/types';
 	import { resolve } from '$app/paths';
 	import { Separator } from './separator';
@@ -44,27 +44,34 @@
 	}, []);
 </script>
 
-<div>
-	{#if title}
-		<p class="mb-1 text-sm font-semibold">{title}</p>
-		<Separator class="mb-1" />
-	{/if}
+{#if navigation.length > 0}
+	<div>
+		{#if title}
+			<p class="mb-1 text-sm font-semibold">{title}</p>
+			<Separator class="mb-1" />
+		{/if}
 
-	<menu>
-		{#each navigation as nav, i (i)}
-			{@const Icon = nav.icon}
-			<li
-				class="gap-2-y relative flex cursor-pointer list-none items-center justify-around rounded-md py-0.5 before:absolute before:left-[-2px] before:h-[20px] before:w-[6px] before:rounded-md before:bg-primary before:opacity-0 hover:bg-muted hover:before:opacity-100"
-			>
-				<a
-					{...rest}
-					href={nav.href}
-					class="flex flex-1 items-center gap-2 rounded-md p-[0.35rem] focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+		<menu>
+			{#each navigation as nav, i (i)}
+				{@const Icon = nav.icon}
+				<li
+					class="gap-2-y relative flex cursor-pointer list-none items-center justify-around rounded-md py-0.5 before:absolute before:left-[-2px] before:h-[20px] before:w-[6px] before:rounded-md before:bg-primary before:opacity-0 hover:bg-muted hover:before:opacity-100"
 				>
-					<Icon size={20} class="ml-1" />
-					{nav.label}
-				</a>
-			</li>
-		{/each}
-	</menu>
-</div>
+					<a
+						{...rest}
+						href={nav.href}
+						class="flex flex-1 items-center gap-2 rounded-md p-[0.35rem] focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+					>
+						<Icon size={20} class="ml-1" />
+						{nav.label}
+					</a>
+				</li>
+				<!-- {:else} -->
+				<!-- <li class="text-xs text-muted-foreground flex items-center gap-1">
+				You may not have the permissions to see anything here.
+				<HeartCrack size={16}/>
+			</li> -->
+			{/each}
+		</menu>
+	</div>
+{/if}

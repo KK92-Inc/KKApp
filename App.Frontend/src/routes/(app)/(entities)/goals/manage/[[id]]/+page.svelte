@@ -55,191 +55,194 @@
 	import Access from '../../../shared/access.svelte';
 	import * as Avatar from '$lib/components/avatar';
 	import PageProject from './page-project.svelte';
+	import { Skeleton } from '$lib/components/skeleton';
 
 	const { params }: PageProps = $props();
-
 	const context = Page.setContext(new Page.Context(() => params.id));
-	$effect(() => {
-		context.hydrate();
-	});
+	$effect(() => {context.hydrate()});
 </script>
 
-<Layout class="px-4" classL="space-y-4" classR="px-0!">
-	{#snippet left()}
-		<Card.Root class="mt-4 gap-1 overflow-hidden p-0">
-			<div
-				class="relative border-b bg-muted/30 px-6 pt-8 pb-6 text-center"
-				style="background-image: radial-gradient(color-mix(in oklab, var(--foreground) 12%, transparent) 1px, transparent 1px); background-size: 14px 14px;"
-			>
-				<Thumbnail value="https://placehold.co/128x128?text=Goal" class="rounded-lg border" />
-			</div>
+<svelte:boundary>
+	{#snippet pending()}
+		Please wait...
+	{/snippet}
+	<Layout class="px-4" classL="space-y-4" classR="px-0!">
+		{#snippet left()}
+			<Card.Root class="mt-4 gap-1 overflow-hidden p-0">
+				<div
+					class="relative border-b bg-muted/30 px-6 pt-8 pb-6 text-center"
+					style="background-image: radial-gradient(color-mix(in oklab, var(--foreground) 12%, transparent) 1px, transparent 1px); background-size: 14px 14px;"
+				>
+					<Thumbnail value="https://placehold.co/128x128?text=Goal" class="rounded-lg border" />
+				</div>
 
-			<Card.Content class="p-4">
-				<Field.Set class="gap-1.5">
-					<!-- Name -->
-					<Field.Field>
-						<Field.Label for="name">Name</Field.Label>
-						<Input
-							id="name"
-							maxlength={255}
-							bind:value={context.fields.name}
-							disabled={context.fields.deprecated}
-							placeholder="Entry into..."
-						/>
-						<Field.Description>The name of the goal.</Field.Description>
-						<Field.Error errors={context.errors.name} />
-					</Field.Field>
-
-					<!-- Description -->
-					<Field.Field>
-						<Field.Label for="description">
-							Description
-							<span class="ml-auto text-xs font-normal">
-								{context.fields.description.length}/255
-							</span>
-						</Field.Label>
-						<Textarea
-							id="description"
-							rows={3}
-							disabled={context.fields.deprecated}
-							class="max-h-52 resize-y"
-							placeholder="This goal will teach you about..."
-							maxlength={255}
-							bind:value={context.fields.description}
-						/>
-						<Field.Description>Short and readable description about the goal.</Field.Description>
-						<Field.Error errors={context.errors.description} />
-					</Field.Field>
-
-					<!-- Workspace -->
-					<!-- NOTE(W2): For now only really staff can actually put this somewhere else... -->
-					{#if !params.id && page.data.session.roles.includes('staff')}
+				<Card.Content class="p-4">
+					<Field.Set class="gap-1.5">
+						<!-- Name -->
 						<Field.Field>
-							<Field.Label for="workspace">Workspace</Field.Label>
-							<Tabs.Root id="workspace" bind:value={context.workspace}>
-								<Tabs.List class="w-auto">
-									<Tabs.Trigger value="user">My Workspace</Tabs.Trigger>
-									<Tabs.Trigger value="root">App Workspace</Tabs.Trigger>
-								</Tabs.List>
-							</Tabs.Root>
-							<Field.Description>Which workspace this goal belongs to.</Field.Description>
-							<Field.Error errors={context.errors.workspace} />
+							<Field.Label for="name">Name</Field.Label>
+							<Input
+								id="name"
+								maxlength={255}
+								bind:value={context.fields.name}
+								disabled={context.fields.deprecated}
+								placeholder="Entry into..."
+							/>
+							<Field.Description>The name of the goal.</Field.Description>
+							<Field.Error errors={context.errors.name} />
 						</Field.Field>
-					{/if}
-				</Field.Set>
-			</Card.Content>
-		</Card.Root>
 
-		<Access
-			bind:visible={context.fields.public}
-			bind:enabled={context.fields.active}
-			disabled={context.fields.deprecated}
-		/>
+						<!-- Description -->
+						<Field.Field>
+							<Field.Label for="description">
+								Description
+								<span class="ml-auto text-xs font-normal">
+									{context.fields.description.length}/255
+								</span>
+							</Field.Label>
+							<Textarea
+								id="description"
+								rows={3}
+								disabled={context.fields.deprecated}
+								class="max-h-52 resize-y"
+								placeholder="This goal will teach you about..."
+								maxlength={255}
+								bind:value={context.fields.description}
+							/>
+							<Field.Description>Short and readable description about the goal.</Field.Description>
+							<Field.Error errors={context.errors.description} />
+						</Field.Field>
 
-		<div class="flex items-center justify-around gap-4">
-			<Separator class="flex-1" />
-			<ButtonGroup.Root>
-				{#if params.id && context.fields.deprecated}
-					<Button variant="outline" onclick={() => context.undeprecate()}>
-						Undeprecate <Heart />
-					</Button>
-				{:else if params.id}
-					<Button variant="outline" onclick={() => context.deprecate()}>
-						Deprecate <HeartCrack />
-					</Button>
-				{/if}
-
-				<Button onclick={() => context.submit()} disabled={context.fields.deprecated}>
-					{params.id ? 'Save Changes' : 'Create Goal'}
-					<CirclePlay />
-				</Button>
-			</ButtonGroup.Root>
-		</div>
-	{/snippet}
-	{#snippet right()}
-		<Item.Group class="mt-4 rounded border bg-muted/30 p-4">
-			{#each context.projects as project, index (project.id)}
-				<Item.Root variant="outline">
-					<Item.Media>
-						<Avatar.Root>
-							<Avatar.Image src={project.thumbnail} class="grayscale" />
-							<Avatar.Fallback>{project.name.charAt(0)}</Avatar.Fallback>
-						</Avatar.Root>
-					</Item.Media>
-					<Item.Content class="gap-1">
-						<Item.Title>
-							<Button
-								variant="link"
-								class="h-auto p-0"
-								href="/users/{page.data.session.userId}/projects/{project.id}"
-							>
-								{project.name}
-							</Button>
-						</Item.Title>
-						<Item.Description>{project.description}</Item.Description>
-					</Item.Content>
-					<Item.Actions>
-						{#if !context.fields.deprecated}
-							<Button
-								variant="outline"
-								size="sm"
-								onclick={() => {
-									context.projects = context.projects.filter((p) => p.id !== project.id);
-								}}
-							>
-								Remove
-								<Trash />
-							</Button>
+						<!-- Workspace -->
+						<!-- NOTE(W2): For now only really staff can actually put this somewhere else... -->
+						{#if !params.id && page.data.session.roles.includes('staff')}
+							<Field.Field>
+								<Field.Label for="workspace">Workspace</Field.Label>
+								<Tabs.Root id="workspace" bind:value={context.workspace}>
+									<Tabs.List class="w-auto">
+										<Tabs.Trigger value="user">My Workspace</Tabs.Trigger>
+										<Tabs.Trigger value="root">App Workspace</Tabs.Trigger>
+									</Tabs.List>
+								</Tabs.Root>
+								<Field.Description>Which workspace this goal belongs to.</Field.Description>
+								<Field.Error errors={context.errors.workspace} />
+							</Field.Field>
 						{/if}
-					</Item.Actions>
-				</Item.Root>
+					</Field.Set>
+				</Card.Content>
+			</Card.Root>
 
-				<!-- Fixed: Check against context.projects.length instead of people.length -->
-				{#if index !== context.projects.length - 1}
-					<Item.Separator />
-				{/if}
-			{:else}
-				<!-- Empty State (Only rendered when projects array is empty) -->
-				{#if !params.id}
-					<Empty.Root class="p-0!">
-						<Empty.Header>
-							<Empty.Media variant="icon">
-								<FolderCodeIcon />
-							</Empty.Media>
-							<Empty.Title>No Projects Yet</Empty.Title>
-							<Empty.Description>
-								You haven't added any projects yet. Get started by adding your first project.
-							</Empty.Description>
-						</Empty.Header>
-						<Empty.Content class="max-w-full">
-							<PageProject />
-						</Empty.Content>
-					</Empty.Root>
+			<Access
+				bind:visible={context.fields.public}
+				bind:enabled={context.fields.active}
+				disabled={context.fields.deprecated}
+			/>
+
+			<div class="flex items-center justify-around gap-4">
+				<Separator class="flex-1" />
+				<ButtonGroup.Root>
+					{#if params.id && context.fields.deprecated}
+						<Button variant="outline" onclick={() => context.undeprecate()}>
+							Undeprecate <Heart />
+						</Button>
+					{:else if params.id}
+						<Button variant="outline" onclick={() => context.deprecate()}>
+							Deprecate <HeartCrack />
+						</Button>
+					{/if}
+
+					<Button onclick={() => context.submit()} disabled={context.fields.deprecated}>
+						{params.id ? 'Save Changes' : 'Create Goal'}
+						<CirclePlay />
+					</Button>
+				</ButtonGroup.Root>
+			</div>
+		{/snippet}
+		{#snippet right()}
+			<Item.Group class="mt-4 rounded border bg-muted/30 p-4">
+				{#each context.projects as project, index (project.id)}
+					<Item.Root variant="outline">
+						<Item.Media>
+							<Avatar.Root>
+								<Avatar.Image src={project.thumbnail} class="grayscale" />
+								<Avatar.Fallback>{project.name.charAt(0)}</Avatar.Fallback>
+							</Avatar.Root>
+						</Item.Media>
+						<Item.Content class="gap-1">
+							<Item.Title>
+								<Button
+									variant="link"
+									class="h-auto p-0"
+									href="/users/{page.data.session.userId}/projects/{project.id}"
+								>
+									{project.name}
+								</Button>
+							</Item.Title>
+							<Item.Description>{project.description}</Item.Description>
+						</Item.Content>
+						<Item.Actions>
+							{#if !context.fields.deprecated}
+								<Button
+									variant="outline"
+									size="sm"
+									onclick={() => {
+										context.projects = context.projects.filter((p) => p.id !== project.id);
+									}}
+								>
+									Remove
+									<Trash />
+								</Button>
+							{/if}
+						</Item.Actions>
+					</Item.Root>
+
+					<!-- Fixed: Check against context.projects.length instead of people.length -->
+					{#if index !== context.projects.length - 1}
+						<Item.Separator />
+					{/if}
 				{:else}
-					<PageProject />
-				{/if}
-			{/each}
-
-			<!-- Controls for when projects already exist -->
-			{#if context.fields.deprecated}
-				<Alert.Root variant="destructive" class="mt-4">
-					<TriangleAlert />
-					<Alert.Title>Goal is deprecated</Alert.Title>
-					<Alert.Description>You are unable to edit this goal as it is deprecated.</Alert.Description>
-				</Alert.Root>
-			{:else if context.projects.length > 0}
-				{#if context.projects.length < 4}
-					<div class="mt-4">
+					<!-- Empty State (Only rendered when projects array is empty) -->
+					{#if !params.id}
+						<Empty.Root class="p-0!">
+							<Empty.Header>
+								<Empty.Media variant="icon">
+									<FolderCodeIcon />
+								</Empty.Media>
+								<Empty.Title>No Projects Yet</Empty.Title>
+								<Empty.Description>
+									You haven't added any projects yet. Get started by adding your first project.
+								</Empty.Description>
+							</Empty.Header>
+							<Empty.Content class="max-w-full">
+								<PageProject />
+							</Empty.Content>
+						</Empty.Root>
+					{:else}
 						<PageProject />
-					</div>
-				{:else}
-					<Alert.Root variant="warning" class="mt-4">
+					{/if}
+				{/each}
+
+				<!-- Controls for when projects already exist -->
+				{#if context.fields.deprecated}
+					<Alert.Root variant="destructive" class="mt-4">
 						<TriangleAlert />
-						<Alert.Title>Project limit reached.</Alert.Title>
-						<Alert.Description>A goal can have no more than 4 projects at a time.</Alert.Description>
+						<Alert.Title>Goal is deprecated</Alert.Title>
+						<Alert.Description>You are unable to edit this goal as it is deprecated.</Alert.Description>
 					</Alert.Root>
+				{:else if context.projects.length > 0}
+					{#if context.projects.length < 4}
+						<div class="mt-4">
+							<PageProject />
+						</div>
+					{:else}
+						<Alert.Root variant="warning" class="mt-4">
+							<TriangleAlert />
+							<Alert.Title>Project limit reached.</Alert.Title>
+							<Alert.Description>A goal can have no more than 4 projects at a time.</Alert.Description>
+						</Alert.Root>
+					{/if}
 				{/if}
-			{/if}
-		</Item.Group>
-	{/snippet}
-</Layout>
+			</Item.Group>
+		{/snippet}
+	</Layout>
+</svelte:boundary>

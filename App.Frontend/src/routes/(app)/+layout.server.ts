@@ -14,7 +14,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 		// TODO: Configure locale, once we ever get to imlement Wuchale
 		locale: "en-us",
 		tz: getLocalTimeZone(),
-		workspace: await Workspace.root(),
+		// workspace: await Workspace.current(),
 		session: locals.session
 	}
 };

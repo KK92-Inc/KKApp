@@ -9,8 +9,9 @@
 	import useDebounce from '$lib/hooks/debounce.svelte';
 	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
 	import * as Avatar from '$lib/components/avatar';
-	import { Archive, FolderCodeIcon, Plus, Search } from '@lucide/svelte';
+	import { Archive, FolderCodeIcon, Plus, RotateCw, Search } from '@lucide/svelte';
 	import * as Empty from '$lib/components/empty';
+	import * as ButtonGroup from '$lib/components/button-group';
 	import * as InputGroup from '$lib/components/input-group';
 	import Paginate from '$lib/components/paginate.svelte';
 	const context = Page.getContext();
@@ -41,7 +42,8 @@
 			</InputGroup.Addon>
 		</InputGroup.Root>
 		<svelte:boundary>
-			{@const page = await Project.getPage({ name: query })}
+			{@const promise = Project.getPage({ name: query })}
+			{@const page = await promise}
 			{@const filtered = page.data.filter((p) => !context.projects.some((cp) => cp.id === p.id))}
 			{#snippet pending()}
 				<Skeleton class="h-20 w-full" />
@@ -87,7 +89,7 @@
 					<Item.Separator />
 				{/if}
 			{:else}
-				<Empty.Root class="p-0">
+				<Empty.Root class="p-0 border">
 					<Empty.Header>
 						<Empty.Media variant="icon">
 							<FolderCodeIcon />
@@ -98,7 +100,16 @@
 						</Empty.Description>
 					</Empty.Header>
 					<Empty.Content class="max-w-full">
-						<Button>Create Project</Button>
+						<ButtonGroup.Root>
+							<Button variant="outline" target="_blank" href="/projects/manage">
+								Create Project
+								<Plus />
+							</Button>
+							<Button variant="outline" onclick={() => promise.refresh()}>
+								Refresh
+								<RotateCw />
+							</Button>
+						</ButtonGroup.Root>
 					</Empty.Content>
 				</Empty.Root>
 			{/each}

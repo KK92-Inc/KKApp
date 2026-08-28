@@ -53,10 +53,13 @@ const meta: Partial<Record<RouteId, MetaEntry>> = {
 	'/(app)/settings/apps': {
 		icon: Bot,
 		label: 'Applications',
+		scopes: ['applications:read']
 	},
 	'/(app)/settings/features': {
 		icon: FlaskConical,
-		label: 'Features'
+		label: 'Features',
+		//@ts-expect-error TOOD: Add this scopes!
+		scopes: ['features:read']
 	},
 	'/(app)/settings/ssh': {
 		icon: KeyRound,
@@ -64,11 +67,13 @@ const meta: Partial<Record<RouteId, MetaEntry>> = {
 	},
 	'/(app)/reviews': {
 		icon: HeartHandshake,
-		label: 'Reviews'
+		label: 'Reviews',
+		scopes: ['reviews:read']
 	},
 	'/(app)/users': {
 		icon: Users,
-		label: 'Users'
+		label: 'Users',
+		scopes: ['users:read']
 	}
 };
 

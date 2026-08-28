@@ -33,24 +33,22 @@
 	onunhandledrejection={async (e) => {
 		// We're being told to GTFO, so let's leave.
 		if (isHttpError(e.reason, 401)) {
-			e.preventDefault()
+			e.preventDefault();
 			await goto('/auth');
+		}
+		if (isHttpError(e.reason, 403)) {
+			e.preventDefault();
+			await goto('/');
 		}
 	}}
 />
 
 <div class="relative z-10 flex min-h-svh flex-col bg-background">
 	<header class="sticky top-0 z-50 w-full border-b bg-background px-5">
-		<nav
-			class="container mx-auto flex h-(--header-height) items-center **:data-[slot=separator]:h-6!"
-		>
+		<nav class="container mx-auto flex h-(--header-height) items-center **:data-[slot=separator]:h-6!">
 			<div class="flex items-center gap-3">
 				<Header.Sidebar bind:open />
-				<Button
-					href="/"
-					variant="ghost"
-					class="text-lg leading-none font-semibold [&>svg]:size-20!"
-				>
+				<Button href="/" variant="ghost" class="text-lg leading-none font-semibold [&>svg]:size-20!">
 					<WhiteLabel />
 				</Button>
 			</div>
@@ -58,7 +56,7 @@
 			<div class="ml-auto flex items-center gap-2">
 				<!-- <Header.Search /> -->
 				<Header.Theme />
-				<Separator orientation="vertical"/>
+				<Separator orientation="vertical" />
 				<Header.Create />
 				<Header.Dropdown />
 			</div>

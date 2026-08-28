@@ -17,6 +17,7 @@ using App.Backend.Database;
 using System.Linq.Expressions;
 using App.Backend.Domain.Entities;
 using App.Backend.Domain.Enums;
+using System.ComponentModel;
 
 // ============================================================================
 
@@ -134,10 +135,28 @@ public class GoalController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Query a goal")]
     [EndpointDescription("Retrieve a specific goal by ID")]
-    public async Task<ActionResult<GoalDO>> GetById(Guid id, CancellationToken token)
+    public async Task<ActionResult<GoalDO>> GetById(
+        Guid id,
+        [FromQuery(Name = "access[user_id]"), Description("Additionally queries if the user has access.")]
+        Guid? userId,
+        CancellationToken token
+    )
     {
         var goal = await goals.FindByIdAsync(id, token);
-        return goal is null ? NotFound() : Ok(new GoalDO(goal));
+        if (goal is null) return NotFound();
+
+        if (userId.HasValue)
+        {
+            var isStaff = await auth.AuthorizeAsync(User, "staff");
+            if (!isStaff.Succeeded)
+            {
+                var member = await members.FindByEntityAndUserId(goal.WorkspaceId, User.GetSID(), token);
+                if (member is null) return Forbid();
+            }
+
+        }
+
+        return Ok(new GoalDO(goal));
     }
 
     [HttpPatch("{id:guid}")]

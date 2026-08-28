@@ -16,6 +16,7 @@ using App.Backend.API.Utils;
 using App.Backend.Domain.Enums;
 using System.Linq.Expressions;
 using App.Backend.Database;
+using System.ComponentModel;
 
 // ============================================================================
 
@@ -28,7 +29,7 @@ public class RubricController(
     IRubricService service,
     IAuthorizationService auth,
     DatabaseContext ctx,
-    IMemberService memberService
+    IMemberService members
 ) : Controller
 {
     [HttpGet]
@@ -85,10 +86,29 @@ public class RubricController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Query a rubric")]
     [EndpointDescription("Retrieve a specific rubric by ID")]
-    public async Task<ActionResult<RubricDO>> GetById(Guid id, CancellationToken token)
+    public async Task<ActionResult<RubricDO>> GetById(
+        Guid id,
+        [FromQuery(Name = "access[user_id]"), Description("Additionally queries if the user has access.")]
+        Guid? userId,
+        CancellationToken token
+    )
     {
         var rubric = await service.FindByIdAsync(id, token);
-        return rubric is null ? NotFound() : Ok(new RubricDO(rubric));
+        if (rubric is null) return NotFound();
+
+        if (userId.HasValue)
+        {
+            var isStaff = await auth.AuthorizeAsync(User, "staff");
+            if (!isStaff.Succeeded)
+            {
+                var member = await members.FindByEntityAndUserId(rubric.WorkspaceId, User.GetSID(), token);
+                if (member is null) return Forbid();
+            }
+
+        }
+
+
+        return Ok(new RubricDO(rubric));
     }
 
     [HttpPatch("{id:guid}")]
@@ -109,7 +129,7 @@ public class RubricController(
         var isStaff = await auth.AuthorizeAsync(User, "staff");
         if (!isStaff.Succeeded)
         {
-            var member = await memberService.FindByEntityAndUserId(rubric.WorkspaceId, User.GetSID(), token);
+            var member = await members.FindByEntityAndUserId(rubric.WorkspaceId, User.GetSID(), token);
             if (member is null) return Forbid();
         }
 
@@ -141,7 +161,7 @@ public class RubricController(
         var isStaff = await auth.AuthorizeAsync(User, "staff");
         if (!isStaff.Succeeded)
         {
-            var member = await memberService.FindByEntityAndUserId(rubric.WorkspaceId, User.GetSID(), token);
+            var member = await members.FindByEntityAndUserId(rubric.WorkspaceId, User.GetSID(), token);
             if (member is null) return Forbid();
         }
 
@@ -166,7 +186,7 @@ public class RubricController(
         var isStaff = await auth.AuthorizeAsync(User, "staff");
         if (!isStaff.Succeeded)
         {
-            var member = await memberService.FindByEntityAndUserId(rubric.WorkspaceId, User.GetSID(), token);
+            var member = await members.FindByEntityAndUserId(rubric.WorkspaceId, User.GetSID(), token);
             if (member is null) return Forbid();
         }
 

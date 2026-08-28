@@ -19,6 +19,7 @@ using App.Backend.API.Utils;
 using App.Backend.Models.Requests.Cursus;
 using System.Linq.Expressions;
 using App.Backend.Database;
+using System.ComponentModel;
 
 // ============================================================================
 
@@ -135,10 +136,28 @@ public class CursusController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Query a cursus")]
     [EndpointDescription("Retrieve a specific cursus by ID")]
-    public async Task<ActionResult<CursusDO>> GetById(Guid id, CancellationToken token)
+    public async Task<ActionResult<CursusDO>> GetById(
+        Guid id,
+        [FromQuery(Name = "access[user_id]"), Description("Additionally queries if the user has access.")]
+        Guid? userId,
+        CancellationToken token
+    )
     {
         var cursus = await service.FindByIdAsync(id, token);
-        return cursus is null ? NotFound() : Ok(new CursusDO(cursus));
+        if (cursus is null) return NotFound();
+
+        if (userId.HasValue)
+        {
+            var isStaff = await auth.AuthorizeAsync(User, "staff");
+            if (!isStaff.Succeeded)
+            {
+                var member = await members.FindByEntityAndUserId(cursus.WorkspaceId, User.GetSID(), token);
+                if (member is null) return Forbid();
+            }
+
+        }
+
+        return Ok(new CursusDO(cursus));
     }
 
     [HttpGet("{id:guid}/track")]
