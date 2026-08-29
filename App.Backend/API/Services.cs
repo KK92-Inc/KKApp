@@ -50,6 +50,7 @@ using KeycloakAdminClientOptions = Keycloak.AuthServices.Sdk.KeycloakAdminClient
 using App.Backend.Core.Services.Persistence.Implementation;
 using App.Backend.Core.Services.Persistence.Interface;
 using App.Backend.Models;
+using System.Text.Json.Serialization;
 
 // ============================================================================
 
@@ -92,12 +93,12 @@ public static class Services
         builder.Services.AddControllers(o =>
         {
             o.AddProtectedResources();
-            // o.Filters.Add<UserResourceFilter>();
             o.Filters.Add<ServiceExceptionFilter>();
         }).AddJsonOptions(o =>
         {
             o.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-            o.JsonSerializerOptions.AddOptionalSupport();       // <-- new
+            o.JsonSerializerOptions.NumberHandling = JsonNumberHandling.Strict;
+            o.JsonSerializerOptions.AddOptionalSupport();
         });
 
 
@@ -109,6 +110,8 @@ public static class Services
             builder.Configuration.GetSection(SubscriptionOptions.SectionName));
         builder.Services.Configure<WebhookOptions>(
             builder.Configuration.GetSection(WebhookOptions.SectionName));
+        builder.Services.Configure<OnsiteNetworkOptions>(
+            builder.Configuration.GetSection(OnsiteNetworkOptions.SectionName));
 
         builder.Services.AddHttpClient<ResendClient>();
         builder.Services.Configure<ResendClientOptions>(o =>
@@ -284,7 +287,8 @@ public static class Services
         builder.Services.AddScoped<IApplicationService, ApplicationService>();
         builder.Services.AddTransient<IResend, ResendClient>();
         builder.Services.AddSingleton<IBroadcastRegistry, MemoryBroadcastRegistry>();
-
+        builder.Services.AddSingleton<IOnsiteNetworkService, OnsiteNetworkService>();
+        
         // User
         builder.Services.AddScoped<IUserService, UserService>();
         builder.Services.AddScoped<IMemberService, MemberService>();

@@ -33,6 +33,7 @@ public class ReviewController(
     IReviewService service,
     IRubricService rubricService,
     IMemberService memberService,
+    IOnsiteNetworkService onsite,
     IUserProjectService userProjects,
     IAuthorizationService auth,
     IMessageBus bus,
@@ -249,6 +250,9 @@ public class ReviewController(
         var result = await auth.AuthorizeAsync(User, "staff");
         if (!result.Succeeded && review.ReviewerId != User.GetSID())
             return Forbid();
+
+        if (review.Kind == ReviewKinds.Peer && !onsite.IsOnsite(HttpContext.Connection.RemoteIpAddress))
+            return Problem(title: "Peer reviews must be started from onsite.", statusCode: StatusCodes.Status422UnprocessableEntity);
 
         review = await service.StartReviewAsync(review.Id, token);
         return Ok(new ReviewDO(review));

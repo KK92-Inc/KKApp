@@ -78,7 +78,7 @@
 	];
 </script>
 
-{#snippet shortcutButton(props: Shortcut)}
+{#snippet shortcut(props: Shortcut)}
 	<button
 		type="button"
 		class={buttonVariants({
@@ -104,8 +104,8 @@
 		</div>
 		{#if mode === 'write'}
 			<menu class="flex items-center gap-px">
-				{#each shortcuts.slice(0, 5) as props}
-					{@render shortcutButton(props)}
+				{#each shortcuts.slice(0, 5) as props, i (i)}
+					{@render shortcut(props)}
 				{/each}
 				{#if shortcuts.length > 5}
 					<Popover.Root>
@@ -118,10 +118,10 @@
 						>
 							<Ellipsis size={16} class="m-auto" />
 						</Popover.Trigger>
-						<Popover.Content class="w-10 p-2 py-1">
+						<Popover.Content class="w-10 py-0!">
 							<menu class="flex flex-col items-center gap-1">
-								{#each shortcuts.slice(5) as props}
-									{@render shortcutButton(props)}
+								{#each shortcuts.slice(5) as props, i (i)}
+									{@render shortcut(props)}
 								{/each}
 							</menu>
 						</Popover.Content>
@@ -130,14 +130,14 @@
 			</menu>
 		{/if}
 	</Tabs.List>
-	<Tabs.Content value="write">
+	<Tabs.Content value="write" class="flex flex-col">
 		<Textarea
 			data-mode={mode}
 			bind:ref={textarea}
 			draggable="false"
 			{placeholder}
 			bind:value
-			class="field-sizing-content rounded-none shadow-none focus-visible:ring-0 max-h-96"
+			class="field-sizing-content rounded-none shadow-none focus-visible:ring-0 max-h-196"
 			{...rest}
 		/>
 		<div class="text-muted-foreground flex items-center gap-1.5 px-2 py-1.5 text-xs border border-t-0 border-input bg-muted rounded-b">

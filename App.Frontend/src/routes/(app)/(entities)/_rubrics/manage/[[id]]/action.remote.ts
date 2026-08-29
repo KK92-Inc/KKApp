@@ -6,15 +6,15 @@
 import { Filters, Problem } from '$lib/api';
 import { command, getRequestEvent } from '$app/server';
 import type { components } from '$lib/api/api';
-import * as Project from "$lib/remotes/projects.remote";
 
 // ============================================================================
 
-type CreateProject = { workspace: string; } & components['schemas']['PostRubricRequestDTO'];
-export const create = command('unchecked', async (body: CreateProject) => {
+// NOTE(W2): Validation happens on the BE.
+type CreateRubric = { workspace: string; } & components['schemas']['PostRubricRequestDTO'];
+export const create = command('unchecked', async (body: CreateRubric) => {
 	const { locals } = getRequestEvent();
 	const { workspace, ...rest } = body;
-	const { error, data } = await locals.api.POST("/workspace/{workspace}/rubric", {
+	const { error, data } = await locals.api.POST('/workspace/{workspace}/rubric', {
 		params: { path: { workspace } },
 		body: rest
 	});
@@ -26,10 +26,11 @@ export const create = command('unchecked', async (body: CreateProject) => {
 	return data;
 });
 
-type UpdateProject = { id: string; } & components['schemas']['PatchRubricRequestDTO'];
-export const update = command('unchecked', async (body: UpdateProject) => {
-	const { locals } = getRequestEvent();
+// NOTE(W2): Validation happens on the BE.
+type UpdateRubric = { id: string; } & components['schemas']['PatchRubricRequestDTO'];
+export const update = command('unchecked', async (body: UpdateRubric) => {
 	const { id, ...rest } = body;
+	const { locals } = getRequestEvent();
 	const { error, data } = await locals.api.PATCH("/rubrics/{id}", {
 		params: { path: { id } },
 		body: rest
@@ -42,31 +43,13 @@ export const update = command('unchecked', async (body: UpdateProject) => {
 	return data;
 });
 
-// ============================================================================
-
-/** Deprecate the goal */
 export const deprecate = command(Filters.id, async (id) => {
 	const { locals } = getRequestEvent();
-	const { error } = await locals.api.POST("/rubrics/{id}/deprecate", {
+	const { error } = await locals.api.DELETE("/rubrics/{id}", {
 		params: { path: { id } },
 	});
 
 	if (error) {
 		Problem.throw(error);
 	}
-
-	Project.get(id).refresh();
-});
-
-export const undeprecate = command(Filters.id, async (id) => {
-	const { locals } = getRequestEvent();
-	const { error } = await locals.api.POST("/rubrics/{id}/undeprecate", {
-		params: { path: { id } },
-	});
-
-	if (error) {
-		Problem.throw(error);
-	}
-
-	Project.get(id).refresh();
 });

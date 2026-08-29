@@ -6,6 +6,7 @@
 import { Filters, Problem } from '$lib/api';
 import { command, getRequestEvent } from '$app/server';
 import type { components } from '$lib/api/api';
+import * as Project from "$lib/remotes/projects.remote";
 
 // ============================================================================
 
@@ -41,14 +42,31 @@ export const update = command('unchecked', async (body: UpdateProject) => {
 	return data;
 });
 
+// ============================================================================
+
 /** Deprecate the goal */
 export const deprecate = command(Filters.id, async (id) => {
 	const { locals } = getRequestEvent();
-	const { error } = await locals.api.DELETE("/projects/{id}", {
+	const { error } = await locals.api.POST("/projects/{id}/deprecate", {
 		params: { path: { id } },
 	});
 
 	if (error) {
 		Problem.throw(error);
 	}
+
+	Project.get(id).refresh();
+});
+
+export const undeprecate = command(Filters.id, async (id) => {
+	const { locals } = getRequestEvent();
+	const { error } = await locals.api.POST("/projects/{id}/undeprecate", {
+		params: { path: { id } },
+	});
+
+	if (error) {
+		Problem.throw(error);
+	}
+
+	Project.get(id).refresh();
 });

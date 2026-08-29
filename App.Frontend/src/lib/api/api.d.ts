@@ -8629,7 +8629,7 @@ export interface components {
             variants: components["schemas"]["RubricVariantDO"][];
             /** Format: uuid */
             projectId: null | string;
-            gitInfo: null | components["schemas"]["GitDO"];
+            gitInfo: components["schemas"]["GitDO"];
         };
         RubricLightDO: {
             /** Format: uuid */

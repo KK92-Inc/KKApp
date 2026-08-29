@@ -6,6 +6,7 @@
 import * as v from 'valibot';
 import { query, command, getRequestEvent } from '$app/server';
 import { Filters, Problem } from '$lib/api';
+import type { components } from '$lib/api/api';
 
 // ============================================================================
 // const Base = { id: Filters.id, branch: v.string() }
@@ -20,31 +21,10 @@ export const getBranches = query(Filters.id, async (id) => {
 	const { locals } = getRequestEvent();
 	const { error, data } = await locals.api.GET('/git/{id}/branches', {
 		params: { path: { id } },
-		parseAs: "text",
 	});
 
 	if (error) Problem.throw(error);
-	if (!data) return { branches: [] as string[], master: undefined };
-
-	const branches: string[] = [];
-	let master: string | undefined;
-	for (const raw of data.split('\n')) {
-		const line = raw.trim();
-		if (!line) continue;
-
-		if (line.startsWith('*')) {
-			const name = line.slice(1).trim();
-			branches.push(name);
-			master = name;
-		} else {
-			branches.push(line);
-		}
-	}
-
-	return {
-		branches,
-		master: master ?? branches[0],
-	};
+	return data ? data : [];
 });
 
 /** Create a new branch pointing at a given ref (branch or SHA) */
@@ -74,23 +54,33 @@ export const removeBranch = command(
 	}
 );
 
+type CreateCommit = { id: string, branch: string } & components['schemas']['PostCommitDTO'];
+export const commit = command("unchecked", async (body: CreateCommit) => {
+	const { locals } = getRequestEvent();
+	const { id, branch, ...rest } = body;
+	const { error } = await locals.api.PUT('/git/{id}/commit/{branch}', {
+		params: { path: { id, branch } },
+		body: rest
+	});
+
+	if (error) Problem.throw(error);
+});
+
 /** Get the file tree at the root of a branch */
 export const getTree = query(TreeSchema, async ({ id, branch }) => {
 	const { locals } = getRequestEvent();
 	const { error, data } = await locals.api.GET('/git/{id}/tree/{branch}', {
-		parseAs: "text",
 		params: { path: { id, branch } }
 	});
 
-	if (error || !data) Problem.throw(error);
-	return data;
+	if (error) Problem.throw(error);
+	return data ? data : [];
 });
 
 /** Get the file tree at a given path within a branch */
 export const getTreePath = query(TreePathSchema, async ({ id, branch, path }) => {
 	const { locals } = getRequestEvent();
 	const { error, data } = await locals.api.GET('/git/{id}/tree/{branch}/{path}', {
-		parseAs: "text",
 		params: { path: { id, branch, path } }
 	});
 

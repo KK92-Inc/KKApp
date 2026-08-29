@@ -64,8 +64,21 @@
 
 <svelte:boundary>
 	{#snippet pending()}
-		Please wait...
+		<Layout class="px-4" classL="space-y-4" classR="px-0!">
+			{#snippet left()}
+				<Skeleton class="h-100 mt-4"/>
+				<Skeleton class="h-50"/>
+				<Skeleton class="h-10"/>
+			{/snippet}
+
+			{#snippet right()}
+				<Skeleton class="h-25 mt-4"/>
+			<Separator class="my-2" />
+				<Skeleton class="h-196"/>
+			{/snippet}
+		</Layout>
 	{/snippet}
+
 	<Layout class="px-4" classL="space-y-4" classR="px-0!">
 		{#snippet left()}
 			<Card.Root class="mt-4 gap-1 overflow-hidden p-0">

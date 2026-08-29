@@ -1,200 +1,292 @@
 <script lang="ts">
+	import Layout from '$lib/components/layout.svelte';
+	import type { PageProps } from './$types';
+	import * as Page from './context.svelte';
 	import Input from '$lib/components/input/input.svelte';
 	import { page } from '$app/state';
-	import { Zap, Unlock, Lock, Trash, GitBranch, CirclePlay, FileText, Database } from '@lucide/svelte';
+	import {
+		CircleAlert,
+		CirclePlay,
+		Database,
+		Ellipsis,
+		FileText,
+		GitBranch,
+		Heart,
+		HeartCrack,
+		TriangleAlert
+	} from '@lucide/svelte';
 	import * as Field from '$lib/components/field';
 	import * as Card from '$lib/components/card';
-	import * as Item from '$lib/components/item';
 	import { Button } from '$lib/components/button';
 	import { Textarea } from '$lib/components/textarea';
-	import { Switch } from '$lib/components/switch';
 	import * as Tabs from '$lib/components/tabs';
 	import Separator from '$lib/components/separator/separator.svelte';
 	import Thumbnail from '$lib/components/thumbnail.svelte';
-	import type { PageProps } from './$types';
 	import * as ButtonGroup from '$lib/components/button-group';
-	import * as Page from './context.svelte';
+	import * as Item from '$lib/components/item';
+	import * as Alert from '$lib/components/alert';
+	import Access from '../../../shared/access.svelte';
 	import { Slider } from '$lib/components/slider';
-	import Files from '../../../shared/files.component.svelte';
+	import MarkdownTextarea from '$lib/components/markdown/markdown-textarea.svelte';
+	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
+	import Markdown from '$lib/components/markdown/markdown.svelte';
+	import { env } from '$env/dynamic/public';
+	import * as InputGroup from '$lib/components/input-group';
+	import * as DropdownMenu from '$lib/components/dropdown-menu';
 
 	const { params }: PageProps = $props();
 	const context = Page.setContext(new Page.Context(() => params.id));
-	await context.hydrate();
-
-	async function submit() {
-		await context.submit();
-	}
+	$effect(() => {
+		context.hydrate();
+	});
 </script>
 
-<!-- Folder Creation Dialog -->
+<svelte:boundary>
+	{#snippet pending()}
+		<Layout class="px-4" classL="space-y-4" classR="px-0!">
+			{#snippet left()}
+				<Skeleton class="mt-4 h-100" />
+				<Skeleton class="h-50" />
+				<Skeleton class="h-10" />
+			{/snippet}
 
-<form class="container mx-auto flex flex-col gap-6 p-6">
-	<div class="flex items-center gap-4">
-		<h1 class="text-2xl font-semibold tracking-tight">
-			{params.id ? `Edit "${context.fields.name}"` : 'Create new project'}
-		</h1>
+			{#snippet right()}
+				<Skeleton class="mt-4 h-25" />
+				<Separator class="my-2" />
+				<Skeleton class="h-196" />
+			{/snippet}
+		</Layout>
+	{/snippet}
 
-		<Separator class="flex-1" />
-		<ButtonGroup.Root>
-			{#if params.id}
-				<Button variant="outline" type="button" onclick={() => context.deprecate()}>
-					Deprecate <Trash />
-				</Button>
-			{/if}
-
-			<Button onclick={submit}>
-				{params.id ? 'Save Changes' : 'Create'}
-				<CirclePlay />
-			</Button>
-		</ButtonGroup.Root>
-	</div>
-
-	{#if !params.id}
-		<Item.Group class="grid gap-3 sm:grid-cols-3">
-			<Item.Root variant="muted" size="sm">
-				<Item.Media variant="icon"><GitBranch class="size-4" /></Item.Media>
-				<Item.Content>
-					<Item.Title class="text-sm">A repository will be made</Item.Title>
-					<Item.Description class="text-xs">Everything below becomes the initial commit.</Item.Description>
-				</Item.Content>
-			</Item.Root>
-			<Item.Root variant="muted" size="sm">
-				<Item.Media variant="icon"><FileText class="size-4" /></Item.Media>
-				<Item.Content>
-					<Item.Title class="text-sm">README.md is the subject</Item.Title>
-					<Item.Description class="text-xs">Users will complete the project as instructed.</Item.Description>
-				</Item.Content>
-			</Item.Root>
-			<Item.Root variant="muted" size="sm">
-				<Item.Media variant="icon"><Database class="size-4" /></Item.Media>
-				<Item.Content>
-					<Item.Title class="text-sm">Upload any pre-requisites</Item.Title>
-					<Item.Description class="text-xs">data.csv, stuff.xlsx, etc whatever you require.</Item.Description>
-				</Item.Content>
-			</Item.Root>
-		</Item.Group>
-	{/if}
-
-	<div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-[320px_1fr]">
-		<div class="flex flex-col gap-6 lg:sticky lg:top-8">
-			<Card.Root class="gap-1 overflow-hidden p-0">
+	<Layout class="px-4" classL="space-y-4" classR="px-0!">
+		{#snippet left()}
+			<Card.Root class="mt-4 gap-1 overflow-hidden p-0">
 				<div
 					class="relative border-b bg-muted/30 px-6 pt-8 pb-6 text-center"
 					style="background-image: radial-gradient(color-mix(in oklab, var(--foreground) 12%, transparent) 1px, transparent 1px); background-size: 14px 14px;"
 				>
-					<Thumbnail
-						value="https://placehold.co/128x128?text=Cursus"
-						class="mx-auto rounded-lg border-2 border-background shadow-md"
-					/>
+					<Thumbnail value="https://placehold.co/128x128?text=Project" class="rounded-lg border" />
 				</div>
 
-				<Card.Content class="flex flex-col gap-3 p-4">
-					<Field.Field data-invalid={!!context.errors.name}>
-						<Field.Label for="name">Name</Field.Label>
-						<Input id="name" maxlength={255} bind:value={context.fields.name} placeholder="Cursus name" />
-						<Field.Error errors={context.errors.name} class="justify-center" />
-					</Field.Field>
+				<Card.Content class="p-4">
+					<Field.Set class="gap-1.5">
+						<!-- Name -->
+						<Field.Field>
+							<Field.Label for="name">Name</Field.Label>
+							<Input
+								id="name"
+								maxlength={255}
+								bind:value={context.fields.name}
+								disabled={context.fields.deprecated}
+								placeholder="Entry into..."
+							/>
+							<Field.Description>The name of the project.</Field.Description>
+							<Field.Error errors={context.errors.name} />
+						</Field.Field>
 
-					<Field.Field data-invalid={!!context.errors.workspace}>
-						<Field.Label for="workspace">Workspace</Field.Label>
-						<Tabs.Root id="workspace" bind:value={context.workspace}>
-							<Tabs.List class="w-auto">
-								<Tabs.Trigger value="user">My Workspace</Tabs.Trigger>
-								{#if page.data.session.roles.includes('staff')}
-									<Tabs.Trigger value="root">App Workspace</Tabs.Trigger>
-								{/if}
-							</Tabs.List>
-						</Tabs.Root>
-						<Field.Error errors={context.errors.workspace} />
-					</Field.Field>
+						<!-- Description -->
+						<Field.Field>
+							<Field.Label for="description">
+								Description
+								<span class="ml-auto text-xs font-normal">
+									{context.fields.description.length}/255
+								</span>
+							</Field.Label>
+							<Textarea
+								id="description"
+								rows={3}
+								disabled={context.fields.deprecated}
+								class="max-h-52 resize-y"
+								placeholder="This project will teach you about..."
+								maxlength={255}
+								bind:value={context.fields.description}
+							/>
+							<Field.Description>Short and readable description about the project.</Field.Description>
+							<Field.Error errors={context.errors.description} />
+						</Field.Field>
 
-					<Field.Field data-invalid={!!context.errors.description?.length}>
-						<Field.Label for="description">Description</Field.Label>
-						<Textarea
-							id="description"
-							rows={3}
-							class="max-h-52 resize-y"
-							maxlength={255}
-							bind:value={context.fields.description}
-						/>
-						<Field.Error errors={context.errors.description} />
-					</Field.Field>
-
-					<Field.Field>
-						<Field.Label for="project-members">
-							Max Members ({context.fields.maxMembers})
-						</Field.Label>
-						<Slider
-							id="project-members"
-							type="single"
-							bind:value={context.fields.maxMembers}
-							min={1}
-							max={10}
-							step={1}
-						/>
-						<Field.Description>The max amount of users that can be in a group.</Field.Description>
-					</Field.Field>
-				</Card.Content>
-			</Card.Root>
-
-			<Card.Root class="gap-2 py-4">
-				<Card.Header class="px-4">
-					<Card.Title class="text-sm font-medium text-muted-foreground">Access Modifiers</Card.Title>
-				</Card.Header>
-				<Card.Content class="px-4">
-					<Field.Set>
-						<Field.Group>
-							<Field.Field
-								data-invalid={!!context.errors.public}
-								orientation="horizontal"
-								class="items-center"
-							>
-								<Field.Content>
-									<Field.Label for="cursus-public" class="flex items-center gap-2">
-										{#if context.fields.public}
-											<Unlock class="h-4 w-4 text-emerald-500" />
-										{:else}
-											<Lock class="h-4 w-4 text-muted-foreground" />
-										{/if}
-										Public
-									</Field.Label>
-									<Field.Description>
-										{context.fields.public
-											? 'Visible to all users on the platform.'
-											: 'Only you and staff can see this cursus.'}
-									</Field.Description>
-									<Field.Error errors={context.errors.public} />
-								</Field.Content>
-								<Switch id="cursus-public" bind:checked={context.fields.public} />
+						<!-- Workspace -->
+						<!-- NOTE(W2): For now only really staff can actually put this somewhere else... -->
+						{#if !params.id && page.data.session.roles.includes('staff')}
+							<Field.Field>
+								<Field.Label for="workspace">Workspace</Field.Label>
+								<Tabs.Root id="workspace" bind:value={context.workspace}>
+									<Tabs.List class="w-auto">
+										<Tabs.Trigger value="user">My Workspace</Tabs.Trigger>
+										<Tabs.Trigger value="root">App Workspace</Tabs.Trigger>
+									</Tabs.List>
+								</Tabs.Root>
+								<Field.Description>Which workspace this project belongs to.</Field.Description>
+								<Field.Error errors={context.errors.workspace} />
 							</Field.Field>
+						{/if}
 
-							<Field.Field
-								data-invalid={!!context.errors.active}
-								orientation="horizontal"
-								class="items-center"
-							>
-								<Field.Content>
-									<Field.Label for="cursus-enabled" class="flex items-center gap-2">
-										<Zap
-											class="h-4 w-4 {context.fields.active ? 'text-amber-500' : 'text-muted-foreground'}"
-										/>
-										Enabled
-									</Field.Label>
-									<Field.Description>
-										{context.fields.active
-											? 'Other users can subscribe to this cursus'
-											: 'Other users cannot subscribe to this cursus'}
-									</Field.Description>
-									<Field.Error errors={context.errors.active} />
-								</Field.Content>
-								<Switch id="cursus-enabled" bind:checked={context.fields.active} />
-							</Field.Field>
-						</Field.Group>
+						<Field.Field>
+							<Field.Label for="project-members">
+								Max Members ({context.fields.maxMembers})
+							</Field.Label>
+							<Slider
+								id="project-members"
+								type="single"
+								bind:value={context.fields.maxMembers}
+								min={1}
+								max={10}
+								step={1}
+							/>
+							<Field.Description>The max amount of users that can be in a group.</Field.Description>
+						</Field.Field>
 					</Field.Set>
 				</Card.Content>
 			</Card.Root>
-		</div>
 
-		<Files bind:files={context.files} />
-	</div>
-</form>
+			<Access
+				bind:visible={context.fields.public}
+				bind:enabled={context.fields.active}
+				disabled={context.fields.deprecated}
+			/>
+
+			<div class="flex items-center justify-around gap-4">
+				<Separator class="flex-1" />
+				<ButtonGroup.Root>
+					{#if params.id && context.fields.deprecated}
+						<Button variant="outline" onclick={() => context.undeprecate()}>
+							Undeprecate <Heart />
+						</Button>
+					{:else if params.id}
+						<Button variant="outline" onclick={() => context.deprecate()}>
+							Deprecate <HeartCrack />
+						</Button>
+					{/if}
+
+					<Button onclick={() => context.submit()} disabled={context.fields.deprecated}>
+						{params.id ? 'Save Changes' : 'Create Project'}
+						<CirclePlay />
+					</Button>
+				</ButtonGroup.Root>
+			</div>
+		{/snippet}
+		{#snippet right()}
+			<div class="mt-4 space-y-2">
+				{#if !params.id}
+					<Item.Group class="mt-4 grid gap-3 sm:grid-cols-3">
+						<Item.Root variant="muted" size="sm">
+							<Item.Media variant="icon"><GitBranch class="size-4" /></Item.Media>
+							<Item.Content>
+								<Item.Title class="text-sm">Code Repository Included</Item.Title>
+								<Item.Description class="text-xs">
+									Automatically tracks changes and revision history.
+								</Item.Description>
+							</Item.Content>
+						</Item.Root>
+						<Item.Root variant="muted" size="sm">
+							<Item.Media variant="icon"><FileText class="size-4" /></Item.Media>
+							<Item.Content>
+								<Item.Title class="text-sm">Built-in Instructions</Item.Title>
+								<Item.Description class="text-xs">
+									Write project guidelines using the Markdown editor below.
+								</Item.Description>
+							</Item.Content>
+						</Item.Root>
+						<Item.Root variant="muted" size="sm">
+							<Item.Media variant="icon"><Database class="size-4" /></Item.Media>
+							<Item.Content>
+								<Item.Title class="text-sm">Starter Files & Data</Item.Title>
+								<Item.Description class="text-xs">
+									Attach datasets or template files (e.g., CSV, XLSX).
+								</Item.Description>
+							</Item.Content>
+						</Item.Root>
+					</Item.Group>
+				{:else}
+					{@const value = `git clone ${env.PUBLIC_GIT_URL}/project/${params.id}`}
+					{#if context.fields.deprecated}
+						<Alert.Root variant="destructive">
+							<CircleAlert />
+							<Alert.Title>Project is Archived</Alert.Title>
+							<Alert.Description>
+								<p>
+									Settings and instructions are currently read-only. Click <strong>Undeprecate</strong> to make
+									edits.
+								</p>
+							</Alert.Description>
+						</Alert.Root>
+					{:else}
+						<Alert.Root>
+							<CircleAlert />
+							<Alert.Title>Advanced File Editing</Alert.Title>
+							<Alert.Description>
+								<p>
+									Need to upload additional files or make bulk updates? Clone the repository locally using
+									your editor of choice.
+								</p>
+								<InputGroup.Root class="mt-2">
+									<InputGroup.Addon align="inline-end">
+										<InputGroup.Copy {value} />
+									</InputGroup.Addon>
+									<InputGroup.Input
+										id="title"
+										autocomplete="off"
+										autocorrect="off"
+										autosave="off"
+										class="w-full"
+										readonly
+										{value}
+									/>
+									<InputGroup.Addon align="inline-start">
+										<DropdownMenu.Root>
+											<DropdownMenu.Trigger>
+												{#snippet child({ props })}
+													<InputGroup.Button {...props} variant="ghost" aria-label="More" size="icon-xs">
+														<Ellipsis />
+													</InputGroup.Button>
+												{/snippet}
+											</DropdownMenu.Trigger>
+											<DropdownMenu.Content align="start" class="[--radius:0.95rem]">
+												<DropdownMenu.Item href={`vscode://vscode.git/clone?url=${value}`}>
+													Open in VS Code
+												</DropdownMenu.Item>
+												<DropdownMenu.Item href={`cursor://vscode.git/clone?url=${value}`}>
+													Open in Cursor
+												</DropdownMenu.Item>
+												<DropdownMenu.Item href={`jetbrains://idea/checkout/git?checkout_url=${value}`}>
+													Open in IntelliJ
+												</DropdownMenu.Item>
+											</DropdownMenu.Content>
+										</DropdownMenu.Root>
+									</InputGroup.Addon>
+								</InputGroup.Root>
+							</Alert.Description>
+						</Alert.Root>
+						<Alert.Root variant="warning">
+							<TriangleAlert />
+							<Alert.Title>Heads Up: Simultaneous Edits</Alert.Title>
+							<Alert.Description>
+								<p>
+									Multiple people editing at once will overwrite each other's work. Refresh the page before
+									saving to ensure you have the latest content.
+								</p>
+							</Alert.Description>
+						</Alert.Root>
+					{/if}
+				{/if}
+
+				<Separator class="my-2" />
+				{#if context.fields.deprecated}
+					<div class="pb-4">
+						<Card.Root class="py-0!">
+							<Card.Content>
+								<Markdown value={context.readme} />
+							</Card.Content>
+						</Card.Root>
+					</div>
+				{:else}
+					<MarkdownTextarea
+						placeholder="### My Project is about..."
+						bind:value={context.readme}
+						class="pb-4"
+					/>
+				{/if}
+			</div>
+		{/snippet}
+	</Layout>
+</svelte:boundary>

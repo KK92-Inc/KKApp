@@ -1,5 +1,5 @@
 <script lang="ts" generics="R extends readonly RouteId[]">
-	import { FileQuestionMark, HeartCrack, Icon } from '@lucide/svelte';
+	import { FileQuestionMark, Icon } from '@lucide/svelte';
 	import type { RouteId, RouteParams } from '$app/types';
 	import { resolve } from '$app/paths';
 	import { Separator } from './separator';
@@ -66,11 +66,6 @@
 						{nav.label}
 					</a>
 				</li>
-				<!-- {:else} -->
-				<!-- <li class="text-xs text-muted-foreground flex items-center gap-1">
-				You may not have the permissions to see anything here.
-				<HeartCrack size={16}/>
-			</li> -->
 			{/each}
 		</menu>
 	</div>

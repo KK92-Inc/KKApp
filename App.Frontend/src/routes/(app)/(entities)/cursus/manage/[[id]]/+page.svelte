@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Tree from '$lib/components/hierarchy/tree.svelte';
+	import Tree from '$lib/components/hierarchy/hierarchy.svelte';
 	import { addChildToNode, removeNodeById } from '$lib/components/hierarchy/state.svelte';
 	import Input from '$lib/components/input/input.svelte';
 	import * as Page from './context.svelte';

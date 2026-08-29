@@ -38,7 +38,7 @@ public class RubricDO(Rubric rubric) : BaseEntityDO<Rubric>(rubric)
     public Guid? ProjectId { get; set; } = rubric.ProjectId;
 
     [Required]
-    public GitDO? GitInfo { get; set; } = rubric.GitInfo;
+    public GitDO GitInfo { get; set; } = rubric.GitInfo;
 
     public static implicit operator RubricDO?(Rubric? rubric) =>
         rubric is null ? null : new(rubric);
