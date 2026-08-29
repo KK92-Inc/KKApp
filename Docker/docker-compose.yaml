@@ -218,8 +218,6 @@ services:
       - "aspire"
   frontend:
     image: "${FRONTEND_IMAGE}"
-    command:
-      - "--host"
     environment:
       NODE_ENV: "production"
       PORT: "8000"
