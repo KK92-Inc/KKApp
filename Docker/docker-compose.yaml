@@ -51,46 +51,6 @@ services:
         read_only: false
     networks:
       - "aspire"
-  git-api:
-    image: "${GIT_API_IMAGE}"
-    expose:
-      - "3000"
-    volumes:
-      - type: "volume"
-        target: "/home/git/repos"
-        source: "git-repos"
-        read_only: false
-    networks:
-      - "aspire"
-  git-ssh:
-    image: "${GIT_SSH_IMAGE}"
-    environment:
-      ConnectionStrings__db: "Host=database;Port=5432;Username=postgres;Password=${DATABASE_PASSWORD};Database=db"
-      DB_HOST: "database"
-      DB_PORT: "5432"
-      DB_USERNAME: "postgres"
-      DB_PASSWORD: "${DATABASE_PASSWORD}"
-      DB_URI: "postgresql://postgres:${DATABASE_PASSWORD}@database:5432/db"
-      DB_JDBCCONNECTIONSTRING: "jdbc:postgresql://database:5432/db"
-      DB_DATABASENAME: "db"
-    ports:
-      - "22:22"
-    volumes:
-      - type: "volume"
-        target: "/home/git/repos"
-        source: "git-repos"
-        read_only: false
-      - type: "volume"
-        target: "/etc/ssh/keys"
-        source: "git-ssh-keys"
-        read_only: false
-    depends_on:
-      database:
-        condition: "service_started"
-      git-api:
-        condition: "service_started"
-    networks:
-      - "aspire"
   migration-job:
     image: "${MIGRATION_JOB_IMAGE}"
     environment:
@@ -152,6 +112,70 @@ services:
         condition: "service_started"
     networks:
       - "aspire"
+  git-api:
+    image: "${GIT_API_IMAGE}"
+    environment:
+      OTEL_DOTNET_EXPERIMENTAL_OTLP_RETRY: "in_memory"
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      HTTP_PORTS: "${GIT_API_PORT}"
+      ConnectionStrings__db: "Host=database;Port=5432;Username=postgres;Password=${DATABASE_PASSWORD};Database=db"
+      DB_HOST: "database"
+      DB_PORT: "5432"
+      DB_USERNAME: "postgres"
+      DB_PASSWORD: "${DATABASE_PASSWORD}"
+      DB_URI: "postgresql://postgres:${DATABASE_PASSWORD}@database:5432/db"
+      DB_JDBCCONNECTIONSTRING: "jdbc:postgresql://database:5432/db"
+      DB_DATABASENAME: "db"
+      REPOSITORY_DIRECTORY: "/home/git/repos"
+    expose:
+      - "${GIT_API_PORT}"
+    volumes:
+      - type: "volume"
+        target: "/home/git/repos"
+    depends_on:
+      database:
+        condition: "service_started"
+    networks:
+      - "aspire"
+  git-ssh:
+    image: "${GIT_SSH_IMAGE}"
+    environment:
+      ConnectionStrings__db: "Host=database;Port=5432;Username=postgres;Password=${DATABASE_PASSWORD};Database=db"
+      DB_HOST: "database"
+      DB_PORT: "5432"
+      DB_USERNAME: "postgres"
+      DB_PASSWORD: "${DATABASE_PASSWORD}"
+      DB_URI: "postgresql://postgres:${DATABASE_PASSWORD}@database:5432/db"
+      DB_JDBCCONNECTIONSTRING: "jdbc:postgresql://database:5432/db"
+      DB_DATABASENAME: "db"
+      ConnectionStrings__valkey: "valkey:6379,password=${VALKEY_PASSWORD}"
+      VALKEY_HOST: "valkey"
+      VALKEY_PORT: "6379"
+      VALKEY_PASSWORD: "${VALKEY_PASSWORD}"
+      VALKEY_URI: "valkey://:${VALKEY_PASSWORD}@valkey:6379"
+      KC_ORIGIN: "http://keycloak:8080"
+      KC_SECRET: "${KC_ADMIN_INTRA_SECRET}"
+      REPOSITORY_DIRECTORY: "/home/git/repos"
+    ports:
+      - "22:22"
+    volumes:
+      - type: "volume"
+        target: "/home/git/repos"
+        source: "git-repos"
+        read_only: false
+      - type: "volume"
+        target: "/etc/ssh/keys"
+        source: "git-ssh-keys"
+        read_only: false
+    depends_on:
+      database:
+        condition: "service_started"
+      valkey:
+        condition: "service_started"
+      git-api:
+        condition: "service_started"
+    networks:
+      - "aspire"
   backend:
     image: "${BACKEND_IMAGE}"
     environment:
@@ -176,7 +200,7 @@ services:
       KeycloakStudent__credentials__secret: "${KC_STUDENT_INTRA_SECRET}"
       KeycloakStudent__auth-server-url: "http://keycloak:8080"
       Resend__Secret: "${BE_RESEND_TOKEN}"
-      Git__BaseUrl: "http://git-api:3000"
+      Git__BaseUrl: "http://git-api:${GIT_API_PORT}"
     expose:
       - "${BACKEND_PORT}"
     depends_on:
@@ -194,6 +218,8 @@ services:
       - "aspire"
   frontend:
     image: "${FRONTEND_IMAGE}"
+    command:
+      - "--host"
     environment:
       NODE_ENV: "production"
       PORT: "8000"
@@ -201,6 +227,7 @@ services:
       KC_ORIGIN: "https://auth.${DOMAIN}"
       S3_ACCESS_KEY_ID: "${S3_ACCESS_KEY_ID}"
       S3_SECRET_ACCESS_KEY: "${S3_SECRET_ACCESS_KEY}"
+      PUBLIC_GIT_URL: "git@${DOMAIN}"
       PUBLIC_API_URL: "http://backend:${BACKEND_PORT}"
       PUBLIC_S3_ENDPOINT: "http://rustfs:9000"
       ORIGIN: "https://intra.${DOMAIN}"
@@ -252,9 +279,9 @@ volumes:
     driver: "local"
   rustfs-volume:
     driver: "local"
+  keycloak-volume:
+    driver: "local"
   git-repos:
     driver: "local"
   git-ssh-keys:
-    driver: "local"
-  keycloak-volume:
     driver: "local"

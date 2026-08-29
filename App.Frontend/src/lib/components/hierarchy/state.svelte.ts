@@ -1,16 +1,10 @@
-// ============================================================================
-// W2Inc, 2025, All Rights Reserved.
-// See README in the root project for more information.
-// ============================================================================
-
 import { getContext, setContext } from 'svelte';
 import { SvelteSet } from 'svelte/reactivity';
 
-// ============================================================================
-
 /**
  * Describes how a hierarchy of type `T` is navigated and mutated. `Hierarchy`
- * never assumes anything about the shape of `T` beyond what this adapter tells it.
+ * never assumes anything about the shape of `T` beyond what this adapter tells it,
+ * so the same component can drive a file tree, a ruleset, an org chart, etc.
  */
 export interface TreeAdapter<T> {
 	/** A stable, unique identifier for an item. */
@@ -18,127 +12,184 @@ export interface TreeAdapter<T> {
 	/**
 	 * The item's children.
 	 * - Return `undefined` if this item can *never* contain children (a leaf,
-	 *   e.g. a file) — it will be rejected as a drop target.
-	 * - Return an array (empty or not) if this item *can* contain children.
+	 *   e.g. a file) — it will be rejected as a drop target entirely.
+	 * - Return an array (empty or not) if this item *can* contain children —
+	 *   it becomes a valid "drop inside" target even when currently empty.
 	 */
 	children: (item: T) => T[] | undefined;
 	/** Optional: create a new child for `parent`, used by `addChild`. */
 	createChild?: (parent: T) => T;
 }
 
-// ============================================================================
-// Pure, framework-agnostic tree algorithms. No DOM, no Svelte specifics —
-// Hierarchy composes these to figure out what a drag/drop should do, and
-// adapters can reuse them (e.g. to implement `read`/`write`).
-// ============================================================================
+export type DropPosition = 'before' | 'after' | 'inside';
 
-/** Depth-first search for the item with the given id anywhere in the forest. */
-export function findById<T>(adapter: TreeAdapter<T>, items: T[], id: string): T | null {
-	for (const item of items) {
+export interface DropTarget {
+	id: string;
+	position: DropPosition;
+}
+
+/** Adds a new child to `parent` via `adapter.createChild`, mutating in place. */
+export function addChild<T>(adapter: TreeAdapter<T>, parent: T): void {
+	if (!adapter.createChild) return;
+	const children = adapter.children(parent);
+	if (!children) return; // parent is a leaf, can't hold children
+	children.push(adapter.createChild(parent));
+}
+
+/** Depth-first search for the item with `id`, or `null` if it isn't in the tree. */
+function findNode<T>(adapter: TreeAdapter<T>, roots: T[], id: string): T | null {
+	for (const item of roots) {
 		if (adapter.id(item) === id) return item;
-		const found = findById(adapter, adapter.children(item) ?? [], id);
-		if (found) return found;
-	}
-	return null;
-}
-
-/** Every descendant id of `item` (not including `item` itself). */
-export function collectDescendantIds<T>(
-	adapter: TreeAdapter<T>,
-	item: T,
-	into: Set<string> = new SvelteSet()
-): Set<string> {
-	for (const child of adapter.children(item) ?? []) {
-		into.add(adapter.id(child));
-		collectDescendantIds(adapter, child, into);
-	}
-	return into;
-}
-
-/** Remove and return the item with the given id, wherever it is in the forest. */
-export function removeById<T>(adapter: TreeAdapter<T>, items: T[], id: string): T | null {
-	const index = items.findIndex((item) => adapter.id(item) === id);
-	if (index !== -1) return items.splice(index, 1)[0];
-
-	for (const item of items) {
-		const bucket = adapter.children(item);
-		if (bucket) {
-			const removed = removeById(adapter, bucket, id);
-			if (removed) return removed;
+		const kids = adapter.children(item);
+		if (kids) {
+			const found = findNode(adapter, kids, id);
+			if (found) return found;
 		}
 	}
 	return null;
 }
 
-/** Append a new child (via `adapter.createChild`) to `parent`. */
-export function addChild<T>(adapter: TreeAdapter<T>, parent: T): T | null {
-	if (!adapter.createChild) return null;
-	const bucket = adapter.children(parent);
-	if (!bucket) return null;
-
-	const child = adapter.createChild(parent);
-	bucket.push(child);
-	return child;
+/** Finds the array that directly contains the item with `id` (i.e. its siblings array). */
+function findParentArray<T>(adapter: TreeAdapter<T>, roots: T[], id: string): T[] | null {
+	if (roots.some((item) => adapter.id(item) === id)) return roots;
+	for (const item of roots) {
+		const kids = adapter.children(item);
+		if (kids) {
+			const found = findParentArray(adapter, kids, id);
+			if (found) return found;
+		}
+	}
+	return null;
 }
 
 /**
- * Move `sourceId` so it becomes a child of `targetId`. Refuses (returns
- * `false`) if either id is missing, the target can't hold children, or the
- * move would nest an item inside its own subtree.
+ * Moves the item identified by `draggedId` to sit relative to `target`, mutating
+ * `roots` (and/or whatever nested children arrays are involved) in place.
+ *
+ * Exported mainly for testing — `Hierarchy` calls this internally on drop.
  */
-export function moveInto<T>(
+export function moveItem<T>(
 	adapter: TreeAdapter<T>,
-	items: T[],
-	sourceId: string,
-	targetId: string
-): boolean {
-	if (sourceId === targetId) return false;
+	roots: T[],
+	draggedId: string,
+	target: DropTarget
+): void {
+	if (draggedId === target.id) return;
 
-	const source = findById(adapter, items, sourceId);
-	const target = findById(adapter, items, targetId);
-	if (!source || !target) return false;
+	const sourceArray = findParentArray(adapter, roots, draggedId);
+	const sourceIndex = sourceArray?.findIndex((item) => adapter.id(item) === draggedId) ?? -1;
+	if (!sourceArray || sourceIndex === -1) return;
 
-	const bucket = adapter.children(target);
-	if (!bucket) return false; // target is a leaf, can't accept children
+	const [dragged] = sourceArray.splice(sourceIndex, 1);
 
-	const descendants = collectDescendantIds(adapter, source);
-	if (descendants.has(targetId)) return false; // can't move into your own subtree
+	if (target.position === 'inside') {
+		const targetNode = findNode(adapter, roots, target.id);
+		const children = targetNode && adapter.children(targetNode);
+		if (!children) {
+			sourceArray.splice(sourceIndex, 0, dragged); // not a valid container, restore
+			return;
+		}
+		children.push(dragged);
+		return;
+	}
 
-	removeById(adapter, items, sourceId);
-	bucket.push(source);
-	return true;
+	const destArray = findParentArray(adapter, roots, target.id);
+	if (!destArray) {
+		sourceArray.splice(sourceIndex, 0, dragged);
+		return;
+	}
+	let destIndex = destArray.findIndex((item) => adapter.id(item) === target.id);
+	if (destIndex === -1) {
+		sourceArray.splice(sourceIndex, 0, dragged);
+		return;
+	}
+	if (target.position === 'after') destIndex += 1;
+	destArray.splice(destIndex, 0, dragged);
 }
 
-/** Move `sourceId` back out to the top level of the forest. */
-export function moveToRoot<T>(adapter: TreeAdapter<T>, items: T[], sourceId: string): boolean {
-	if (items.some((item) => adapter.id(item) === sourceId)) return false; // already at root
-	const source = removeById(adapter, items, sourceId);
-	if (!source) return false;
-	items.push(source);
-	return true;
+const CONTEXT_KEY = Symbol('hierarchy');
+
+/**
+ * All drag/drop state for one `<Hierarchy>` instance. Created once in
+ * `hierarchy.svelte` and shared with every recursively-rendered node via
+ * context, so drag state never has to be threaded through props and the
+ * `node`/`actions` snippets never see any of it.
+ */
+export class HierarchyState<T> {
+	adapter: TreeAdapter<T>;
+	/** Wired up by `hierarchy.svelte`; called with the resolved move on drop. */
+	onDrop?: (draggedId: string, target: DropTarget) => void;
+
+	/** id of the item currently being dragged, or `null` when idle. */
+	draggedId = $state<string | null>(null);
+	/** ids that can't accept the current drag: the dragged item + all its descendants. */
+	#invalidIds = $state<Set<string>>(new SvelteSet());
+	/** Where the dragged item would land if dropped right now. */
+	dropTarget = $state<DropTarget | null>(null);
+
+	constructor(adapter: TreeAdapter<T>) {
+		this.adapter = adapter;
+	}
+
+	get isDragging(): boolean {
+		return this.draggedId !== null;
+	}
+
+	startDrag(item: T): void {
+		this.draggedId = this.adapter.id(item);
+		this.#invalidIds = this.#collectSubtreeIds(item);
+	}
+
+	/** Whether `item` is a legal drop target for the item currently being dragged. */
+	canAcceptDrop(item: T): boolean {
+		if (this.draggedId === null) return false;
+		return !this.#invalidIds.has(this.adapter.id(item));
+	}
+
+	/** Updates the hovered drop target, rejecting positions the adapter/state disallow. */
+	setDropTarget(item: T, position: DropPosition): void {
+		if (!this.canAcceptDrop(item)) return;
+		if (position === 'inside' && this.adapter.children(item) === undefined) return;
+
+		const id = this.adapter.id(item);
+		if (this.dropTarget?.id === id && this.dropTarget.position === position) return;
+		this.dropTarget = { id, position };
+	}
+
+	/** Clears the drop target if it currently belongs to `item`. */
+	clearDropTargetFor(item: T): void {
+		if (this.dropTarget?.id === this.adapter.id(item)) this.dropTarget = null;
+	}
+
+	/** Commits the current drag as a move, then resets drag state. */
+	drop(): void {
+		if (this.draggedId && this.dropTarget) {
+			this.onDrop?.(this.draggedId, this.dropTarget);
+		}
+		this.endDrag();
+	}
+
+	endDrag(): void {
+		this.draggedId = null;
+		this.#invalidIds = new SvelteSet();
+		this.dropTarget = null;
+	}
+
+	#collectSubtreeIds(item: T): Set<string> {
+		const ids = new SvelteSet<string>();
+		const walk = (node: T) => {
+			ids.add(this.adapter.id(node));
+			this.adapter.children(node)?.forEach(walk);
+		};
+		walk(item);
+		return ids;
+	}
 }
 
-// ============================================================================
-// Drag context shared between Hierarchy.svelte (owns `items` + drag state)
-// and hierarchy-node.svelte (fires drag events at every depth). Kept here,
-// rather than prop-drilled, so recursion doesn't need to thread bindables
-// through every level.
-// ============================================================================
-
-export interface HierarchyContext<T = unknown> {
-	readonly draggedId: string | null;
-	readonly invalidTargetIds: Set<string>;
-	beginDrag(item: T): void;
-	endDrag(): void;
-	move(sourceId: string, targetId: string): void;
+export function setHierarchyContext<T>(state: HierarchyState<T>): void {
+	setContext(CONTEXT_KEY, state);
 }
 
-const HIERARCHY_KEY = Symbol('hierarchy');
-
-export function setHierarchyContext<T>(context: HierarchyContext<T>) {
-	setContext(HIERARCHY_KEY, context);
-}
-
-export function getHierarchyContext<T>(): HierarchyContext<T> {
-	return getContext(HIERARCHY_KEY);
+export function getHierarchyContext<T>(): HierarchyState<T> {
+	return getContext(CONTEXT_KEY) as HierarchyState<T>;
 }

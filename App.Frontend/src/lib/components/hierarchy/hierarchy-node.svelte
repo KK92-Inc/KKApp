@@ -1,111 +1,231 @@
 <script lang="ts" generics="T">
 	import type { Snippet } from 'svelte';
 	import { flip } from 'svelte/animate';
-	import { cn } from '$lib/utils';
-	import { type TreeAdapter, getHierarchyContext } from './state.svelte';
-	import HierarchyNode from './hierarchy-node.svelte';
+	import { getHierarchyContext, type DropPosition } from './state.svelte';
+	import Self from './hierarchy-node.svelte';
 
 	interface Props {
 		item: T;
-		adapter: TreeAdapter<T>;
 		node: Snippet<[{ item: T }]>;
 		actions?: Snippet<[{ item: T }]>;
 	}
 
-	let { item, adapter, node, actions }: Props = $props();
+	let { item, node, actions }: Props = $props();
 
-	const ctx = getHierarchyContext<T>();
+	const tree = getHierarchyContext<T>();
+	const adapter = tree.adapter;
+
+	let expanded = $state(true);
 
 	const id = $derived(adapter.id(item));
 	const children = $derived(adapter.children(item));
-	const canHaveChildren = $derived(children !== undefined);
-
-	const isDragging = $derived(ctx.draggedId === id);
-	// Blocked = would create a cycle (self/own descendant) or target can't hold children.
-	const isBlocked = $derived(
-		ctx.draggedId !== null && (ctx.invalidTargetIds.has(id) || !canHaveChildren)
+	const isContainer = $derived(children !== undefined);
+	const isDragging = $derived(tree.draggedId === id);
+	const isInvalidTarget = $derived(tree.isDragging && !tree.canAcceptDrop(item));
+	const dropPosition = $derived<DropPosition | null>(
+		tree.dropTarget?.id === id ? tree.dropTarget.position : null
 	);
-
-	let isOver = $state(false);
 
 	function handleDragStart(e: DragEvent) {
 		e.stopPropagation();
-		e.dataTransfer?.setData('text/plain', id);
-		if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
-		ctx.beginDrag(item);
+		tree.startDrag(item);
+		if (e.dataTransfer) {
+			e.dataTransfer.effectAllowed = 'move';
+			e.dataTransfer.setData('text/plain', id);
+		}
 	}
 
-	function handleDragEnd() {
-		ctx.endDrag();
+	function handleDragEnd(e: DragEvent) {
+		e.stopPropagation();
+		tree.endDrag();
 	}
 
 	function handleDragOver(e: DragEvent) {
+		if (!tree.canAcceptDrop(item)) return; // no preventDefault -> browser shows "no drop" cursor
 		e.preventDefault();
 		e.stopPropagation();
-		if (isBlocked) {
-			if (e.dataTransfer) e.dataTransfer.dropEffect = 'none';
-			return;
+
+		const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+		const ratio = (e.clientY - rect.top) / rect.height;
+
+		let position: DropPosition;
+		if (isContainer) {
+			if (ratio < 0.25) position = 'before';
+			else if (ratio > 0.75) position = 'after';
+			else position = 'inside';
+		} else {
+			position = ratio < 0.5 ? 'before' : 'after';
 		}
-		if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-		isOver = true;
+
+		tree.setDropTarget(item, position);
 	}
 
-	function handleDragLeave() {
-		isOver = false;
+	function handleDragLeave(e: DragEvent) {
+		const related = e.relatedTarget as Node | null;
+		// only clear if we're actually leaving this row, not entering a descendant of it
+		if (related && (e.currentTarget as HTMLElement).contains(related)) return;
+		tree.clearDropTargetFor(item);
 	}
 
 	function handleDrop(e: DragEvent) {
 		e.preventDefault();
 		e.stopPropagation();
-		isOver = false;
-		if (isBlocked) return;
-		const sourceId = e.dataTransfer?.getData('text/plain');
-		if (sourceId) ctx.move(sourceId, id);
+		tree.drop();
 	}
 </script>
 
-<div class="my-0.5 text-sm">
-	<div class="group inline-flex items-center gap-1.5">
-		<div
-			role="button"
-			tabindex="0"
-			draggable="true"
-			ondragstart={handleDragStart}
-			ondragend={handleDragEnd}
-			ondragover={handleDragOver}
-			ondragleave={handleDragLeave}
-			ondrop={handleDrop}
-			class={cn(
-				'inline-flex select-none items-center gap-2 rounded-lg border px-3 py-1.5 transition-all duration-150',
-				'cursor-grab active:cursor-grabbing',
-				isDragging && 'border-dashed border-primary/50 bg-primary/5 opacity-40',
-				isBlocked &&
-					!isDragging &&
-					'pointer-events-none cursor-not-allowed border-border/40 bg-muted/30 opacity-35 grayscale',
-				!isDragging &&
-					!isBlocked &&
-					'bg-card text-card-foreground shadow-xs hover:border-primary',
-				isOver && !isBlocked && 'scale-[1.02] border-primary bg-primary/10 ring-2 ring-primary/20',
-				!isOver && !isBlocked && !isDragging && 'border-border'
-			)}
+<div
+	role="treeitem"
+	tabindex="0"
+	aria-selected="false"
+	aria-expanded={isContainer ? expanded : undefined}
+	draggable="true"
+	class="hierarchy-row"
+	class:hierarchy-row--dragging={isDragging}
+	class:hierarchy-row--invalid={isInvalidTarget}
+	class:hierarchy-row--before={dropPosition === 'before'}
+	class:hierarchy-row--after={dropPosition === 'after'}
+	class:hierarchy-row--inside={dropPosition === 'inside'}
+	ondragstart={handleDragStart}
+	ondragend={handleDragEnd}
+	ondragover={handleDragOver}
+	ondragleave={handleDragLeave}
+	ondrop={handleDrop}
+>
+	{#if isContainer}
+		<button
+			type="button"
+			class="hierarchy-toggle"
+			aria-label={expanded ? 'Collapse' : 'Expand'}
+			onclick={() => (expanded = !expanded)}
 		>
-			{@render node({ item })}
-		</div>
+			<svg class:hierarchy-toggle-icon--open={expanded} viewBox="0 0 16 16" width="10" height="10">
+				<path d="M5 3l6 5-6 5" fill="none" stroke="currentColor" stroke-width="1.5" />
+			</svg>
+		</button>
+	{:else}
+		<span class="hierarchy-toggle-spacer"></span>
+	{/if}
 
-		{#if actions}
-			<div class="opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-				{@render actions({ item })}
-			</div>
-		{/if}
+	<div class="hierarchy-content">
+		{@render node({ item })}
 	</div>
 
-	{#if children && children.length > 0}
-		<div class="relative my-1 ml-4 space-y-0.5 border-l-2 border-border/60 pl-4">
-			{#each children as child (adapter.id(child))}
-				<div animate:flip={{ duration: 200 }}>
-					<HierarchyNode item={child} {adapter} {node} {actions} />
-				</div>
-			{/each}
-		</div>
-	{/if}
+	<div class="hierarchy-actions">
+		{@render actions?.({ item })}
+	</div>
 </div>
+
+{#if isContainer && expanded && children}
+	<div class="hierarchy-children">
+		{#each children as child (adapter.id(child))}
+			<div animate:flip={{ duration: 200 }}>
+				<Self item={child} {node} {actions} />
+			</div>
+		{/each}
+	</div>
+{/if}
+
+<style>
+	.hierarchy-row {
+		position: relative;
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+		padding: 0.375rem 0.5rem;
+		border-radius: var(--radius-md, 0.375rem);
+		cursor: grab;
+		user-select: none;
+	}
+
+	.hierarchy-row:hover {
+		background: var(--color-muted, rgba(0, 0, 0, 0.04));
+	}
+
+	.hierarchy-row--dragging {
+		opacity: 0.4;
+		cursor: grabbing;
+	}
+
+	.hierarchy-row--invalid {
+		cursor: not-allowed;
+	}
+	.hierarchy-row--invalid:hover {
+		background: none;
+	}
+
+	/* drop-position feedback: a line above/below, or a filled ring to show "inside" */
+	.hierarchy-row--before::before,
+	.hierarchy-row--after::after {
+		content: '';
+		position: absolute;
+		left: 1.5rem;
+		right: 0.375rem;
+		height: 2px;
+		border-radius: 1px;
+		background: var(--color-primary, #3b82f6);
+	}
+	.hierarchy-row--before::before {
+		top: -1px;
+	}
+	.hierarchy-row--after::after {
+		bottom: -1px;
+	}
+
+	.hierarchy-row--inside {
+		background: color-mix(in srgb, var(--color-primary, #3b82f6) 12%, transparent);
+		outline: 1.5px solid var(--color-primary, #3b82f6);
+		outline-offset: -1.5px;
+	}
+
+	.hierarchy-toggle {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 1rem;
+		height: 1rem;
+		flex-shrink: 0;
+		background: none;
+		border: none;
+		padding: 0;
+		color: var(--color-muted-foreground, #6b7280);
+		cursor: pointer;
+	}
+
+	.hierarchy-toggle svg {
+		transition: transform 150ms ease;
+	}
+	.hierarchy-toggle-icon--open {
+		transform: rotate(90deg);
+	}
+
+	.hierarchy-toggle-spacer {
+		width: 1rem;
+		flex-shrink: 0;
+	}
+
+	.hierarchy-content {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.hierarchy-actions {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+		opacity: 0;
+		pointer-events: none;
+		transition: opacity 100ms ease;
+	}
+	.hierarchy-row:hover .hierarchy-actions,
+	.hierarchy-row:focus-within .hierarchy-actions {
+		opacity: 1;
+		pointer-events: auto;
+	}
+
+	.hierarchy-children {
+		margin-left: 0.8rem;
+		padding-left: 0.45rem;
+		border-left: 1px solid var(--color-border, rgba(0, 0, 0, 0.1));
+	}
+</style>

@@ -1,77 +1,59 @@
 <script lang="ts" generics="T">
 	import type { Snippet } from 'svelte';
 	import { flip } from 'svelte/animate';
-	import { cn } from '$lib/utils';
+	import { HierarchyState, moveItem, setHierarchyContext, type TreeAdapter } from './state.svelte';
 	import HierarchyNode from './hierarchy-node.svelte';
-	import {
-		type TreeAdapter,
-		collectDescendantIds,
-		moveInto,
-		moveToRoot,
-		setHierarchyContext
-	} from './state.svelte';
-	import { SvelteSet } from 'svelte/reactivity';
 
 	interface Props {
-		/** Top-level items. Bind to this so drag/drop mutations propagate back. */
+		/** Top-level items. Bind to this so moves/reorders propagate back to your state. */
 		items: T[];
-		/** Tells Hierarchy how to read/mutate your item shape. */
+		/** Tells Hierarchy how to read/mutate `T` — see `TreeAdapter`. */
 		adapter: TreeAdapter<T>;
-		/** Renders a single item. Receives only `{ item }` — nothing DnD-related. */
+		/** Renders the content of a single item. Receives only `{ item }`. */
 		node: Snippet<[{ item: T }]>;
-		/** Optional per-item actions, shown on hover. Also receives only `{ item }`. */
+		/** Renders hover actions for a single item. Receives only `{ item }`. */
 		actions?: Snippet<[{ item: T }]>;
 		class?: string;
 	}
 
 	let { items = $bindable(), adapter, node, actions, class: className }: Props = $props();
 
-	let draggedId = $state<string | null>(null);
-	let invalidTargetIds = $state<Set<string>>(new Set());
+	const tree = new HierarchyState<T>(adapter);
+	tree.onDrop = (draggedId, target) => moveItem(adapter, items, draggedId, target);
+	setHierarchyContext(tree);
 
-	setHierarchyContext<T>({
-		get draggedId() {
-			return draggedId;
-		},
-		get invalidTargetIds() {
-			return invalidTargetIds;
-		},
-		beginDrag(item) {
-			draggedId = adapter.id(item);
-			invalidTargetIds = collectDescendantIds(adapter, item);
-			invalidTargetIds.add(draggedId);
-		},
-		endDrag() {
-			draggedId = null;
-			invalidTargetIds = new SvelteSet();
-		},
-		move(sourceId, targetId) {
-			moveInto(adapter, items, sourceId, targetId);
-		}
-	});
+	// Fallback drop zone: catches drags released in the empty space around/below
+	// the rendered rows (nothing else stops propagation there), so you can always
+	// drop at the very end of the top-level list.
+	function handleRootDragOver(e: DragEvent) {
+		if (!tree.isDragging || items.length === 0) return;
+		e.preventDefault();
+		tree.setDropTarget(items[items.length - 1], 'after');
+	}
+
+	function handleRootDrop(e: DragEvent) {
+		e.preventDefault();
+		tree.drop();
+	}
 </script>
 
-<!--
-	Dropping directly on the background (rather than on a node, which stops
-	propagation) unparents the dragged item back to the top level. Give this
-	container some min-height in your own layout if you want an obvious
-	place to drop things back to root.
--->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
-	class={cn('flex flex-col gap-0.5', className)}
-	ondragover={(e) => {
-		if (draggedId) e.preventDefault();
-	}}
-	ondrop={(e) => {
-		e.preventDefault();
-		const sourceId = e.dataTransfer?.getData('text/plain');
-		if (sourceId) moveToRoot(adapter, items, sourceId);
-	}}
+	role="tree"
+	tabindex="-1"
+	class={['hierarchy', className]}
+	ondragover={handleRootDragOver}
+	ondrop={handleRootDrop}
 >
 	{#each items as item (adapter.id(item))}
 		<div animate:flip={{ duration: 200 }}>
-			<HierarchyNode {item} {adapter} {node} {actions} />
+			<HierarchyNode {item} {node} {actions} />
 		</div>
 	{/each}
 </div>
+
+<style>
+	.hierarchy {
+		display: flex;
+		flex-direction: column;
+	}
+</style>
