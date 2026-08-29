@@ -222,7 +222,6 @@ var backend = builder.AddProject<Projects.App_Backend_API>("backend")
 // ============================================================================
 
 var frontend = builder.AddViteApp("frontend", "./App.Frontend")
-    .WithArgs("--host")
     .WithHttpHealthCheck("/health")
     .WithEnvironment("KC_SECRET", studentIntraSecret)
     .WithEnvironment("KC_ORIGIN", kcHostname)
