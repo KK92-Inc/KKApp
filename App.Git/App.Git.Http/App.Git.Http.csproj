@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <ContainerFamily>noble-chiseled</ContainerFamily>
     <ContainerBaseImage>mcr.microsoft.com/dotnet/aspnet:10.0</ContainerBaseImage>
+    <ContainerUser>10001</ContainerUser>
   </PropertyGroup>
 
   <ItemGroup>

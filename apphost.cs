@@ -189,10 +189,65 @@ else
 {
     var dir = Path.Combine(builder.AppHostDirectory, "tmp", "repos");
     api.WithEnvironment("REPOSITORY_DIRECTORY", dir);
+
+    // git-api runs as a native process on the host in dev (not containerized),
+    // so it writes to ./tmp/repos as whatever OS user is running `dotnet run`.
+    // git-ssh runs containerized and bind-mounts the same directory, then
+    // chowns it on boot -- point that chown at the *host* user/group instead
+    // of a hardcoded container uid, or the two processes fight over ownership
+    // and you end up needing `sudo chown -R $USER` after every ssh restart.
+    var (hostUid, hostGid) = GetHostUidGid();
+
     ssh.WithEnvironment("REPOSITORY_DIRECTORY", "/home/git/repos") // container-side path, not host path
         .WithEndpoint(port: 2222, targetPort: 22, scheme: "tcp", name: "ssh", isExternal: true)
+        .WithEnvironment("GIT_UID", hostUid)
+        .WithEnvironment("GIT_GID", hostGid)
+        // Rootless Podman puts containers in a user namespace by default, so
+        // a chown to "host uid 1000" inside the container actually lands on
+        // some remapped uid (from /etc/subuid) on the host -- NOT on the
+        // developer's real uid. --userns=keep-id disables that remapping so
+        // container uid N really is host uid N, which is what makes the
+        // GIT_UID/GIT_GID chown in entrypoint.sh line up with the host user
+        // that git-api (running natively) actually writes as. This flag is
+        // Podman-specific; drop it if this project standardizes on Docker.
+        .WithContainerRuntimeArgs("--userns=keep-id")
         .WithBindMount("./tmp/repos", "/home/git/repos")
         .WithBindMount("./Configurations/Shell/Keys", "/etc/ssh/keys");
+}
+
+// ============================================================================
+// Resolves the current developer's uid/gid so the git-ssh container can chown
+// the bind-mounted repo storage to match the host user that git-api (running
+// natively in dev) actually writes as. Falls back to 10001:10001 on platforms
+// without POSIX ids (Windows), where bind-mount ownership isn't enforced the
+// same way anyway.
+// ============================================================================
+static (string uid, string gid) GetHostUidGid()
+{
+    if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS())
+        return ("10001", "10001");
+
+    static string Run(string args)
+    {
+        var psi = new System.Diagnostics.ProcessStartInfo("id", args)
+        {
+            RedirectStandardOutput = true,
+            UseShellExecute = false,
+        };
+        using var proc = System.Diagnostics.Process.Start(psi)!;
+        var output = proc.StandardOutput.ReadToEnd().Trim();
+        proc.WaitForExit();
+        return output;
+    }
+
+    try
+    {
+        return (Run("-u"), Run("-g"));
+    }
+    catch
+    {
+        return ("10001", "10001");
+    }
 }
 
 

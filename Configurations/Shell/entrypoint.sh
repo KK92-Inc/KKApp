@@ -29,7 +29,22 @@ chmod 640 /etc/sshenv
 
 # Fixing ownership on the actual git repository storage. As volumes are
 # created by root.
-chown -R git:git /home/git/repos
+#
+# GIT_UID/GIT_GID default to the "git" user baked into the image (10001:10001,
+# see Dockerfile.ssh -- picked to avoid the "bun" account oven/bun:1-alpine
+# already owns at 1000:1000), which is what the production git-api container
+# is pinned to run as (see App.Git.Http.csproj -> <ContainerUser>).
+#
+# In local dev, git-api runs natively on the host (not containerized), so
+# apphost.cs overrides GIT_UID/GIT_GID with the *host* user's actual uid/gid
+# for this container, so the bind-mounted ./tmp/repos ends up owned by
+# whichever user is actually running `dotnet run` -- no manual chown needed.
+GIT_UID="${GIT_UID:-10001}"
+GIT_GID="${GIT_GID:-10001}"
+
+chown -R "${GIT_UID}:${GIT_GID}" /home/git/repos
+chmod -R 775 /home/git/repos
+chmod g+s /home/git/repos
 
 # ============================================================================
 
