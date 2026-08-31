@@ -14,6 +14,11 @@
 	import * as ButtonGroup from '$lib/components/button-group';
 	import * as InputGroup from '$lib/components/input-group';
 	import Paginate from '$lib/components/paginate.svelte';
+	import * as Alert from '$lib/components/alert';
+	import Separator from '$lib/components/separator/separator.svelte';
+	import { Badge } from '$lib/components/badge';
+	import * as Card from '$lib/components/card';
+
 	const context = Page.getContext();
 
 	let query = $state('');
@@ -41,6 +46,7 @@
 				<Search />
 			</InputGroup.Addon>
 		</InputGroup.Root>
+
 		<svelte:boundary>
 			{@const promise = Project.getPage({ name: query })}
 			{@const page = await promise}
@@ -52,23 +58,11 @@
 				<Skeleton class="h-20 w-full" />
 			{/snippet}
 			{#each filtered as project, index (project.id)}
-				{@const thumbnail = project.avatarUrl ?? `https://placehold.co/128x128?text=${project.name}`}
-				<Item.Root variant="muted">
-					<Item.Media>
-						<Avatar.Root>
-							<Avatar.Image src={thumbnail} class="grayscale" />
-							<Avatar.Fallback>{project.name.charAt(0)}</Avatar.Fallback>
-						</Avatar.Root>
-					</Item.Media>
-					<Item.Content class="gap-1">
-						<Item.Title>{project.name}</Item.Title>
-						<Item.Description>{project.description}</Item.Description>
-					</Item.Content>
-					<Item.Actions>
+				<Item.Project {project}>
+					{#snippet actions()}
 						<Button
-							variant="ghost"
+							variant="secondary"
 							size="icon"
-							class="rounded-full"
 							onclick={() => {
 								context.projects = [
 									...context.projects,
@@ -76,20 +70,20 @@
 										id: project.id,
 										description: project.description,
 										name: project.name,
-										thumbnail
+										thumbnail: ""
 									}
 								];
 							}}
 						>
 							<Plus />
 						</Button>
-					</Item.Actions>
-				</Item.Root>
+					{/snippet}
+				</Item.Project>
 				{#if index !== filtered.length - 1}
 					<Item.Separator />
 				{/if}
 			{:else}
-				<Empty.Root class="p-0 border">
+				<Empty.Root class="border p-0">
 					<Empty.Header>
 						<Empty.Media variant="icon">
 							<FolderCodeIcon />

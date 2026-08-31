@@ -123,7 +123,7 @@ export class Context {
 		}, { onValidation: (fields) => this.errors = fields });
 	}
 
-	private get target() {
+	public get target() {
 		return this.workspace === "root"
 			? Workspace.root()
 			: Workspace.current();

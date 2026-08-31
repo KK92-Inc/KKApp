@@ -3,6 +3,7 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+#pragma warning disable ASPIREJAVASCRIPT001
 #:sdk Aspire.AppHost.Sdk@13.5.3
 #:package Scalar.Aspire@0.8.45
 #:package Aspire.Npgsql@13.5.3
@@ -14,12 +15,15 @@
 #:project App.Git/App.Git.Http/App.Git.Http.csproj
 #:project App.Backend/API/App.Backend.API.csproj
 
+using Microsoft.Extensions.DependencyInjection;
+using OpenTelemetry.Exporter;
 using Scalar.Aspire;
 
 // ============================================================================
 
 var builder = DistributedApplication.CreateBuilder(args);
 builder.AddDockerComposeEnvironment("env").WithDashboard(true);
+builder.Services.Configure<OtlpExporterOptions>(o => o.Headers = $"x-otlp-api-key={"SecretSauce"}");
 
 // The main domain this app is running under.
 // Propregates to services which resolve to their own hardcoded subdomains.
@@ -244,7 +248,9 @@ var backend = builder.AddProject<Projects.App_Backend_API>("backend")
 // - Frontend waits for Backend & Keycloak
 // ============================================================================
 
+
 var frontend = builder.AddViteApp("frontend", "./App.Frontend")
+    .PublishAsNodeServer("build/index.js", "build")
     .WithHttpHealthCheck("/health")
     .WithEnvironment("KC_SECRET", studentIntraSecret)
     .WithEnvironment("KC_ORIGIN", kcHostname)

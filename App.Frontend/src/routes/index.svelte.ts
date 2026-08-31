@@ -9,9 +9,9 @@ import {
 	FlaskConical,
 	GraduationCap,
 	HeartHandshake,
-	Key,
 	KeyRound,
 	Sparkles,
+	Target,
 	Trophy,
 	UserPen,
 	Users
@@ -74,7 +74,27 @@ const meta: Partial<Record<RouteId, MetaEntry>> = {
 		icon: Users,
 		label: 'Users',
 		scopes: ['users:read']
-	}
+	},
+	'/(app)/(entities)/workspace/[id]/projects': {
+		icon: Archive,
+		label: 'View Projects',
+		scopes: ['projects:read', 'workspaces:read']
+	},
+	'/(app)/(entities)/workspace/[id]/goals': {
+		icon: Trophy,
+		label: 'View Goals',
+		scopes: ['goals:read', 'workspaces:read']
+	},
+	'/(app)/(entities)/workspace/[id]/rubrics': {
+		icon: Target,
+		label: 'View Rubrics',
+		scopes: ['cursus:read', 'workspaces:read']
+	},
+	'/(app)/(entities)/workspace/[id]/cursi': {
+		icon: GraduationCap,
+		label: 'View Cursus',
+		scopes: ['cursus:read', 'workspaces:read']
+	},
 };
 
 // ============================================================================

@@ -8,6 +8,9 @@ import Title from "./item-title.svelte";
 import Description from "./item-description.svelte";
 import Actions from "./item-actions.svelte";
 import Media from "./item-media.svelte";
+import Project from "./entities/item-project.svelte"
+import Goal from "./entities/item-goal.svelte"
+import Cursus from "./entities/item-cursus.svelte"
 
 export {
 	Root,
@@ -20,6 +23,9 @@ export {
 	Description,
 	Actions,
 	Media,
+	Project,
+	Goal,
+	Cursus,
 	//
 	Root as Item,
 	Group as ItemGroup,
@@ -31,4 +37,7 @@ export {
 	Description as ItemDescription,
 	Actions as ItemActions,
 	Media as ItemMedia,
+	Project as ItemProject,
+	Goal as ItemGoal,
+	Cursus as ItemCursus,
 };
