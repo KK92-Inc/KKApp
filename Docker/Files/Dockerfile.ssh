@@ -1,3 +1,8 @@
+# ============================================================================
+# Copyright (c) 2026 - W2Inc, All Rights Reserved.
+# See README.md in the project root for license information.
+# ============================================================================
+
 FROM oven/bun:1-alpine AS build-auth
 
 WORKDIR /app
@@ -22,16 +27,6 @@ FROM oven/bun:1-alpine
 
 ARG GIT_UID=10001
 ARG GIT_GID=10001
-
-# NOTE: 1000 is NOT available here -- oven/bun:1-alpine already bakes in a
-# "bun" user/group at uid/gid 1000 (see oven-sh/bun's own alpine Dockerfile),
-# so building this image as-is with GIT_UID/GID=1000 fails at addgroup with
-# "gid '1000' in use". 10001 is clear of that account, Alpine's other
-# reserved system ids, and the aspnet chiseled non-root uid (64198) used by
-# git-api's container (see App.Git.Http.csproj -> <ContainerUser>). If you
-# ever change this value, it must be changed identically in
-# App.Git.Http.csproj's <ContainerUser> and nowhere else needs to match at
-# build time (entrypoint.sh reads the actual runtime uid/gid from env instead).
 
 RUN apk add --no-cache openssh git ca-certificates \
     && addgroup -S -g ${GIT_GID} git \
