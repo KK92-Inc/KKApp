@@ -12,7 +12,7 @@
 	import { Calendar, Code, ExternalLink, FileText, Globe, Link2, MessageCircle } from '@lucide/svelte';
 	import type { PageProps } from './$types';
 	import Markdown from '$lib/components/markdown/markdown.svelte';
-	import { PUBLIC_S3_ENDPOINT } from '$env/static/public';
+	import { env } from '$env/dynamic/public';
 	import { DateFormatter } from '@internationalized/date';
 
 	const { params }: PageProps = $props();
@@ -23,7 +23,7 @@
 	});
 
 	const user = $derived(await User.get(params.userId));
-	const avatar = $derived(`${PUBLIC_S3_ENDPOINT}/avatars/${user.id}`);
+	const avatar = $derived(`${env.PUBLIC_S3_ENDPOINT}/avatars/${user.id}`);
 	const socials = $derived(
 		[
 			{ label: 'Website', url: user.details?.websiteUrl, icon: Globe },

@@ -13,9 +13,9 @@
 	import * as DropdownMenu from '$lib/components/dropdown-menu/';
 	import { page } from '$app/state';
 	import { logout } from '$lib/remotes/account.remote';
-	import { PUBLIC_S3_ENDPOINT } from '$env/static/public';
+	import { env } from '$env/dynamic/public';
 
-	const avatar = $derived(`${PUBLIC_S3_ENDPOINT}/avatars/${page.data.session.userId}`);
+	const avatar = $derived(`${env.PUBLIC_S3_ENDPOINT}/avatars/${page.data.session.userId}`);
 </script>
 
 <ButtonGroup.Root>

@@ -158,10 +158,6 @@ jobs:
             type=ref,event=branch
             type=ref,event=pr
 
-      - name: Setup frontend environment file
-        if: matrix.name == 'kk-frontend'
-        run: cp ./App.Frontend/.env.ci ./App.Frontend/.env
-
       - name: Stage Dockerfile into build context
         if: matrix.needs_copy
         run: cp ${{ matrix.source_dockerfile }} ${{ matrix.context }}/Dockerfile
