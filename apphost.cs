@@ -66,6 +66,7 @@ var postgres = builder.AddPostgres("database", port: 5432)
     .WithLifetime(ContainerLifetime.Persistent);
 
 var cache = builder.AddValkey("valkey", port: 6379)
+    .WithImageTag("9")
     .WithDataVolume(name: "cache-volume")
     .WithLifetime(ContainerLifetime.Persistent);
 
@@ -77,6 +78,7 @@ var keycloakDb = postgres.AddDatabase("keycloak-db");
 // - We self host our own S3 Object storage to avoid costs
 // ============================================================================
 
+// TODO: Pin to a version
 var storage = builder.AddContainer("rustfs", "rustfs/rustfs", "latest")
     .WithArgs("/data")
     .WithVolume("rustfs-volume", "/data")
@@ -88,7 +90,7 @@ var storage = builder.AddContainer("rustfs", "rustfs/rustfs", "latest")
     .WithHttpHealthCheck("/health", endpointName: "s3")
     .WithLifetime(ContainerLifetime.Persistent);
 
-// Pin to consistent host ports for `mc`/S3 clients
+// Pin to consistent host ports for clients
 if (!builder.ExecutionContext.IsPublishMode)
 {
     storage.WithEndpoint("s3", e => e.Port = 9000);
@@ -198,12 +200,11 @@ else
     // of a hardcoded container uid, or the two processes fight over ownership
     // and you end up needing `sudo chown -R $USER` after every ssh restart.
     var (hostUid, hostGid) = GetHostUidGid();
-
     ssh.WithEnvironment("REPOSITORY_DIRECTORY", "/home/git/repos") // container-side path, not host path
         .WithEndpoint(port: 2222, targetPort: 22, scheme: "tcp", name: "ssh", isExternal: true)
         .WithEnvironment("GIT_UID", hostUid)
         .WithEnvironment("GIT_GID", hostGid)
-        // --userns=keep-id alone doesn't just remap uids -- with no explicit --user, it also
+        // --userns=keep-id alone doesn't just remap uids with no explicit --user, it also
         // makes the container's default process run AS your host uid instead of root, even
         // though the image has no USER directive. entrypoint.sh needs real root (writing
         // /etc/sshenv, chowning /home/git/repos to an arbitrary uid), so force it explicitly.
@@ -212,42 +213,6 @@ else
         .WithBindMount("./tmp/repos", "/home/git/repos")
         .WithBindMount("./Configurations/Shell/Keys", "/etc/ssh/keys");
 }
-
-// ============================================================================
-// Resolves the current developer's uid/gid so the git-ssh container can chown
-// the bind-mounted repo storage to match the host user that git-api (running
-// natively in dev) actually writes as. Falls back to 10001:10001 on platforms
-// without POSIX ids (Windows), where bind-mount ownership isn't enforced the
-// same way anyway.
-// ============================================================================
-static (string uid, string gid) GetHostUidGid()
-{
-    if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS())
-        return ("10001", "10001");
-
-    static string Run(string args)
-    {
-        var psi = new System.Diagnostics.ProcessStartInfo("id", args)
-        {
-            RedirectStandardOutput = true,
-            UseShellExecute = false,
-        };
-        using var proc = System.Diagnostics.Process.Start(psi)!;
-        var output = proc.StandardOutput.ReadToEnd().Trim();
-        proc.WaitForExit();
-        return output;
-    }
-
-    try
-    {
-        return (Run("-u"), Run("-g"));
-    }
-    catch
-    {
-        return ("10001", "10001");
-    }
-}
-
 
 // ============================================================================
 // Backend
@@ -321,3 +286,39 @@ builder.AddScalarApiReference("scalar", o => o.WithTheme(ScalarTheme.Saturn))
 // ============================================================================
 
 builder.Build().Run();
+
+// ============================================================================
+// Resolves the current developer's uid/gid so the git-ssh container can chown
+// the bind-mounted repo storage to match the host user that git-api (running
+// natively in dev) actually writes as. Falls back to 10001:10001 on platforms
+// without POSIX ids (Windows), where bind-mount ownership isn't enforced the
+// same way anyway.
+// ============================================================================
+
+static (string uid, string gid) GetHostUidGid()
+{
+    if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS())
+        return ("10001", "10001");
+
+    static string Run(string args)
+    {
+        var psi = new System.Diagnostics.ProcessStartInfo("id", args)
+        {
+            RedirectStandardOutput = true,
+            UseShellExecute = false,
+        };
+        using var proc = System.Diagnostics.Process.Start(psi)!;
+        var output = proc.StandardOutput.ReadToEnd().Trim();
+        proc.WaitForExit();
+        return output;
+    }
+
+    try
+    {
+        return (Run("-u"), Run("-g"));
+    }
+    catch
+    {
+        return ("10001", "10001");
+    }
+}
