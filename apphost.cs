@@ -161,8 +161,6 @@ var ssh = builder.AddDockerfile("git-ssh", ".", "Docker/Files/Dockerfile.ssh")
     .WithReference(cache)
     .WaitFor(backendDb)
     .WaitFor(cache)
-    .WaitFor(api)
-    // TODO: Use WithRef instead maybe ?
     .WithEnvironment("KC_ORIGIN", auth.GetEndpoint("http"))
     .WithEnvironment("KC_SECRET", adminIntraSecret)
     .WithLifetime(ContainerLifetime.Persistent);
@@ -170,13 +168,16 @@ var ssh = builder.AddDockerfile("git-ssh", ".", "Docker/Files/Dockerfile.ssh")
 if (builder.ExecutionContext.IsPublishMode)
 {
     api.WithEnvironment("REPOSITORY_DIRECTORY", "/home/git/repos")
+       .WaitFor(ssh)
        .PublishAsDockerComposeService((resource, service) =>
        {
            service.Volumes.Add(new()
            {
                Name = "git-repos",
+               Source = "git-repos",
                Target = "/home/git/repos",
-               Type = "volume"
+               Type = "volume",
+               ReadOnly = false
            });
        });
 
@@ -202,15 +203,12 @@ else
         .WithEndpoint(port: 2222, targetPort: 22, scheme: "tcp", name: "ssh", isExternal: true)
         .WithEnvironment("GIT_UID", hostUid)
         .WithEnvironment("GIT_GID", hostGid)
-        // Rootless Podman puts containers in a user namespace by default, so
-        // a chown to "host uid 1000" inside the container actually lands on
-        // some remapped uid (from /etc/subuid) on the host -- NOT on the
-        // developer's real uid. --userns=keep-id disables that remapping so
-        // container uid N really is host uid N, which is what makes the
-        // GIT_UID/GIT_GID chown in entrypoint.sh line up with the host user
-        // that git-api (running natively) actually writes as. This flag is
-        // Podman-specific; drop it if this project standardizes on Docker.
-        .WithContainerRuntimeArgs("--userns=keep-id")
+        // --userns=keep-id alone doesn't just remap uids -- with no explicit --user, it also
+        // makes the container's default process run AS your host uid instead of root, even
+        // though the image has no USER directive. entrypoint.sh needs real root (writing
+        // /etc/sshenv, chowning /home/git/repos to an arbitrary uid), so force it explicitly.
+        // keep-id still does its job of making that root's chown land on your real host uid.
+        .WithContainerRuntimeArgs("--userns=keep-id", "--user=0:0")
         .WithBindMount("./tmp/repos", "/home/git/repos")
         .WithBindMount("./Configurations/Shell/Keys", "/etc/ssh/keys");
 }

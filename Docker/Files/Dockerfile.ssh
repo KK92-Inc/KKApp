@@ -41,6 +41,8 @@ RUN apk add --no-cache openssh git ca-certificates \
     && addgroup git sshenv \
     && addgroup nobody sshenv \
     && mkdir -p /var/run/sshd /home/git/repos \
+    && chown ${GIT_UID}:${GIT_GID} /home/git/repos \
+    && chmod 775 /home/git/repos \
     && git config --system safe.directory '*'
 
 COPY --from=build-shell /app/output/shell /home/git/shell
