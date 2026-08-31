@@ -132,8 +132,12 @@ services:
     volumes:
       - type: "volume"
         target: "/home/git/repos"
+        source: "git-repos"
+        read_only: false
     depends_on:
       database:
+        condition: "service_started"
+      git-ssh:
         condition: "service_started"
     networks:
       - "aspire"
@@ -171,8 +175,6 @@ services:
       database:
         condition: "service_started"
       valkey:
-        condition: "service_started"
-      git-api:
         condition: "service_started"
     networks:
       - "aspire"
