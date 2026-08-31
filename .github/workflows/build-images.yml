@@ -118,7 +118,7 @@ jobs:
           - name: kk-frontend
             context: ./App.Frontend
             source_dockerfile: ./Docker/Files/Dockerfile.fe
-            needs_copy: false
+            needs_copy: true
           - name: kk-keycloak
             context: ./Configurations/Keycloak
             source_dockerfile: ./Docker/Files/Dockerfile.auth
