@@ -265,6 +265,7 @@ public static class Services
         {
             if (!builder.Environment.IsEnvironment("Testing"))
             {
+                opts.UseRuntimeCompilation();
                 opts.PersistMessagesWithPostgresql(cs!).EnableMessageTransport(o => o.AutoProvision());
                 opts.PublishAllMessages().ToPostgresqlQueue("outbound");
                 opts.ListenToPostgresqlQueue("outbound").MaximumMessagesToReceive(50);

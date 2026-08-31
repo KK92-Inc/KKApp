@@ -3,13 +3,13 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-#:sdk Aspire.AppHost.Sdk@13.4.6
+#:sdk Aspire.AppHost.Sdk@13.5.3
 #:package Scalar.Aspire@0.8.45
-#:package Aspire.Npgsql@13.4.6
-#:package Aspire.Hosting.Docker@13.4.6
-#:package Aspire.Hosting.Valkey@13.4.6
-#:package Aspire.Hosting.PostgreSQL@13.4.6
-#:package Aspire.Hosting.JavaScript@13.4.6
+#:package Aspire.Npgsql@13.5.3
+#:package Aspire.Hosting.Docker@13.5.3
+#:package Aspire.Hosting.Valkey@13.5.3
+#:package Aspire.Hosting.PostgreSQL@13.5.3
+#:package Aspire.Hosting.JavaScript@13.5.3
 #:project App.Migrations/Migrations.csproj
 #:project App.Git/App.Git.Http/App.Git.Http.csproj
 #:project App.Backend/API/App.Backend.API.csproj
@@ -19,7 +19,7 @@ using Scalar.Aspire;
 // ============================================================================
 
 var builder = DistributedApplication.CreateBuilder(args);
-builder.AddDockerComposeEnvironment("env").WithDashboard(false);
+builder.AddDockerComposeEnvironment("env").WithDashboard(true);
 
 // The main domain this app is running under.
 // Propregates to services which resolve to their own hardcoded subdomains.
@@ -53,6 +53,10 @@ var feRedirect = builder.ExecutionContext.IsPublishMode
 var kcHostname = builder.ExecutionContext.IsPublishMode
     ? ReferenceExpression.Create($"https://auth.{domain}")
     : ReferenceExpression.Create($"http://keycloak-w2inc.dev.{domain}:8080");
+
+var s3Hostname = builder.ExecutionContext.IsPublishMode
+    ? ReferenceExpression.Create($"https://s3.{domain}")
+    : ReferenceExpression.Create($"http://rustfs-w2inc.dev.{domain}:9001");
 
 // ============================================================================
 // Database + Cache
@@ -248,7 +252,7 @@ var frontend = builder.AddViteApp("frontend", "./App.Frontend")
     .WithEnvironment("S3_SECRET_ACCESS_KEY", s3pwd)
     .WithEnvironment("PUBLIC_GIT_URL", $"git@{domain}")
     .WithEnvironment("PUBLIC_API_URL", backend.GetEndpoint("http"))
-    .WithEnvironment("PUBLIC_S3_ENDPOINT", storage.GetEndpoint("s3"))
+    .WithEnvironment("PUBLIC_S3_ENDPOINT", s3Hostname)
     .WithEnvironment("ORIGIN", feHostname)
     .WithReference(backend)
     .WithReference(cache)
@@ -276,6 +280,7 @@ else
 
 builder.AddScalarApiReference("scalar", o => o.WithTheme(ScalarTheme.Saturn))
     .WithReference(backend)
+    .WaitFor(frontend)
     .WithApiReference(backend, o =>
     {
         o.WithDefaultHttpClient(ScalarTarget.C, ScalarClient.HttpClient);

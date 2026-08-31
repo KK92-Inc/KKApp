@@ -1,4 +1,14 @@
 services:
+  env-dashboard:
+    image: "mcr.microsoft.com/dotnet/nightly/aspire-dashboard:13.5"
+    ports:
+      - "18888"
+    expose:
+      - "18889"
+      - "18890"
+    networks:
+      - "aspire"
+    restart: "always"
   database:
     image: "${DATABASE_IMAGE}"
     environment:
@@ -16,7 +26,7 @@ services:
     networks:
       - "aspire"
   valkey:
-    image: "docker.io/valkey/valkey:9.1"
+    image: "docker.io/valkey/valkey:9"
     command:
       - "-c"
       - "valkey-server --requirepass $$VALKEY_PASSWORD --save 60 1"
@@ -63,6 +73,9 @@ services:
       DB_URI: "postgresql://postgres:${DATABASE_PASSWORD}@database:5432/db"
       DB_JDBCCONNECTIONSTRING: "jdbc:postgresql://database:5432/db"
       DB_DATABASENAME: "db"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://env-dashboard:18889"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_SERVICE_NAME: "migration-job"
     depends_on:
       database:
         condition: "service_started"
@@ -127,6 +140,9 @@ services:
       DB_JDBCCONNECTIONSTRING: "jdbc:postgresql://database:5432/db"
       DB_DATABASENAME: "db"
       REPOSITORY_DIRECTORY: "/home/git/repos"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://env-dashboard:18889"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_SERVICE_NAME: "git-api"
     expose:
       - "${GIT_API_PORT}"
     volumes:
@@ -203,6 +219,9 @@ services:
       KeycloakStudent__auth-server-url: "http://keycloak:8080"
       Resend__Secret: "${BE_RESEND_TOKEN}"
       Git__BaseUrl: "http://git-api:${GIT_API_PORT}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://env-dashboard:18889"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_SERVICE_NAME: "backend"
     expose:
       - "${BACKEND_PORT}"
     depends_on:
@@ -218,43 +237,6 @@ services:
         condition: "service_started"
     networks:
       - "aspire"
-  frontend:
-    image: "${FRONTEND_IMAGE}"
-    environment:
-      NODE_ENV: "production"
-      PORT: "8000"
-      KC_SECRET: "${KC_STUDENT_INTRA_SECRET}"
-      KC_ORIGIN: "https://auth.${DOMAIN}"
-      S3_ACCESS_KEY_ID: "${S3_ACCESS_KEY_ID}"
-      S3_SECRET_ACCESS_KEY: "${S3_SECRET_ACCESS_KEY}"
-      PUBLIC_GIT_URL: "git@${DOMAIN}"
-      PUBLIC_API_URL: "http://backend:${BACKEND_PORT}"
-      PUBLIC_S3_ENDPOINT: "http://rustfs:9000"
-      ORIGIN: "https://intra.${DOMAIN}"
-      BACKEND_HTTP: "http://backend:${BACKEND_PORT}"
-      services__backend__http__0: "http://backend:${BACKEND_PORT}"
-      BACKEND_HTTPS: "https://backend:${BACKEND_PORT}"
-      ConnectionStrings__valkey: "valkey:6379,password=${VALKEY_PASSWORD}"
-      VALKEY_HOST: "valkey"
-      VALKEY_PORT: "6379"
-      VALKEY_PASSWORD: "${VALKEY_PASSWORD}"
-      VALKEY_URI: "valkey://:${VALKEY_PASSWORD}@valkey:6379"
-      XFF_DEPTH: "1"
-      PROTOCOL_HEADER: "x-forwarded-proto"
-      HOST_HEADER: "x-forwarded-host"
-      PORT_HEADER: "x-forwarded-port"
-      ADDRESS_HEADER: "True-Client-IP"
-    expose:
-      - "8000"
-    depends_on:
-      backend:
-        condition: "service_started"
-      keycloak:
-        condition: "service_started"
-      valkey:
-        condition: "service_started"
-    networks:
-      - "aspire"
   scalar:
     image: "scalarapi/aspire-api-reference:0.8.45"
     environment:
@@ -267,6 +249,9 @@ services:
       BACKEND_HTTPS: "https://backend:${BACKEND_PORT}"
     expose:
       - "8080"
+    depends_on:
+      frontend:
+        condition: "service_started"
     networks:
       - "aspire"
 networks:
