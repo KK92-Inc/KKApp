@@ -35,11 +35,17 @@ export class Context {
 	});
 
 	private dialog = useDialog();
+	private original = $state.snapshot(this.fields);
 
 	/** Hydrate the context */
 	public async hydrate() {
 		const id = this.goalId();
-		if (!id) return;
+		if (!id) {
+			// NOTE(W2): Sync the fields again else we risk de-sync.
+			this.projects = [];
+			this.fields = this.original;
+			return;
+		}
 
 		const [goal, projects] = await Promise.all([
 			await Goal.get(id),
