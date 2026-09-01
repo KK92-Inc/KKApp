@@ -7,16 +7,14 @@
 	import WhiteLabel from '$lib/components/white-label.svelte';
 
 	const quotes = [
-		{ text: 'The only true wisdom is in knowing you know nothing.', author: 'Socrates' },
+		{ text: 'If you complain too much about the tool, you should make one from scratch', author: 'Terry A Davis' },
 		{ text: 'Education is not the filling of a pail, but the lighting of a fire.', author: 'W.B. Yeats' },
 		{ text: 'The mind is not a vessel to be filled, but a fire to be kindled.', author: 'Plutarch' },
-		{
-			text: 'Live as if you were to die tomorrow. Learn as if you were to live forever.',
-			author: 'Mahatma Gandhi'
-		},
 		{ text: 'The only way to do great work is to love what you do.', author: 'Steve Jobs' },
 		{ text: 'In the middle of difficulty lies opportunity.', author: 'Albert Einstein' },
-		{ text: "The more I learn, the more I realize how much I don't know.", author: 'Albert Einstein' }
+		{ text: "An idiot admires complexity, a genius admires simplicity.", author: 'Terry A Davis' },
+		{ text: "Stay Hungry, Stay foolish.", author: 'Steve Jobs' },
+		{ text: "Developers! Developers! Developers! Developers! Developers! Developers! Developers!", author: 'Steve Ballmer' }
 	];
 
 	let index = $state(0);

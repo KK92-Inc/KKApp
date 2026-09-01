@@ -88,7 +88,7 @@ const meta: Partial<Record<RouteId, MetaEntry>> = {
 	'/(app)/(entities)/workspace/[id]/rubrics': {
 		icon: Target,
 		label: 'View Rubrics',
-		scopes: ['cursus:read', 'workspaces:read']
+		scopes: ['rubrics:read', 'rubrics:write', 'workspaces:read']
 	},
 	'/(app)/(entities)/workspace/[id]/cursi': {
 		icon: GraduationCap,

@@ -10,11 +10,10 @@
 
 	interface Props {
 		user: components['schemas']['UserDO'];
-		actions?: Snippet;
+		actions?: Snippet<[ ]>;
 	}
 
 	let { user, actions }: Props = $props();
-
 	const formatter = new DateFormatter(page.data.locale, {
 		day: 'numeric',
 		month: 'long',

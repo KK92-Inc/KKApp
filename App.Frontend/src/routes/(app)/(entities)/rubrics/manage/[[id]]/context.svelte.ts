@@ -111,7 +111,7 @@ export class Context {
 				...this.fields,
 				commit: {
 					message: "Initial Commit",
-					files: [{ path: "readme.md", content: bytes.toBase64() }]
+					files: [{ path: "README.md", content: bytes.toBase64() }]
 				}
 			});
 

@@ -29,7 +29,6 @@
 	import Label from '$lib/components/label/label.svelte';
 	import { Toggle } from '$lib/components/toggle';
 	import * as Select from '$lib/components/select';
-	import UserTile from '$lib/components/user-tile.svelte';
 
 	const orderByOptions = v.picklist(['CreatedAt', 'UpdatedAt']);
 	const url = useSearchParams({
@@ -162,13 +161,13 @@
 
 		<div class="flex gap-4">
 			{#each page.data as user (user.id)}
-				<UserTile {user}>
+				<Item.User {user}>
 					{#snippet actions()}
 						<Button href="/users/{user.id}/projects" variant="outline" size="icon-sm">
 							<Archive class="size-3" />
 						</Button>
 					{/snippet}
-				</UserTile>
+				</Item.User>
 			{:else}
 				<Empty.Root class="col-span-full">
 					<Empty.Header>

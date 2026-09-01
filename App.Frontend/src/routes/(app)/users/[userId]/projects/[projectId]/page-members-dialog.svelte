@@ -20,7 +20,6 @@
 	import * as Page from './context.svelte';
 	import { Problem } from '$lib/api';
 	import Badge from '$lib/components/badge/badge.svelte';
-	import UserTile from '$lib/components/user-tile.svelte';
 	import * as Project from '$lib/remotes/projects.remote';
 	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
 
@@ -86,9 +85,9 @@
 							</Tabs.Trigger>
 						</Tabs.List>
 						<Tabs.Content value="manage">
-							<div class="flex gap-2">
+							<Item.Group class="flex gap-2">
 								{#each members.data as member (member.id)}
-									<UserTile user={member.user}>
+									<Item.User user={member.user}>
 										{#snippet actions()}
 											{#if member.role === 'Leader'}
 												<Badge variant="outline" class="rounded-sm">Project Leader</Badge>
@@ -148,21 +147,23 @@
 												</Button>
 											{/if}
 										{/snippet}
-									</UserTile>
+									</Item.User>
 								{:else}
-									<Empty.Root class="col-span-full">
-										<Empty.Header>
-											<Empty.Media variant="icon">
-												<Users />
-											</Empty.Media>
-											<Empty.Title>Nothing here</Empty.Title>
-											<Empty.Description>
-												No users were found that match what you're looking for.
-											</Empty.Description>
-										</Empty.Header>
-									</Empty.Root>
+									<Item.Root>
+										<Empty.Root class="col-span-full">
+											<Empty.Header>
+												<Empty.Media variant="icon">
+													<Users />
+												</Empty.Media>
+												<Empty.Title>Nothing here</Empty.Title>
+												<Empty.Description>
+													No users were found that match what you're looking for.
+												</Empty.Description>
+											</Empty.Header>
+										</Empty.Root>
+									</Item.Root>
 								{/each}
-							</div>
+							</Item.Group>
 						</Tabs.Content>
 						<Tabs.Content value="search" class="space-y-2">
 							<InputGroup.Root class="w-auto">
@@ -211,9 +212,9 @@
 									<Skeleton class="h-20 w-50" />
 								{/snippet}
 
-								<div class="flex gap-2">
+								<Item.Group class="flex gap-2">
 									{#each viable.data.filter((u) => u.id !== page.data.session.userId) as user (user.id)}
-										<UserTile {user}>
+										<Item.User {user}>
 											{#snippet actions()}
 												<Button
 													onclick={(e) => {
@@ -234,21 +235,23 @@
 													<Plus size={12} />
 												</Button>
 											{/snippet}
-										</UserTile>
+										</Item.User>
 									{:else}
-										<Empty.Root class="col-span-full">
-											<Empty.Header>
-												<Empty.Media variant="icon">
-													<Users />
-												</Empty.Media>
-												<Empty.Title>Nothing here</Empty.Title>
-												<Empty.Description>
-													No users were found that match what you're looking for.
-												</Empty.Description>
-											</Empty.Header>
-										</Empty.Root>
+										<Item.Root>
+											<Empty.Root class="col-span-full">
+												<Empty.Header>
+													<Empty.Media variant="icon">
+														<Users />
+													</Empty.Media>
+													<Empty.Title>Nothing here</Empty.Title>
+													<Empty.Description>
+														No users were found that match what you're looking for.
+													</Empty.Description>
+												</Empty.Header>
+											</Empty.Root>
+										</Item.Root>
 									{/each}
-								</div>
+								</Item.Group>
 								<Paginate
 									page={index}
 									onPageChange={(p) => (index = p)}

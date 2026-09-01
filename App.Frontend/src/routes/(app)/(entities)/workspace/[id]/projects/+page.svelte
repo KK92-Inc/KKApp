@@ -1,16 +1,10 @@
 <script lang="ts">
-	import Layout from '$lib/components/layout.svelte';
-	import * as v from 'valibot';
 	import * as InputGroup from '$lib/components/input-group';
-	import * as Field from '$lib/components/field';
-	import * as Tabs from '$lib/components/tabs';
-	import * as Select from '$lib/components/select';
 	import * as Empty from '$lib/components/empty';
 	import * as Item from '$lib/components/item';
 	import * as Projects from '$lib/remotes/projects.remote';
-	import { Archive, ArrowLeft, FolderCode, Search } from '@lucide/svelte';
+	import { ArrowLeft, FolderCode, Search } from '@lucide/svelte';
 	import useDebounce from '$lib/hooks/debounce.svelte';
-	import useSearchParams from '$lib/hooks/url.svelte';
 	import { page } from '$app/state';
 	import type { PageProps } from './$types';
 	import { Separator } from '$lib/components/separator';
@@ -28,7 +22,7 @@
 	});
 </script>
 
-<div class="w-full space-y-6 px-4 py-4 lg:px-6">
+<div class="md:container mx-auto space-y-6 px-4 py-4 lg:px-6">
 	<!-- Toolbar Header -->
 	<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 		<Button variant="secondary" href="..">
@@ -76,17 +70,7 @@
 
 		<Item.Group class="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
 			{#each result.data as project (project.id)}
-				<Item.Project {project}>
-					{#snippet actions()}
-						<Button
-							variant="outline"
-							size="sm"
-							href="/users/{page.data.session.userId}/projects/{project.id}"
-						>
-							View
-						</Button>
-					{/snippet}
-				</Item.Project>
+				<Item.Project {project} session={{ state: "Awaiting", userId: page.data.session.userId }} />
 			{:else}
 				<Item.Root variant="muted" class="col-span-full">
 					<Empty.Root>

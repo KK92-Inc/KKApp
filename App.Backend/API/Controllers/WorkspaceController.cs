@@ -426,7 +426,7 @@ such as official cursi, projects or rubrics.
         var app = await applicationService.FindByIdAsync(appId, token);
         if (app is null) return NotFound();
 
-        await applicationService.RevokeAccess(app, User.GetSID(), token);
+        await applicationService.RevokeAccess(app, User.GetLocalRealmSID(), token);
         return NoContent();
     }
 
@@ -438,7 +438,7 @@ such as official cursi, projects or rubrics.
     [EndpointDescription("Retrieve a list of all applications the current user has granted access to.")]
     public async Task<ActionResult<IEnumerable<ApplicationDO>>> GetConsentedApplications(CancellationToken token)
     {
-        var apps = await applicationService.GetConsentedApplicationsAsync(User.GetSID(), token);
+        var apps = await applicationService.GetConsentedApplicationsAsync(User.GetLocalRealmSID(), token);
         return Ok(apps.Select(app => new ApplicationDO(app)));
     }
 

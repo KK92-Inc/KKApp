@@ -4,91 +4,90 @@
 	import * as Avatar from '$lib/components/avatar';
 	import { Badge } from '$lib/components/badge';
 	import type { Snippet } from 'svelte';
-	import { cn } from '$lib/utils'; // Assuming cn utility import
+	import { cn } from '$lib/utils';
+	import { Users } from '@lucide/svelte';
+	import { colors, type EntityState } from '.';
 
 	interface Props {
-		cursus: components['schemas']['CursusDO'];
-		state?: 'Inactive' | 'Active' | 'Awaiting' | 'Completed';
+		state?: EntityState;
+		project: components['schemas']['ProjectDO'];
+		href?: string;
 		actions?: Snippet<[]>;
 	}
 
-	// Destructure state from props
-	const { cursus, state, actions }: Props = $props();
-	const initials = $derived(cursus.name.slice(0, 2));
+	const { project, state, href, actions }: Props = $props();
 
-	const src = $derived(
-		cursus.avatarUrl ?? `https://placehold.co/128x128?text=${encodeURIComponent(initials)}`
-	);
-
-	// State-specific border & background styles
-	const styles: Record<NonNullable<Props['state']>, string> = {
-		Active: 'border-l-4 border-l-emerald-500 border-emerald-500/30 bg-emerald-500/5',
-		Awaiting: 'border-l-4 border-l-amber-500 border-amber-500/30 bg-amber-500/5',
-		Completed: 'border-l-4 border-l-blue-500 border-blue-500/30 bg-blue-500/5',
-		Inactive: 'border-l-4 border-l-muted-foreground/40 opacity-75'
-	};
+	const initials = $derived(project.name.slice(0, 2).toUpperCase());
+	const src = $derived(project.avatarUrl ?? `https://placehold.co/128x128?text=${initials}`);
+	const to = $derived(href ?? `/projects/${project.slug}`);
+	const style = $derived(state ? colors[state] : undefined);
 </script>
 
 <Item.Root
 	variant="outline"
-	class={cn(
-		'group relative flex flex-col justify-between gap-4 p-5 transition-all hover:border-foreground/20 hover:shadow-xs sm:flex-row sm:items-center',
-		state && styles[state]
-	)}
+	class="group relative flex items-start gap-4 p-4 transition-all hover:bg-accent/40 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
 >
-	<div class="flex items-start gap-4 w-full">
-		<!-- Thumbnail / Avatar -->
-		<Item.Media>
-			<Avatar.Root class="size-14 rounded-xl border shadow-2xs">
-				<Avatar.Image {src} alt={cursus.name} class="aspect-square size-full rounded-xl object-cover" />
-				<Avatar.Fallback class="rounded-xl bg-muted text-sm font-semibold text-muted-foreground">
-					{initials}
-				</Avatar.Fallback>
-			</Avatar.Root>
-		</Item.Media>
+	{#snippet child({ props })}
+		<a href={to} {...props}>
+			<Item.Media>
+				<Avatar.Root
+					class={cn('size-16 rounded-xl border-2 shadow-sm', style ? style.avatar : 'border')}
+				>
+					<Avatar.Image {src} alt={project.name} class="aspect-square size-full rounded-xl object-cover" />
+					<Avatar.Fallback class="rounded-xl bg-muted text-sm font-semibold text-muted-foreground">
+						{initials}
+					</Avatar.Fallback>
+				</Avatar.Root>
+			</Item.Media>
 
-		<div class="space-y-1.5 flex-1">
-			<div class="flex flex-wrap items-center gap-2">
-				<Item.Title class="text-base leading-none font-semibold tracking-tight">
-					{cursus.name}
-				</Item.Title>
+			<Item.Content class="min-w-0 flex-1 gap-1.5">
+				<div class="flex flex-wrap items-center gap-2">
+					<Item.Title class="text-base font-semibold tracking-tight group-hover:underline">
+						{project.name}
+					</Item.Title>
 
-				<span class="text-xs font-medium text-foreground/80">
-					{#if cursus.workspace.owner}
-						by {cursus.workspace.owner.displayName ?? cursus.workspace.owner.login}
+					{#if project.workspace.owner}
+						<span class="text-xs text-muted-foreground">
+							by {project.workspace.owner.displayName ?? project.workspace.owner.login}
+						</span>
 					{:else}
-						<Badge variant="secondary">Official Project</Badge>
+						<Badge variant="secondary" class="text-[10px]">Official</Badge>
 					{/if}
-				</span>
+				</div>
 
-				{#if state}
-					<Badge variant="outline" class="text-xs font-medium capitalize">
-						{state}
-					</Badge>
+				{#if project.description}
+					<Item.Description class="line-clamp-2 text-xs" title={project.description}>
+						{project.description}
+					</Item.Description>
 				{/if}
 
-				<Badge variant="outline" class="text-xs font-medium capitalize">
-					{cursus.variant} - {cursus.completionMode}
-				</Badge>
+				<div class="flex flex-wrap items-center gap-2 pt-0.5">
+					{#if state}
+						<Badge variant="outline" class={cn('text-[11px] font-medium', colors?.badge)}>
+							{state}
+						</Badge>
+					{/if}
 
-				<!-- {#if cursus.deprecated}
-				<Badge variant="destructive" class="text-xs">Deprecated</Badge>
-				{:else if !cursus.active}
-					<Badge variant="secondary" class="text-xs">Inactive</Badge>
-				{/if} -->
-			</div>
+					{#if project.deprecated}
+						<Badge variant="destructive" class="text-[11px]">Deprecated</Badge>
+					{:else if !project.active}
+						<Badge variant="secondary" class="text-[11px]">Inactive</Badge>
+					{/if}
 
-			<!-- Description -->
-			{#if cursus.description}
-				<Item.Description class="line-clamp-none text-xs text-muted-foreground">
-					{cursus.description}
-				</Item.Description>
+					{#if project.maxMembers}
+						<span class="inline-flex items-center gap-1 text-xs text-muted-foreground">
+							<Users class="size-3.5" />
+							{project.maxMembers}
+						</span>
+					{/if}
+				</div>
+			</Item.Content>
+
+			{#if actions}
+				<Item.Actions onclick={(e) => e.stopPropagation()}>
+					{@render actions()}
+				</Item.Actions>
 			{/if}
-		</div>
-		{#if actions}
-			<Item.Actions class="flex shrink-0 items-center gap-2 pt-2 sm:pt-0">
-				{@render actions()}
-			</Item.Actions>
-		{/if}
-	</div>
+		</a>
+	{/snippet}
 </Item.Root>

@@ -11,6 +11,8 @@ import Media from "./item-media.svelte";
 import Project from "./entities/item-project.svelte"
 import Goal from "./entities/item-goal.svelte"
 import Cursus from "./entities/item-cursus.svelte"
+import Rubric from "./entities/item-rubric.svelte"
+import User from "./entities/item-user.svelte"
 
 export {
 	Root,
@@ -26,6 +28,8 @@ export {
 	Project,
 	Goal,
 	Cursus,
+	Rubric,
+	User,
 	//
 	Root as Item,
 	Group as ItemGroup,
@@ -40,4 +44,6 @@ export {
 	Project as ItemProject,
 	Goal as ItemGoal,
 	Cursus as ItemCursus,
+	Rubric as ItemRubric,
+	User as ItemUser,
 };
