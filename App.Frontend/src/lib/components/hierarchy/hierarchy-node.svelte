@@ -1,231 +1,170 @@
 <script lang="ts" generics="T">
-	import type { Snippet } from 'svelte';
-	import { flip } from 'svelte/animate';
-	import { getHierarchyContext, type DropPosition } from './state.svelte';
+	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
+	import { cn } from '$lib/utils.js';
+	import { Button } from '$lib/components/button';
+	import type { HierarchyController } from './state.svelte.js';
+	import type { DropPosition, HierarchyActionsSnippet, HierarchyItemSnippet } from './types.js';
 	import Self from './hierarchy-node.svelte';
 
-	interface Props {
+	let {
+		item,
+		depth,
+		controller,
+		itemSnippet,
+		actionsSnippet
+	}: {
 		item: T;
-		node: Snippet<[{ item: T }]>;
-		actions?: Snippet<[{ item: T }]>;
+		depth: number;
+		controller: HierarchyController<T>;
+		itemSnippet: HierarchyItemSnippet<T>;
+		actionsSnippet?: HierarchyActionsSnippet<T>;
+	} = $props();
+
+	const adapter = $derived(controller.adapter);
+	const id = $derived(adapter.getId(item));
+	const children = $derived(adapter.getChildren(item));
+	const hasChildren = $derived(!!children && children.length > 0);
+	const canHaveChildren = $derived(controller.canHaveChildren(item));
+	const isDraggable = $derived(adapter.isDraggable?.(item) ?? true);
+
+	const expanded = $derived(controller.expandedIds.has(id));
+	const isDragging = $derived(controller.draggedId === id);
+	const isBlocked = $derived(controller.isBlocked(id));
+	const isDropTarget = $derived(controller.dragOverId === id);
+	const dropPosition = $derived(isDropTarget ? controller.dropPosition : null);
+
+	let row: HTMLDivElement | undefined = $state();
+
+	function positionFromPointer(clientY: number): DropPosition {
+		if (!row) return 'after';
+		const rect = row.getBoundingClientRect();
+		const ratio = (clientY - rect.top) / rect.height;
+		if (!canHaveChildren) {
+			// Leaf items only ever accept before/after, split the row in half.
+			return ratio < 0.5 ? 'before' : 'after';
+		}
+		if (ratio < 0.25) return 'before';
+		if (ratio > 0.75) return 'after';
+		return 'inside';
 	}
-
-	let { item, node, actions }: Props = $props();
-
-	const tree = getHierarchyContext<T>();
-	const adapter = tree.adapter;
-
-	let expanded = $state(true);
-
-	const id = $derived(adapter.id(item));
-	const children = $derived(adapter.children(item));
-	const isContainer = $derived(children !== undefined);
-	const isDragging = $derived(tree.draggedId === id);
-	const isInvalidTarget = $derived(tree.isDragging && !tree.canAcceptDrop(item));
-	const dropPosition = $derived<DropPosition | null>(
-		tree.dropTarget?.id === id ? tree.dropTarget.position : null
-	);
 
 	function handleDragStart(e: DragEvent) {
-		e.stopPropagation();
-		tree.startDrag(item);
-		if (e.dataTransfer) {
-			e.dataTransfer.effectAllowed = 'move';
-			e.dataTransfer.setData('text/plain', id);
+		if (!isDraggable) {
+			e.preventDefault();
+			return;
 		}
-	}
-
-	function handleDragEnd(e: DragEvent) {
-		e.stopPropagation();
-		tree.endDrag();
+		e.dataTransfer?.setData('text/plain', id);
+		if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+		controller.startDrag(item);
 	}
 
 	function handleDragOver(e: DragEvent) {
-		if (!tree.canAcceptDrop(item)) return; // no preventDefault -> browser shows "no drop" cursor
+		if (controller.draggedId == null) return;
+		// preventDefault is required for the drop event to ever fire.
 		e.preventDefault();
-		e.stopPropagation();
 
-		const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-		const ratio = (e.clientY - rect.top) / rect.height;
-
-		let position: DropPosition;
-		if (isContainer) {
-			if (ratio < 0.25) position = 'before';
-			else if (ratio > 0.75) position = 'after';
-			else position = 'inside';
-		} else {
-			position = ratio < 0.5 ? 'before' : 'after';
+		if (isBlocked) {
+			if (e.dataTransfer) e.dataTransfer.dropEffect = 'none';
+			controller.clearHover();
+			return;
 		}
 
-		tree.setDropTarget(item, position);
+		const position = positionFromPointer(e.clientY);
+		const valid = controller.updateDragOver(item, position);
+		if (e.dataTransfer) e.dataTransfer.dropEffect = valid ? 'move' : 'none';
 	}
 
 	function handleDragLeave(e: DragEvent) {
-		const related = e.relatedTarget as Node | null;
-		// only clear if we're actually leaving this row, not entering a descendant of it
-		if (related && (e.currentTarget as HTMLElement).contains(related)) return;
-		tree.clearDropTargetFor(item);
+		const next = e.relatedTarget as Node | null;
+		if (row && next && row.contains(next)) return;
+		controller.clearHoverIfMatches(id);
 	}
 
 	function handleDrop(e: DragEvent) {
 		e.preventDefault();
 		e.stopPropagation();
-		tree.drop();
+		controller.commitDrop();
+	}
+
+	function handleDragEnd() {
+		controller.endDrag();
+	}
+
+	function toggle() {
+		if (hasChildren) controller.toggleExpanded(id);
+	}
+
+	function handleKeydown(e: KeyboardEvent) {
+		if ((e.key === 'Enter' || e.key === ' ') && hasChildren) {
+			e.preventDefault();
+			toggle();
+		}
 	}
 </script>
 
-<div
-	role="treeitem"
-	tabindex="0"
-	aria-selected="false"
-	aria-expanded={isContainer ? expanded : undefined}
-	draggable="true"
-	class="hierarchy-row"
-	class:hierarchy-row--dragging={isDragging}
-	class:hierarchy-row--invalid={isInvalidTarget}
-	class:hierarchy-row--before={dropPosition === 'before'}
-	class:hierarchy-row--after={dropPosition === 'after'}
-	class:hierarchy-row--inside={dropPosition === 'inside'}
-	ondragstart={handleDragStart}
-	ondragend={handleDragEnd}
-	ondragover={handleDragOver}
-	ondragleave={handleDragLeave}
-	ondrop={handleDrop}
->
-	{#if isContainer}
-		<button
-			type="button"
-			class="hierarchy-toggle"
-			aria-label={expanded ? 'Collapse' : 'Expand'}
-			onclick={() => (expanded = !expanded)}
-		>
-			<svg class:hierarchy-toggle-icon--open={expanded} viewBox="0 0 16 16" width="10" height="10">
-				<path d="M5 3l6 5-6 5" fill="none" stroke="currentColor" stroke-width="1.5" />
-			</svg>
-		</button>
-	{:else}
-		<span class="hierarchy-toggle-spacer"></span>
-	{/if}
+<li>
+	<div
+		bind:this={row}
+		class={cn(
+			'group relative flex items-center gap-1 rounded-md py-1 pr-1 text-sm outline-none',
+			'hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring/50',
+			isDragging && 'opacity-40',
+			isBlocked && !isDragging && 'cursor-not-allowed opacity-40',
+			isDropTarget && dropPosition === 'inside' && 'bg-primary/10 ring-1 ring-inset ring-primary/40'
+		)}
+		style="padding-left: {depth * 1.25 + 0.25}rem"
+		draggable={isDraggable}
+		role="treeitem"
+		tabindex="0"
+		aria-level={depth + 1}
+		aria-expanded={hasChildren ? expanded : undefined}
+		ondragstart={handleDragStart}
+		ondragover={handleDragOver}
+		ondragleave={handleDragLeave}
+		ondrop={handleDrop}
+		ondragend={handleDragEnd}
+		onkeydown={handleKeydown}
+	>
+		{#if isDropTarget && dropPosition === 'before'}
+			<div class="pointer-events-none absolute inset-x-2 -top-px h-0.5 rounded-full bg-primary"></div>
+		{:else if isDropTarget && dropPosition === 'after'}
+			<div class="pointer-events-none absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-primary"></div>
+		{/if}
 
-	<div class="hierarchy-content">
-		{@render node({ item })}
-	</div>
+		{#if hasChildren}
+			<Button
+				variant="ghost"
+				size="icon-sm"
+				class="size-5 shrink-0"
+				aria-label={expanded ? 'Collapse' : 'Expand'}
+				draggable="false"
+				onclick={toggle}
+			>
+				<ChevronRightIcon class={cn('size-3.5 transition-transform', expanded && 'rotate-90')} />
+			</Button>
+		{:else}
+			<span class="inline-block size-5 shrink-0" aria-hidden="true"></span>
+		{/if}
 
-	<div class="hierarchy-actions">
-		{@render actions?.({ item })}
-	</div>
-</div>
+		<div class="min-w-0 flex-1">
+			{@render itemSnippet({ item, depth, expanded, hasChildren, isDragging })}
+		</div>
 
-{#if isContainer && expanded && children}
-	<div class="hierarchy-children">
-		{#each children as child (adapter.id(child))}
-			<div animate:flip={{ duration: 200 }}>
-				<Self item={child} {node} {actions} />
+		{#if actionsSnippet}
+			<div
+				class="flex shrink-0 items-center gap-0.5 opacity-0 focus-within:opacity-100 group-hover:opacity-100"
+				draggable="false"
+			>
+				{@render actionsSnippet({ item, depth })}
 			</div>
-		{/each}
+		{/if}
 	</div>
-{/if}
 
-<style>
-	.hierarchy-row {
-		position: relative;
-		display: flex;
-		align-items: center;
-		gap: 0.25rem;
-		padding: 0.375rem 0.5rem;
-		border-radius: var(--radius-md, 0.375rem);
-		cursor: grab;
-		user-select: none;
-	}
-
-	.hierarchy-row:hover {
-		background: var(--color-muted, rgba(0, 0, 0, 0.04));
-	}
-
-	.hierarchy-row--dragging {
-		opacity: 0.4;
-		cursor: grabbing;
-	}
-
-	.hierarchy-row--invalid {
-		cursor: not-allowed;
-	}
-	.hierarchy-row--invalid:hover {
-		background: none;
-	}
-
-	/* drop-position feedback: a line above/below, or a filled ring to show "inside" */
-	.hierarchy-row--before::before,
-	.hierarchy-row--after::after {
-		content: '';
-		position: absolute;
-		left: 1.5rem;
-		right: 0.375rem;
-		height: 2px;
-		border-radius: 1px;
-		background: var(--color-primary, #3b82f6);
-	}
-	.hierarchy-row--before::before {
-		top: -1px;
-	}
-	.hierarchy-row--after::after {
-		bottom: -1px;
-	}
-
-	.hierarchy-row--inside {
-		background: color-mix(in srgb, var(--color-primary, #3b82f6) 12%, transparent);
-		outline: 1.5px solid var(--color-primary, #3b82f6);
-		outline-offset: -1.5px;
-	}
-
-	.hierarchy-toggle {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 1rem;
-		height: 1rem;
-		flex-shrink: 0;
-		background: none;
-		border: none;
-		padding: 0;
-		color: var(--color-muted-foreground, #6b7280);
-		cursor: pointer;
-	}
-
-	.hierarchy-toggle svg {
-		transition: transform 150ms ease;
-	}
-	.hierarchy-toggle-icon--open {
-		transform: rotate(90deg);
-	}
-
-	.hierarchy-toggle-spacer {
-		width: 1rem;
-		flex-shrink: 0;
-	}
-
-	.hierarchy-content {
-		flex: 1;
-		min-width: 0;
-	}
-
-	.hierarchy-actions {
-		display: flex;
-		align-items: center;
-		gap: 0.25rem;
-		opacity: 0;
-		pointer-events: none;
-		transition: opacity 100ms ease;
-	}
-	.hierarchy-row:hover .hierarchy-actions,
-	.hierarchy-row:focus-within .hierarchy-actions {
-		opacity: 1;
-		pointer-events: auto;
-	}
-
-	.hierarchy-children {
-		margin-left: 0.8rem;
-		padding-left: 0.45rem;
-		border-left: 1px solid var(--color-border, rgba(0, 0, 0, 0.1));
-	}
-</style>
+	{#if expanded && children}
+		<ul class="list-none" role="group">
+			{#each children as child (adapter.getId(child))}
+				<Self item={child} depth={depth + 1} {controller} {itemSnippet} {actionsSnippet} />
+			{/each}
+		</ul>
+	{/if}
+</li>

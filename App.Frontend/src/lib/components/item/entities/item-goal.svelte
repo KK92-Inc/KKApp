@@ -54,7 +54,6 @@
 </script>
 
 <Item.Root variant="outline" class="flex flex-col gap-3 p-4">
-	<!-- Card Header Row -->
 	<div class="flex w-full items-start justify-between gap-4">
 		<div class="flex min-w-0 items-start gap-3">
 			<Item.Media variant="image" class="mt-0.5 shrink-0">
@@ -73,13 +72,13 @@
 						</span>
 					{:else}
 						<Badge class="gap-1 rounded-sm" variant="secondary">
-							Official goal
+							Official Goal
 							<Award class="size-3" />
 						</Badge>
 					{/if}
 
 					{#if session}
-						<Badge variant="outline" class={cn('text-[11px] font-medium')}>
+						<Badge variant="outline" class={cn('text-[11px] font-medium', colors[session.state].badge)}>
 							{session.state}
 						</Badge>
 					{/if}
@@ -138,7 +137,7 @@
 								No projects linked to this goal.
 							</p>
 						{:else}
-							<Item.Group class="grid grid-cols-1 gap-4 md:grid-cols-2">
+							<Item.Group class="grid grid-cols-1">
 								{#each items as { project, session: projectSession } (project.id)}
 									<Item.Project {project} session={projectSession} />
 								{/each}

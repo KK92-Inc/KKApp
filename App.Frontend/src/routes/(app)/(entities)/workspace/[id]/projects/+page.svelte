@@ -34,7 +34,7 @@
 				<Search class="size-4 text-muted-foreground" />
 			</InputGroup.Addon>
 			<InputGroup.Input
-				placeholder="Search projects..."
+				placeholder="Search project..."
 				value={search}
 				oninput={(e) => debounced.fn(e.currentTarget.value)}
 			/>

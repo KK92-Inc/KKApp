@@ -44,12 +44,6 @@
 	import Separator from '$lib/components/separator/separator.svelte';
 	import Thumbnail from '$lib/components/thumbnail.svelte';
 	import * as ButtonGroup from '$lib/components/button-group';
-	import { Badge } from '$lib/components/badge';
-	import { GalaxyRenderer } from '$lib/components/galaxy/render';
-	import { Adapter, type Track, type TrackNode } from '$lib/components/galaxy/adapters/cursus';
-	import type { GalaxyNode } from '$lib/components/galaxy/types';
-	import type { Attachment } from 'svelte/attachments';
-	import { cn } from '$lib/utils';
 	import * as Alert from '$lib/components/alert';
 	import * as Empty from '$lib/components/empty';
 	import Access from '../../../shared/access.svelte';

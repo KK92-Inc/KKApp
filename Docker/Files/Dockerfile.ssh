@@ -28,7 +28,7 @@ FROM oven/bun:1-alpine
 ARG GIT_UID=10001
 ARG GIT_GID=10001
 
-RUN apk add --no-cache openssh git ca-certificates \
+RUN apk add --no-cache openssh git ca-certificates shadow \
     && addgroup -S -g ${GIT_GID} git \
     && adduser -D -h /home/git -s /bin/sh -u ${GIT_UID} -G git git \
     && passwd -d git \

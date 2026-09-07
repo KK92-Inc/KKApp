@@ -36,6 +36,21 @@ Keycloak will correctly set the secrets up amongst the different clients.
 
 If you don't have a secret like for Resend, fill it with garbage or get a secret.
 
+## The idea
+
+The core philosphy of the peer to peer model in education works but it is not currently used to it's fullest potential. To do so we have to implement various self determination theories into the app itself to allow students to have:
+- `Autonomy`: The need to feel in control of your own actions, goals, and choices rather than controlled by external pressures.
+- `Competence`: The need to feel effective, master tasks, and build expertise in your environment.
+- `Relatedness`: The need to experience a sense of belonging, connection, and care for and from others.
+
+Most alternative platforms do not possess this or encourage any of it and/or ignore it. What you get is the same iteration for a solution with zero improvement just recycled solutions.
+
+Most campuses currently do some of these things but still progress feels like pressing the gas pedal and the break at the same time.
+
+---
+
+You should be able to own the platform you run your education on, be free to modify and not be coerced into a perpetual licensing fee.
+
 ## 📄 License
 
 Copyright © 2025 W2Inc. All Rights Reserved.

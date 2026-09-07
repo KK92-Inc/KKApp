@@ -22,7 +22,7 @@
 	});
 </script>
 
-<div class="w-full space-y-6 px-4 py-4 lg:px-6">
+<div class="md:container mx-auto space-y-6 px-4 py-4 lg:px-6">
 	<!-- Toolbar Header -->
 	<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 		<Button variant="secondary" href="..">
@@ -34,7 +34,7 @@
 				<Search class="size-4 text-muted-foreground" />
 			</InputGroup.Addon>
 			<InputGroup.Input
-				placeholder="Search projects..."
+				placeholder="Search cursus..."
 				value={search}
 				oninput={(e) => debounced.fn(e.currentTarget.value)}
 			/>

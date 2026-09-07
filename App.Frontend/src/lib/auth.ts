@@ -61,6 +61,7 @@ interface TokenClaims extends jose.JWTPayload {
 	email: string;
 	email_verified: boolean;
 	preferred_username: string;
+	admin_user_id?: string;
 	realm_access: { roles: string[] };
 	resource_access?: Record<string, { roles: string[] }>;
 }
@@ -196,7 +197,7 @@ async function build(accessToken: string, payload: jose.JWTPayload): Promise<Ses
 	const resRoles = Object.values(claims.resource_access ?? {}).flatMap((r) => r.roles);
 
 	return {
-		userId: claims.sub,
+		userId: claims.admin_user_id ?? claims.sub,
 		username: claims.preferred_username,
 		email: claims.email,
 		verified: claims.email_verified,

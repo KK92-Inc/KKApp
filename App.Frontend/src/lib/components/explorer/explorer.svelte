@@ -1,9 +1,9 @@
 <script lang="ts">
-	import type { FileNode } from '.';
+	import type { TreeDTO } from '.';
 	import ExplorerNodeTree from './explorer-node-tree.svelte';
 
 	interface Props {
-		nodes: FileNode[];
+		nodes: TreeDTO[];
 		baseUrl: string;
 		branch: string;
 		dotdotHref?: string;

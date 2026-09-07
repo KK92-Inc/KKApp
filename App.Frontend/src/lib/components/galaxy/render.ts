@@ -295,15 +295,11 @@ export class GalaxyRenderer<TMeta = unknown> {
 		const max = innerRadius * 1.75;
 		let size = parseFloat(el.getAttribute('font-size') ?? '10');
 
-		try {
-			for (let i = 0; i < 20 && size > 5; i++) {
-				const { width, height } = el.getBBox();
-				if (width <= max && height <= max) break;
-				size = Math.max(5, size * 0.88);
-				el.setAttribute('font-size', `${size.toFixed(1)}px`);
-			}
-		} catch {
-			// getBBox unavailable
+		for (let i = 0; i < 20 && size > 5; i++) {
+			const { width, height } = el.getBBox();
+			if (width <= max && height <= max) break;
+			size = Math.max(5, size * 0.88);
+			el.setAttribute('font-size', `${size.toFixed(1)}px`);
 		}
 	}
 

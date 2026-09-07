@@ -12,7 +12,8 @@
 
 	let { value, class: className }: Props = $props();
 
-	let renderValue = $state('');
+	// Initialize with prop value directly
+	let renderValue = $derived(value);
 	const update = useDebounce((v: string) => (renderValue = v), 250);
 
 	$effect(() => {

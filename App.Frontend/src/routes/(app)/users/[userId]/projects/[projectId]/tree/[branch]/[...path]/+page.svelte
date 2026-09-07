@@ -1,6 +1,5 @@
 <script lang="ts">
 	import * as Git from '$lib/remotes/git.remote';
-	import { parseGitTree } from '$lib/components/explorer';
 	import Explorer from '$lib/components/explorer/explorer.svelte';
 	import * as Alert from '$lib/components/alert';
 	import { Button } from '$lib/components/button';
@@ -47,25 +46,25 @@
 	{/snippet}
 
 	{#if context.view === 'submission' && session?.gitInfo?.id && context.branch}
-		{@const raw = params.path
+		{@const tree = params.path
 			? await Git.getTreePath({ id: session.gitInfo.id, branch: params.branch, path: params.path })
 			: await Git.getTree({ id: session.gitInfo.id, branch: params.branch })}
 		<Explorer
 			baseUrl={base}
 			branch={params.branch}
-			nodes={parseGitTree(raw, params.path)}
+			nodes={tree}
 			dotdotHref={params.path ? dotdotHref : undefined}
 		/>
-	{:else}
+	{:else if project?.gitInfo?.id}
 		{@const git = await Git.getBranches(project.gitInfo.id)}
-		{#if git.master}
-			{@const raw = params.path
+		{#if git.length > 0}
+			{@const tree = params.path
 				? await Git.getTreePath({ id: project.gitInfo.id, branch: params.branch, path: params.path })
 				: await Git.getTree({ id: project.gitInfo.id, branch: params.branch })}
 			<Explorer
 				baseUrl={base}
 				branch={params.branch}
-				nodes={parseGitTree(raw, params.path)}
+				nodes={tree}
 				dotdotHref={params.path ? dotdotHref : undefined}
 			/>
 		{/if}

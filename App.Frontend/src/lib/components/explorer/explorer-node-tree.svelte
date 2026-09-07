@@ -1,12 +1,12 @@
 <script lang="ts">
-	import type { FileNode } from '.';
+	import type { TreeDTO } from '.';
 	import * as Table from '$lib/components/table';
 	import ExplorerNode from './explorer-node.svelte';
 	import Button from '../button/button.svelte';
 	import { Folder } from '@lucide/svelte';
 
 	interface Props {
-		nodes: FileNode[];
+		nodes: TreeDTO[];
 		/** Project root, e.g. `/users/123/projects/456` - tree/blob routes hang off it. */
 		baseUrl: string;
 		branch: string;
@@ -16,8 +16,8 @@
 
 	const { nodes, baseUrl, branch, dotdotHref }: Props = $props();
 
-	function href(node: FileNode): string {
-		const kind = node.type === '-' ? 'blob' : 'tree';
+	function href(node: TreeDTO): string {
+		const kind = node.directory ? 'tree' : 'blob';
 		return `${baseUrl}/${kind}/${branch}/${node.path}`;
 	}
 </script>

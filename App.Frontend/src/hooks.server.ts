@@ -35,7 +35,6 @@ let bootstrapped = false;
 
 const bootstrap: Handle = async ({ event, resolve }) => {
 	if (bootstrapped) {
-		// Setup already ran — /setup itself no longer exists.
 		if (event.url.pathname.startsWith('/setup')) {
 			return new Response(null, { status: 404 });
 		}

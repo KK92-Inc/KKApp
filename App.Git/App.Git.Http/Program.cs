@@ -193,17 +193,40 @@ repos.MapGet("/tree/{branch}/{**subpath}", (string owner, string name, string br
     return Results.Ok(result);
 }).WithTags("Trees");
 
-repos.MapGet("/blob/{branch}/{**path}", (string owner, string name, string branch, string? path) =>
+repos.MapGet("/blob/{branch}/{**path}", (string owner, string name, string branch, string? path, ILogger<Program> logger) =>
 {
     var dir = Path.Combine(root, owner, name);
     if (!Repository.IsValid(dir))
+    {
+        logger.LogWarning("Repo path invalid or missing: {Dir}", dir);
         return Results.NotFound();
+    }
 
     using var repo = new Repository(dir);
-    var commit = repo.Lookup<Commit>(branch);
-    var entry = commit?.Tree[path];
-    if (entry is null || entry.TargetType is not TreeEntryTargetType.Blob)
+
+    var commit = repo.Branches[branch]?.Tip ?? repo.Lookup<Commit>(branch);
+    if (commit is null)
+    {
+        logger.LogWarning("Branch/Commit not found: Branch={Branch}, Owner={Owner}, Name={Name}", branch, owner, name);
         return Results.NotFound();
+    }
+
+    if (string.IsNullOrWhiteSpace(path))
+    {
+        logger.LogWarning("Blob request received empty path.");
+        return Results.BadRequest("Path parameter is required.");
+    }
+
+    var relativePath = Uri.UnescapeDataString(path).TrimStart('/');
+    logger.LogInformation("Looking up blob entry: RawPath='{RawPath}', RelativePath='{RelativePath}', Commit={Sha}", path, relativePath, commit.Sha);
+
+    var entry = commit.Tree[relativePath];
+    if (entry is null || entry.TargetType is not TreeEntryTargetType.Blob)
+    {
+        logger.LogWarning("Blob entry not found in commit tree: RelativePath='{RelativePath}', TargetType={Type}", 
+            relativePath, entry?.TargetType.ToString() ?? "Null");
+        return Results.NotFound();
+    }
 
     var blob = entry.Target.Peel<Blob>();
     using var stream = blob.GetContentStream();
@@ -212,7 +235,6 @@ repos.MapGet("/blob/{branch}/{**path}", (string owner, string name, string branc
 
     return Results.Bytes(buffer.ToArray(), "application/octet-stream");
 }).WithTags("Blobs");
-
 // ============================================================================
 // Commits
 // ============================================================================

@@ -7,32 +7,12 @@ import Root from "./explorer.svelte";
 import NodeTree from "./explorer-node-tree.svelte";
 import Node from "./explorer-node.svelte";
 import FileView from "./explorer-file.svelte";
+import type { components } from "$lib/api/api";
 
 // ============================================================================
 
-export interface FileNode {
-	type: '-' | 'd';
-	name: string;
-	path: string;
-}
+export type TreeDTO = components["schemas"]["TreeDTO"];
 
-export function parseGitTree(input: string, path?: string): FileNode[] {
-	const nodes: FileNode[] = [];
-	const basePath = path ? `${path.replace(/\/$/, '')}/` : '';
-	const regex = /^\s*\d+\s+([a-z]+)\s+[0-9a-f]+\s+(?:-|\d+)\s+(.+)$/gmi;
-	for (const m of input.matchAll(regex)) {
-		const name = m[2].trimEnd();
-		nodes.push({
-			type: m[1].toLowerCase() === 'tree' ? 'd' : '-',
-			name,
-			path: basePath + name
-		});
-	}
-
-	return nodes.sort((a, b) =>
-		(a.type === b.type ? 0 : a.type === 'd' ? -1 : 1) || a.name.localeCompare(b.name)
-	);
-}
 // ============================================================================
 
 export {

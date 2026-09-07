@@ -28,6 +28,8 @@
 <svelte:boundary>
 	{#snippet failed(e, reset)}
 		{@const err = e as HttpError}
+		{params.path}
+
 		<Alert.Root variant="destructive">
 			<CircleAlert />
 			<Alert.Title>{err.body?.message ?? 'Failed to load file'}</Alert.Title>
@@ -48,15 +50,18 @@
 	{/snippet}
 
 	{#if context.view === 'submission' && session?.gitInfo?.id && context.branch}
-		{@const b64 = await Git.getBlob({ id: session.gitInfo.id, branch: params.branch, path: params.path })}
-		{@const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))}
-		<ExplorerFile {name} content={new TextDecoder().decode(bytes)} size={bytes.byteLength} {backHref} />
-	{:else}
+		{@const content = await Git.getBlob({ id: session.gitInfo.id, branch: params.branch, path: params.path })}
+		<ExplorerFile name={params.path.split('/').pop() ?? ''} {content} {backHref} />
+	{:else if project?.gitInfo?.id}
 		{@const git = await Git.getBranches(project.gitInfo.id)}
-		{#if git.master}
-			{@const b64 = await Git.getBlob({ id: project.gitInfo.id, branch: params.branch, path: params.path })}
-			{@const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))}
-			<ExplorerFile {name} content={new TextDecoder().decode(bytes)} size={bytes.byteLength} {backHref} />
+		{#if git.length > 0}
+			{@const content = await Git.getBlob({
+				id: project.gitInfo.id,
+				branch: params.branch,
+				path: params.path
+			})}
+
+			<ExplorerFile name={params.path.split('/').pop() ?? ''} {content} {backHref} />
 		{/if}
 	{/if}
 </svelte:boundary>

@@ -33,13 +33,11 @@
 		})
 	);
 
-	const git = $derived(
-		session?.gitInfo ? await Git.getBranches(session.gitInfo.id) : { master: undefined, branches: [] }
-	);
-	const initialized = $derived(git.master !== undefined);
+	const git = $derived(session?.gitInfo ? await Git.getBranches(session.gitInfo.id) : []);
+	const initialized = $derived(!!git.find(b => b.head));
 
 	$effect(() => {
-		if (initialized) context.branch = git.master;
+		if (initialized) context.branch = git.find(b => b.head)!.name;
 	});
 
 	let name = $state('');
@@ -90,16 +88,16 @@
 						{/if}
 						<Command.Group>
 							<svelte:boundary>
-								{#each git.branches as b (b)}
-									<Command.Item value={b} class="h-8" onSelect={() => (context.branch = b)}>
-										<CheckIcon class={cn(context.branch !== b && 'text-transparent')} />
-										<span class="flex-1">{b}</span>
-										{#if b !== git.master && session.state === 'Active'}
+								{#each git as branch (branch.name)}
+									<Command.Item value={branch.name} class="h-8" onSelect={() => (context.branch = branch.name)}>
+										<CheckIcon class={cn(context.branch !== branch.name && 'text-transparent')} />
+										<span class="flex-1">{branch.name}</span>
+										{#if !branch.head && session.state === 'Active'}
 											<Button
 												type="button"
 												onclick={async (e) => {
 													e.stopImmediatePropagation();
-													await remove(b);
+													await remove(branch.name);
 												}}
 												class="hover:bg-destructive/20!"
 												variant="ghost"

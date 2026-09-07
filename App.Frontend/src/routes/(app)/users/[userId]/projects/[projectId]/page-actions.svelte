@@ -11,7 +11,6 @@
 	import * as Projects from '$lib/remotes/projects.remote';
 	import { Problem } from '$lib/api';
 	import * as Alert from '$lib/components/alert';
-	import Failed from '$lib/components/empty/failed.svelte';
 	import { DateFormatter } from '@internationalized/date';
 	import Separator from '$lib/components/separator/separator.svelte';
 

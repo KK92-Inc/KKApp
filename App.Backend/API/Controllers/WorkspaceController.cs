@@ -117,7 +117,7 @@ such as official cursi, projects or rubrics.
 
         var userId = User.GetSID(); // Must be admin for app workspace.
         var authorized = await auth.AuthorizeAsync(User, "staff");
-        if (space.OwnerId != userId || (space.OwnerId is null && !authorized.Succeeded))
+        if (space.OwnerId != userId && !(space.OwnerId is null && authorized.Succeeded))
             return Forbid();
 
         if (await cursusService.FindBySlugAsync(body.Name.ToSlug(), token) is not null)
@@ -163,14 +163,13 @@ such as official cursi, projects or rubrics.
     )
     {
         var space = await service.FindByIdAsync(workspace, token);
-        if (space is null)
-            return NotFound();
-        if (space.Ownership is EntityOwnership.Organization && !User.IsInRole("Staff"))
+        if (space is null) return NotFound();
+
+        var userId = User.GetSID(); // Must be admin for app workspace.
+        var authorized = await auth.AuthorizeAsync(User, "staff");
+        if (space.OwnerId != userId && !(space.OwnerId is null && authorized.Succeeded))
             return Forbid();
 
-        var id = User.GetSID();
-        if (space.OwnerId is not null && space.OwnerId != id)
-            return Forbid();
         if (await goalService.FindBySlugAsync(body.Name.ToSlug(), token) is not null)
             return Conflict();
 

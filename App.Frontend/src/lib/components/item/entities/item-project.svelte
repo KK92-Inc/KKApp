@@ -55,7 +55,7 @@
 
 					<div class="flex flex-wrap items-center gap-2 pt-0.5">
 						{#if session}
-							<Badge variant="outline" class={cn('text-[11px] font-medium', colors?.badge)}>
+							<Badge variant="outline" class={cn('text-[11px] font-medium', colors[session.state].badge)}>
 								{session.state}
 							</Badge>
 						{/if}

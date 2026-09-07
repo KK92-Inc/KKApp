@@ -91,10 +91,14 @@ export const getTreePath = query(TreePathSchema, async ({ id, branch, path }) =>
 /** Get raw file content at a given path within a branch */
 export const getBlob = query(BlobSchema, async ({ id, branch, path }) => {
 	const { locals } = getRequestEvent();
-	const { error, data } = await locals.api.GET('/git/{id}/blob/{branch}/{path}', {
-		parseAs: "text",
+	const { error, data, response } = await locals.api.GET('/git/{id}/blob/{branch}/{path}', {
+		parseAs: "arrayBuffer",
 		params: { path: { id, branch, path } }
 	});
+
+	// NOTE(W2): Just a literal empty file with no content.
+	if (response.status === 200 && !data)
+		return new ArrayBuffer(0);
 
 	if (error || !data) Problem.throw(error);
 	return data;

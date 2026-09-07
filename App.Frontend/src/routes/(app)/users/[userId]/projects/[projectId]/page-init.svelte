@@ -5,7 +5,6 @@
 	import * as Explorer from '$lib/components/explorer';
 	import * as Card from '$lib/components/card';
 	import * as InputGroup from '$lib/components/input-group';
-	import { parseGitTree } from '$lib/components/explorer';
 	import { CircleAlert, GitBranch, RefreshCcw, Rocket } from '@lucide/svelte';
 	import * as Alert from '$lib/components/alert';
 	import type { HttpError } from '@sveltejs/kit';
@@ -92,7 +91,7 @@
 				<Tabs.Trigger disabled value="browser">Browser</Tabs.Trigger>
 				<Tabs.Trigger value="terminal">Terminal</Tabs.Trigger>
 			</Tabs.List>
-			<Tabs.Content value="terminal">
+			<Tabs.Content value="browser">
 				<Alert.Root>
 					<GitBranch />
 					<Alert.Title>Initializing the repository</Alert.Title>

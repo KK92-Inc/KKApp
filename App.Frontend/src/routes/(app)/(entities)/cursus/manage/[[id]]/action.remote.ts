@@ -3,11 +3,10 @@
 // See README in the root project for more information.
 // ============================================================================
 
-import * as v from 'valibot';
-import { command, getRequestEvent } from '$app/server';
-import type { components } from '$lib/api/api';
 import { Filters, Problem } from '$lib/api';
-import { Log } from '$lib/log';
+import type { components } from '$lib/api/api';
+import * as Cursus from "$lib/remotes/cursus.remote"
+import { command, getRequestEvent } from '$app/server';
 
 // ============================================================================
 
@@ -43,14 +42,30 @@ export const update = command('unchecked', async (body: UpdateCursus) => {
 	return data;
 });
 
-/** Deprecate the goal */
+// ============================================================================
+
 export const deprecate = command(Filters.id, async (id) => {
 	const { locals } = getRequestEvent();
-	const { error } = await locals.api.DELETE("/projects/{id}", {
+	const { error } = await locals.api.POST("/projects/{id}/deprecate", {
 		params: { path: { id } },
 	});
 
 	if (error) {
 		Problem.throw(error);
 	}
+
+	Cursus.get(id).refresh();
+});
+
+export const undeprecate = command(Filters.id, async (id) => {
+	const { locals } = getRequestEvent();
+	const { error } = await locals.api.POST("/projects/{id}/undeprecate", {
+		params: { path: { id } },
+	});
+
+	if (error) {
+		Problem.throw(error);
+	}
+
+	Cursus.get(id).refresh();
 });

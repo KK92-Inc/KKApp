@@ -42,6 +42,9 @@ chmod 640 /etc/sshenv
 GIT_UID="${GIT_UID:-10001}"
 GIT_GID="${GIT_GID:-10001}"
 
+usermod  -o -u "$GIT_UID" git
+groupmod -o -g "$GIT_GID" git
+
 chown -R "${GIT_UID}:${GIT_GID}" /home/git/repos
 chmod -R 775 /home/git/repos
 chmod g+s /home/git/repos

@@ -21,7 +21,7 @@
 	import * as Card from '$lib/components/card';
 	import * as Accordion from '$lib/components/accordion';
 	import Markdown from '$lib/components/markdown/markdown.svelte';
-	import type { HttpError } from '@sveltejs/kit';
+	import { isHttpError, type HttpError } from '@sveltejs/kit';
 
 	let { params, children }: LayoutProps = $props();
 	const context = Page.setContext(
@@ -73,7 +73,8 @@
 
 			<!-- There is no session or we're not looking at it -->
 			{#if !session || context.view === 'assignment'}
-				{#if !projectGit.master}
+				{@const head = projectGit.find((b) => b.head)}
+				{#if !head}
 					<Alert.Root variant="destructive">
 						<GitBranch />
 						<Alert.Title>Project repository is empty</Alert.Title>
@@ -88,11 +89,10 @@
 				{/if}
 				<!-- There is a session and we're trying to look at it. -->
 			{:else}
-				{@const git = session.gitInfo
-					? await Git.getBranches(session.gitInfo.id)
-					: { master: undefined, branches: [] }}
+				{@const git = session.gitInfo ? await Git.getBranches(session.gitInfo.id) : []}
+				{@const head = git.find((b) => b.head)}
 				<!-- Show how to initialize your session -->
-				{#if git.master === undefined}
+				{#if !head}
 					<Components.Init />
 				{:else}
 					<!-- Show warning that modifications are not possible in this state... -->
@@ -114,7 +114,8 @@
 			<Card.Root class="py-0 shadow-none">
 				<Card.Content class="p-0">
 					<Accordion.Root type="single">
-						{#if projectGit.master}
+						{@const head = projectGit.find((b) => b.head)}
+						{#if head}
 							<Accordion.Item>
 								<Accordion.Trigger class="px-4">
 									<span class="flex items-center gap-2">
@@ -125,8 +126,8 @@
 									<svelte:boundary>
 										{@const readme = await Git.getBlob({
 											id: project.gitInfo.id,
-											branch: projectGit.master,
-											path: 'README.md'
+											branch: head.name,
+											path: 'readme.md'
 										})}
 
 										{#snippet pending()}
@@ -134,10 +135,15 @@
 										{/snippet}
 
 										{#snippet failed(e, reset)}
-											{@const err = e as HttpError}
 											<Alert.Root variant="destructive">
 												<CircleAlert />
-												<Alert.Title>{err.body.message}</Alert.Title>
+												<Alert.Title>
+													{#if isHttpError(e)}
+														{e.body.message}
+													{:else}
+														Something is incorrect about this README...
+													{/if}
+												</Alert.Title>
 												<Alert.Description>
 													This could resolve itself or may be a bug.
 													<Button variant="outline" class="text-foreground" size="sm" onclick={reset}>
@@ -148,20 +154,7 @@
 											</Alert.Root>
 										{/snippet}
 
-										{#if readme}
-											{@const binary = Uint8Array.from(atob(readme), (char) => char.charCodeAt(0))}
-											<Markdown value={new TextDecoder().decode(binary)} />
-										{:else}
-											<Alert.Root>
-												<Alert.Title class="flex items-center gap-1">
-													<TriangleAlert size={16} />
-													Missing README.md
-												</Alert.Title>
-												<Alert.Description>
-													The project is missing the file 'README.md', please report this to staff.
-												</Alert.Description>
-											</Alert.Root>
-										{/if}
+										<Markdown value={new TextDecoder('utf-8', { fatal: true }).decode(readme)} />
 									</svelte:boundary>
 								</Accordion.Content>
 							</Accordion.Item>

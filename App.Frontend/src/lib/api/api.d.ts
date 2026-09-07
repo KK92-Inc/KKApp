@@ -8200,21 +8200,10 @@ export interface components {
             nodes?: components["schemas"]["CursusTrackNodeDO"][];
         };
         CursusTrackNodeDO: {
-            /**
-             * Format: uuid
-             * @description The goal ID this node represents.
-             */
-            goalId: string;
-            /**
-             * Format: uuid
-             * @description The parent goal ID within this cursus track. Null for root-level goals.
-             */
-            parentId?: null | string;
-            /**
-             * Format: uuid
-             * @description Choice group identifier for alternative goals. Siblings with the same value are alternatives; null means required.
-             */
-            group?: null | string;
+            goal: components["schemas"]["GoalLightDO"];
+            /** Format: uuid */
+            choiceGroup?: null | string;
+            children?: components["schemas"]["CursusTrackNodeDO"][];
         };
         /** @enum {unknown} */
         CursusVariant: "Dynamic" | "Static" | "Hybrid";
@@ -8559,31 +8548,6 @@ export interface components {
              */
             maxMembers: number | string;
         };
-        ProjectLightDO: {
-            /** Format: uuid */
-            id: string;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
-            /** @description The display name of the project. */
-            name: string;
-            /** @description A detailed description of the project's purpose or contents. */
-            description: string;
-            /** @description The URL-friendly slug identifier for the project. */
-            slug: string;
-            /** @description Indicates whether the project is currently active. */
-            active: boolean;
-            /** @description Indicates whether the project is publicly visible. */
-            public: boolean;
-            /** @description Indicates whether the project has been deprecated. */
-            deprecated: boolean;
-            /**
-             * Format: int32
-             * @description Indicates whether the project has been deprecated.
-             */
-            maxMembers: number | string;
-        };
         ReviewDO: {
             /** Format: uuid */
             id: string;
@@ -8792,15 +8756,15 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
             /** @description The current state of the object. */
-            state?: components["schemas"]["EntityObjectState"];
+            state: components["schemas"]["EntityObjectState"];
             /** @description The project template this instance is based on. */
-            project?: components["schemas"]["ProjectLightDO"];
-            gitInfo?: null | components["schemas"]["GitDO"];
+            project: components["schemas"]["ProjectDO"];
+            gitInfo: null | components["schemas"]["GitDO"];
             /**
              * Format: date-time
              * @description Determines if and how long there is a cooldown on acting on this session again.
              */
-            unlocksAt?: null | string;
+            unlocksAt: null | string;
         };
         UserProjectTransactionDO: {
             /** Format: uuid */
