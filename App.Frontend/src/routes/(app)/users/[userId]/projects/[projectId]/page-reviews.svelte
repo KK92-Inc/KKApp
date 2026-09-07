@@ -2,18 +2,15 @@
 	import * as Avatar from '$lib/components/avatar/';
 	import * as Item from '$lib/components/item/';
 	import Button, { buttonVariants } from '$lib/components/button/button.svelte';
-	import Separator from '$lib/components/separator/separator.svelte';
 	import {
 		ArrowRight,
 		Bot,
 		CalendarDaysIcon,
 		Globe,
 		HeartHandshake,
-		ListFilter,
 		Plus,
 		SortAsc,
 		SortDesc,
-		TextSearch,
 		User,
 		Users
 	} from '@lucide/svelte';
@@ -26,10 +23,9 @@
 	import * as Page from './context.svelte';
 	import Failed from '$lib/components/empty/failed.svelte';
 	import * as ButtonGroup from '$lib/components/button-group';
-	import * as DropdownMenu from '$lib/components/dropdown-menu';
 	import type { components } from '$lib/api/api';
 	import * as Select from '$lib/components/select';
-	import { Order } from '$lib/api';
+	import { Order, Problem } from '$lib/api';
 	import * as UserProjects from '$lib/remotes/user-project.remote';
 	import * as Projects from '$lib/remotes/projects.remote';
 	import * as Reviews from '$lib/remotes/review.remote';
@@ -46,10 +42,7 @@
 		})
 	);
 
-		const git = $derived(
-		session?.gitInfo ? await Git.getBranches(session.gitInfo.id) : { master: undefined, branches: [] }
-	);
-
+	const git = $derived(session?.gitInfo ? await Git.getBranches(session.gitInfo.id) : []);
 	const formatter = new DateFormatter(page.data.locale, {
 		month: 'short',
 		day: 'numeric',
@@ -65,10 +58,14 @@
 	});
 
 	async function requestReview() {
-		if (session && git.master)
-			await Reviews.create({ userProjectId: session.id, ref: git.master })
-		else
-			toast.error("There is no active session or nothing has been pushed yet.")
+		const head = git.find((b) => b.head);
+		if (!session) toast.error('Session in');
+		else if (!head) toast.error('You have not submitted anything yet.');
+		else {
+			await Problem.try(async () => {
+				await Reviews.create({ userProjectId: session.id, ref: head.name });
+			});
+		}
 	}
 </script>
 
@@ -110,7 +107,7 @@
 							</Button>
 						{:else if !membership}
 							<!-- Other user can review it -->
-							 <!-- TODO: Implement, for now only team leader can request it -->
+							<!-- TODO: Implement, for now only team leader can request it -->
 							<!-- <Button size="sm" variant="outline" onclick={provideReview}>
 								Review <TextSearch />
 							</Button> -->
@@ -149,13 +146,13 @@
 					{#each reviews.data as item (item.id)}
 						<Item.Root variant="outline" class="items-center gap-3 p-3">
 							<Item.Media variant="image" class="shrink-0 border">
-								{#if (item.kind === "Self")}
+								{#if item.kind === 'Self'}
 									<User class="size-5 text-muted-foreground" />
-								{:else if (item.kind === "Peer")}
+								{:else if item.kind === 'Peer'}
 									<Users class="size-5 text-muted-foreground" />
-								{:else if (item.kind === "Async")}
+								{:else if item.kind === 'Async'}
 									<Globe class="size-5 text-muted-foreground" />
-								{:else if (item.kind === "Auto")}
+								{:else if item.kind === 'Auto'}
 									<Bot class="size-5 text-muted-foreground" />
 								{:else}
 									<User class="size-5 text-muted-foreground" />
@@ -175,7 +172,7 @@
 										<span class="text-muted-foreground/40 select-none">•</span>
 										<span class="max-w-32 truncate">{project.name}</span>
 									{:else}
-										{#if (item.kind === "Self")}
+										{#if item.kind === 'Self'}
 											<span class="font-bold">You</span>
 										{:else if item.reviewer}
 											<HoverCard.Root>
@@ -223,7 +220,7 @@
 
 										{#if item.state === 'InProgress'}
 											<span class="text-muted-foreground">
-												{(item.kind === "Self") ? 'are' : 'is'} reviewing
+												{item.kind === 'Self' ? 'are' : 'is'} reviewing
 											</span>
 										{:else}
 											<span class="text-muted-foreground">reviewed</span>

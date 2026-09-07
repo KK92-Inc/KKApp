@@ -1,7 +1,6 @@
 <script lang="ts">
 	import * as Item from '$lib/components/item';
 	import * as UserProjects from '$lib/remotes/user-project.remote';
-	import * as Projects from '$lib/remotes/projects.remote';
 	import {
 		Play,
 		UserPlus,
@@ -25,7 +24,6 @@
 
 	let index = $state(1);
 	const context = Page.getContext();
-	const project = await Projects.get(context.projectId());
 	const session = $derived(
 		await UserProjects.getByUserAndProject({
 			userId: context.userId(),

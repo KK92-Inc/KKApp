@@ -269,6 +269,8 @@ public static class Services
                 opts.PersistMessagesWithPostgresql(cs!).EnableMessageTransport(o => o.AutoProvision());
                 opts.PublishAllMessages().ToPostgresqlQueue("outbound");
                 opts.ListenToPostgresqlQueue("outbound").MaximumMessagesToReceive(50);
+                // TODO: This is ok, but... we might need to look into our handlers in general.
+                opts.CodeGeneration.AlwaysUseServiceLocationFor<DatabaseContext>();
             }
         });
     }

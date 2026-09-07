@@ -85,7 +85,7 @@
 							</Tabs.Trigger>
 						</Tabs.List>
 						<Tabs.Content value="manage">
-							<Item.Group class="flex gap-2">
+							<Item.Group class="flex gap-2 *:w-fit">
 								{#each members.data as member (member.id)}
 									<Item.User user={member.user}>
 										{#snippet actions()}

@@ -4,7 +4,7 @@
 	import * as Alert from '$lib/components/alert';
 	import * as UserProject from '$lib/remotes/user-project.remote';
 	import * as Project from '$lib/remotes/projects.remote';
-	import { Crown, ClockFading, Users, CalendarDaysIcon, Plus, Settings } from '@lucide/svelte';
+	import { Crown, ClockFading, Users, CalendarDaysIcon } from '@lucide/svelte';
 	import { Button } from '$lib/components/button';
 	import * as Page from './context.svelte';
 	import { page } from '$app/state';
