@@ -1,9 +1,3 @@
-// Place at: $lib/components/item/entity-status.ts
-//
-// Shared colour + label mapping used by the Project / Goal / Cursus / Rubric
-// item cards to indicate state at a glance (left accent border, avatar
-// status dot, and badge colour all pull from the same source so they never
-// drift out of sync).
 
 export type EntityState = 'Inactive' | 'Active' | 'Awaiting' | 'Completed';
 export const colors: Record<EntityState, { avatar: string; badge: string }> = {

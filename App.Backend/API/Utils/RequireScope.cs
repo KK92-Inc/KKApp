@@ -23,6 +23,8 @@ public class RequireScopeRequirement(string scope) : IAuthorizationRequirement
     public string Scope { get; } = scope;
 }
 
+// ============================================================================
+
 public class RequireScopeHandler : AuthorizationHandler<RequireScopeRequirement>
 {
     // TODO: Make it Configurable / retrieve via options.
@@ -31,7 +33,6 @@ public class RequireScopeHandler : AuthorizationHandler<RequireScopeRequirement>
     protected override Task HandleRequirementAsync(AuthorizationHandlerContext ctx, RequireScopeRequirement requirement)
     {
         var azp = ctx.User.FindFirst("azp")?.Value;
-        Console.WriteLine(azp);
         if (azp is not null && FirstPartyClients.Contains(azp))
         {
             ctx.Succeed(requirement);

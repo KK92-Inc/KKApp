@@ -13,6 +13,7 @@ import Goal from "./entities/item-goal.svelte"
 import Cursus from "./entities/item-cursus.svelte"
 import Rubric from "./entities/item-rubric.svelte"
 import User from "./entities/item-user.svelte"
+import Spotlight from "./misc/item-spotlight.svelte"
 
 export {
 	Root,
@@ -30,6 +31,7 @@ export {
 	Cursus,
 	Rubric,
 	User,
+	Spotlight,
 	//
 	Root as Item,
 	Group as ItemGroup,
@@ -46,4 +48,5 @@ export {
 	Cursus as ItemCursus,
 	Rubric as ItemRubric,
 	User as ItemUser,
+	Spotlight as ItemSpotlight
 };
