@@ -5,7 +5,7 @@
 	import * as Page from './context.svelte';
 	import * as Projects from '$lib/remotes/projects.remote';
 
-	import { Button } from '$lib/components/button';
+	import { Button, buttonVariants } from '$lib/components/button';
 	import { Check, ChevronsUpDown, ExternalLink, SearchIcon } from '@lucide/svelte';
 	import { cn } from '$lib/utils';
 	import useDebounce from '$lib/hooks/debounce.svelte';
@@ -41,9 +41,17 @@
 </script>
 
 <Popover.Root>
-	<Popover.Trigger bind:ref={trigger} disabled={context.fields.deprecated}>
+	<Popover.Trigger class={buttonVariants({ variant: 'outline' })} disabled={context.fields.deprecated}>
+		{#if context.fields.projectId === null}
+			Wildcard Rubric
+		{:else}
+			{label ?? 'Unknown Project'}
+		{/if}
+	</Popover.Trigger>
+
+	<!-- <Popover.Trigger bind:ref={trigger} disabled={context.fields.deprecated}>
 		{#snippet child({ props })}
-			<Button {...props} variant="outline" role="combobox" aria-expanded={open} class="justify-between">
+			<Button {...props} variant="outline" class="justify-between">
 				<span>
 					{#if context.fields.projectId === null}
 						Wildcard Rubric
@@ -54,7 +62,7 @@
 				<ChevronsUpDown />
 			</Button>
 		{/snippet}
-	</Popover.Trigger>
+	</Popover.Trigger> -->
 	<Popover.Content class="w-80 p-2" align="start">
 		<InputGroup.Root>
 			<InputGroup.Addon>
@@ -67,7 +75,7 @@
 			/>
 		</InputGroup.Root>
 
-		<div class="flex max-h-60 flex-col gap-1 overflow-y-auto pt-2">
+		<!-- <div class="flex max-h-60 flex-col gap-1 overflow-y-auto pt-2">
 			<svelte:boundary>
 				{@const workspace = await context.target}
 				{@const projects = await Projects.getPage({ name: query, workspaceId: workspace.id })}
@@ -129,8 +137,6 @@
 					<span class="p-4 text-center text-xs text-muted-foreground"> No projects match your search. </span>
 				{/each}
 			</svelte:boundary>
-		</div>
-
-		<!-- <span class="p-4 text-center text-xs text-muted-foreground"> No projects match your search. </span> -->
+		</div> -->
 	</Popover.Content>
 </Popover.Root>

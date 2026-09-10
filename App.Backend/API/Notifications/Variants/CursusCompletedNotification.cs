@@ -4,7 +4,6 @@
 // ============================================================================
 
 using App.Backend.Domain.Enums;
-using App.Backend.API.Views.Models;
 using App.Backend.API.Notifications.Channels;
 using Wolverine;
 using System.Net.Mail;

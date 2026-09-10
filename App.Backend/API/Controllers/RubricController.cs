@@ -133,14 +133,11 @@ public class RubricController(
             if (member is null) return Forbid();
         }
 
-        rubric.Name = body.Name.GetValueOrDefault(rubric.Name);
-        rubric.Public = body.Public.GetValueOrDefault(rubric.Public);
-        rubric.Enabled = body.Enabled.GetValueOrDefault(rubric.Enabled);
+        rubric.Name = body.Name;
+        rubric.Public = body.Public;
+        rubric.Enabled = body.Enabled;
 
-        List<(ReviewKinds Kind, int Count)>? variants = body.Variants is not null
-            ? body.Variants.Where(v => v.Required > 0).Select(v => (v.Kind, v.Required)).ToList()
-            : null;
-
+        var variants = body.Variants?.Where(v => v.Required > 0).Select(v => (v.Kind, v.Required)).ToList();
         await service.UpdateRubricAsync(rubric, variants, token);
         return Ok(new RubricDO(rubric));
     }

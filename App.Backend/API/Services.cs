@@ -9,15 +9,12 @@ using System.Threading.RateLimiting;
 
 using Microsoft.OpenApi;
 using Microsoft.EntityFrameworkCore;
-using Aspire.StackExchange.Redis;
 
-using Keycloak.AuthServices.Authentication;
 using Keycloak.AuthServices.Authorization;
 using Keycloak.AuthServices.Common;
 using Keycloak.AuthServices.Sdk;
 
 using Quartz;
-using Resend;
 using Serilog;
 using Serilog.Templates;
 using Serilog.Templates.Themes;
@@ -34,7 +31,6 @@ using App.Backend.Core.Services.Interface;
 using App.Backend.Core.Services.Options;
 using App.Backend.Database;
 using App.Backend.Database.Interceptors;
-using App.Backend.API.Jobs.Extensions;
 using App.Backend.Core.Engines.Evaluations;
 using App.Backend.Core.Engines.Evaluations.Rules;
 using App.Backend.API.Schemas.Schema;
@@ -83,7 +79,6 @@ public static class Services
     {
         builder.AddServiceDefaults();
         builder.Services.AddOptions();
-        builder.Services.AddRazorTemplating();
         builder.Services.AddProblemDetails();
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddResponseCompression();
@@ -98,7 +93,6 @@ public static class Services
         {
             o.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
             o.JsonSerializerOptions.NumberHandling = JsonNumberHandling.Strict;
-            o.JsonSerializerOptions.AddOptionalSupport();
         });
 
 
@@ -112,13 +106,6 @@ public static class Services
             builder.Configuration.GetSection(WebhookOptions.SectionName));
         builder.Services.Configure<OnsiteNetworkOptions>(
             builder.Configuration.GetSection(OnsiteNetworkOptions.SectionName));
-
-        builder.Services.AddHttpClient<ResendClient>();
-        builder.Services.Configure<ResendClientOptions>(o =>
-        {
-            o.ApiToken = builder.Configuration["Resend:Secret"]
-                ?? throw new InvalidOperationException("Resend API token is not configured.");
-        });
     }
 
     // Authentication & Authorization
@@ -159,19 +146,10 @@ public static class Services
     {
         builder.Services.AddOpenApi(o =>
         {
-            // Optional<T> should never become its own named component
-            // TODO: Move this some place else for now it's ok.
-            var defaultReferenceId = o.CreateSchemaReferenceId;
-            o.CreateSchemaReferenceId = typeInfo =>
-                typeInfo.Type.IsGenericType && typeInfo.Type.GetGenericTypeDefinition() == typeof(Optional<>)
-                    ? null
-                    : defaultReferenceId(typeInfo);
-
             o.AddDocumentTransformer<InfoDocumentTransformer>();
             o.AddDocumentTransformer<BearerDocumentTransformer>();
             o.AddSchemaTransformer<RequiredDiscriminatorTransformer>();
             o.AddSchemaTransformer<BreakRuleCircularRefTransformer>();
-            o.AddSchemaTransformer<OptionalSchemaTransformer>();
             o.AddOperationTransformer<BasicResponsesOperationTransformer>();
 
             // Register the Keycloak OAuth2 security scheme.
@@ -288,7 +266,6 @@ public static class Services
         builder.Services.AddScoped<INotificationService, NotificationService>();
         builder.Services.AddScoped<ISpotlightService, SpotlightService>();
         builder.Services.AddScoped<IApplicationService, ApplicationService>();
-        builder.Services.AddTransient<IResend, ResendClient>();
         builder.Services.AddSingleton<IBroadcastRegistry, MemoryBroadcastRegistry>();
         builder.Services.AddSingleton<IOnsiteNetworkService, OnsiteNetworkService>();
         

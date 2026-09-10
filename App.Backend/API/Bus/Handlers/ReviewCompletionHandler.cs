@@ -5,10 +5,8 @@
 
 namespace App.Backend.API.Bus.Handlers;
 
-using Resend;
 using System.Text.Json;
 using Wolverine.Attributes;
-using Razor.Templating.Core;
 using App.Backend.API.Notifications.Channels;
 using App.Backend.API.Notifications;
 using App.Backend.Core.Services.Interface;
