@@ -7,22 +7,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using App.Backend.API.Params;
 using App.Backend.Core.Services.Interface;
-using Keycloak.AuthServices.Authorization;
-using App.Backend.Models.Responses.Entities.Cursus;
-using App.Backend.Domain.Relations;
 using App.Backend.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
-using App.Backend.Models.Responses.Entities.Goals;
-using App.Backend.Domain.Entities;
-using Wolverine;
-using App.Backend.API.Utils;
-using App.Backend.Models.Requests.Cursus;
-using System.Linq.Expressions;
-using App.Backend.Database;
-using System.ComponentModel;
 using App.Backend.Models.Responses.Entities;
-using App.Backend.Domain.Entities.Events;
 using App.Backend.Models.Requests.Event;
+using System.Linq.Expressions;
+using App.Backend.Domain.Entities.Events;
+using System.ComponentModel.DataAnnotations;
 
 // ============================================================================
 
@@ -44,13 +35,33 @@ public class EventController(IAuthorizationService auth, IEventService service) 
     public async Task<ActionResult<IEnumerable<EventDO>>> GetAll(
         [FromQuery(Name = "filter[id]")] Guid? id,
         [FromQuery(Name = "filter[name]")] string? name,
+        [FromQuery(Name = "filter[state]")] EventState? state,
+        [FromQuery(Name = "filter[not[state]]")] EventState? notState,
+        [FromQuery(Name = "filter[year]"), Range(2000, 2077)] int? year,
+        [FromQuery(Name = "filter[month]"), Range(1, 12)] int? month,
         [FromQuery] Sorting sorting,
         [FromQuery] Pagination pagination,
         CancellationToken token
     )
     {
+        Expression<Func<Event, bool>>? date = null;
+
+        if (year.HasValue || month.HasValue)
+        {
+            var target = year ?? DateTimeOffset.UtcNow.Year;
+            var start = month.HasValue
+                ? new DateTimeOffset(target, month.Value, 1, 0, 0, 0, TimeSpan.Zero)
+                : new DateTimeOffset(target, 1, 1, 0, 0, 0, TimeSpan.Zero);
+
+            var end = month.HasValue ? start.AddMonths(1) : start.AddYears(1);
+            date = e => e.StartsAt < end && e.EndsAt >= start;
+        }
+
         var page = await service.GetAllAsync(sorting, pagination, token,
             id is null ? null : e => e.Id == id,
+            state is null ? null : e => e.State == state,
+            notState is null ? null : e => e.State != notState,
+            date,
             string.IsNullOrWhiteSpace(name) ? null : e => EF.Functions.ILike(e.Name, $"%{name}%")
         );
 

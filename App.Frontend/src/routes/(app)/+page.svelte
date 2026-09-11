@@ -9,6 +9,7 @@
 	import * as Account from '$lib/remotes/account.remote';
 	import Reviews from './reviews.svelte';
 	import { page } from '$app/state';
+	import Events from './events.svelte';
 
 	function feed(page: number) {
 		return Account.getNotificationPage({
@@ -52,6 +53,7 @@
 
 	<aside class="sticky top-[calc(var(--header-height)+1rem)] flex h-fit flex-col gap-4 max-md:hidden">
 		<Spotlight />
+		<Events />
 		<Reviews />
 	</aside>
 </div>

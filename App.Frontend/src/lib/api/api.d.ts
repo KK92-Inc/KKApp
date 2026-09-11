@@ -1156,6 +1156,10 @@ export interface paths {
                 query?: {
                     "filter[id]"?: string;
                     "filter[name]"?: string;
+                    "filter[state]"?: components["schemas"]["EventState"];
+                    "filter[not[state]]"?: components["schemas"]["EventState"];
+                    "filter[year]"?: number | string;
+                    "filter[month]"?: number | string;
                     /** @description The name of the property to use for sorting. */
                     "sort[by]"?: string;
                     /** @description The sort direction. */
