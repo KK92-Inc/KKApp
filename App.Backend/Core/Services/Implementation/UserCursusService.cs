@@ -18,10 +18,12 @@ namespace App.Backend.Core.Services.Implementation;
 
 public class UserCursusService(DatabaseContext ctx) : BaseService<UserCursus>(ctx), IUserCursusService
 {
+    private readonly DatabaseContext context = ctx;
+
     public async Task<(IReadOnlyList<UserCursusGoal> Snapshot, IReadOnlyDictionary<Guid, EntityObjectState> States)> GetTrackAsync(
         Guid userCursusId, Guid userId, CancellationToken token = default)
     {
-        var snapshot = await ctx.UserCursusGoal
+        var snapshot = await context.UserCursusGoal
             .Where(g => g.UserCursusId == userCursusId)
             .Include(g => g.Goal)
             .ToListAsync(token);
@@ -30,7 +32,7 @@ public class UserCursusService(DatabaseContext ctx) : BaseService<UserCursus>(ct
             return ([], new Dictionary<Guid, EntityObjectState>());
 
         var goalIds = snapshot.Select(n => n.GoalId).ToList();
-        var states = await ctx.UserGoals
+        var states = await context.UserGoals
             .Where(ug => ug.UserId == userId && goalIds.Contains(ug.GoalId))
             .ToDictionaryAsync(ug => ug.GoalId, ug => ug.State, token);
 

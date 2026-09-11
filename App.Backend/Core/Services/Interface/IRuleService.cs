@@ -3,10 +3,10 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-using App.Backend.Domain;
 using App.Backend.Domain.Entities.Reviews;
 using App.Backend.Domain.Entities.Users;
 using App.Backend.Core.Engines.Evaluations;
+using App.Backend.Domain.Rules.Evaluations;
 
 namespace App.Backend.Core.Services.Interface;
 

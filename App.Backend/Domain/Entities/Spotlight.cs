@@ -20,33 +20,28 @@ namespace App.Backend.Domain.Entities;
 [Index(nameof(StartsAt), nameof(EndsAt))]
 public class Spotlight : BaseEntity
 {
-    [Required, MaxLength(200)]
-    [Column("title")]
+    [Column("title"), MaxLength(255)]
     public required string Title { get; set; }
 
-    [Required, MaxLength(1000)]
-    [Column("description")]
+    [Column("description"), MaxLength(255)]
     public required string Description { get; set; }
 
     /// <summary>
     /// Call-to-action button text (e.g., "Learn More", "Register Now")
     /// </summary>
-    [Required, MaxLength(50)]
-    [Column("action_text")]
+    [Column("action_text"), MaxLength(50)]
     public required string ActionText { get; set; }
 
     /// <summary>
     /// URL to navigate to when clicking the spotlight
     /// </summary>
-    [Required, MaxLength(500)]
-    [Column("href")]
+    [Column("href"), MaxLength(255)]
     public required string Href { get; set; }
 
     /// <summary>
     /// Background image URL for the spotlight card
     /// </summary>
-    [MaxLength(500)]
-    [Column("background_url")]
+    [Column("background_url"), MaxLength(255)]
     public string? BackgroundUrl { get; set; }
 
     /// <summary>

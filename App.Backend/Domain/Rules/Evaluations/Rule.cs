@@ -4,12 +4,11 @@
 // ============================================================================
 
 using System.Text.Json.Serialization;
-using App.Backend.Domain.Rules.Evaluations;
 using App.Backend.Domain.Rules.Evaluations.Composites;
 
 // ============================================================================
 
-namespace App.Backend.Domain;
+namespace App.Backend.Domain.Rules.Evaluations;
 
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
 [JsonDerivedType(typeof(AllOfRule), "all_of")]

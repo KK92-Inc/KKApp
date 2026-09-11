@@ -11,6 +11,7 @@ using App.Backend.Domain.Entities.Reviews;
 using App.Backend.Domain.Relations;
 using App.Backend.Domain.Entities.Projects;
 using App.Backend.Domain;
+using App.Backend.Domain.Entities.Events;
 
 // ============================================================================
 
@@ -56,37 +57,38 @@ public class DatabaseContext(DbContextOptions<DatabaseContext> options) : DbCont
     public DbSet<Member> Members { get; set; }
     public DbSet<UserProjectTransaction> UserProjectTransactions { get; set; }
     public DbSet<Application> Applications { get; set; }
+    public DbSet<Event> Events { get; set; }
+    public DbSet<EventFeedback> EventFeedbacks { get; set; }
 
     // Joins
     public DbSet<GoalProject> GoalProject { get; set; }
     public DbSet<CursusGoal> CursusGoal { get; set; }
     public DbSet<UserCursusGoal> UserCursusGoal { get; set; }
-    // public DbSet<GoalCollaborator> GoalCollaborator { get; set; }
-    // public DbSet<CursusCollaborator> CursusCollaborator { get; set; }
+    public DbSet<UserEvent> UserEvent { get; set; }
 #nullable restore
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        base.OnModelCreating(modelBuilder);
+    // protected override void OnModelCreating(ModelBuilder modelBuilder)
+    // {
+    //     base.OnModelCreating(modelBuilder);
 
-        // Rule collections are stored as jsonb. Register value converters so
-        // EF Core serializes them via System.Text.Json (which supports the
-        // [JsonPolymorphic] attributes on Rule) rather than delegating to Npgsql,
-        // which requires an explicit dynamic-JSON opt-in for interface types.
-        var jsonOptions = new JsonSerializerOptions();
+    //     // Rule collections are stored as jsonb. Register value converters so
+    //     // EF Core serializes them via System.Text.Json (which supports the
+    //     // [JsonPolymorphic] attributes on Rule) rather than delegating to Npgsql,
+    //     // which requires an explicit dynamic-JSON opt-in for interface types.
+    //     var jsonOptions = new JsonSerializerOptions();
 
-        modelBuilder.Entity<Rubric>()
-            .Property(r => r.ReviewerRules)
-            .HasConversion(
-                v => JsonSerializer.Serialize(v, jsonOptions),
-                v => JsonSerializer.Deserialize<ICollection<Rule>>(v, jsonOptions) ?? new List<Rule>()
-            );
+    //     modelBuilder.Entity<Rubric>()
+    //         .Property(r => r.ReviewerRules)
+    //         .HasConversion(
+    //             v => JsonSerializer.Serialize(v, jsonOptions),
+    //             v => JsonSerializer.Deserialize<ICollection<Rule>>(v, jsonOptions) ?? new List<Rule>()
+    //         );
 
-        modelBuilder.Entity<Rubric>()
-            .Property(r => r.RevieweeRules)
-            .HasConversion(
-                v => JsonSerializer.Serialize(v, jsonOptions),
-                v => JsonSerializer.Deserialize<ICollection<Rule>>(v, jsonOptions) ?? new List<Rule>()
-            );
-    }
+    //     modelBuilder.Entity<Rubric>()
+    //         .Property(r => r.RevieweeRules)
+    //         .HasConversion(
+    //             v => JsonSerializer.Serialize(v, jsonOptions),
+    //             v => JsonSerializer.Deserialize<ICollection<Rule>>(v, jsonOptions) ?? new List<Rule>()
+    //         );
+    // }
 }

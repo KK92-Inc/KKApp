@@ -24,13 +24,10 @@ public class CommentDO(Comment comment) : BaseEntityDO<Comment>(comment)
     [Required]
     public string Body { get; set; } = comment.Body;
 
-    [Required]
-    public Guid UserId { get; set; } = comment.UserId;
-
     /// <summary>
     /// The user who authored this comment.
     /// </summary>
-    public UserLightDO? User { get; set; } = comment.User;
+    public UserLightDO User { get; set; } = comment.User;
 
     public static implicit operator CommentDO?(Comment? comment) =>
         comment is null ? null : new(comment);

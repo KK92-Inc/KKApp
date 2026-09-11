@@ -7,9 +7,9 @@
 using App.Backend.Core.Engines.Evaluations;
 using App.Backend.Core.Engines.Evaluations.Enums;
 using App.Backend.Core.Services.Interface;
-using App.Backend.Domain;
 using App.Backend.Domain.Entities.Reviews;
 using App.Backend.Domain.Entities.Users;
+using App.Backend.Domain.Rules.Evaluations;
 
 namespace App.Backend.Core.Services.Implementation;
 

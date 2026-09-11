@@ -3,7 +3,7 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-using App.Backend.Domain;
+using App.Backend.Domain.Rules.Evaluations;
 using App.Backend.Domain.Rules.Evaluations.Composites;
 
 // ============================================================================

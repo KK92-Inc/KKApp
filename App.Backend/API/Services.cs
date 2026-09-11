@@ -14,6 +14,7 @@ using Keycloak.AuthServices.Authorization;
 using Keycloak.AuthServices.Common;
 using Keycloak.AuthServices.Sdk;
 
+using Npgsql;
 using Quartz;
 using Serilog;
 using Serilog.Templates;
@@ -45,8 +46,9 @@ using Microsoft.Kiota.Abstractions.Authentication;
 using KeycloakAdminClientOptions = Keycloak.AuthServices.Sdk.KeycloakAdminClientOptions;
 using App.Backend.Core.Services.Persistence.Implementation;
 using App.Backend.Core.Services.Persistence.Interface;
-using App.Backend.Models;
 using System.Text.Json.Serialization;
+using App.Backend.API.Jobs;
+using App.Backend.API.Jobs.Extensions;
 
 // ============================================================================
 
@@ -214,15 +216,15 @@ public static class Services
 
     private static void RegisterDatabase(WebApplicationBuilder builder)
     {
-        // 1. If testing, bail out early. Let ApiFactory handle DbContext registration.
         if (builder.Environment.IsEnvironment("Testing"))
             return;
 
-        // 2. Production / Development (Aspire setup)
-        var cs = builder.Configuration.GetConnectionString("db");
-        builder.AddNpgsqlDbContext<DatabaseContext>("db", null, options =>
+        var source = new NpgsqlDataSourceBuilder(builder.Configuration.GetConnectionString("db"));
+        source.EnableDynamicJson();
+
+        builder.Services.AddDbContextPool<DatabaseContext>(options =>
         {
-            options.UseNpgsql(cs);
+            options.UseNpgsql(source.Build());
             options.UseLazyLoadingProxies();
             options.AddInterceptors(new SshKeyInterceptor());
             options.AddInterceptors(new SavingChangesInterceptor(TimeProvider.System));
@@ -230,6 +232,8 @@ public static class Services
             if (builder.Environment.IsDevelopment())
                 options.EnableSensitiveDataLogging();
         });
+
+        builder.EnrichNpgsqlDbContext<DatabaseContext>();
     }
 
     // Message Bus
@@ -268,13 +272,14 @@ public static class Services
         builder.Services.AddScoped<IApplicationService, ApplicationService>();
         builder.Services.AddSingleton<IBroadcastRegistry, MemoryBroadcastRegistry>();
         builder.Services.AddSingleton<IOnsiteNetworkService, OnsiteNetworkService>();
-        
+
         // User
         builder.Services.AddScoped<IUserService, UserService>();
         builder.Services.AddScoped<IMemberService, MemberService>();
         builder.Services.AddScoped<IUserCursusService, UserCursusService>();
         builder.Services.AddScoped<IUserGoalService, UserGoalService>();
         builder.Services.AddScoped<IUserProjectService, UserProjectService>();
+        builder.Services.AddScoped<IEventService, EventService>();
 
         // Academic
         builder.Services.AddScoped<IWorkspaceService, WorkspaceService>();
@@ -308,6 +313,8 @@ public static class Services
             quartz.SchedulerId = "Queue";
             quartz.SchedulerName = "KKScheduler";
             quartz.UseDefaultThreadPool(x => x.MaxConcurrency = 5);
+
+            quartz.Register<EventStateJob>();
         });
 
         builder.Services.AddQuartzHostedService(o => o.WaitForJobsToComplete = true);

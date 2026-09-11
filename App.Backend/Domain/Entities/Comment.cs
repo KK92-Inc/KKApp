@@ -34,23 +34,13 @@ public class Comment : BaseEntity
     /// to be the literal type name used by the application (for example: "Review").
     /// </summary>
     [Column("entity_type")]
-    public string EntityType { get; set; }
+    public required string EntityType { get; set; }
 
-    /// <summary>
-    /// The identifier of the target entity instance this comment belongs to.
-    /// When combined with <see cref="EntityType"/>, it uniquely identifies
-    /// the commented object across the system.
-    /// </summary>
     [Column("entity_id")]
     public Guid EntityId { get; set; }
 
-    /// <summary>
-    /// The body of the comment. Typically contains the textual content that the
-    /// user submitted. Formatting (HTML/Markdown/plain text) is determined by
-    /// the application policy and should be handled consistently by callers.
-    /// </summary>
     [Column("body")]
-    public string Body { get; set; }
+    public required string Body { get; set; }
 
     /// <summary>
     /// The identifier of the user who authored the comment.

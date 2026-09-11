@@ -17,11 +17,9 @@ using System.Linq.Expressions;
 
 namespace App.Backend.Core.Services.Implementation;
 
-public class ReviewService(DatabaseContext context, IRuleService rules, IGitService git) : BaseService<Review>(context), IReviewService
+public class ReviewService(DatabaseContext ctx, IRuleService rules, IGitService git) : BaseService<Review>(ctx), IReviewService
 {
-    // ============================================================================
-    // Public API (Core Actions)
-    // ============================================================================
+    private readonly DatabaseContext context = ctx;
 
     public override async Task<PaginatedList<Review>> GetAllAsync(ISorting sorting, IPagination pagination, CancellationToken token = default, params Expression<Func<Review, bool>>?[] filters)
     {

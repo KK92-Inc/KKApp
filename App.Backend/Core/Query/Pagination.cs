@@ -31,7 +31,7 @@ public interface IPagination
 /// Paginated list of items.
 /// </summary>
 /// <typeparam name="T">The object type</typeparam>
-public class PaginatedList<T>(IReadOnlyCollection<T> items, int count, int index, int size) where T : BaseEntity
+public class PaginatedList<T>(IReadOnlyCollection<T> items, int count, int index, int size)
 {
     /// <summary>
     /// Append pagination headers to the response headers.
@@ -84,7 +84,7 @@ public static class PaginationExtension
     /// <param name="source">The source queryable.</param>
     /// <param name="pagination">The pagination parameters.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the paginated list.</returns>
-    public static async Task<PaginatedList<T>> PaginateAsync<T>(this IQueryable<T> source, IPagination pagination, CancellationToken token = default) where T : BaseEntity
+    public static async Task<PaginatedList<T>> PaginateAsync<T>(this IQueryable<T> source, IPagination pagination, CancellationToken token = default)
     {
         int count = await source.CountAsync(token);
         var items = await source
