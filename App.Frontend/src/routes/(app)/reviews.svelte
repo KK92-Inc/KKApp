@@ -42,9 +42,15 @@
 
 <div class="grid grid-rows-[auto_1fr]">
 	<span class="flex items-center gap-3 pb-2">
-		<p class="font-bold whitespace-nowrap">Recent Reviews</p>
+		<p class="font-bold whitespace-nowrap flex items-center gap-2">
+			<HeartHandshake size={16}/>
+			Recent Reviews
+		</p>
 		<Separator orientation="horizontal" class="flex-1" />
-		<Button size="sm" variant="outline" href="/users/{page.data.session.userId}/reviews">View More</Button>
+		<Button size="sm" variant="outline" href="/users/{page.data.session.userId}/reviews">
+			View More
+			<ArrowRight />
+		</Button>
 	</span>
 	<Item.Group class="gap-2">
 		<svelte:boundary>

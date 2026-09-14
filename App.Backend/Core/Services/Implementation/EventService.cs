@@ -34,6 +34,18 @@ public class EventService(DatabaseContext ctx, TimeProvider time) : BaseService<
             .PaginateAsync(pagination, token);
     }
 
+    public async Task<ILookup<Guid, User>> ParticipantsForEvents(IEnumerable<Guid> eventIds, CancellationToken token = default)
+    {
+        var ids = eventIds.ToArray();
+
+        var rows = await context.UserEvent
+            .Where(ev => ids.Contains(ev.EventId))
+            .Select(ev => new { ev.EventId, ev.User })
+            .ToListAsync(token);
+
+        return rows.ToLookup(r => r.EventId, r => r.User);
+    }
+
     public async Task<PaginatedList<(EventFeedback Feedback, Comment Comment)>> GetAllFeedbackAsync(
         Guid eventId,
         ISorting sorting,
@@ -127,7 +139,7 @@ public class EventService(DatabaseContext ctx, TimeProvider time) : BaseService<
 
             ServiceException.ThrowIf(status is null, "Event not found");
             ServiceException.ThrowIf(status!.Event.State is EventState.Rejected, "Event was rejected.");
-            ServiceException.ThrowIf(status.Event.State is EventState.Completed, "Event has already completed.");
+            ServiceException.ThrowIf(status.Event.State is EventState.Finished, "Event has already completed.");
             ServiceException.ThrowIf(status.Event.UserId == userId, "You can't join your own event.");
             ServiceException.ThrowIf(status.Joined, "Already joined this event.");
             ServiceException.ThrowIf(status.Event.ClosesAt.HasValue && now > status.Event.ClosesAt.Value, "Registration for this event is closed.");
@@ -160,7 +172,7 @@ public class EventService(DatabaseContext ctx, TimeProvider time) : BaseService<
 
         ServiceException.ThrowIf(status is null, "Event not found");
         ServiceException.ThrowIf(status!.Event.State is EventState.Rejected, "Event was rejected.");
-        ServiceException.ThrowIf(status.Event.State is EventState.Completed, "Event has already completed.");
+        ServiceException.ThrowIf(status.Event.State is EventState.Finished, "Event has already completed.");
         ServiceException.ThrowIf(!status.IsJoined, "You have not joined this event.");
         ServiceException.ThrowIf(status.IsClosed, "You can no longer leave this event as registration has closed.");
 

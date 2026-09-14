@@ -66,7 +66,26 @@ public class EventController(IAuthorizationService auth, IEventService service) 
         );
 
         page.AppendHeaders(Response.Headers);
-        return Ok(page.Items.Select(e => new EventDO(e)));
+        var events = page.Items.Select(e => e.Id).ToArray();
+        var participants = await service.ParticipantsForEvents(events, token);
+        return Ok(page.Items
+            .Select(e => new EventDO(e, participants[e.Id]))
+            .ToList());
+    }
+
+    [HttpGet("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Query a event")]
+    [EndpointDescription("Retrieve a specific event by ID")]
+    public async Task<ActionResult<EventDO>> GetById(Guid id, CancellationToken token)
+    {
+        var @event = await service.FindByIdAsync(id, token);
+        if (@event is null) return NotFound();
+
+
+        return Ok(new EventDO(@event, await service.Participants(id, token)));
     }
 
     [HttpPost("{id:guid}/feedback")]
@@ -86,7 +105,7 @@ public class EventController(IAuthorizationService auth, IEventService service) 
         var @event = await service.FindByIdAsync(id, token);
         if (@event is null) return NotFound();
 
-        if (@event.State is not EventState.Completed)
+        if (@event.State is not EventState.Finished)
             return Problem(title: "Event is not yet completed", statusCode: 422);
         if (!await service.Participates(id, userId, token))
             return Forbid();
@@ -113,21 +132,6 @@ public class EventController(IAuthorizationService auth, IEventService service) 
         return Ok(page.Items.Select(tuple => new EventFeedbackDO(tuple.Feedback, tuple.Comment)));
     }
 
-    [HttpGet("{id:guid}/users")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [EndpointSummary("Query event participants")]
-    [EndpointDescription("Retrieve list of registered users for a specific event")]
-    public async Task<ActionResult<IEnumerable<UserDO>>> GetParticipants(Guid id, CancellationToken token)
-    {
-        var @event = await service.FindByIdAsync(id, token);
-        if (@event is null) return NotFound();
-
-        var users = await service.Participants(id, token);
-        return Ok(users.Select(u => new UserDO(u)));
-    }
-
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -135,32 +139,29 @@ public class EventController(IAuthorizationService auth, IEventService service) 
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Create a new event")]
     [EndpointDescription("Creates a new campus event created by the requesting user")]
-    public async Task<ActionResult<EventDO>> Create(
-        [FromBody] PostEventRequestDTO body,
-        [FromQuery(Name = "event[pending]")] bool? pending,
-        CancellationToken token
+    public async Task<ActionResult<EventDO>> Create([FromBody] PostEventRequestDTO body, CancellationToken token
     )
     {
         var userId = User.GetSID();
         var initial = EventState.Pending;
 
-        if (pending.HasValue && !pending.Value)
+        // Threshold needs to be provided unless you're staff
+        // Then you can just *create* the event directly
+        if (!body.Threshold.HasValue)
         {
             var staff = await auth.AuthorizeAsync(User, "staff");
             if (staff.Succeeded) initial = EventState.Accepted;
         }
 
-        var createdEvent = await service.CreateAsync(new()
+        var @event = await service.CreateAsync(new()
         {
             UserId = userId,
             Name = body.Name,
             Markdown = body.Markdown,
-            // NOTE(W2): Basically it makes no sense to ask for a threshold...
-            // If you say it *will* happen then don't ask for a certain amount to join.
             State = initial,
             Description = body.Description,
             Thumbnail = body.Thumbnail,
-            Threshold = pending.HasValue ? null : body.Threshold,
+            Threshold = body.Threshold,
             Capacity = body.Capacity,
             StartsAt = body.StartsAt,
             EndsAt = body.EndsAt,
@@ -169,8 +170,8 @@ public class EventController(IAuthorizationService auth, IEventService service) 
 
         return CreatedAtAction(
             nameof(Create),
-            new { filter_id = createdEvent.Id },
-            new EventDO(createdEvent)
+            new { filter_id = @event.Id },
+            new EventDO(@event, [])
         );
     }
 
@@ -194,7 +195,7 @@ public class EventController(IAuthorizationService auth, IEventService service) 
 
         // Prevent already completed events from being cancelled.
         // Accepted ones can still be cancelled for maybe unexpected reasons.
-        if (@event.State is EventState.Completed)
+        if (@event.State is EventState.Finished)
             return Problem(title: "Event is already completed", statusCode: 422);
         if (@event.State is EventState.Rejected)
             return Problem(title: "Event is already rejected", statusCode: 422);
@@ -217,7 +218,7 @@ public class EventController(IAuthorizationService auth, IEventService service) 
         var @event = await service.FindByIdAsync(id, token);
         if (@event is null) return NotFound();
 
-        if (@event.State is EventState.Completed)
+        if (@event.State is EventState.Finished)
             return Problem(title: "Event is already completed", statusCode: 422);
         if (@event.State is EventState.Rejected)
             return Problem(title: "Event was rejected", statusCode: 422);
@@ -240,7 +241,7 @@ public class EventController(IAuthorizationService auth, IEventService service) 
         var @event = await service.FindByIdAsync(id, token);
         if (@event is null) return NotFound();
 
-        if (@event.State is EventState.Completed)
+        if (@event.State is EventState.Finished)
             return Problem(title: "Event is already completed", statusCode: 422);
         if (@event.State is EventState.Rejected)
             return Problem(title: "Event was rejected", statusCode: 422);

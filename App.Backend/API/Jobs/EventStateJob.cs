@@ -75,7 +75,7 @@ public class EventStateJob(ILogger<EventStateJob> logger, DatabaseContext contex
         return await context.Events
             .Where(e => e.State == EventState.Accepted && e.EndsAt <= now)
             .ExecuteUpdateAsync(setters => setters
-                .SetProperty(e => e.State, EventState.Completed)
+                .SetProperty(e => e.State, EventState.Finished)
                 .SetProperty(e => e.UpdatedAt, now), token);
     }
 }

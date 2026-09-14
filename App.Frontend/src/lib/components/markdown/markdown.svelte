@@ -4,6 +4,7 @@
 	import { Markdown } from './render';
 	import { cn } from 'tailwind-variants';
 	import useDebounce from '$lib/hooks/debounce.svelte';
+	import Skeleton from '../skeleton/skeleton.svelte';
 
 	interface Props {
 		value: string;
@@ -24,7 +25,7 @@
 
 <svelte:boundary>
 	{#snippet pending()}
-		<span>Rendering...</span>
+		<Skeleton class="h-32" />
 	{/snippet}
 
 	<div class={cn('markdown', className)}>

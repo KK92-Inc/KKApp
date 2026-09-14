@@ -36,6 +36,14 @@ public interface IEventService : IDomainService<Event>
     /// <summary>
     /// 
     /// </summary>
+    /// <param name="eventIds"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public Task<ILookup<Guid, User>> ParticipantsForEvents(IEnumerable<Guid> eventIds, CancellationToken token = default);
+
+    /// <summary>
+    /// 
+    /// </summary>
     /// <param name="eventId"></param>
     /// <param name="userId"></param>
     /// <param name="token"></param>

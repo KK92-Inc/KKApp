@@ -33,7 +33,7 @@ public enum EventState
     /// <summary>
     /// The event has concluded.
     /// </summary>
-    [JsonPropertyName(nameof(Completed))]
-    Completed = 3,
+    [JsonPropertyName(nameof(Finished))]
+    Finished = 3,
 }
 

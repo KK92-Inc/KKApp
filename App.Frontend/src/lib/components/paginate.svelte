@@ -2,10 +2,11 @@
 	import * as Pagination from '$lib/components/pagination';
 	import { Pagination as PaginationPrimitive } from 'bits-ui';
 
-	let {
-		page = $bindable(1),
-		...rest
-	}: PaginationPrimitive.RootProps = $props();
+	type Props = PaginationPrimitive.RootProps & {
+		variant?: 'default' | 'short';
+	};
+
+	let { page = $bindable(1), variant = 'default', ...rest }: Props = $props();
 </script>
 
 <Pagination.Root bind:page {...rest}>
@@ -14,19 +15,27 @@
 			<Pagination.Item>
 				<Pagination.Previous />
 			</Pagination.Item>
-			{#each pages as page (page.key)}
-				{#if page.type === 'page'}
-					<Pagination.Item>
-						<Pagination.Link {page} isActive={currentPage === page.value}>
-							{page.value}
-						</Pagination.Link>
-					</Pagination.Item>
-				{:else}
-					<Pagination.Item>
-						<Pagination.Ellipsis />
-					</Pagination.Item>
-				{/if}
-			{/each}
+
+			{#if variant === 'default'}
+				{#each pages as page (page.key)}
+					{#if page.type === 'page'}
+						<Pagination.Item>
+							<Pagination.Link {page} isActive={currentPage === page.value}>
+								{page.value}
+							</Pagination.Link>
+						</Pagination.Item>
+					{:else}
+						<Pagination.Item>
+							<Pagination.Ellipsis />
+						</Pagination.Item>
+					{/if}
+				{/each}
+			{:else}
+				<Pagination.Item>
+					{page}
+				</Pagination.Item>
+			{/if}
+
 			<Pagination.Item>
 				<Pagination.Next />
 			</Pagination.Item>

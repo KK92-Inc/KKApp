@@ -54,7 +54,7 @@ public record PostEventRequestDTO : IValidatableObject
     /// Minimum required occupancy threshold to transition state.
     /// </summary>
     [Range(1, int.MaxValue, ErrorMessage = "Threshold must be at least 1.")]
-    [Description("Minimum required occupancy for the event to switch state.")]
+    [Description("Minimum required occupancy for the event to switch state. Only staff can set it to null.")]
     public int? Threshold { get; init; }
 
     /// <summary>

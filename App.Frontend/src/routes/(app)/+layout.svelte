@@ -9,6 +9,7 @@
 	import Separator from '$lib/components/separator/separator.svelte';
 	import { toast } from 'svelte-sonner';
 	import { isHttpError } from '@sveltejs/kit';
+	import { Calendar } from '@lucide/svelte';
 
 	let open = $state(false);
 	let { children }: LayoutProps = $props();
@@ -56,6 +57,11 @@
 			<div class="ml-auto flex items-center gap-2">
 				<!-- <Header.Search /> -->
 				<Header.Theme />
+				<Separator orientation="vertical" class="max-md:hidden" />
+				<Button href="/events" variant="outline">
+					<Calendar />
+					<span class="max-md:hidden">Events</span>
+				</Button>
 				<Separator orientation="vertical" />
 				<Header.Create />
 				<Header.Dropdown />

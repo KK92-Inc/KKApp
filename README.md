@@ -49,6 +49,28 @@ Most campuses currently do some of these things but still progress feels like pr
 
 ---
 
+# TODO: Student Management
+
+Create a page dedicated to manage users.
+Staff only and you basically can edit their display name, email and etc
+Then you can manage their profile picture
+
+As well as handling Student role so for example:
+- Applicant
+- Student
+- Alumni (?)
+- Staff
+
+Finally you can also enroll them into a cursus:
+- You need to have your piscine cursus ready as well as student cursus
+- Then you simply designate them to the right cursus.
+
+Needs to be bulk editable somehow we need a proper data table:
+- Deactivate
+- Anonymize
+- Alumnize 
+---
+
 You should be able to own the platform you run your education on, be free to modify and not be coerced into a perpetual licensing fee.
 
 ## 📄 License

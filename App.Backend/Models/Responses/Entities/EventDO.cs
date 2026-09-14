@@ -6,13 +6,14 @@
 using System.ComponentModel.DataAnnotations;
 using App.Backend.Domain.Entities;
 using App.Backend.Domain.Entities.Events;
+using App.Backend.Domain.Entities.Users;
 using App.Backend.Domain.Enums;
 
 // ============================================================================
 
 namespace App.Backend.Models.Responses.Entities;
 
-public class EventDO(Event @event) : BaseEntityDO<Event>(@event)
+public class EventDO(Event @event, IEnumerable<User> users) : BaseEntityDO<Event>(@event)
 {
     [Required]
     public string Name { get; set; } = @event.Name;
@@ -47,5 +48,6 @@ public class EventDO(Event @event) : BaseEntityDO<Event>(@event)
     [Required]
     public Guid UserId { get; set; } = @event.UserId;
 
-    public static implicit operator EventDO?(Event? @event) => @event is null ? null : new(@event);
+    [Required]
+    public IEnumerable<UserLightDO> Participants { get; set; } = users.Select(u => new UserLightDO(u));
 }

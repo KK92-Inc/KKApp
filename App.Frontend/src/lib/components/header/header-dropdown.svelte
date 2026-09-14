@@ -1,12 +1,5 @@
 <script lang="ts">
-		import {
-		Bell,
-		CircleQuestionMark,
-		Cog,
-		Ellipsis,
-		LogOut,
-		Rocket,
-	} from '@lucide/svelte';
+	import { Bell, CircleQuestionMark, Cog, Ellipsis, LogOut, Rocket } from '@lucide/svelte';
 	import { Button } from '../button';
 	import * as Avatar from '$lib/components/avatar/';
 	import * as ButtonGroup from '$lib/components/button-group/';
@@ -26,6 +19,9 @@
 		</Avatar.Root>
 		<span class="max-md:hidden">Account</span>
 	</Button>
+	<Button variant="outline" href="/notifications">
+		<Bell />
+	</Button>
 	<DropdownMenu.Root>
 		<DropdownMenu.Trigger>
 			{#snippet child({ props })}
@@ -40,10 +36,10 @@
 					<Cog />
 					Settings
 				</DropdownMenu.Item>
-				<DropdownMenu.Item href="/notifications">
+				<!-- <DropdownMenu.Item href="/notifications">
 					<Bell />
 					Notifications
-				</DropdownMenu.Item>
+				</DropdownMenu.Item> -->
 			</DropdownMenu.Group>
 			<DropdownMenu.Separator />
 			<DropdownMenu.Group>
