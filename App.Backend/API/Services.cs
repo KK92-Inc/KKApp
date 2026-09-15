@@ -49,6 +49,11 @@ using App.Backend.Core.Services.Persistence.Interface;
 using System.Text.Json.Serialization;
 using App.Backend.API.Jobs;
 using App.Backend.API.Jobs.Extensions;
+using App.Backend.API.Bus.Messages.Kickoff;
+using Wolverine.ErrorHandling;
+using Microsoft.Kiota.Abstractions;
+using Humanizer;
+using JasperFx.CodeGeneration.Model;
 
 // ============================================================================
 
@@ -115,13 +120,15 @@ public static class Services
 
     private static void RegisterAuthentication(WebApplicationBuilder builder)
     {
-        builder.Services.AddKeycloakWebApiAuthentication(builder.Configuration, "KeycloakStudent");
         builder.Services.AddSingleton<IAuthorizationHandler, RequireScopeHandler>();
+        builder.Services.AddKeycloakWebApiAuthentication(builder.Configuration, "KeycloakStudent");
         builder.Services
             .AddAuthorization(options =>
             {
-                options.AddPolicy("staff", policy => policy.RequireRealmRoles("staff"));
                 options.AddPolicy("dev", policy => policy.RequireRealmRoles("developer"));
+                options.AddPolicy("staff", policy => policy.RequireRealmRoles("staff"));
+                options.AddPolicy("student", policy => policy.RequireRealmRoles("student"));
+                options.AddPolicy("applicant", policy => policy.RequireRealmRoles("applicant"));
                 // JWT Scopes
                 options.AddPolicy("scope:user", p => p.Requirements.Add(new RequireScopeRequirement("user")));
                 options.AddPolicy("scope:workspace", p => p.Requirements.Add(new RequireScopeRequirement("workspace")));
@@ -132,7 +139,7 @@ public static class Services
             .AddKeycloakAuthorization(options =>
             {
                 options.RoleClaimType = ClaimTypes.Role;
-                options.EnableRolesMapping = RolesClaimTransformationSource.All; // or .All to include resource_access too
+                options.EnableRolesMapping = RolesClaimTransformationSource.All;
             })
             .AddAuthorizationServer(builder.Configuration, configSectionName: "KeycloakStudent");
 
@@ -245,6 +252,7 @@ public static class Services
 
         builder.Host.UseWolverine(opts =>
         {
+            opts.ServiceLocationPolicy = ServiceLocationPolicy.AlwaysAllowed;
             if (!builder.Environment.IsEnvironment("Testing"))
             {
                 opts.UseRuntimeCompilation();
@@ -253,8 +261,18 @@ public static class Services
                 opts.ListenToPostgresqlQueue("outbound").MaximumMessagesToReceive(50);
                 // TODO: This is ok, but... we might need to look into our handlers in general.
                 opts.CodeGeneration.AlwaysUseServiceLocationFor<DatabaseContext>();
+
+                // Make kickoff a durable queue and process them in parallel.
+                opts.LocalQueue("promote-applicant").MaximumParallelMessages(8);
+                opts.Publish(p => p.Message<PromoteApplicant>().ToLocalQueue("promote-applicant"));
+
+                opts.OnException<ApiException>()
+                    .RetryWithCooldown(1.Seconds(), 5.Seconds(), 15.Seconds())
+                    .Then.MoveToErrorQueue();
             }
         });
+
+
     }
 
     // Domain Services

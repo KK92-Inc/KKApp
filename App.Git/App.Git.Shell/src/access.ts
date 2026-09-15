@@ -165,6 +165,24 @@ async function member(userProjectId: string, login: string) {
 	return result?.ok ?? false;
 }
 
+/**
+ * Checks whether the user has an active freeze record.
+ * @param login The user login.
+ */
+async function frozen(login: string) {
+	const [result] = await sql<{ frozen: boolean }[]>`
+		SELECT EXISTS (
+			SELECT 1 FROM tbl_user u
+			JOIN tbl_freeze f ON f.user_id = u.id
+			WHERE u.login = ${login}
+			  AND f.starts_at <= CURRENT_TIMESTAMP
+			  AND CURRENT_TIMESTAMP < f.ends_at
+		) AS frozen
+	`;
+
+	return result?.frozen ?? false;
+}
+
 // ============================================================================
 
 /**
@@ -187,6 +205,8 @@ export default async function evaluate(root: string, user: string, command: stri
 
 	if (await priviliged(user)) // Full bypass if priviliged, i.e: Staff user
 		return { action, path, owner, name };
+	if (await frozen(user))
+		Utils.fail("Access denied: User is on a freeze.");
 
 	const object = await entity(owner, name);
 	if (object.kind === "project" || object.kind === "rubric") {

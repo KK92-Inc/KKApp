@@ -14,6 +14,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using App.Backend.Domain.Entities;
+using App.Backend.Core.Query;
 
 // ============================================================================
 
@@ -22,11 +24,14 @@ namespace App.Backend.Core.Services.Implementation;
 public class UserService(
     DatabaseContext ctx,
     ILogger<UserService> log,
+    TimeProvider time,
     IConfiguration configuration,
     [FromKeyedServices("student")] KeycloakAdminApiClient keycloak
 ) : BaseService<User>(ctx), IUserService
 {
-    private readonly DatabaseContext _context = ctx;
+    private readonly DatabaseContext context = ctx;
+
+    private readonly string realm = configuration["KeycloakStudent:realm"] ?? "student";
 
     public override async Task<User?> FindByIdAsync(Guid id, CancellationToken token = default)
     {
@@ -35,8 +40,8 @@ public class UserService(
 
     public override async Task UpdateAsync(User entity, CancellationToken token = default)
     {
-        if (entity.Details is not null && _context.Entry(entity.Details).State is EntityState.Detached)
-            _context.Add(entity.Details);
+        if (entity.Details is not null && context.Entry(entity.Details).State is EntityState.Detached)
+            context.Add(entity.Details);
 
         await base.UpdateAsync(entity, token);
     }
@@ -108,19 +113,19 @@ public class UserService(
         // Persist User and Personal Workspace atomically
         try
         {
-            var strategy = _context.Database.CreateExecutionStrategy();
+            var strategy = context.Database.CreateExecutionStrategy();
             var account = await strategy.ExecuteAsync(async (ct) =>
             {
-                await using var transaction = await _context.Database.BeginTransactionAsync(ct);
+                await using var transaction = await context.Database.BeginTransactionAsync(ct);
 
-                var newUser = await _context.Users.AddAsync(user, ct);
-                await _context.Workspaces.AddAsync(new()
+                var newUser = await context.Users.AddAsync(user, ct);
+                await context.Workspaces.AddAsync(new()
                 {
                     OwnerId = id,
                     Ownership = EntityOwnership.User,
                 }, ct);
 
-                await _context.SaveChangesAsync(ct);
+                await context.SaveChangesAsync(ct);
                 await transaction.CommitAsync(ct);
                 return newUser.Entity;
             }, token);
@@ -145,32 +150,140 @@ public class UserService(
 
     public async Task AddSshKeyAsync(Guid userId, SshKey sshKey, CancellationToken token = default)
     {
-        var exists = await _context.SshKeys.FirstOrDefaultAsync(
+        var exists = await context.SshKeys.FirstOrDefaultAsync(
             k => k.KeyType == sshKey.KeyType && k.KeyBlob == sshKey.KeyBlob,
             token);
 
         ServiceException.ThrowIf(exists is not null, "This SSH Key already exists.");
 
         sshKey.UserId = userId;
-        await _context.SshKeys.AddAsync(sshKey, token);
-        await _context.SaveChangesAsync(token);
+        await context.SshKeys.AddAsync(sshKey, token);
+        await context.SaveChangesAsync(token);
     }
 
     public async Task<bool> RemoveSshKeyAsync(string fingerprint, CancellationToken token = default)
     {
-        var key = await _context.SshKeys.FirstOrDefaultAsync(k => k.Fingerprint == fingerprint, token);
+        var key = await context.SshKeys.FirstOrDefaultAsync(k => k.Fingerprint == fingerprint, token);
         if (key is null)
             return false;
 
-        _context.SshKeys.Remove(key);
-        await _context.SaveChangesAsync(token);
+        context.SshKeys.Remove(key);
+        await context.SaveChangesAsync(token);
         return true;
     }
 
     public async Task<IEnumerable<SshKey>> GetSshKeysAsync(Guid userId, CancellationToken token = default)
     {
-        return await _context.Set<SshKey>()
+        return await context.Set<SshKey>()
             .Where(k => k.UserId == userId)
             .ToListAsync(token);
+    }
+
+    public async Task AnonymizeAsync(Guid id, CancellationToken token = default)
+    {
+        var handle = $"n0bdy-{time.GetUtcNow().ToUnixTimeSeconds()}";
+        var user = await FindByIdAsync(id, token);
+        ServiceException.ThrowIf(user is null, 404, "User not found.");
+        ServiceException.ThrowIf(user.Login.StartsWith("n0bdy"), 422, "User is already anonymized.");
+
+        var studentRealm = keycloak.Admin.Realms[realm].Users[id.ToString()];
+        var kcUser = await studentRealm.GetAsync(null, token)!;
+
+        await context.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
+        {
+            await using var transaction = await context.Database.BeginTransactionAsync(ct);
+
+            if (user.Details is not null)
+                context.Remove(user.Details);
+
+            user.Login = handle;
+            user.Display = null;
+            user.AvatarUrl = null;
+
+            // Don't forget to also delete all the keys
+            context.SshKeys.RemoveRange(await context.SshKeys
+                .Where(k => k.UserId == id)
+                .ToListAsync(ct));
+
+            kcUser.Enabled = false;
+            kcUser.FirstName = "";
+            kcUser.LastName = "";
+            kcUser.Email = $"{handle}@unknown.com";
+            kcUser.EmailVerified = false;
+            await studentRealm.PutAsync(kcUser, null, token);
+            await context.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+        }, token);
+    }
+
+    public async Task<Freeze?> GetFreezeAsync(Guid id, CancellationToken token = default)
+    {
+        var now = time.GetUtcNow();
+        return await context.Freezes
+            .Where(f => f.UserId == id && f.StartsAt <= now && f.EndsAt > now)
+            .FirstOrDefaultAsync(token);
+    }
+
+    public async Task<Freeze> FreezeAsync(Guid id, Freeze entity, CancellationToken token = default)
+    {
+        var freeze = await context.Freezes.FirstOrDefaultAsync(f => f.UserId == id, token);
+        ServiceException.ThrowIf(freeze is not null, "User is already frozen.");
+
+        var result = await context.Freezes.AddAsync(entity, token);
+        await context.SaveChangesAsync(token);
+        return result.Entity;
+
+
+        var studentRealm = keycloak.Admin.Realms[realm].Users[id.ToString()];
+        var user = await studentRealm.GetAsync(null, token);
+        ServiceException.ThrowIf(user is null, "User not found in Keycloak");
+
+        return await context.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
+        {
+            await using var transaction = await context.Database.BeginTransactionAsync(ct);
+            var result = await context.Freezes.AddAsync(entity, token);
+            await context.SaveChangesAsync(token);
+
+            if (user.Enabled is not false)
+            {
+                user.Enabled = false;
+                await studentRealm.PutAsync(user, null, token);
+            }
+
+            await context.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+            return result.Entity;
+        }, token);
+    }
+
+    public async Task UnFreezeAsync(Guid id, CancellationToken token = default)
+    {
+        var freeze = await context.Freezes.FirstOrDefaultAsync(f => f.UserId == id, token);
+        ServiceException.ThrowIf(freeze is null, "User has no active freeze.");
+
+        var studentRealm = keycloak.Admin.Realms[realm].Users[id.ToString()];
+        var user = await studentRealm.GetAsync(null, token);
+        ServiceException.ThrowIf(user is null, "User not found in Keycloak");
+
+        await context.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
+        {
+            await using var transaction = await context.Database.BeginTransactionAsync(ct);
+            context.Freezes.Remove(freeze);
+            await context.SaveChangesAsync(ct);
+
+            if (user.Enabled is not true)
+            {
+                user.Enabled = true;
+                await studentRealm.PutAsync(user, null, ct);
+            }
+
+            await context.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+        }, token);
+    }
+
+    public async Task<PaginatedList<Freeze>> GetFrozenUsersAsync(ISorting sorting, IPagination pagination, CancellationToken token = default)
+    {
+        return await context.Freezes.AsNoTracking().Sort(sorting).PaginateAsync(pagination, token);
     }
 }

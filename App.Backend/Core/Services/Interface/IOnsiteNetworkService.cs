@@ -5,6 +5,9 @@
 
 namespace App.Backend.Core.Services.Interface;
 
+/// <summary>
+/// Onsite network enforcment.
+/// </summary>
 public interface IOnsiteNetworkService
 {
     bool IsOnsite(System.Net.IPAddress? remoteIp);

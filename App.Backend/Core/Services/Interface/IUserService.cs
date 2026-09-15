@@ -4,6 +4,8 @@
 // ============================================================================
 
 using System.Linq.Dynamic.Core;
+using App.Backend.Core.Query;
+using App.Backend.Domain.Entities;
 using App.Backend.Domain.Entities.Users;
 using App.Backend.Models;
 
@@ -39,6 +41,61 @@ public interface IUserService : IDomainService<User>
     public Task<User?> FindByNameAsync(string displayName, CancellationToken token = default);
 
     /// <summary>
+    /// Anonymizes an account effictively "deleting it".
+    /// This will erase the <see cref="Details"/> entry entirely.
+    /// 
+    /// The login will be scrambled and all optional fields will be nulled.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="token">Cancellation token.</param>
+    /// <returns></returns>
+    public Task AnonymizeAsync(Guid id, CancellationToken token = default);
+
+    #region Freeze
+
+    /// <summary>
+    /// Retrieve all currently frozen users.
+    /// </summary>
+    /// <param name="sorting"></param>
+    /// <param name="pagination"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    Task<PaginatedList<Freeze>> GetFrozenUsersAsync(
+        ISorting sorting,
+        IPagination pagination,
+        CancellationToken token = default
+    );
+
+    /// <summary>
+    /// Gets a active freeze for a user if they have one.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="token">Cancellation token.</param>
+    /// <returns></returns>
+    public Task<Freeze?> GetFreezeAsync(Guid id, CancellationToken token = default);
+
+    /// <summary>
+    /// Freezes a account.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="token">Cancellation token.</param>
+    /// <returns></returns>
+    public Task<Freeze> FreezeAsync(Guid id, Freeze entity, CancellationToken token = default);
+
+    /// <summary>
+    /// Unfreezes a user, internally it deletes the freeze row and re-enables the
+    /// account. The scheduled unfreeze will just not do anything.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="token">Cancellation token.</param>
+    /// <returns></returns>
+    public Task UnFreezeAsync(Guid id, CancellationToken token = default);
+
+    #endregion
+
+    #region SSH
+
+    /// <summary>
     /// Add an SSH key to a user.
     /// </summary>
     /// <param name="userId">The user ID.</param>
@@ -60,4 +117,6 @@ public interface IUserService : IDomainService<User>
     /// <param name="userId">The user ID.</param>
     /// <param name="token">Cancellation token.</param>
     public Task<IEnumerable<SshKey>> GetSshKeysAsync(Guid userId, CancellationToken token = default);
+
+    #endregion
 }

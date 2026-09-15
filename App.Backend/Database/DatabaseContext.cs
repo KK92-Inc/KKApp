@@ -59,12 +59,15 @@ public class DatabaseContext(DbContextOptions<DatabaseContext> options) : DbCont
     public DbSet<Application> Applications { get; set; }
     public DbSet<Event> Events { get; set; }
     public DbSet<EventFeedback> EventFeedbacks { get; set; }
+    public DbSet<Kickoff> Kickoffs { get; set; }
+    public DbSet<Freeze> Freezes { get; set; }
 
     // Joins
     public DbSet<GoalProject> GoalProject { get; set; }
     public DbSet<CursusGoal> CursusGoal { get; set; }
     public DbSet<UserCursusGoal> UserCursusGoal { get; set; }
     public DbSet<UserEvent> UserEvent { get; set; }
+    public DbSet<UserKickoff> UserKickoff { get; set; }
 #nullable restore
 
     // protected override void OnModelCreating(ModelBuilder modelBuilder)

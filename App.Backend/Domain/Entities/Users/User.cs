@@ -37,6 +37,7 @@ public class User : BaseEntity
     public string? AvatarUrl { get; set; }
 
     public virtual Details? Details { get; set; }
+    
 
     //= Relations =//
 
