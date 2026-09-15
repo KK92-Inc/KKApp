@@ -3,12 +3,11 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-namespace App.Backend.API.Bus.Handlers;
+namespace App.Backend.API.Bus.Handlers.Freeze;
 
 using Wolverine.Attributes;
 using App.Backend.Database;
 using Keycloak.AuthServices.Sdk.Kiota.Admin;
-using App.Backend.API.Bus.Messages.Kickoff;
 using Microsoft.EntityFrameworkCore;
 using App.Backend.API.Bus.Messages.Freeze;
 using Wolverine;
@@ -34,10 +33,11 @@ public class UnFreezeUserHandler(
             .Where(f => f.UserId == message.UserId && f.StartsAt <= now && f.EndsAt <= now)
             .FirstOrDefaultAsync(token);
 
-        // No elapsed freeze found (already lifted, or never existed).
-        if (freeze is null) return;
+        // Basically there is no freeze anymore or it got invalidated before hand.
+        if (freeze is null || freeze.InvalidatedAt is not null) return;
 
-        var studentRealm = keycloak.Admin.Realms[realm].Users[freeze.UserId.ToString()];
+        // Unlock the user.
+        var studentRealm = keycloak.Admin.Realms[realm].Users[message.UserId.ToString()];
         var user = await studentRealm.GetAsync(null, token)
             ?? throw new InvalidOperationException($"{message.UserId} does not exist in keycloak");
 
@@ -46,7 +46,5 @@ public class UnFreezeUserHandler(
             user.Enabled = true;
             await studentRealm.PutAsync(user, null, token);
         }
-
-        // await bus.ScheduleAsync(new UnFreezeUserMessage(freeze.UserId), freeze.EndsAt);
     }
 }

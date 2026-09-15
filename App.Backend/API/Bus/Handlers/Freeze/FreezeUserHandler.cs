@@ -3,12 +3,11 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-namespace App.Backend.API.Bus.Handlers;
+namespace App.Backend.API.Bus.Handlers.Freeze;
 
 using Wolverine.Attributes;
 using App.Backend.Database;
 using Keycloak.AuthServices.Sdk.Kiota.Admin;
-using App.Backend.API.Bus.Messages.Kickoff;
 using Microsoft.EntityFrameworkCore;
 using App.Backend.API.Bus.Messages.Freeze;
 using Wolverine;

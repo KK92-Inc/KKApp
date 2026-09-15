@@ -226,60 +226,21 @@ public class UserService(
 
     public async Task<Freeze> FreezeAsync(Guid id, Freeze entity, CancellationToken token = default)
     {
-        var freeze = await context.Freezes.FirstOrDefaultAsync(f => f.UserId == id, token);
+        var freeze = await GetFreezeAsync(id, token);
         ServiceException.ThrowIf(freeze is not null, "User is already frozen.");
 
         var result = await context.Freezes.AddAsync(entity, token);
         await context.SaveChangesAsync(token);
         return result.Entity;
-
-
-        var studentRealm = keycloak.Admin.Realms[realm].Users[id.ToString()];
-        var user = await studentRealm.GetAsync(null, token);
-        ServiceException.ThrowIf(user is null, "User not found in Keycloak");
-
-        return await context.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
-        {
-            await using var transaction = await context.Database.BeginTransactionAsync(ct);
-            var result = await context.Freezes.AddAsync(entity, token);
-            await context.SaveChangesAsync(token);
-
-            if (user.Enabled is not false)
-            {
-                user.Enabled = false;
-                await studentRealm.PutAsync(user, null, token);
-            }
-
-            await context.SaveChangesAsync(ct);
-            await transaction.CommitAsync(ct);
-            return result.Entity;
-        }, token);
     }
 
     public async Task UnFreezeAsync(Guid id, CancellationToken token = default)
     {
-        var freeze = await context.Freezes.FirstOrDefaultAsync(f => f.UserId == id, token);
+        var freeze = await GetFreezeAsync(id, token);
         ServiceException.ThrowIf(freeze is null, "User has no active freeze.");
 
-        var studentRealm = keycloak.Admin.Realms[realm].Users[id.ToString()];
-        var user = await studentRealm.GetAsync(null, token);
-        ServiceException.ThrowIf(user is null, "User not found in Keycloak");
-
-        await context.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
-        {
-            await using var transaction = await context.Database.BeginTransactionAsync(ct);
-            context.Freezes.Remove(freeze);
-            await context.SaveChangesAsync(ct);
-
-            if (user.Enabled is not true)
-            {
-                user.Enabled = true;
-                await studentRealm.PutAsync(user, null, ct);
-            }
-
-            await context.SaveChangesAsync(ct);
-            await transaction.CommitAsync(ct);
-        }, token);
+        freeze.InvalidatedAt = time.GetUtcNow();
+        await context.SaveChangesAsync(token);
     }
 
     public async Task<PaginatedList<Freeze>> GetFrozenUsersAsync(ISorting sorting, IPagination pagination, CancellationToken token = default)

@@ -25,17 +25,17 @@ public class Freeze : BaseEntity
     [Column("name"), StringLength(2048)]
     public required string Reason { get; set; }
 
-    /// <summary>
-    /// The scheduled date on when to invoke this kickoff.
-    /// </summary>
     [Column("starts_at")]
     public DateTimeOffset StartsAt { get; set; }
 
-    /// <summary>
-    /// The scheduled date on when to invoke this kickoff.
-    /// </summary>
     [Column("ends_at")]
     public required DateTimeOffset EndsAt { get; set; }
+
+    /// <summary>
+    /// When this freeze was invalidated / cancelled.
+    /// </summary>
+    [Column("invalidated_at")]
+    public DateTimeOffset? InvalidatedAt { get; set; }
 
     [Column("user_id")]
     public required Guid UserId { get; set; }

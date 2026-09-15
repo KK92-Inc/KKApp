@@ -5,27 +5,19 @@
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using App.Backend.Core.Query;
 using App.Backend.API.Params;
 using App.Backend.Core.Services.Interface;
-using App.Backend.Models;
 using Keycloak.AuthServices.Authorization;
 using App.Backend.Models.Responses.Entities;
 using Microsoft.EntityFrameworkCore;
 using App.Backend.Models.Requests.Users;
-using App.Backend.Domain.Entities.Users;
 using System.ComponentModel;
-using Keycloak.AuthServices.Sdk.Admin.Models;
-using Keycloak.AuthServices.Sdk.Admin;
 using App.Backend.Domain.Enums;
 using Wolverine;
 using App.Backend.API.Notifications.Variants;
-using Keycloak.AuthServices.Sdk.Kiota.Admin;
 using App.Backend.API.Utils;
-using Keycloak.AuthServices.Sdk.Protection;
 using Keycloak.AuthServices.Authorization.Requirements;
 using System.ComponentModel.DataAnnotations;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using App.Backend.API.Bus.Messages.Freeze;
 
 // ============================================================================
@@ -166,6 +158,8 @@ In regards to rubrics it will evaluate if user is elligible to conduct a review 
 	{
 		if (userId == User.GetSID())
 			return Problem(title: "Can't freeze yourself.", statusCode: 422);
+
+		// TODO: This does not trigger......
 		var existing = await users.GetFreezeAsync(userId, token);
 		if (existing is not null) return Conflict();
 
