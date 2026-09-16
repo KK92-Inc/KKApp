@@ -75,9 +75,9 @@ public class UserService(
         await keycloak.Admin.Realms[realm].Users.PostAsync(new()
         {
             Username = user.Login,
-            Email = user.Details?.Email,
-            FirstName = user.Details?.FirstName,
-            LastName = user.Details?.LastName,
+            Email = user.Email,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
             Enabled = true,
             EmailVerified = true,
             RealmRoles = ["student"],

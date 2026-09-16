@@ -19,25 +19,28 @@ namespace App.Backend.Domain.Entities.Users;
 [Index(nameof(Login), nameof(Display))]
 public class User : BaseEntity
 {
-    public User()
-    {
-        Login = string.Empty;
-        Display = null;
-        AvatarUrl = null;
-        Details = null;
-    }
-
     [Column("login")]
     public string Login { get; set; }
 
     [Column("display")]
     public string? Display { get; set; }
 
+    [Column("first_name")]
+    public string FirstName { get; set; }
+
+    [Column("last_name")]
+    public string LastName { get; set; }
+
+    /// <summary>
+    /// The 
+    /// </summary>
+    [Column("email")]
+    public string Email { get; set; }
+
     [Column("avatar_url")]
     public string? AvatarUrl { get; set; }
 
     public virtual Details? Details { get; set; }
-    
 
     //= Relations =//
 

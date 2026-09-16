@@ -7,29 +7,34 @@
 	import { page } from '$app/state';
 	import Markdown from '$lib/components/markdown/markdown.svelte';
 	import Separator from '$lib/components/separator/separator.svelte';
-	import { PartyPopper, StarCheck } from '@lucide/svelte';
-	import CardEvent from '../_card-event.svelte';
+	import { ArrowLeft, PartyPopper, StarCheck } from '@lucide/svelte';
+	import CardEvent from '../card-event.svelte';
 
 	const { params }: PageProps = $props();
-	const [event, participants] = $derived(
-		await Promise.all([Events.get(params.id), Events.participants(params.id)])
+	const [event] = $derived(
+		await Promise.all([Events.get(params.id)])
 	);
 
 	const src = $derived(event.thumbnail ?? `https://placehold.co/1200x514?text=${event.name}`);
 </script>
 
 <div class="mx-auto mt-4 w-full max-w-2xl min-w-0 px-4 space-y-4">
+	<Button variant="outline" href="/events">
+		<ArrowLeft/>
+		Back to Events
+	</Button>
+
 	<div class="relative aspect-21/9 overflow-hidden rounded-xl border">
 		<img {src} alt={event.name} class="absolute inset-0 h-full w-full object-cover" />
 	</div>
 
-	<CardEvent {event} {participants} class="gap-4 rounded-md"/>
+	<CardEvent {event} class="gap-4 rounded-md"/>
 
 	<Card.Root>
 		<Card.Header>
 			<Card.Title>About this Event</Card.Title>
 		</Card.Header>
-
+		<Separator />
 		<Card.Content>
 			<Markdown value={event.markdown} />
 		</Card.Content>

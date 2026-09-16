@@ -220,7 +220,7 @@ such as official cursi, projects or rubrics.
             Files = body.Commit.Files,
             Message = body.Commit.Message,
             Author = user.Login,
-            Email = user.Details?.Email ?? "N/A"
+            Email = user.Email
         };
 
         var project = await service.AddProjectAsync(space.Id, new()
@@ -285,7 +285,7 @@ such as official cursi, projects or rubrics.
             Files = body.Commit.Files,
             Message = body.Commit.Message,
             Author = user.Login,
-            Email = user.Details?.Email ?? "N/A"
+            Email = user.Email
         };
 
         var created = await service.AddRubricAsync(space.Id, rubric, commit, token);

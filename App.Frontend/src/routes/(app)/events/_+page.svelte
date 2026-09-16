@@ -4,7 +4,6 @@
 	import * as Item from '$lib/components/item/';
 	import * as Empty from '$lib/components/empty';
 	import Button from '$lib/components/button/button.svelte';
-	import CardEvent from './_card-event.svelte';
 	import Separator from '$lib/components/separator/separator.svelte';
 	import {
 		ArrowRight,
@@ -21,6 +20,7 @@
 	import { page } from '$app/state';
 	import Badge from '$lib/components/badge/badge.svelte';
 	import * as Card from '$lib/components/card';
+	import CardEvent from './card-event.svelte';
 
 	const formatter = new DateFormatter(page.data.locale, {
 		month: 'short',
@@ -43,8 +43,7 @@
 			<img {src} alt="Event cover" class="relative z-20 aspect-video w-full object-cover" />
 
 			<svelte:boundary>
-				{@const participants = await Events.participants(event.id)}
-				<CardEvent {event} {participants} class="border-none py-4 gap-3.5 text-xs shadow-none" />
+				<CardEvent {event} class="border-none py-4 gap-3.5 text-xs shadow-none" />
 			</svelte:boundary>
 
 			<Separator />

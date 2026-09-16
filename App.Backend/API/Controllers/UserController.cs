@@ -242,13 +242,9 @@ In regards to rubrics it will evaluate if user is elligible to conduct a review 
 		var (user, password) = await users.CreateUserAsync(new()
 		{
 			Login = request.Login,
-			Display = request.Login,
-			Details = new()
-			{
-				Email = request.Email,
-				FirstName = request.FirstName,
-				LastName = request.LastName,
-			},
+			FirstName = request.FirstName,
+			LastName = request.LastName,
+			Email = request.Email,
 		}, token);
 
 		await bus.PublishAsync(new WelcomeUserNotification(user!));
@@ -279,16 +275,15 @@ In regards to rubrics it will evaluate if user is elligible to conduct a review 
 		var user = await users.FindByIdAsync(userId, token);
 		if (user is null) return NotFound();
 
-		// Update root properties if provided
 		user.AvatarUrl = body.AvatarUrl ?? user.AvatarUrl;
 		user.Display = body.DisplayName ?? user.Display;
+		user.FirstName = body.FirstName ?? user.FirstName;
+		user.LastName = body.LastName ?? user.LastName;
 
 		if (body.Details is not null)
 		{
 			user.Details ??= new();
 			var d = body.Details;
-			user.Details.FirstName = d.FirstName ?? user.Details.FirstName;
-			user.Details.LastName = d.LastName ?? user.Details.LastName;
 			user.Details.Markdown = d.Markdown ?? user.Details.Markdown;
 			user.Details.WebsiteUrl = d.WebsiteUrl ?? user.Details.WebsiteUrl;
 			user.Details.LinkedinUrl = d.LinkedinUrl ?? user.Details.LinkedinUrl;

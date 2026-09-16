@@ -9,10 +9,7 @@ public class Details : BaseEntity
 {
     public Details()
     {
-        Email = null;
         Markdown = null;
-        FirstName = null;
-        LastName = null;
         GithubUrl = null;
         LinkedinUrl = null;
         RedditUrl = null;
@@ -21,23 +18,8 @@ public class Details : BaseEntity
         EnabledNotifications = default;
     }
 
-    [Column("user_id")]
-    public Guid UserId { get; set; }
-
-    [ForeignKey(nameof(UserId))]
-    public virtual User User { get; set; }
-
-    [Column("email")]
-    public string? Email { get; set; }
-
     [Column("bio"), MaxLength(16384)]
     public string? Markdown { get; set; }
-
-    [Column("first_name")]
-    public string? FirstName { get; set; }
-
-    [Column("last_name")]
-    public string? LastName { get; set; }
 
     /// <summary>
     /// Flags / Combination of notifications the user does wish to
@@ -57,4 +39,10 @@ public class Details : BaseEntity
 
     [Column("website_url")]
     public string? WebsiteUrl { get; set; }
+
+    [Column("user_id")]
+    public Guid UserId { get; set; }
+
+    [ForeignKey(nameof(UserId))]
+    public virtual User User { get; set; }
 }

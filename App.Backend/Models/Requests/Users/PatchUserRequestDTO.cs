@@ -22,6 +22,14 @@ public record PatchUserRequestDTO
     [Description("The display name for the user.")]
     public string? DisplayName { get; init; }
 
+    [StringLength(100, MinimumLength = 1)]
+    [Description("The user's first name.")]
+    public string? FirstName { get; init; }
+
+    [StringLength(100, MinimumLength = 1)]
+    [Description("The user's last name.")]
+    public string? LastName { get; init; }
+
     /// <summary>
     /// Optional avatar URL update.
     /// </summary>

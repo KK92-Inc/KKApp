@@ -85,10 +85,10 @@ public class SystemService(
                     Id = id,
                     Login = login,
                     Display = login,
+                    Email = email,
                     Details = new()
                     {
                         UserId = id,
-                        Email = email,
                     },
                 }, ct);
 

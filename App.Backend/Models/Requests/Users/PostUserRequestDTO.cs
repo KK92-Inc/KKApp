@@ -35,14 +35,14 @@ public record PostUserRequestDTO
     /// </summary>
     [StringLength(255, MinimumLength = 1)]
     [Description("Optional first name of the user.")]
-    public string? FirstName { get; init; }
+    public required string FirstName { get; init; }
 
     /// <summary>
     /// Optional last name of the user.
     /// </summary>
     [StringLength(255, MinimumLength = 1)]
     [Description("Optional last name of the user.")]
-    public string? LastName { get; init; }
+    public required string LastName { get; init; }
 
     /// <summary>
     /// Optional avatar URL.

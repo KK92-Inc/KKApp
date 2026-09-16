@@ -12,7 +12,6 @@ namespace App.Backend.Models.Requests.Users;
 
 public class PostUserFreezeRequestDTO : IValidatableObject
 {
-
     [Required, StringLength(2048, MinimumLength = 4)]
     [Description("The reason for the freeze.")]
     public required string Reason { get; init; }

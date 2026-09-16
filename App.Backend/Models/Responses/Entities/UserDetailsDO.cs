@@ -20,10 +20,7 @@ public class UserDetailsDO : BaseEntityDO<Details>
 
     public UserDetailsDO(Details details) : base(details)
     {
-        Email = details.Email;
         Markdown = details.Markdown;
-        FirstName = details.FirstName;
-        LastName = details.LastName;
         GithubUrl = details.GithubUrl;
         LinkedinUrl = details.LinkedinUrl;
         RedditUrl = details.RedditUrl;
@@ -32,7 +29,7 @@ public class UserDetailsDO : BaseEntityDO<Details>
 
     [Required]
     public string? Email { get; set; }
-    [Required, StringLength(maximumLength: 2000)]
+    [Required]
     public string? Markdown { get; set; }
     [Required]
     public string? FirstName { get; set; }

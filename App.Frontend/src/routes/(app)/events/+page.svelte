@@ -36,7 +36,7 @@
 			</InputGroup.Addon>
 		</InputGroup.Root>
 
-		<Button variant="secondary">
+		<Button variant="secondary" href="/events/manage">
 			Propose Event
 			<Plus />
 		</Button>
