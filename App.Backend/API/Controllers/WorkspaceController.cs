@@ -107,7 +107,6 @@ such as official cursi, projects or rubrics.
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProtectedResource("cursus", "cursus:write")]
-    [ProtectedResource("workspaces", "workspaces:write")]
     [EndpointSummary("Create a new cursus")]
     [EndpointDescription("Create a new cursus to be added to the workspace")]
     public async Task<ActionResult<CursusDO>> AddCursus(Guid workspace, [FromBody] PostCursusRequestDTO body, CancellationToken token)
@@ -153,7 +152,6 @@ such as official cursi, projects or rubrics.
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProtectedResource("goals", "goals:write")]
-    [ProtectedResource("workspaces", "workspaces:write")]
     [EndpointSummary("Create a new goal")]
     [EndpointDescription("Directly create a new goal to be added to the workspace")]
     public async Task<ActionResult<GoalDO>> AddGoal(
@@ -194,7 +192,6 @@ such as official cursi, projects or rubrics.
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     [RequireScope("workspace")]
     [ProtectedResource("projects", "projects:write")]
-    [ProtectedResource("workspaces", "workspaces:write")]
     [EndpointSummary("Create a new project")]
     [EndpointDescription("Directly create a new project to be added to the workspace")]
     public async Task<ActionResult<ProjectDO>> AddProject(
@@ -246,7 +243,6 @@ such as official cursi, projects or rubrics.
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProtectedResource("rubrics", "rubrics:write")]
-    [ProtectedResource("workspaces", "workspaces:write")]
     [EndpointSummary("Create a new rubric")]
     [EndpointDescription("Create a new rubric to be added to the workspace")]
     public async Task<ActionResult<RubricDO>> AddRubric(Guid workspace, [FromBody] PostRubricRequestDTO body, CancellationToken token)
@@ -329,7 +325,6 @@ such as official cursi, projects or rubrics.
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProtectedResource("applications", "applications:write")]
-    [ProtectedResource("workspaces", "workspaces:write")]
     [EndpointSummary("Create a new application")]
     [EndpointDescription("Create a new application client linked to this workspace and fetch its initial credential secret.")]
     public async Task<IActionResult> AddApplication(Guid id, [FromBody] PostApplicationRequestDTO dto, CancellationToken token)
@@ -356,7 +351,6 @@ such as official cursi, projects or rubrics.
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProtectedResource("applications", "applications:write")]
-    [ProtectedResource("workspaces", "workspaces:write")]
     [EndpointSummary("Update an existing application")]
     [EndpointDescription("Update an existing application metadata configuration and synchronize changes out to Keycloak.")]
     public async Task<IActionResult> UpdateApplication(Guid appId, [FromBody] PatchApplicationRequestDTO dto, CancellationToken token)
@@ -396,7 +390,6 @@ such as official cursi, projects or rubrics.
     [Tags("Application")]
     [HttpPost("/application/{appId:guid}/secret/rotate")]
     [ProtectedResource("applications", "applications:write")]
-    [ProtectedResource("workspaces", "workspaces:write")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [EndpointSummary("Rotate client secret")]
@@ -446,7 +439,6 @@ such as official cursi, projects or rubrics.
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    [ProtectedResource("cursus", "cursus:write")]
     [ProtectedResource("workspaces", "workspaces:write")]
     [EndpointSummary("Transfer cursus between workspaces")]
     [EndpointDescription("Transfer one or more cursus from one workspace to another")]
@@ -480,7 +472,6 @@ such as official cursi, projects or rubrics.
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    [ProtectedResource("goals", "goals:write")]
     [ProtectedResource("workspaces", "workspaces:write")]
     [EndpointSummary("Transfer goals between workspaces")]
     [EndpointDescription("Transfer one or more goals from one workspace to another")]
@@ -514,7 +505,6 @@ such as official cursi, projects or rubrics.
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    [ProtectedResource("projects", "projects:write")]
     [ProtectedResource("workspaces", "workspaces:write")]
     [EndpointSummary("Transfer projects between workspaces")]
     [EndpointDescription("Transfer one or more projects from one workspace to another")]

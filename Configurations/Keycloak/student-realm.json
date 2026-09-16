@@ -74,9 +74,18 @@
         "attributes": {}
       },
       {
+        "id": "99bccf21-8756-445d-ae71-1e42f8048950",
+        "name": "applicant",
+        "description": "A user who is in the application process to become a student.",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "deebf776-8658-40de-9851-5d9432201a45",
+        "attributes": {}
+      },
+      {
         "id": "3ee7c624-bab2-4225-822c-1fd11a337c45",
         "name": "staff",
-        "description": "",
+        "description": "A staff user who has absolute privileges to manage the school.",
         "composite": false,
         "clientRole": false,
         "containerId": "deebf776-8658-40de-9851-5d9432201a45",
@@ -85,7 +94,7 @@
       {
         "id": "5c0606c1-5923-487d-bca1-2225f07db238",
         "name": "student",
-        "description": "",
+        "description": "A regular student who is part of the school.",
         "composite": false,
         "clientRole": false,
         "containerId": "deebf776-8658-40de-9851-5d9432201a45",
@@ -152,9 +161,9 @@
                 "manage-clients",
                 "view-events",
                 "view-users",
-                "view-realm",
-                "view-clients",
                 "query-groups",
+                "view-clients",
+                "view-realm",
                 "view-authorization"
               ]
             }
@@ -897,17 +906,17 @@
         }
       ],
       "defaultClientScopes": [
+        "evaluation",
         "service_account",
         "web-origins",
         "acr",
         "workspace",
-        "user",
-        "subscription",
-        "evaluation",
-        "repository",
         "admin-link",
         "profile",
+        "subscription",
         "basic",
+        "repository",
+        "user",
         "email"
       ],
       "optionalClientScopes": [
@@ -936,10 +945,10 @@
                 "name": "comments:write"
               },
               {
-                "name": "comments:delete"
+                "name": "comments:read"
               },
               {
-                "name": "comments:read"
+                "name": "comments:delete"
               }
             ],
             "icon_uri": ""
@@ -1008,10 +1017,10 @@
             ],
             "scopes": [
               {
-                "name": "rubrics:delete"
+                "name": "rubrics:write"
               },
               {
-                "name": "rubrics:write"
+                "name": "rubrics:delete"
               },
               {
                 "name": "rubrics:read"
@@ -1185,106 +1194,43 @@
             }
           },
           {
-            "name": "Role: Admin",
-            "description": "",
+            "name": "Role: Applicant",
             "type": "role",
             "logic": "POSITIVE",
             "decisionStrategy": "UNANIMOUS",
             "config": {
               "fetchRoles": "true",
-              "roles": "[{\"id\":\"realm-management/realm-admin\",\"required\":true}]"
+              "roles": "[{\"id\":\"applicant\",\"required\":true}]"
             }
           },
           {
-            "name": "Access: Basic",
-            "description": "Anyone who is a student OR staff",
+            "name": "Access: Student",
+            "description": "Manages the access level for students",
             "type": "aggregate",
             "logic": "POSITIVE",
             "decisionStrategy": "AFFIRMATIVE",
             "config": {
-              "applyPolicies": "[\"Role: Student\",\"Role: Staff\"]"
+              "applyPolicies": "[\"Access: Staff\",\"Role: Student\"]"
             }
           },
           {
-            "name": "Access: Manage",
-            "description": "Policy to allow for the management of entities (e.g: Creating/Delete Projects, ...)",
+            "name": "Access: Staff",
+            "description": "Manages the access level for staff",
+            "type": "aggregate",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "applyPolicies": "[\"Role: Staff\"]"
+            }
+          },
+          {
+            "name": "Access: Applicant",
+            "description": "Manages the access level for applicants.",
             "type": "aggregate",
             "logic": "POSITIVE",
             "decisionStrategy": "AFFIRMATIVE",
             "config": {
-              "applyPolicies": "[\"Role: Admin\",\"Role: Staff\"]"
-            }
-          },
-          {
-            "name": "Manage Comments",
-            "description": "",
-            "type": "scope",
-            "logic": "POSITIVE",
-            "decisionStrategy": "UNANIMOUS",
-            "config": {
-              "resources": "[\"comments\"]",
-              "scopes": "[\"comments:read\",\"comments:delete\",\"comments:write\"]",
-              "applyPolicies": "[\"Access: Basic\"]"
-            }
-          },
-          {
-            "name": "View Projects",
-            "description": "",
-            "type": "scope",
-            "logic": "POSITIVE",
-            "decisionStrategy": "UNANIMOUS",
-            "config": {
-              "resources": "[\"projects\"]",
-              "scopes": "[\"projects:read\"]",
-              "applyPolicies": "[\"Access: Basic\"]"
-            }
-          },
-          {
-            "name": "View Goals",
-            "description": "",
-            "type": "scope",
-            "logic": "POSITIVE",
-            "decisionStrategy": "UNANIMOUS",
-            "config": {
-              "resources": "[\"goals\"]",
-              "scopes": "[\"goals:read\"]",
-              "applyPolicies": "[\"Access: Basic\"]"
-            }
-          },
-          {
-            "name": "View Graph",
-            "description": "Allow access to see the cursus graph",
-            "type": "scope",
-            "logic": "POSITIVE",
-            "decisionStrategy": "UNANIMOUS",
-            "config": {
-              "resources": "[\"cursus\"]",
-              "scopes": "[\"cursus:graph:read\"]",
-              "applyPolicies": "[\"Access: Basic\"]"
-            }
-          },
-          {
-            "name": "View Cursus",
-            "description": "",
-            "type": "scope",
-            "logic": "POSITIVE",
-            "decisionStrategy": "UNANIMOUS",
-            "config": {
-              "resources": "[\"cursus\"]",
-              "scopes": "[\"cursus:read\"]",
-              "applyPolicies": "[\"Access: Basic\"]"
-            }
-          },
-          {
-            "name": "Manage Projects",
-            "description": "",
-            "type": "scope",
-            "logic": "POSITIVE",
-            "decisionStrategy": "UNANIMOUS",
-            "config": {
-              "resources": "[\"projects\"]",
-              "scopes": "[\"projects:write\",\"projects:delete\"]",
-              "applyPolicies": "[\"Access: Manage\"]"
+              "applyPolicies": "[\"Role: Staff\",\"Role: Applicant\",\"Role: Student\"]"
             }
           },
           {
@@ -1292,59 +1238,11 @@
             "description": "",
             "type": "scope",
             "logic": "POSITIVE",
-            "decisionStrategy": "UNANIMOUS",
+            "decisionStrategy": "AFFIRMATIVE",
             "config": {
               "resources": "[\"cursus\"]",
-              "scopes": "[\"cursus:delete\",\"cursus:write\"]",
-              "applyPolicies": "[\"Access: Manage\"]"
-            }
-          },
-          {
-            "name": "Manage Reviews",
-            "description": "",
-            "type": "scope",
-            "logic": "POSITIVE",
-            "decisionStrategy": "UNANIMOUS",
-            "config": {
-              "resources": "[\"reviews\"]",
-              "scopes": "[\"reviews:write\",\"reviews:delete\"]",
-              "applyPolicies": "[\"Access: Basic\"]"
-            }
-          },
-          {
-            "name": "View Reviews",
-            "description": "",
-            "type": "scope",
-            "logic": "POSITIVE",
-            "decisionStrategy": "UNANIMOUS",
-            "config": {
-              "resources": "[\"reviews\"]",
-              "scopes": "[\"reviews:read\"]",
-              "applyPolicies": "[\"Access: Basic\"]"
-            }
-          },
-          {
-            "name": "Manage Rubrics",
-            "description": "",
-            "type": "scope",
-            "logic": "POSITIVE",
-            "decisionStrategy": "UNANIMOUS",
-            "config": {
-              "resources": "[\"rubrics\"]",
-              "scopes": "[\"rubrics:delete\",\"rubrics:write\"]",
-              "applyPolicies": "[\"Access: Manage\"]"
-            }
-          },
-          {
-            "name": "View Rubrics",
-            "description": "",
-            "type": "scope",
-            "logic": "POSITIVE",
-            "decisionStrategy": "UNANIMOUS",
-            "config": {
-              "resources": "[\"rubrics\"]",
-              "scopes": "[\"rubrics:read\"]",
-              "applyPolicies": "[\"Access: Basic\"]"
+              "scopes": "[\"cursus:write\",\"cursus:delete\"]",
+              "applyPolicies": "[\"Access: Staff\"]"
             }
           },
           {
@@ -1352,108 +1250,11 @@
             "description": "",
             "type": "scope",
             "logic": "POSITIVE",
-            "decisionStrategy": "UNANIMOUS",
+            "decisionStrategy": "AFFIRMATIVE",
             "config": {
               "resources": "[\"goals\"]",
-              "scopes": "[\"goals:write\",\"goals:delete\"]",
-              "applyPolicies": "[\"Access: Manage\"]"
-            }
-          },
-          {
-            "name": "View Workspaces",
-            "description": "",
-            "type": "scope",
-            "logic": "POSITIVE",
-            "decisionStrategy": "UNANIMOUS",
-            "config": {
-              "resources": "[\"workspaces\"]",
-              "scopes": "[\"workspaces:read\"]",
-              "applyPolicies": "[\"Access: Basic\"]"
-            }
-          },
-          {
-            "name": "Manage Workspaces",
-            "description": "Note: Does not allow for deletion as it is destructive",
-            "type": "scope",
-            "logic": "POSITIVE",
-            "decisionStrategy": "UNANIMOUS",
-            "config": {
-              "resources": "[\"workspaces\"]",
-              "scopes": "[\"workspaces:write\"]",
-              "applyPolicies": "[\"Access: Manage\"]"
-            }
-          },
-          {
-            "name": "View Applications",
-            "description": "",
-            "type": "scope",
-            "logic": "POSITIVE",
-            "decisionStrategy": "UNANIMOUS",
-            "config": {
-              "resources": "[\"applications\"]",
-              "scopes": "[\"applications:read\"]",
-              "applyPolicies": "[\"Access: Basic\"]"
-            }
-          },
-          {
-            "name": "Manage Applications",
-            "description": "",
-            "type": "scope",
-            "logic": "POSITIVE",
-            "decisionStrategy": "UNANIMOUS",
-            "config": {
-              "resources": "[\"applications\"]",
-              "scopes": "[\"applications:write\",\"applications:delete\"]",
-              "applyPolicies": "[\"Access: Manage\"]"
-            }
-          },
-          {
-            "name": "Manage Repositories",
-            "description": "",
-            "type": "scope",
-            "logic": "POSITIVE",
-            "decisionStrategy": "UNANIMOUS",
-            "config": {
-              "resources": "[\"repository\"]",
-              "scopes": "[\"repository:write\",\"repository:delete\"]",
-              "applyPolicies": "[\"Access: Manage\"]"
-            }
-          },
-          {
-            "name": "View Repositories",
-            "description": "",
-            "type": "scope",
-            "logic": "POSITIVE",
-            "decisionStrategy": "UNANIMOUS",
-            "config": {
-              "resources": "[\"repository\"]",
-              "scopes": "[\"repository:read\"]",
-              "applyPolicies": "[\"Access: Basic\"]"
-            }
-          },
-          {
-            "name": "Manage Users",
-            "description": "",
-            "type": "scope",
-            "logic": "POSITIVE",
-            "decisionStrategy": "UNANIMOUS",
-            "config": {
-              "defaultResourceType": "",
-              "resources": "[\"users\"]",
-              "scopes": "[\"users:delete\",\"users:write\"]",
-              "applyPolicies": "[\"Access: Manage\"]"
-            }
-          },
-          {
-            "name": "View Users",
-            "description": "Read user data",
-            "type": "scope",
-            "logic": "POSITIVE",
-            "decisionStrategy": "UNANIMOUS",
-            "config": {
-              "resources": "[\"users\"]",
-              "scopes": "[\"users:read\"]",
-              "applyPolicies": "[\"Access: Basic\"]"
+              "scopes": "[\"goals:delete\",\"goals:write\"]",
+              "applyPolicies": "[\"Access: Staff\"]"
             }
           },
           {
@@ -1461,11 +1262,216 @@
             "description": "Allow users to manage their profile",
             "type": "scope",
             "logic": "POSITIVE",
-            "decisionStrategy": "UNANIMOUS",
+            "decisionStrategy": "AFFIRMATIVE",
             "config": {
               "resources": "[\"users\"]",
-              "scopes": "[\"user:profile:write\",\"user:profile:read\"]",
-              "applyPolicies": "[\"Access: Basic\"]"
+              "scopes": "[\"user:profile:read\",\"user:profile:write\"]",
+              "applyPolicies": "[\"Access: Staff\",\"Access: Student\",\"Access: Applicant\"]"
+            }
+          },
+          {
+            "name": "Manage Projects",
+            "description": "",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"projects\"]",
+              "scopes": "[\"projects:write\",\"projects:delete\"]",
+              "applyPolicies": "[\"Access: Staff\"]"
+            }
+          },
+          {
+            "name": "Manage Repositories",
+            "description": "",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"repository\"]",
+              "scopes": "[\"repository:delete\",\"repository:write\"]",
+              "applyPolicies": "[\"Access: Staff\",\"Access: Student\"]"
+            }
+          },
+          {
+            "name": "Manage Reviews",
+            "description": "",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"reviews\"]",
+              "scopes": "[\"reviews:delete\",\"reviews:write\"]",
+              "applyPolicies": "[\"Access: Staff\",\"Access: Student\",\"Access: Applicant\"]"
+            }
+          },
+          {
+            "name": "Manage Rubrics",
+            "description": "",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"rubrics\"]",
+              "scopes": "[\"rubrics:write\",\"rubrics:delete\"]",
+              "applyPolicies": "[\"Access: Staff\"]"
+            }
+          },
+          {
+            "name": "Manage Users",
+            "description": "",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "defaultResourceType": "",
+              "resources": "[\"users\"]",
+              "scopes": "[\"users:write\",\"users:delete\"]",
+              "applyPolicies": "[\"Access: Staff\"]"
+            }
+          },
+          {
+            "name": "Manage Workspaces",
+            "description": "Note: Does not allow for deletion as it is destructive",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"workspaces\"]",
+              "scopes": "[\"workspaces:write\"]",
+              "applyPolicies": "[\"Access: Staff\"]"
+            }
+          },
+          {
+            "name": "View Applications",
+            "description": "",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"applications\"]",
+              "scopes": "[\"applications:read\"]",
+              "applyPolicies": "[\"Access: Staff\",\"Access: Student\"]"
+            }
+          },
+          {
+            "name": "View Cursus",
+            "description": "",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"cursus\"]",
+              "scopes": "[\"cursus:read\"]",
+              "applyPolicies": "[\"Access: Staff\",\"Access: Student\",\"Access: Applicant\"]"
+            }
+          },
+          {
+            "name": "View Goals",
+            "description": "",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"goals\"]",
+              "scopes": "[\"goals:read\"]",
+              "applyPolicies": "[\"Access: Staff\",\"Access: Student\",\"Access: Applicant\"]"
+            }
+          },
+          {
+            "name": "View Projects",
+            "description": "",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"projects\"]",
+              "scopes": "[\"projects:read\"]",
+              "applyPolicies": "[\"Access: Staff\",\"Access: Student\",\"Access: Applicant\"]"
+            }
+          },
+          {
+            "name": "View Repositories",
+            "description": "",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"repository\"]",
+              "scopes": "[\"repository:read\"]",
+              "applyPolicies": "[\"Access: Staff\",\"Access: Student\",\"Access: Applicant\"]"
+            }
+          },
+          {
+            "name": "View Reviews",
+            "description": "",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"reviews\"]",
+              "scopes": "[\"reviews:read\"]",
+              "applyPolicies": "[\"Access: Staff\",\"Access: Student\",\"Access: Applicant\"]"
+            }
+          },
+          {
+            "name": "Manage Comments",
+            "description": "Allows access to comments (Read, Write, Delete)",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"comments\"]",
+              "scopes": "[\"comments:read\",\"comments:write\",\"comments:delete\"]",
+              "applyPolicies": "[\"Access: Staff\",\"Access: Student\",\"Access: Applicant\"]"
+            }
+          },
+          {
+            "name": "Manage Applications",
+            "description": "Allows creation and deletion of applications.",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"applications\"]",
+              "scopes": "[\"applications:delete\",\"applications:write\"]",
+              "applyPolicies": "[\"Access: Staff\",\"Access: Student\"]"
+            }
+          },
+          {
+            "name": "View Rubrics",
+            "description": "",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"rubrics\"]",
+              "scopes": "[\"rubrics:read\"]",
+              "applyPolicies": "[\"Access: Staff\",\"Access: Student\",\"Access: Applicant\"]"
+            }
+          },
+          {
+            "name": "View Users",
+            "description": "Read user data",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"users\"]",
+              "scopes": "[\"users:read\"]",
+              "applyPolicies": "[\"Access: Staff\",\"Access: Student\",\"Access: Applicant\"]"
+            }
+          },
+          {
+            "name": "View Workspaces",
+            "description": "",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"workspaces\"]",
+              "scopes": "[\"workspaces:read\"]",
+              "applyPolicies": "[\"Access: Staff\"]"
             }
           }
         ],
@@ -1565,11 +1571,11 @@
             "displayName": "Delete Goals"
           },
           {
-            "name": "reviews:delete",
-            "displayName": "Delete Reviews"
+            "name": "rubrics:delete"
           },
           {
-            "name": "rubrics:delete"
+            "name": "reviews:delete",
+            "displayName": "Delete Reviews"
           },
           {
             "name": "cursus:graph:read",
@@ -2592,10 +2598,10 @@
       "linkOnly": false,
       "hideOnLogin": false,
       "config": {
-        "tokenUrl": "http://127.0.0.1:8080/realms/admin/protocol/openid-connect/token",
         "acceptsPromptNoneForwardFromClient": "false",
-        "jwksUrl": "http://127.0.0.1:8080/realms/admin/protocol/openid-connect/certs",
+        "tokenUrl": "http://127.0.0.1:8080/realms/admin/protocol/openid-connect/token",
         "isAccessTokenJWT": "false",
+        "jwksUrl": "http://127.0.0.1:8080/realms/admin/protocol/openid-connect/certs",
         "filteredByClaim": "false",
         "backchannelSupported": "false",
         "caseSensitiveOriginalUsername": "false",
@@ -2613,8 +2619,8 @@
         "disableNonce": "false",
         "useJwksUrl": "true",
         "sendClientIdOnLogout": "false",
-        "pkceEnabled": "false",
         "metadataDescriptorUrl": "${KC_HOSTNAME}/realms/admin/.well-known/openid-configuration",
+        "pkceEnabled": "false",
         "authorizationUrl": "${KC_HOSTNAME}/realms/admin/protocol/openid-connect/auth",
         "disableUserInfo": "false",
         "logoutUrl": "http://127.0.0.1:8080/realms/admin/protocol/openid-connect/logout",
@@ -2681,14 +2687,14 @@
         "subComponents": {},
         "config": {
           "allowed-protocol-mapper-types": [
-            "oidc-full-name-mapper",
-            "oidc-sha256-pairwise-sub-mapper",
-            "saml-user-attribute-mapper",
-            "oidc-address-mapper",
             "oidc-usermodel-attribute-mapper",
             "saml-user-property-mapper",
+            "oidc-address-mapper",
+            "oidc-full-name-mapper",
+            "oidc-sha256-pairwise-sub-mapper",
+            "saml-role-list-mapper",
             "oidc-usermodel-property-mapper",
-            "saml-role-list-mapper"
+            "saml-user-attribute-mapper"
           ]
         }
       },
@@ -2716,13 +2722,13 @@
         "config": {
           "allowed-protocol-mapper-types": [
             "oidc-address-mapper",
-            "saml-role-list-mapper",
-            "saml-user-attribute-mapper",
-            "saml-user-property-mapper",
-            "oidc-full-name-mapper",
-            "oidc-usermodel-property-mapper",
             "oidc-usermodel-attribute-mapper",
-            "oidc-sha256-pairwise-sub-mapper"
+            "oidc-sha256-pairwise-sub-mapper",
+            "saml-user-property-mapper",
+            "oidc-usermodel-property-mapper",
+            "oidc-full-name-mapper",
+            "saml-role-list-mapper",
+            "saml-user-attribute-mapper"
           ]
         }
       },

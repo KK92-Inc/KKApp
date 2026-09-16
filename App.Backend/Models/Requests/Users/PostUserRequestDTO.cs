@@ -34,7 +34,6 @@ public record PostUserRequestDTO
     /// Optional first name of the user.
     /// </summary>
     [StringLength(255, MinimumLength = 1)]
-    [RegularExpression(@"^[a-zA-Z\s'-]+$", ErrorMessage = "First name can only contain letters, spaces, hyphens, and apostrophes.")]
     [Description("Optional first name of the user.")]
     public string? FirstName { get; init; }
 
@@ -42,7 +41,6 @@ public record PostUserRequestDTO
     /// Optional last name of the user.
     /// </summary>
     [StringLength(255, MinimumLength = 1)]
-    [RegularExpression(@"^[a-zA-Z\s'-]+$", ErrorMessage = "Last name can only contain letters, spaces, hyphens, and apostrophes.")]
     [Description("Optional last name of the user.")]
     public string? LastName { get; init; }
 

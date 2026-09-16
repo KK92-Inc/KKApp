@@ -163,9 +163,9 @@ public class EventController(IAuthorizationService auth, IEventService service) 
             Thumbnail = body.Thumbnail,
             Threshold = body.Threshold,
             Capacity = body.Capacity,
-            StartsAt = body.StartsAt,
-            EndsAt = body.EndsAt,
-            ClosesAt = body.ClosesAt,
+            StartsAt = body.StartsAt.ToUniversalTime(),
+            EndsAt = body.EndsAt.ToUniversalTime(),
+            ClosesAt = body.ClosesAt?.ToUniversalTime(),
         }, token);
 
         return CreatedAtAction(
@@ -173,6 +173,47 @@ public class EventController(IAuthorizationService auth, IEventService service) 
             new { filter_id = @event.Id },
             new EventDO(@event, [])
         );
+    }
+
+    [HttpPatch("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Update an event partially")]
+    [EndpointDescription("Updates provided fields for an existing event by ID")]
+    public async Task<ActionResult<EventDO>> Update(
+        Guid id,
+        [FromBody] PatchEventRequestDTO body,
+        CancellationToken token
+    )
+    {
+        var @event = await service.FindByIdAsync(id, token);
+        if (@event is null) return NotFound();
+
+        var userId = User.GetSID();
+        var staff = await auth.AuthorizeAsync(User, "staff");
+        if (@event.UserId != userId && !staff.Succeeded)
+            return Forbid();
+
+        if (@event.State is EventState.Finished or EventState.Rejected)
+            return Problem(title: "Cannot modify a finished or rejected event", statusCode: 422);
+
+        // Apply only non-null/provided values
+        if (body.Name is not null) @event.Name = body.Name;
+        if (body.Description is not null) @event.Description = body.Description;
+        if (body.Thumbnail is not null) @event.Thumbnail = body.Thumbnail;
+        if (body.Markdown is not null) @event.Markdown = body.Markdown;
+        if (body.Capacity.HasValue) @event.Capacity = body.Capacity.Value;
+        if (body.Threshold.HasValue) @event.Threshold = body.Threshold;
+        if (body.StartsAt.HasValue) @event.StartsAt = body.StartsAt.Value;
+        if (body.EndsAt.HasValue) @event.EndsAt = body.EndsAt.Value;
+        if (body.ClosesAt.HasValue) @event.ClosesAt = body.ClosesAt;
+
+        await service.UpdateAsync(@event, token);
+        return Ok(new EventDO(@event, await service.Participants(id, token)));
     }
 
     [HttpDelete("{id:guid}")]

@@ -13,21 +13,21 @@ namespace App.Backend.Models.Requests.Event;
 /// <summary>
 /// Request DTO for creating a new campus event.
 /// </summary>
-public record PostEventRequestDTO : IValidatableObject
+public record PatchEventRequestDTO : IValidatableObject
 {
     /// <summary>
     /// Name of the event.
     /// </summary>
-    [Required, StringLength(255, MinimumLength = 1)]
+    [StringLength(255, MinimumLength = 1)]
     [Description("Name of the event.")]
-    public required string Name { get; init; }
+    public string? Name { get; init; }
 
     /// <summary>
     /// A short readable description of the event.
     /// </summary>
-    [Required, StringLength(255, MinimumLength = 1)]
+    [StringLength(255, MinimumLength = 1)]
     [Description("Short description of the event.")]
-    public required string Description { get; init; }
+    public string? Description { get; init; }
 
     /// <summary>
     /// Optional event thumbnail URL.
@@ -39,16 +39,16 @@ public record PostEventRequestDTO : IValidatableObject
     /// <summary>
     /// Detailed markdown content describing the event.
     /// </summary>
-    [Required, StringLength(2048, MinimumLength = 1)]
+    [StringLength(2048, MinimumLength = 1)]
     [Description("Markdown presentation of what the event is about.")]
-    public required string Markdown { get; init; }
+    public string? Markdown { get; init; }
 
     /// <summary>
     /// Maximum capacity of attendees.
     /// </summary>
     [Range(1, int.MaxValue, ErrorMessage = "Capacity must be at least 1.")]
     [Description("The maximum number of participants allowed.")]
-    public int Capacity { get; init; }
+    public int? Capacity { get; init; }
 
     /// <summary>
     /// Minimum required occupancy threshold to transition state.
@@ -60,21 +60,18 @@ public record PostEventRequestDTO : IValidatableObject
     /// <summary>
     /// Event start time.
     /// </summary>
-    [Required]
     [Description("When the event will start.")]
-    public DateTimeOffset StartsAt { get; init; }
+    public DateTimeOffset? StartsAt { get; init; }
 
     /// <summary>
     /// Event end time.
     /// </summary>
-    [Required]
     [Description("When the event will conclude.")]
-    public DateTimeOffset EndsAt { get; init; }
+    public DateTimeOffset? EndsAt { get; init; }
 
     /// <summary>
     /// Registration closing time.
     /// </summary>
-    [Required]
     [Description("When the event stops accepting new attendees or allowing leaves.")]
     public DateTimeOffset? ClosesAt { get; init; }
 

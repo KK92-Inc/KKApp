@@ -230,7 +230,11 @@ In regards to rubrics it will evaluate if user is elligible to conduct a review 
 	[ProducesErrorResponseType(typeof(ProblemDetails))]
 	[EndpointSummary("Create a user")]
 	[EndpointDescription("Provision a new user and create a Keycloak account for them.")]
-	public async Task<ActionResult<UserDO>> CreateUser([FromBody] PostUserRequestDTO request, CancellationToken token)
+	public async Task<ActionResult<UserDO>> Create(
+		[FromBody] PostUserRequestDTO request,
+		[FromQuery(Name = "role")] string? role,
+		CancellationToken token
+	)
 	{
 		var existing = await users.FindByLoginAsync(request.Login, token);
 		if (existing is not null) return Conflict();
