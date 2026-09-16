@@ -72,7 +72,7 @@
         {#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
           <Table.Row>
             {#each headerGroup.headers as header (header.id)}
-              <Table.Head colspan={header.colSpan}>
+              <Table.Head colspan={header.colSpan} align={header.column.id === 'actions' ? 'right' : undefined}>
                 {#if !header.isPlaceholder}
                   <FlexRender {header} />
                 {/if}
@@ -85,7 +85,7 @@
         {#each table.getRowModel().rows as row (row.id)}
           <Table.Row data-state={row.getIsSelected() && 'selected'}>
             {#each row.getVisibleCells() as cell (cell.id)}
-              <Table.Cell>
+              <Table.Cell align={cell.column.id === 'actions' ? 'right' : undefined}>
                 <FlexRender {cell} />
               </Table.Cell>
             {/each}

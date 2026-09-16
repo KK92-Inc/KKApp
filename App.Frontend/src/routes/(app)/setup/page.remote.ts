@@ -3,8 +3,7 @@
 // See README in the root project for more information.
 // ============================================================================
 
-import { command, form, getRequestEvent } from '$app/server';
-import { error, invalid, redirect } from '@sveltejs/kit';
+import { command, getRequestEvent } from '$app/server';
 import { BACKEND_URI } from '$lib/config';
 import type { components } from '$lib/api/api';
 import { Problem } from '$lib/api';
@@ -30,9 +29,3 @@ export const bootstrap = command("unchecked", async (data: SystemInitDTO) => {
 		Problem.throw(await response.json())
 	}
 });
-
-// export const bootstrap = form("unchecked", async (data: SystemInitDTO) => {
-
-
-// 	redirect(303, '/auth');
-// });
