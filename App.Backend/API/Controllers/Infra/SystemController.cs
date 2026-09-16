@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using App.Backend.Core.Services.Interface;
 using App.Backend.API.Notifications.Variants;
-using App.Backend.Models.Requests.SshKeys;
+using App.Backend.Models.Requests;
 
 // ============================================================================
 
@@ -32,7 +32,7 @@ public class SystemController(ISystemService service, IMessageBus bus) : Control
     [ExcludeFromDescription]
     public async Task<IActionResult> Bootstrap([FromBody] SystemInitDTO body, CancellationToken token)
     {
-        var account = await service.InitializeAsync(body.Login, body.Password, body.Email, token);
+        var account = await service.InitializeAsync(body.Login, body.Firstname, body.Lastname, body.Email, token);
         await bus.PublishAsync(new WelcomeUserNotification(account!));
         return NoContent();
     }

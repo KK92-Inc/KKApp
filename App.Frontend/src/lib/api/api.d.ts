@@ -98,7 +98,7 @@ export interface paths {
                     "sort[by]"?: string;
                     /** @description The sort direction. */
                     "sort[order]"?: components["schemas"]["Order"];
-                    /** @description The page number/index */
+                    /** @description The 0-based page index */
                     "page[index]"?: number | string;
                     /** @description The amount of results per page */
                     "page[size]"?: number | string;
@@ -328,7 +328,7 @@ export interface paths {
                     "sort[by]"?: string;
                     /** @description The sort direction. */
                     "sort[order]"?: components["schemas"]["Order"];
-                    /** @description The page number/index */
+                    /** @description The 0-based page index */
                     "page[index]"?: number | string;
                     /** @description The amount of results per page */
                     "page[size]"?: number | string;
@@ -699,7 +699,7 @@ export interface paths {
                     "sort[by]"?: string;
                     /** @description The sort direction. */
                     "sort[order]"?: components["schemas"]["Order"];
-                    /** @description The page number/index */
+                    /** @description The 0-based page index */
                     "page[index]"?: number | string;
                     /** @description The amount of results per page */
                     "page[size]"?: number | string;
@@ -1164,7 +1164,7 @@ export interface paths {
                     "sort[by]"?: string;
                     /** @description The sort direction. */
                     "sort[order]"?: components["schemas"]["Order"];
-                    /** @description The page number/index */
+                    /** @description The 0-based page index */
                     "page[index]"?: number | string;
                     /** @description The amount of results per page */
                     "page[size]"?: number | string;
@@ -1556,7 +1556,7 @@ export interface paths {
                     "sort[by]"?: string;
                     /** @description The sort direction. */
                     "sort[order]"?: components["schemas"]["Order"];
-                    /** @description The page number/index */
+                    /** @description The 0-based page index */
                     "page[index]"?: number | string;
                     /** @description The amount of results per page */
                     "page[size]"?: number | string;
@@ -2572,7 +2572,7 @@ export interface paths {
                     "sort[by]"?: string;
                     /** @description The sort direction. */
                     "sort[order]"?: components["schemas"]["Order"];
-                    /** @description The page number/index */
+                    /** @description The 0-based page index */
                     "page[index]"?: number | string;
                     /** @description The amount of results per page */
                     "page[size]"?: number | string;
@@ -3217,7 +3217,7 @@ export interface paths {
                     "sort[by]"?: string;
                     /** @description The sort direction. */
                     "sort[order]"?: components["schemas"]["Order"];
-                    /** @description The page number/index */
+                    /** @description The 0-based page index */
                     "page[index]"?: number | string;
                     /** @description The amount of results per page */
                     "page[size]"?: number | string;
@@ -3694,7 +3694,7 @@ export interface paths {
                     "filter[rubric_id]"?: string;
                     "filter[kind]"?: components["schemas"]["ReviewKinds"];
                     "filter[status]"?: components["schemas"]["ReviewState"];
-                    /** @description The page number/index */
+                    /** @description The 0-based page index */
                     "page[index]"?: number | string;
                     /** @description The amount of results per page */
                     "page[size]"?: number | string;
@@ -4569,7 +4569,7 @@ export interface paths {
                     "sort[by]"?: string;
                     /** @description The sort direction. */
                     "sort[order]"?: components["schemas"]["Order"];
-                    /** @description The page number/index */
+                    /** @description The 0-based page index */
                     "page[index]"?: number | string;
                     /** @description The amount of results per page */
                     "page[size]"?: number | string;
@@ -5363,7 +5363,7 @@ export interface paths {
                 query?: {
                     "filter[login]"?: string;
                     "filter[display]"?: string;
-                    /** @description The page number/index */
+                    /** @description The 0-based page index */
                     "page[index]"?: number | string;
                     /** @description The amount of results per page */
                     "page[size]"?: number | string;
@@ -5543,7 +5543,7 @@ export interface paths {
                     "type[id]": string;
                     /** @description Defaults to Project */
                     "type[entity]": components["schemas"]["EntityType"];
-                    /** @description The page number/index */
+                    /** @description The 0-based page index */
                     "page[index]"?: number | string;
                     /** @description The amount of results per page */
                     "page[size]"?: number | string;
@@ -5773,7 +5773,7 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    /** @description The page number/index */
+                    /** @description The 0-based page index */
                     "page[index]"?: number | string;
                     /** @description The amount of results per page */
                     "page[size]"?: number | string;
@@ -6172,7 +6172,7 @@ export interface paths {
                 query?: {
                     "filter[name]"?: string;
                     "filter[state]"?: components["schemas"]["EntityObjectState"];
-                    /** @description The page number/index */
+                    /** @description The 0-based page index */
                     "page[index]"?: number | string;
                     /** @description The amount of results per page */
                     "page[size]"?: number | string;
@@ -6500,7 +6500,7 @@ export interface paths {
                 query?: {
                     "filter[name]"?: string;
                     "filter[state]"?: components["schemas"]["EntityObjectState"];
-                    /** @description The page number/index */
+                    /** @description The 0-based page index */
                     "page[index]"?: number | string;
                     /** @description The amount of results per page */
                     "page[size]"?: number | string;
@@ -6750,7 +6750,7 @@ export interface paths {
                     "filter[name]"?: string;
                     "filter[slug]"?: string;
                     "filter[state]"?: components["schemas"]["EntityObjectState"];
-                    /** @description The page number/index */
+                    /** @description The 0-based page index */
                     "page[index]"?: number | string;
                     /** @description The amount of results per page */
                     "page[size]"?: number | string;
@@ -6997,7 +6997,7 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    /** @description The page number/index */
+                    /** @description The 0-based page index */
                     "page[index]"?: number | string;
                     /** @description The amount of results per page */
                     "page[size]"?: number | string;
@@ -7085,7 +7085,7 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    /** @description The page number/index */
+                    /** @description The 0-based page index */
                     "page[index]"?: number | string;
                     /** @description The amount of results per page */
                     "page[size]"?: number | string;
@@ -8457,7 +8457,7 @@ export interface paths {
                     "sort[by]"?: string;
                     /** @description The sort direction. */
                     "sort[order]"?: components["schemas"]["Order"];
-                    /** @description The page number/index */
+                    /** @description The 0-based page index */
                     "page[index]"?: number | string;
                     /** @description The amount of results per page */
                     "page[size]"?: number | string;
@@ -9543,10 +9543,6 @@ export interface components {
         PatchUserDetailsRequestDTO: {
             /** @description Optional markdown biography or about text. */
             markdown?: null | string;
-            /** @description The user's first name. */
-            firstName?: null | string;
-            /** @description The user's last name. */
-            lastName?: null | string;
             enabledNotifications?: null | components["schemas"]["NotificationMeta"];
             /**
              * Format: uri
@@ -9572,6 +9568,10 @@ export interface components {
         PatchUserRequestDTO: {
             /** @description The display name for the user. */
             displayName?: null | string;
+            /** @description The user's first name. */
+            firstName?: null | string;
+            /** @description The user's last name. */
+            lastName?: null | string;
             /**
              * Format: uri
              * @description URL to the user's avatar image.
@@ -9751,9 +9751,9 @@ export interface components {
             /** @description Optional display name for the user. */
             email: string;
             /** @description Optional first name of the user. */
-            firstName?: null | string;
+            firstName: string;
             /** @description Optional last name of the user. */
-            lastName?: null | string;
+            lastName: string;
             /**
              * Format: uri
              * @description Optional URL to the user's avatar image.
@@ -9901,7 +9901,8 @@ export interface components {
         };
         SystemInitDTO: {
             login: string;
-            password: string;
+            firstname: string;
+            lastname: string;
             email: string;
         };
         TreeDTO: {

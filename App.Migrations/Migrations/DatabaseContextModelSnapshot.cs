@@ -1039,25 +1039,13 @@ namespace Migrations.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<string>("Email")
-                        .HasColumnType("text")
-                        .HasColumnName("email");
-
                     b.Property<int>("EnabledNotifications")
                         .HasColumnType("integer")
                         .HasColumnName("enabled_notifications");
 
-                    b.Property<string>("FirstName")
-                        .HasColumnType("text")
-                        .HasColumnName("first_name");
-
                     b.Property<string>("GithubUrl")
                         .HasColumnType("text")
                         .HasColumnName("github_url");
-
-                    b.Property<string>("LastName")
-                        .HasColumnType("text")
-                        .HasColumnName("last_name");
 
                     b.Property<string>("LinkedinUrl")
                         .HasColumnType("text")
@@ -1154,6 +1142,21 @@ namespace Migrations.Migrations
                     b.Property<string>("Display")
                         .HasColumnType("text")
                         .HasColumnName("display");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("email");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("first_name");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("last_name");
 
                     b.Property<string>("Login")
                         .IsRequired()

@@ -24,14 +24,6 @@ public record PatchUserDetailsRequestDTO
     [Description("Optional markdown biography or about text.")]
     public string? Markdown { get; init; }
 
-    [StringLength(100, MinimumLength = 1)]
-    [Description("The user's first name.")]
-    public string? FirstName { get; init; }
-
-    [StringLength(100, MinimumLength = 1)]
-    [Description("The user's last name.")]
-    public string? LastName { get; init; }
-
     /// <summary>
     /// Notification preferences flags.
     /// </summary>

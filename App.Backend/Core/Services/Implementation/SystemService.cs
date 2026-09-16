@@ -37,7 +37,7 @@ public class SystemService(
     }
 
     /// <inheritdoc />
-    public async Task<User> InitializeAsync(string login, string password, string email, CancellationToken token = default)
+    public async Task<User> InitializeAsync(string Login, string First, string Last, string Email, CancellationToken token = default)
     {
         if (await context.System.AsNoTracking().AnyAsync(token))
             throw new ServiceException(403, "System is already initialized.");
@@ -49,16 +49,17 @@ public class SystemService(
         // See: https://github.com/keycloak/keycloak/issues/12454
         await keycloak.Admin.Realms[realm].Users.PostAsync(new()
         {
-            Username = login,
-            Email = email,
+            Username = Login,
+            Email = Email,
             Enabled = true,
             EmailVerified = true,
+            RequiredActions = ["UPDATE_PASSWORD"],
             Credentials =
             [
                 new CredentialRepresentation
                 {
                     Type = "password",
-                    Value = password,
+                    Value = Login,
                     Temporary = false,
                 }
             ],
@@ -66,12 +67,12 @@ public class SystemService(
 
         var lookup = await keycloak.Admin.Realms[realm].Users.GetAsync(cfg =>
         {
-            cfg.QueryParameters.Username = login;
+            cfg.QueryParameters.Username = Login;
             cfg.QueryParameters.Exact = true;
         }, token);
 
-        var created = lookup?.SingleOrDefault()
-            ?? throw new ServiceException(500, "Failed to bootstrap: could not resolve created user in Keycloak.");
+        var created = lookup?.SingleOrDefault();
+        ServiceException.ThrowIf(created is null, 500, "Failed to bootstrap: Could not resolve created user in keycloak.");
 
         var id = Guid.Parse(created.Id!);
         try
@@ -83,13 +84,11 @@ public class SystemService(
                 var account = await context.Users.AddAsync(new()
                 {
                     Id = id,
-                    Login = login,
-                    Display = login,
-                    Email = email,
-                    Details = new()
-                    {
-                        UserId = id,
-                    },
+                    Login = Login,
+                    Display = Login,
+                    Email = Email,
+                    FirstName = First,
+                    LastName = Last,
                 }, ct);
 
                 // NOTE(W2): Adds membership automatically
@@ -102,7 +101,7 @@ public class SystemService(
                 // NOTE(W2): Unlike here because root / orgs shouldn't be
                 // owned by a single user.
                 // TODO: In the future we might want to add EntityOwnership.Root
-                // to disguish it from organizations.
+                // to separate it from organizations.
                 var space = await context.Workspaces.AddAsync(new()
                 {
                     Ownership = EntityOwnership.Organization,

@@ -3,17 +3,17 @@
 // See README in the root project for more information.
 // ============================================================================
 
-import { form, getRequestEvent } from '$app/server';
-import { error, redirect } from '@sveltejs/kit';
+import { command, form, getRequestEvent } from '$app/server';
+import { error, invalid, redirect } from '@sveltejs/kit';
 import { BACKEND_URI } from '$lib/config';
-import { bootstrapSchema } from './schema';
 import type { components } from '$lib/api/api';
+import { Problem } from '$lib/api';
 
 type SystemInitDTO = components['schemas']['SystemInitDTO'];
 
 // ============================================================================
 
-export const bootstrap = form(bootstrapSchema, async (data) => {
+export const bootstrap = command("unchecked", async (data: SystemInitDTO) => {
 	const { fetch } = getRequestEvent();
 	const response = await fetch(`${BACKEND_URI}/system`, {
 		method: 'POST',
@@ -21,13 +21,18 @@ export const bootstrap = form(bootstrapSchema, async (data) => {
 		body: JSON.stringify({
 			login: data.login,
 			email: data.email,
-			password: data._password
+			firstname: data.firstname,
+			lastname: data.lastname
 		} satisfies SystemInitDTO)
 	});
 
 	if (!response.ok) {
-		error(502, 'Failed to create the admin account. Please try again.');
+		Problem.throw(await response.json())
 	}
-
-	redirect(303, '/auth');
 });
+
+// export const bootstrap = form("unchecked", async (data: SystemInitDTO) => {
+
+
+// 	redirect(303, '/auth');
+// });

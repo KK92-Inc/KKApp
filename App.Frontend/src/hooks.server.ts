@@ -31,33 +31,27 @@ api.use(middleware);
 
 // ============================================================================
 
-let bootstrapped = false;
-
 const bootstrap: Handle = async ({ event, resolve }) => {
-	if (bootstrapped) {
-		if (event.url.pathname.startsWith('/setup')) {
-			return new Response(null, { status: 404 });
-		}
-		return resolve(event);
-	}
+  const isSetupRoute = event.url.pathname.startsWith('/setup');
+  const response = await event.fetch(`${BACKEND_URI}/system`);
+  if (response.status === 204) {
+    if (!isSetupRoute) {
+      redirect(303, '/setup');
+    }
 
-	// Avoid a redirect loop while unbootstrapped.
-	if (event.url.pathname.startsWith('/setup')) {
-		return resolve(event);
-	}
+    return resolve(event);
+  }
 
-	const response = await event.fetch(`${BACKEND_URI}/system`);
-	if (response.status === 403) {
-		bootstrapped = true;
-		return resolve(event);
-	}
+  // System is bootstrapped; block access to setup
+  if (response.status === 403) {
+    if (isSetupRoute) {
+      return new Response(null, { status: 404 });
+    }
+    return resolve(event);
+  }
 
-	if (response.status === 204) {
-		redirect(303, '/setup');
-	}
-
-	Log.dbg('unexpected /system status', response.status);
-	return resolve(event);
+  Log.dbg('unexpected /system status', response.status);
+  return resolve(event);
 };
 
 // ============================================================================

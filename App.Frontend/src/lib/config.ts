@@ -31,13 +31,14 @@ export const BACKEND_URI = config(['PUBLIC_API_URL', 'API', 'BACKEND_HTTP', 'BAC
 
 // Keycloak
 export const KC_ID = config(['KC_ID', 'Keycloak__ClientId'], 'intra');
-export const KC_ORIGIN = config(['KC_ORIGIN', 'Keycloak__AuthServerUrl'], 'http://localhost:8080');
+export const KC_ORIGIN = config(['KC_ORIGIN', 'PUBLIC_KC_ORIGIN'], 'http://localhost:8080');
 export const KC_SECRET = config(['KC_SECRET'], '');
 export const KC_CALLBACK = config(['KC_CALLBACK'], `${ORIGIN}/auth/callback`);
 export const KC_COOKIE = config(['KC_COOKIE'], 'kc.session');
 export const KC_REALM = config(['KC_REALM'], 'student');
 
 // S3
+export const S3_ORIGIN = config(['PUBLIC_S3_ENDPOINT'], '')
 export const S3_ID = config(['S3_ACCESS_KEY_ID'], '');
 export const S3_SECRET = config(['S3_SECRET_ACCESS_KEY'], '');
 
