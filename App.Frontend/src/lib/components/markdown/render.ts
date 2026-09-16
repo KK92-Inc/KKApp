@@ -151,5 +151,21 @@ export const Markdown = {
 	 * Supports GFM, LaTeX/KaTeX math, and syntax highlighted code blocks (shiki).
 	 * Output is sanitized via rehype-sanitize to prevent XSS.
 	 */
-	render: async (source: string) => String(await processor.process(source))
+	render: async (source: string) => String(await processor.process(source)),
+
+	/**
+	 * Highlights a section of source code
+	 * @param source
+	 * @param lang
+	 * @returns
+	 */
+	highlight: (source: string, lang: string) => {
+		const normalized = lang.trim().toLowerCase();
+		const langs = highlighter.getLoadedLanguages();
+
+		return highlighter.codeToHtml(source, {
+			lang: langs.includes(normalized) ? normalized : 'text',
+			theme: 'github-dark'
+		});
+	}
 };

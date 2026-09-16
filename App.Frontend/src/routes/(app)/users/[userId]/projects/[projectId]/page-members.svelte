@@ -32,15 +32,7 @@
 	);
 </script>
 
-{#if !session}
-	<p class="text-xs text-muted-foreground">
-		{#if context.userId() === page.data.session.userId}
-			You haven't subscribed to this project yet.
-		{:else}
-			This user hasn't subscribed to this project yet.
-		{/if}
-	</p>
-{:else}
+{#if session}
 	<svelte:boundary>
 		{@const members = await UserProject.getMembersPage({ id: session.id })}
 		{@const abandoned = members.data.find((v) => v.userId === page.data.session.userId && v.leftAt)}

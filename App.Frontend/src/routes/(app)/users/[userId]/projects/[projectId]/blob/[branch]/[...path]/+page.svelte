@@ -9,6 +9,7 @@
 	import type { HttpError } from '@sveltejs/kit';
 	import * as UserProject from '$lib/remotes/user-project.remote';
 	import * as Project from '$lib/remotes/projects.remote';
+	import { ShikiError } from 'shiki';
 
 	const { params }: PageProps = $props();
 	const context = Page.getContext();
@@ -28,7 +29,7 @@
 <svelte:boundary>
 	{#snippet failed(e, reset)}
 		{@const err = e as HttpError}
-		{params.path}
+		{JSON.stringify((e as ShikiError).message)}
 
 		<Alert.Root variant="destructive">
 			<CircleAlert />

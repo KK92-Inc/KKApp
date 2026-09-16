@@ -2,6 +2,7 @@
 	import * as Empty from '$lib/components/empty';
 	import Button from '../button/button.svelte';
 	import { ArrowLeft, File, Download, FileQuestionMark, FileExclamationPoint } from '@lucide/svelte';
+	import { Markdown } from '$lib/components/markdown/render';
 
 	interface Props {
 		content: ArrayBuffer;
@@ -11,7 +12,7 @@
 
 	const { name, content, backHref }: Props = $props();
 	const size = $derived(content.byteLength);
-
+	const language = $derived(name.split('.').pop() ?? 'text');
 	const UNITS = ['byte', 'kilobyte', 'megabyte'] as const;
 
 	export function format(bytes?: number): string {
@@ -75,19 +76,14 @@
 
 		<!-- Header Actions -->
 		<div class="flex shrink-0 items-center gap-1">
-			<Button
-				variant="ghost"
-				size="icon"
-				onclick={download}
-				disabled={size === 0}
-				aria-label="Download file"
-			>
+			<Button variant="ghost" size="icon" onclick={download} disabled={size === 0} aria-label="Download file">
 				<Download class="size-4" />
 			</Button>
 		</div>
 	</div>
 
-	<div class="max-h-128 overflow-auto">
+	<!-- Apply some styling on the generated pre tag to fix padding and x-scroll-overflow -->
+	<div class="code-viewer max-h-128 overflow-auto [&>pre]:m-0 [&>pre]:w-max [&>pre]:min-w-full [&>pre]:p-4">
 		{#if content.byteLength === 0}
 			<Empty.Root>
 				<Empty.Header>
@@ -101,7 +97,9 @@
 		{:else}
 			{@const text = decode(content)}
 			{#if text}
-				<pre class="overflow-x-auto p-4 text-sm leading-relaxed"><code>{text}</code></pre>
+				<!-- It should be safe as we pass it through shiki only -->
+				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+				{@html Markdown.highlight(text, language)}
 			{:else}
 				<Empty.Root>
 					<Empty.Header>
