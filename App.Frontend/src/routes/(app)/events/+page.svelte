@@ -14,7 +14,7 @@
 	import Paginate from '$lib/components/paginate.svelte';
 	import CardEvent from './card-event.svelte';
 
-	let index = $state(1);
+	let index = $state(0);
 	let search = $state('');
 	let status = $state<'Pending' | 'Accepted' | 'Rejected' | 'Finished'>('Accepted');
 	const debounced = useDebounce((query: string) => {

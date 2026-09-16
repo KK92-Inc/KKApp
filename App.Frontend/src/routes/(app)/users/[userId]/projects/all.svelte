@@ -27,7 +27,7 @@
 
 	const { userId, search }: Props = $props();
 
-	let index = $state(1);
+	let index = $state(0);
 	const root = await Workspace.root();
 </script>
 

@@ -13,36 +13,36 @@ using System.ComponentModel.DataAnnotations;
 namespace App.Backend.API.Params;
 
 /// <summary>
-/// Query parameters for pagination.
+/// Pagination parameters
 /// </summary>
 public class Pagination : IPagination
 {
-	private const int c_MaxPageSize = 50;
+    private const int c_MaxPageSize = 50;
 
-	private int _pageSize = 30;
-	private int _pageNumber = 1;
+    private int _pageSize = 30;
+    private int _pageNumber = 0;
 
-	/// <summary>
-	/// The page number.
-	/// </summary>
-	[Range(1, int.MaxValue)]
-	[FromQuery(Name = "page[index]")]
-    [Description("The page number/index")]
-	public int Page
-	{
-		get => _pageNumber;
-		set => _pageNumber = Math.Max(1, value);
-	}
+    /// <summary>
+    /// The page index (0-based).
+    /// </summary>
+    [Range(0, int.MaxValue)]
+    [FromQuery(Name = "page[index]")]
+    [Description("The 0-based page index")]
+    public int Page
+    {
+        get => _pageNumber;
+        set => _pageNumber = Math.Max(0, value);
+    }
 
-	/// <summary>
-	/// How many items per page.
-	/// </summary>
-	[Range(1, c_MaxPageSize)]
-	[FromQuery(Name = "page[size]")]
+    /// <summary>
+    /// How many items per page.
+    /// </summary>
+    [Range(1, c_MaxPageSize)]
+    [FromQuery(Name = "page[size]")]
     [Description("The amount of results per page")]
-	public int Size
-	{
-		get => _pageSize;
-		set => _pageSize = Math.Min(c_MaxPageSize, Math.Max(1, value));
-	}
+    public int Size
+    {
+        get => _pageSize;
+        set => _pageSize = Math.Min(c_MaxPageSize, Math.Max(1, value));
+    }
 }

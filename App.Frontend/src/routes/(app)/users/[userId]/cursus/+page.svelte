@@ -31,7 +31,7 @@
 				v.transform(Number),
 				v.check((n) => !isNaN(n) && n > 0)
 			),
-			1
+			0
 		),
 		search: v.fallback(v.string(), ''),
 		status: v.fallback(v.picklist(states), 'Any'),

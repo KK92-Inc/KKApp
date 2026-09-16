@@ -15,7 +15,7 @@
 
 	const { params }: PageProps = $props();
 
-	let index = $state(1);
+	let index = $state(0);
 	let search = $state('');
 	const debounced = useDebounce((query: string) => {
 		search = query;

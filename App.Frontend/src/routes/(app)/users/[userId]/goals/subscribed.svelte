@@ -15,7 +15,7 @@
 		status?: v.InferOutput<typeof EntityObjectState>;
 	}
 
-	let index = $state(1);
+	let index = $state(0);
 	const { userId, search, status }: Props = $props();
 </script>
 

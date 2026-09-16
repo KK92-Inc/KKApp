@@ -108,7 +108,7 @@ export const Filters = {
 		sort: v.optional(v.fallback(v.picklist(['Ascending', 'Descending']), 'Ascending'), 'Ascending')
 	},
 	pagination: {
-		page: v.optional(v.fallback(v.number(), 1), 1),
+		page: v.optional(v.fallback(v.number(), 0), 0),
 		size: v.optional(v.fallback(v.number(), PAGINATION_PER_STEP), PAGINATION_PER_STEP)
 	}
 };
