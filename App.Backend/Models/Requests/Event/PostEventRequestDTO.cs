@@ -46,6 +46,7 @@ public record PostEventRequestDTO : IValidatableObject
     /// <summary>
     /// Maximum capacity of attendees.
     /// </summary>
+    [Required]
     [Range(1, int.MaxValue, ErrorMessage = "Capacity must be at least 1.")]
     [Description("The maximum number of participants allowed.")]
     public int Capacity { get; init; }
@@ -81,8 +82,33 @@ public record PostEventRequestDTO : IValidatableObject
     /// <summary>
     /// Cross-property logical validations executed automatically during model binding.
     /// </summary>
-    public IEnumerable<ValidationResult> Validate(ValidationContext context)
+    public IEnumerable<ValidationResult> Validate(ValidationContext _)
     {
+        var today = DateTimeOffset.UtcNow.Date;
+        if (StartsAt.Date <= today)
+        {
+            yield return new ValidationResult(
+                "Event start time must be at least one day after today.",
+                [nameof(StartsAt)]
+            );
+        }
+
+        if (EndsAt.Date <= today)
+        {
+            yield return new ValidationResult(
+                "Event end time must be after today.",
+                [nameof(EndsAt)]
+            );
+        }
+
+        if (ClosesAt.HasValue && ClosesAt.Value.Date <= today)
+        {
+            yield return new ValidationResult(
+                "Registration close time must be after today.",
+                [nameof(ClosesAt)]
+            );
+        }
+
         if (EndsAt <= StartsAt)
         {
             yield return new ValidationResult(

@@ -34,6 +34,7 @@
 	onunhandledrejection={async (e) => {
 		// We're being told to GTFO, so let's leave.
 		if (isHttpError(e.reason, 401)) {
+			console.log("jIJ")
 			e.preventDefault();
 			await goto('/auth');
 		}

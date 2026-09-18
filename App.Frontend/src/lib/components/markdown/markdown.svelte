@@ -28,9 +28,9 @@
 		<Skeleton class="h-32" />
 	{/snippet}
 
-	<div class={cn('markdown', className)}>
-		<!-- NOTE(W2): We sanitize the input via rehype-sanitize -->
-		<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-		{@html await Markdown.render(renderValue)}
-	</div>
+<div class={cn('markdown w-full max-w-full min-w-0 break-words [word-break:break-word]', className)}>
+  <!-- NOTE(W2): We sanitize the input via rehype-sanitize -->
+  <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+  {@html await Markdown.render(renderValue)}
+</div>
 </svelte:boundary>

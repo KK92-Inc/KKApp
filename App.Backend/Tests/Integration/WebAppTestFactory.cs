@@ -63,4 +63,12 @@ public class WebAppTestFactory : WebApplicationFactory<Program>
 
     public DatabaseContext CreateDbContext() =>
         Services.CreateScope().ServiceProvider.GetRequiredService<DatabaseContext>();
+
+    /// <summary>
+    /// Resolves a scoped <see cref="Wolverine.IMessageBus"/> so tests can publish
+    /// messages (e.g. <c>GoalCompletionMessage</c>) exactly the way production
+    /// handlers do, instead of re-implementing handler logic by hand.
+    /// </summary>
+    public Wolverine.IMessageBus CreateMessageBus() =>
+        Services.CreateScope().ServiceProvider.GetRequiredService<Wolverine.IMessageBus>();
 }

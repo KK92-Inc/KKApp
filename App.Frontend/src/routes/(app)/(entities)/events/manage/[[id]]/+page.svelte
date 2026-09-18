@@ -7,85 +7,176 @@
 	import Separator from '$lib/components/separator/separator.svelte';
 	import Textarea from '$lib/components/textarea/textarea.svelte';
 	import MarkdownTextarea from '$lib/components/markdown/markdown-textarea.svelte';
-	import Slider from '$lib/components/slider/slider.svelte';
+	import Thumbnail from '$lib/components/thumbnail.svelte';
+	import * as Page from './context.svelte';
+	import type { PageProps } from './$types';
+	import InputDate from '$lib/components/input-date.svelte';
+	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
+	import { page } from '$app/state';
+	import { Checkbox } from '$lib/components/checkbox';
+
+	const { params }: PageProps = $props();
+	const context = Page.setContext(new Page.Context(() => params.id));
+	$effect(() => {
+		context.hydrate();
+	});
 </script>
 
-<Card.Root class="relative mx-auto mt-8 w-full max-w-lg pt-0">
-	<div class="absolute inset-0 z-30 aspect-video bg-black/35"></div>
-	<img
-		src="https://avatar.vercel.sh/shadcn1"
-		alt="Event cover"
-		class="relative z-20 aspect-video w-full object-cover brightness-60 grayscale dark:brightness-40"
-	/>
-	<Card.Header>
-		<Card.Action>
-			<Badge variant="secondary">Proposal</Badge>
-		</Card.Action>
-		<Card.Title>Propose an Event</Card.Title>
-		<Card.Description>
-			If you have a fun event idea you would like to organize, you can propose it here.
-		</Card.Description>
-	</Card.Header>
-
-	<Separator />
-
-	<Card.Content>
-		<Field.Set>
-			<Field.Group>
-				<Field.Field>
-					<Field.Label for="street">Event Name</Field.Label>
-					<Input id="street" type="text" placeholder="Karaoke Night" />
-				</Field.Field>
-				<Field.Field>
-					<Field.Label for="description">
-						Description
-						<span class="ml-auto text-xs font-normal">
-							{0}/255
-						</span>
-					</Field.Label>
-
-					<Textarea id="description" rows={3} class="max-h-52 resize-y" maxlength={255} />
-					<Field.Description>Short and readable description about the cursus.</Field.Description>
-				</Field.Field>
-				<div class="grid grid-cols-2 gap-4">
-					<Field.Field>
-						<Field.Label for="city">City</Field.Label>
-						<Input id="city" type="datetime-local" placeholder="New York" />
+<svelte:boundary>
+	{#snippet pending()}
+		<Skeleton class="mx-auto mt-4 h-100 w-full max-w-lg" />
+	{/snippet}
+	<Card.Root class="relative mx-auto mt-4 w-full max-w-lg pt-0">
+		<Thumbnail
+			variant="cover"
+			size={192}
+			class="border-b"
+			bind:value={context.fields.thumbnail}
+			name="thumbnail"
+			alt="Event thumbnail"
+		/>
+		<Card.Content>
+			<Field.Set>
+				<Field.Group class="gap-y-2">
+					<Field.Field data-invalid={!!context.errors.name}>
+						<Field.Label for="name">Event Name</Field.Label>
+						<Input
+							id="name"
+							type="text"
+							maxlength={255}
+							bind:value={context.fields.name}
+							placeholder="Karaoke Night"
+						/>
+						<Field.Error errors={context.errors.name} />
 					</Field.Field>
-					<Field.Field>
-						<Field.Label for="zip">Postal Code</Field.Label>
-						<Input id="zip" type="datetime-local" placeholder="90502" />
+					<Field.Field data-invalid={!!context.errors.description}>
+						<Field.Label for="description">
+							Description
+							<span class="ml-auto text-xs font-normal">
+								{context.fields.description.length}/255
+							</span>
+						</Field.Label>
+
+						<Textarea
+							id="description"
+							rows={3}
+							class="max-h-52 resize-y"
+							maxlength={255}
+							bind:value={context.fields.description}
+						/>
+						<Field.Description>Short and readable description about the event.</Field.Description>
+						<Field.Error errors={context.errors.description} />
 					</Field.Field>
 
-					<Field.Field>
-						<Field.Label for="city">Capacity</Field.Label>
-						<Input id="zip" max={255} min={10} type="number" placeholder="25" />
+					<div class="grid grid-cols-2 gap-4">
+						<Field.Field data-invalid={!!context.errors.startsAt}>
+							<Field.Label for="starts-at">Starts At</Field.Label>
+							<InputDate id="starts-at" bind:value={context.fields.startsAt} />
+							<Field.Error errors={context.errors.startsAt} />
+						</Field.Field>
+						<Field.Field data-invalid={!!context.errors.endsAt}>
+							<Field.Label for="ends-at">Ends At</Field.Label>
+							<InputDate id="ends-at" bind:value={context.fields.endsAt} />
+							<Field.Error errors={context.errors.endsAt} />
+						</Field.Field>
+
+						<Field.Field data-invalid={!!context.errors.capacity}>
+							<Field.Label for="capacity">Capacity</Field.Label>
+							<Input
+								id="capacity"
+								max={255}
+								min={10}
+								type="number"
+								bind:value={context.fields.capacity}
+								placeholder="25"
+							/>
+							<Field.Description>How many people may join this event.</Field.Description>
+							<Field.Error errors={context.errors.capacity} />
+						</Field.Field>
+
+						<Field.Field data-invalid={!!context.errors.closesAt}>
+							<Field.Label for="closes-at">Closes At</Field.Label>
+							<InputDate id="closes-at" bind:value={context.fields.closesAt} class="w-full" />
+							<Field.Description>When registrations close for this event.</Field.Description>
+							<Field.Error errors={context.errors.closesAt} />
+						</Field.Field>
+					</div>
+
+					<Separator />
+
+					<Field.Field data-invalid={!!context.errors.threshold}>
+						<Field.Label for="threshold">Threshold</Field.Label>
+						{#if page.data.session.roles.includes('staff')}
+							<div class="flex items-center gap-2">
+								<Checkbox
+									id="threshold-optional"
+									checked={context.fields.threshold === null}
+									onCheckedChange={(checked: boolean) => {
+										context.fields.threshold = checked ? null : context.fields.capacity;
+									}}
+								/>
+								<label for="threshold-optional" class="text-sm font-normal text-muted-foreground">
+									No minimum required
+								</label>
+							</div>
+
+							{#if context.fields.threshold !== null}
+								<Input
+									id="threshold"
+									max={255}
+									min={10}
+									type="number"
+									bind:value={context.fields.threshold}
+									placeholder="25"
+								/>
+							{/if}
+						{:else}
+							<Input
+								id="threshold"
+								max={255}
+								min={10}
+								type="number"
+								required
+								bind:value={context.fields.threshold}
+								placeholder="25"
+							/>
+						{/if}
+
+						<Field.Description>
+							{#if page.data.session.roles.includes('staff')}
+								Minimum required occupancy for the event to switch state. If not defined the event will skip proposal and become an upcoming event.
+							{:else}
+								Your event will start off as a proposal and if you meet the threshold it will be allowed to happen. Otherwise it will be rejected automatically.
+							{/if}
+						</Field.Description>
+						<Field.Error errors={context.errors.threshold} />
 					</Field.Field>
-					<Field.Field>
-						<Field.Label for="zip">Closes At</Field.Label>
-						<Input id="zip" type="datetime-local" placeholder="90502" />
+				</Field.Group>
+			</Field.Set>
+		</Card.Content>
+
+		<Separator />
+
+		<Card.Content>
+			<Field.Set>
+				<Field.Group class="w-full">
+					<Field.Field class="w-full min-w-0" data-invalid={!!context.errors.markdown}>
+						<Field.Label for="markdown">Event Details</Field.Label>
+						<MarkdownTextarea id="markdown" bind:value={context.fields.markdown} />
+						<Field.Description>
+							Here you can line out what is going to happen in the event in detail.
+						</Field.Description>
+						<Field.Error errors={context.errors.markdown} />
 					</Field.Field>
-				</div>
-			</Field.Group>
-		</Field.Set>
-	</Card.Content>
+				</Field.Group>
+			</Field.Set>
+		</Card.Content>
+		<Separator />
 
-	<Separator />
-
-	<Card.Content>
-		<Field.Set>
-			<Field.Field>
-				<Field.Label for="city">Event Details</Field.Label>
-				<MarkdownTextarea />
-				<Field.Description
-					>Here you can line out what is going to happen in the event in detail.</Field.Description
-				>
-			</Field.Field>
-		</Field.Set>
-	</Card.Content>
-	<Separator />
-
-	<Card.Footer>
-		<Button class="w-full">View Event</Button>
-	</Card.Footer>
-</Card.Root>
+		<Card.Footer>
+			<Button class="w-full" onclick={() => context.submit()}>
+				{params.id ? 'Save Event' : 'Create Event'}
+			</Button>
+		</Card.Footer>
+	</Card.Root>
+</svelte:boundary>

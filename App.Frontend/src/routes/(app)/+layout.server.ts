@@ -4,7 +4,6 @@
 // ============================================================================
 
 import type { LayoutServerLoad } from "./$types";
-import * as Workspace from "$lib/remotes/workspace.remote";
 import { getLocalTimeZone } from "@internationalized/date";
 
 // ============================================================================

@@ -7,7 +7,8 @@ using System.Diagnostics;
 using App.Backend.Core.Services.Interface;
 using App.Backend.Database;
 using App.Backend.Domain.Entities;
-using App.Backend.Domain.Values.Misc;
+using App.Git.Models.Requests;
+using App.Git.Models.Responses;
 using Microsoft.EntityFrameworkCore;
 
 // ============================================================================
@@ -30,7 +31,7 @@ public class LocalGitService(DatabaseContext db) : IGitService
     private string GetRepoPath(string owner, string name) => 
         Path.Combine(_baseRepoPath, owner, name);
 
-    public async Task<Git?> FindByIdAsync(Guid id, CancellationToken token = default)
+    public async Task<GitInfo?> FindByIdAsync(Guid id, CancellationToken token = default)
     {
         // Assuming your Git entity is stored in this DbSet
         return await db.GitInfo.FirstOrDefaultAsync(g => g.Id == id, token);
@@ -255,7 +256,32 @@ public class LocalGitService(DatabaseContext db) : IGitService
         directory.Delete(true);
     }
 
-    public Task<bool> Commit(string owner, string name, string branch, Commit commit, CancellationToken token = default)
+    Task<GitInfo?> IGitService.FindByIdAsync(Guid id, CancellationToken token)
+    {
+        throw new NotImplementedException();
+    }
+
+    Task<TreeDTO[]?> IGitService.GetTreeAsync(string owner, string name, string branch, string path, CancellationToken token)
+    {
+        throw new NotImplementedException();
+    }
+
+    Task<byte[]?> IGitService.GetBlobAsync(string owner, string name, string branch, string path, CancellationToken token)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> Commit(string owner, string name, string branch, PostCommitWithAuthorDTO commit, CancellationToken token = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    Task<BranchDTO[]> IGitService.GetBranchesAsync(string owner, string name, CancellationToken token)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<string?> GetDefaultBranchAsync(string owner, string name, CancellationToken token = default)
     {
         throw new NotImplementedException();
     }

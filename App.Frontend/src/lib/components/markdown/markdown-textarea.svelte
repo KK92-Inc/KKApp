@@ -96,7 +96,7 @@
 	</button>
 {/snippet}
 
-<Tabs.Root bind:value={mode} class={cn('gap-0', className)}>
+<Tabs.Root bind:value={mode} class={cn('w-full min-w-0 gap-0', className)}>
 	<Tabs.List class="h-fit w-full justify-between rounded-b-none border border-b-0">
 		<div class="w-fit p-1">
 			<Tabs.Trigger value="write">Write</Tabs.Trigger>
@@ -164,7 +164,10 @@
 			</a>
 		</div>
 	</Tabs.Content>
-	<Tabs.Content value="preview" class={cn('markdown rounded-t-none border-0 dark:bg-input/30 ')}>
-		<Markdown {value} class="min-h-20 rounded-md rounded-t-none border p-3" />
-	</Tabs.Content>
+<Tabs.Content
+    value="preview"
+    class={cn('w-full min-w-0 overflow-x-auto markdown rounded-t-none border-0 dark:bg-input/30')}
+  >
+    <Markdown {value} class="min-h-20 rounded-md rounded-t-none border p-3" />
+  </Tabs.Content>
 </Tabs.Root>
