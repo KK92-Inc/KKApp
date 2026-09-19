@@ -12,7 +12,6 @@ using App.Backend.Models.Responses.Entities.Cursus;
 using App.Backend.Domain.Relations;
 using App.Backend.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
-using App.Backend.Models.Responses.Entities.Goals;
 using App.Backend.Domain.Entities;
 using Wolverine;
 using App.Backend.API.Utils;
@@ -182,7 +181,7 @@ public class CursusController(
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Replace cursus track")]
     [EndpointDescription("Fully replaces the hierarchical goal track for a static cursus.")]
-    public async Task<ActionResult<CursusTrackDO>> SetTrack(Guid id, [FromBody] PostCursusTrackRequestDTO body, CancellationToken token)
+    public async Task<ActionResult<CursusTrackDO>> SetTrack(Guid id, [FromBody] PutCursusTrackRequestDTO body, CancellationToken token)
     {
         var cursus = await service.FindByIdAsync(id, token);
         if (cursus is null) return NotFound();
@@ -201,33 +200,5 @@ public class CursusController(
 
         var track = await service.SetTrackAsync(id, nodes, token);
         return Ok(AssembleTrack(cursus, track));
-    }
-
-    private static CursusTrackDO AssembleTrack(Cursus cursus, IReadOnlyList<CursusGoal> goals)
-    {
-        var entries = goals.Select(g => (
-            Node: new Models.Responses.Entities.Cursus.CursusTrackNodeDO { Goal = new GoalLightDO(g.Goal), ChoiceGroup = g.ChoiceGroup },
-            g.GoalId,
-            g.ParentGoalId
-        )).ToList();
-
-        var byId = entries.ToDictionary(e => e.GoalId, e => e.Node);
-        var roots = new List<Models.Responses.Entities.Cursus.CursusTrackNodeDO>();
-
-        foreach (var (node, _, parentId) in entries)
-        {
-            if (parentId is not null && byId.TryGetValue(parentId.Value, out var parent))
-                parent.Children.Add(node);
-            else
-                roots.Add(node);
-        }
-
-        return new CursusTrackDO
-        {
-            CursusId = cursus.Id,
-            Variant = cursus.Variant,
-            CompletionMode = cursus.CompletionMode,
-            Nodes = roots
-        };
     }
 }

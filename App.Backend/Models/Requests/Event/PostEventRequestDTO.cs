@@ -5,6 +5,7 @@
 
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace App.Backend.Models.Requests.Event;
 
@@ -82,9 +83,11 @@ public record PostEventRequestDTO : IValidatableObject
     /// <summary>
     /// Cross-property logical validations executed automatically during model binding.
     /// </summary>
-    public IEnumerable<ValidationResult> Validate(ValidationContext _)
+    public IEnumerable<ValidationResult> Validate(ValidationContext context)
     {
-        var today = DateTimeOffset.UtcNow.Date;
+        var time = context.GetService<TimeProvider>();
+        var today = time is not null ? time.GetUtcNow().Date : DateTimeOffset.UtcNow.Date;
+
         if (StartsAt.Date <= today)
         {
             yield return new ValidationResult(

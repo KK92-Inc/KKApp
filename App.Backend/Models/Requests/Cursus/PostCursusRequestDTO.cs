@@ -3,37 +3,44 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using App.Backend.Domain.Enums;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
-using App.Backend.Domain.Enums;
-using App.Backend.Models.Responses.Entities.Cursus;
-
-namespace App.Backend.Models.Requests.Cursus;
 
 // ============================================================================
 
+namespace App.Backend.Models.Requests.Cursus;
+
+/// <summary>
+/// Create a cursus.
+/// </summary>
 public class PostCursusRequestDTO
 {
     [Required, StringLength(256, MinimumLength = 1)]
+    [Description("The name of cursus")]
     public required string Name { get; init; }
 
     [Required, StringLength(16384, MinimumLength = 1)]
     [Description("Description of the cursus.")]
     public required string Description { get; init; }
 
-    [Required, Description("Indicates whether the cursus is currently active.")]
-    public bool Active { get; init; }
+    [Required]
+    [Description("Indicates whether the cursus can be subscribed to.")]
+    public bool Enabled { get; init; }
 
-    [Required, Description("Indicates whether the cursus is publicly visible.")]
+    [Required]
+    [Description("Indicates whether the cursus is publicly visible.")]
     public bool Public { get; init; }
 
-    [Required, Description("The cursus variant: Static (fixed track) or Dynamic (free-roam).")]
+    [Required]
+    [Description("What kind of cursus this is.")]
     public CursusVariant Variant { get; init; }
 
-    [Required, Description("How users progress through the track: Ring (level-by-level) or FreeStyle (branch-independent).")]
+    [Required]
+    [Description("Defines the type of progression to be made in the cursus.")]
     public CursusMode Mode { get; init; }
 
-    [Required, MinLength(1)]
-    [Description("The flat list of track nodes forming the cursus hierarchy.")]
-    public required PostCursusTrackRequestDTO Track { get; init; }
+    [Required]
+    [Description("The cursus track itself.")]
+    public required PutCursusTrackRequestDTO Track { get; init; }
 }

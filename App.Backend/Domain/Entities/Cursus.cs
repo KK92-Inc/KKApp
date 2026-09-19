@@ -29,11 +29,11 @@ public class Cursus : BaseEntity
     [Column("slug"), StringLength(255)]
     public required string Slug { get; set; }
 
-    [Column("avatar_url")]
-    public string? AvatarUrl { get; set; }
+    [Column("thumbnail_url")]
+    public string? Thumbnail { get; set; }
 
-    [Column("active")]
-    public bool Active { get; set; }
+    [Column("enabled")]
+    public bool Enabled { get; set; }
 
     [Column("public")]
     public bool Public { get; set; }
@@ -45,14 +45,14 @@ public class Cursus : BaseEntity
     /// Whether this cursus follows a fixed track or allows dynamic/free-roam.
     /// </summary>
     [Column("variant")]
-    public CursusVariant Variant { get; set; } = CursusVariant.Static;
+    public CursusVariant Variant { get; set; }
 
     /// <summary>
     /// How users progress through the track: level-by-level (Ring) or
     /// branch-independent (FreeStyle).
     /// </summary>
     [Column("completion")]
-    public CursusMode CompletionMode { get; set; } = CursusMode.Ring;
+    public CursusMode CompletionMode { get; set; }
 
     [Column("workspace_id")]
     public Guid WorkspaceId { get; set; }

@@ -5,6 +5,7 @@
 
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace App.Backend.Models.Requests.Event;
 
@@ -80,6 +81,33 @@ public record PatchEventRequestDTO : IValidatableObject
     /// </summary>
     public IEnumerable<ValidationResult> Validate(ValidationContext context)
     {
+        var time = context.GetService<TimeProvider>();
+        var today = time is not null ? time.GetUtcNow().Date : DateTimeOffset.UtcNow.Date;
+
+        if (StartsAt?.Date <= today)
+        {
+            yield return new ValidationResult(
+                "Event start time must be at least one day after today.",
+                [nameof(StartsAt)]
+            );
+        }
+
+        if (EndsAt?.Date <= today)
+        {
+            yield return new ValidationResult(
+                "Event end time must be after today.",
+                [nameof(EndsAt)]
+            );
+        }
+
+        if (ClosesAt.HasValue && ClosesAt.Value.Date <= today)
+        {
+            yield return new ValidationResult(
+                "Registration close time must be after today.",
+                [nameof(ClosesAt)]
+            );
+        }
+
         if (EndsAt <= StartsAt)
         {
             yield return new ValidationResult(

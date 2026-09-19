@@ -134,12 +134,11 @@ such as official cursi, projects or rubrics.
             Public = body.Public
         };
 
-        var nodes = body.Track.Nodes.Select(n => new CursusGoal
+        var nodes = body.Track.Select(n => new CursusGoal
         {
             CursusId = cursus.Id,
             GoalId = n.GoalId,
             ParentGoalId = n.ParentId,
-            ChoiceGroup = n.Group
         });
 
         cursus = await service.AddCursusAsync(space.Id, cursus, nodes, token);

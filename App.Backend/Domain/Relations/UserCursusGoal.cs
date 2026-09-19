@@ -23,7 +23,6 @@ namespace App.Backend.Domain.Relations;
 [Table("rel_cursus_goal_snapshot")]
 [PrimaryKey(nameof(UserCursusId), nameof(GoalId))]
 [Index(nameof(UserCursusId), nameof(ParentGoalId))]
-[Index(nameof(UserCursusId), nameof(ChoiceGroup), nameof(GoalId))]
 public class UserCursusGoal : BaseTimestampEntity
 {
     [Column("user_cursus_id")]
@@ -38,13 +37,6 @@ public class UserCursusGoal : BaseTimestampEntity
     /// </summary>
     [Column("parent_goal_id")]
     public Guid? ParentGoalId { get; set; }
-
-    /// <summary>
-    /// Mirrors <see cref="CursusGoal.ChoiceGroup"/> at snapshot time.
-    /// Null means the goal is required (not part of any choice set).
-    /// </summary>
-    [Column("choice_group")]
-    public Guid? ChoiceGroup { get; set; }
 
     [ForeignKey(nameof(UserCursusId))]
     public virtual UserCursus UserCursus { get; set; } = null!;

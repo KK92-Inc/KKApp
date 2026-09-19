@@ -11,7 +11,7 @@ public class CursusCompletionTests3
     private static async Task PutTrackAsync(HttpClient client, Guid cursusId, List<Models.Requests.Cursus.CursusTrackNodeDO> nodes)
     {
         var response = await client.PostAsJsonAsync($"/cursus/{cursusId}/track",
-            new PostCursusTrackRequestDTO { Nodes = nodes }, JsonOptions.Default);
+            new PutCursusTrackRequestDTO { Nodes = nodes }, JsonOptions.Default);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 

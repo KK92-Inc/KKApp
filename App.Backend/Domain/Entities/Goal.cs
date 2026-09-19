@@ -31,11 +31,11 @@ public class Goal : BaseEntity
     [Column("slug"), StringLength(255)]
     public required string Slug { get; set; }
 
-    [Column("avatar_url")]
-    public string? AvatarUrl { get; set; }
+    [Column("thumbnail_url")]
+    public string? Thumbnail { get; set; }
 
-    [Column("active")]
-    public bool Active { get; set; }
+    [Column("enabled")]
+    public bool Enabled { get; set; }
 
     [Column("public")]
     public bool Public { get; set; }

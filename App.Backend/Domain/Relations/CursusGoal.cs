@@ -37,14 +37,6 @@ public class CursusGoal : BaseTimestampEntity
     [Column("parent_goal_id")]
     public Guid? ParentGoalId { get; set; }
 
-    /// <summary>
-    /// Groups sibling goals into a choice set. Siblings sharing the same
-    /// non-null value are alternatives — the user must complete at least one.
-    /// Null means the goal is required (not part of any choice).
-    /// </summary>
-    [Column("choice_group")]
-    public Guid? ChoiceGroup { get; set; }
-
     [ForeignKey(nameof(CursusId))]
     public virtual Cursus Cursus { get; set; }
 
