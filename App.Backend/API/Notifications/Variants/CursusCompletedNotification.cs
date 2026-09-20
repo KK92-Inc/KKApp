@@ -5,14 +5,7 @@
 
 using App.Backend.Domain.Enums;
 using App.Backend.API.Notifications.Channels;
-using Wolverine;
-using System.Net.Mail;
-using App.Backend.Domain.Entities.Users;
-using Microsoft.AspNetCore.SignalR;
-using App.Backend.Models.Responses.Entities;
 using App.Backend.Models.Responses.Entities.Notifications;
-using App.Backend.API.Bus.Messages;
-using App.Backend.Models.Responses.Entities.Cursus;
 
 namespace App.Backend.API.Notifications.Variants;
 

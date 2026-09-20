@@ -13,7 +13,6 @@ using App.Backend.Core.Services.Implementation;
 using App.Backend.Core.Services.Interface;
 using App.Backend.Models;
 using Keycloak.AuthServices.Authorization;
-using App.Backend.Models.Responses.Entities.Cursus;
 using App.Backend.Models.Requests.Cursus;
 using Microsoft.EntityFrameworkCore;
 using App.Backend.Models.Responses.Entities.Projects;

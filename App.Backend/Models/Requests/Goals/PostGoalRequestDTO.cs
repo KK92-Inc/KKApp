@@ -32,7 +32,7 @@ public record PostGoalRequestDTO
     /// Whether the goal is active.
     /// </summary>
     [Description("Indicates whether the goal is currently active.")]
-    public bool Active { get; init; } = true;
+    public bool Enabled { get; init; } = true;
 
     /// <summary>
     /// Whether the project is public.

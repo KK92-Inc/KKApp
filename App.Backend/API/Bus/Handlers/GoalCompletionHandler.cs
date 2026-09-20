@@ -70,18 +70,12 @@ public class GoalCompletionHandler(
 
         var eligibleUserCursusIds = eligibleUserCursi.Select(uc => uc.Id).ToList();
 
-        // Of those, keep only the ones where the user's own snapshot is fully satisfied:
-        //   - Every required goal (ChoiceGroup == null) in their snapshot is completed
-        //   - Every choice group in their snapshot has at least one completed goal
+        // Of those, keep only the ones where every goal in the user's own frozen
+        // snapshot is completed.
         var completedUserCursusIds = await context.UserCursusGoal
             .Where(ucg => eligibleUserCursusIds.Contains(ucg.UserCursusId))
             .GroupBy(ucg => ucg.UserCursusId)
-            .Where(g =>
-                g.Where(ucg => ucg.ChoiceGroup == null)
-                    .All(ucg => completedGoalIds.Contains(ucg.GoalId)) &&
-                g.Where(ucg => ucg.ChoiceGroup != null)
-                    .GroupBy(ucg => ucg.ChoiceGroup)
-                    .All(choiceGroup => choiceGroup.Any(ucg => completedGoalIds.Contains(ucg.GoalId))))
+            .Where(g => g.All(ucg => completedGoalIds.Contains(ucg.GoalId)))
             .Select(g => g.Key)
             .ToHashSetAsync(ct);
 

@@ -9,7 +9,7 @@ using App.Backend.Core.Query;
 using App.Backend.API.Params;
 using App.Backend.Core.Services.Interface;
 using App.Backend.Models;
-using App.Backend.Models.Responses.Entities.Cursus;
+using App.Backend.Models.Responses.Entities.Cursi;
 using App.Backend.Domain.Enums;
 
 // ============================================================================

@@ -8,12 +8,11 @@ using Microsoft.AspNetCore.Authorization;
 using App.Backend.API.Params;
 using App.Backend.Core.Services.Interface;
 using Keycloak.AuthServices.Authorization;
-using App.Backend.Models.Responses.Entities.Cursus;
+using App.Backend.Models.Responses.Entities.Cursi;
 using App.Backend.Domain.Relations;
 using App.Backend.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using App.Backend.Domain.Entities;
-using Wolverine;
 using App.Backend.API.Utils;
 using App.Backend.Models.Requests.Cursus;
 using System.Linq.Expressions;
@@ -170,9 +169,14 @@ public class CursusController(
         var cursus = await service.FindByIdAsync(id, token);
         if (cursus is null) return NotFound();
         var track = await service.GetTrackAsync(id, token);
-        return Ok(AssembleTrack(cursus, track));
+        return Ok(service.AssembleTrack(cursus, track));
     }
 
+    /// <summary>
+    /// Replaces a cursus's track. Existing subscribers are unaffected - this only
+    /// changes what future subscribers are cloned into. See SubscriptionService for
+    /// where that clone happens.
+    /// </summary>
     [HttpPost("{id:guid}/track")]
     [ProtectedResource("cursus", "cursus:write")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -180,25 +184,21 @@ public class CursusController(
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Replace cursus track")]
-    [EndpointDescription("Fully replaces the hierarchical goal track for a static cursus.")]
+    [EndpointDescription("Fully replaces the hierarchical goal track for a static cursus. Existing subscribers are not affected.")]
     public async Task<ActionResult<CursusTrackDO>> SetTrack(Guid id, [FromBody] PutCursusTrackRequestDTO body, CancellationToken token)
     {
         var cursus = await service.FindByIdAsync(id, token);
         if (cursus is null) return NotFound();
-
-        if (cursus.Variant is CursusVariant.Static)
-            return UnprocessableEntity(new ProblemDetails() { Title = "Track can only be set on static cursi" });
-
-        await service.ValidateTrackAsync([.. body.Nodes.Select(n => (n.GoalId, n.ParentId, n.Group))], token);
+    
+        await service.ValidateTrackAsync([.. body.Nodes.Select(n => (n.GoalId, n.ParentId))], token);
         var nodes = body.Nodes.Select(n => new CursusGoal
         {
             CursusId = id,
             GoalId = n.GoalId,
             ParentGoalId = n.ParentId,
-            ChoiceGroup = n.Group
         });
 
         var track = await service.SetTrackAsync(id, nodes, token);
-        return Ok(AssembleTrack(cursus, track));
+        return Ok(service.AssembleTrack(cursus, track));
     }
 }

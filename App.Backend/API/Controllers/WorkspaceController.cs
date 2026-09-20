@@ -5,7 +5,6 @@
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.OpenApi;
 using Keycloak.AuthServices.Authorization;
 
 using App.Backend.Core;
@@ -17,20 +16,16 @@ using App.Backend.Models.Requests.Goals;
 using App.Backend.Models.Requests.Cursus;
 using App.Backend.Models.Requests.Rubrics;
 using App.Backend.Models.Responses.Entities.Projects;
-using App.Backend.Models.Responses.Entities.Cursus;
 using App.Backend.Models.Responses.Entities.Reviews;
 using App.Backend.Models.Responses.Entities.Applications;
 using App.Backend.Domain.Entities;
 using App.Backend.Models.Requests.Application;
-using App.Backend.API.Controllers.Interfaces;
-using App.Backend.API.Notifications.Variants;
-using Wolverine;
 using App.Backend.Domain.Entities.Reviews;
-using Keycloak.AuthServices.Sdk.Admin;
 using App.Backend.API.Params;
 using App.Backend.API.Utils;
 using App.Backend.Domain.Relations;
 using App.Git.Models.Requests;
+using App.Backend.Models.Responses.Entities.Cursi;
 
 // ============================================================================
 
@@ -130,11 +125,11 @@ such as official cursi, projects or rubrics.
             Slug = body.Name.ToSlug(),
             Variant = body.Variant,
             CompletionMode = body.Mode,
-            Active = body.Active,
+            Enabled = body.Enabled,
             Public = body.Public
         };
 
-        var nodes = body.Track.Select(n => new CursusGoal
+        var nodes = body.Track?.Nodes.Select(n => new CursusGoal
         {
             CursusId = cursus.Id,
             GoalId = n.GoalId,
@@ -176,7 +171,7 @@ such as official cursi, projects or rubrics.
             WorkspaceId = workspace,
             Description = body.Description,
             Slug = body.Name.ToSlug(),
-            Active = body.Active,
+            Enabled = body.Enabled,
             Public = body.Public,
         }, token);
 

@@ -9,7 +9,7 @@ using App.Backend.Core.Services.Interface;
 using App.Backend.Models.Responses.Entities;
 using App.Backend.Models.Responses.Entities.Projects;
 using App.Backend.API.Utils;
-using App.Backend.Models.Responses.Entities.Cursus;
+using App.Backend.Models.Responses.Entities.Cursi;
 
 // ============================================================================
 
@@ -50,7 +50,7 @@ public class SubscriptionController(
 
         var cursus = await cursusService.FindByIdAsync(cursusId, token);
         if (cursus is null) return NotFound();
-        if (cursus.Deprecated || !cursus.Active)
+        if (cursus.Deprecated || !cursus.Enabled)
         {
             return UnprocessableEntity(new ProblemDetails()
             {
@@ -101,7 +101,7 @@ public class SubscriptionController(
 
         var goal = await goalService.FindByIdAsync(goalId, token);
         if (goal is null) return NotFound();
-        if (goal.Deprecated || !goal.Active)
+        if (goal.Deprecated || !goal.Enabled)
         {
             return UnprocessableEntity(new ProblemDetails()
             {

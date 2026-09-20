@@ -10,88 +10,119 @@ using System.ComponentModel.DataAnnotations;
 namespace App.Backend.Models.Requests.Cursus;
 
 /// <summary>
-/// 
+/// The full proposed track for a cursus. Always a complete replacement, never a delta -
+/// see <see cref="Core.Services.Interface.ICursusService.SetTrackAsync"/>.
 /// </summary>
 public class PutCursusTrackRequestDTO : IValidatableObject
 {
-    public required IEnumerable<(Guid ParentGoalId, Guid GoalId)> Nodes;
+    public required IEnumerable<CursusTrackNodeDO> Nodes { get; init; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        if (Nodes == null || !Nodes.Any())
+        var nodes = Nodes?.ToList() ?? [];
+        if (nodes.Count == 0)
         {
             yield return new ValidationResult("A track must contain at least one goal.", [nameof(Nodes)]);
             yield break;
         }
 
-        var duplicates = Nodes
+        var duplicates = nodes
             .GroupBy(n => n.GoalId)
             .Where(g => g.Count() > 1)
             .Select(g => g.Key)
-            .Any();
+            .ToList();
 
-        if (duplicates)
+        if (duplicates.Count > 0)
         {
-            yield return new ValidationResult("Track contains duplicate goals.", [nameof(Nodes)]);
+            yield return new ValidationResult(
+                $"Track contains duplicate goal(s): {string.Join(", ", duplicates)}.", [nameof(Nodes)]);
             yield break;
         }
 
-        // Parent Existence Check
-        var map = Nodes.ToDictionary(n => n.GoalId, n => n.ParentGoalId);
-        foreach (var (ParentGoalId, GoalId) in Nodes)
+        var byId = nodes.ToDictionary(n => n.GoalId, n => n.ParentId);
+
+        // A parent reference is only valid if it points at another node IN THIS TRACK.
+        // Null (root) is always fine and is not checked here.
+        foreach (var node in nodes)
         {
-            if (!map.ContainsKey(ParentGoalId))
+            if (node.ParentId is Guid parentId && !byId.ContainsKey(parentId))
             {
                 yield return new ValidationResult(
-                    $"A Goal references missing parent goal.",
+                    $"Goal {node.GoalId} references parent {parentId}, which is not part of this track.",
                     [nameof(Nodes)]);
             }
         }
 
-        // Maximum 4 Children Per Node Check
-        var exceeding = Nodes
-            .GroupBy(n => n.ParentGoalId)
-            .Where(g => g.Count() > 4)
-            .Select(g => new {
-                ParentGoalId = g.Key,
-                ChildCount = g.Count()
-            });
+        const int maxChildren = 4;
+        var crowded = nodes
+            .Where(n => n.ParentId is not null)
+            .GroupBy(n => n.ParentId!.Value)
+            .Where(g => g.Count() > maxChildren);
 
-        foreach (var excess in exceeding)
+        foreach (var group in crowded)
         {
             yield return new ValidationResult(
-                $"Goal {excess.ParentGoalId} exceeds the maximum fan-out limit with {excess.ChildCount} children (max allowed is 4).",
+                $"Goal {group.Key} has {group.Count()} direct children, exceeding the maximum fan-out of {maxChildren}.",
                 [nameof(Nodes)]);
         }
 
-        foreach (var (ParentGoalId, GoalId) in Nodes)
+        const int maxDepth = 10;
+        var marks = new Dictionary<Guid, byte>(); // 0/unset = white, 1 = gray (on this walk), 2 = black (resolved)
+        var depths = new Dictionary<Guid, int>();
+
+        foreach (var start in byId.Keys)
         {
-            int depth = 0;
-            var visited = new HashSet<Guid>();
-            Guid? current = GoalId;
+            if (marks.GetValueOrDefault(start) == 2)
+                continue;
 
-            while (current.HasValue)
+            var path = new List<Guid>();
+            var current = start;
+            var cycle = false;
+
+            while (true)
             {
-                if (!visited.Add(current.Value))
+                if (marks.GetValueOrDefault(current) == 1)
                 {
-                    yield return new ValidationResult($"Infinite Loop/cycle detected.", [nameof(Nodes)]);
+                    cycle = true;
                     break;
                 }
 
-                depth++;
-                if (depth > 6)
-                {
-                    yield return new ValidationResult(
-                        $"Track depth exceeds the maximum allowed limit of 5 goals.",
-                        [nameof(Nodes)]
-                    );
+                if (marks.GetValueOrDefault(current) == 2)
                     break;
-                }
 
-                if (map.TryGetValue(current.Value, out var parentId))
-                    current = parentId;
-                else
+                marks[current] = 1;
+                path.Add(current);
+
+                var parent = byId[current];
+                if (parent is null)
                     break;
+
+                current = parent.Value;
+            }
+
+            if (cycle)
+            {
+                yield return new ValidationResult($"Track contains a cycle involving goal {current}.", [nameof(Nodes)]);
+                yield break;
+            }
+
+            // Walk the collected path back to front, assigning depth from the root down.
+            var baseDepth = marks.GetValueOrDefault(current) == 2 ? depths[current] : 0;
+            for (var i = path.Count - 1; i >= 0; i--)
+            {
+                baseDepth++;
+                depths[path[i]] = baseDepth;
+                marks[path[i]] = 2;
+            }
+        }
+
+        foreach (var (goalId, depth) in depths)
+        {
+            if (depth > maxDepth)
+            {
+                yield return new ValidationResult(
+                    $"Goal {goalId} sits at depth {depth}, exceeding the maximum track depth of {maxDepth}.",
+                    [nameof(Nodes)]);
             }
         }
     }

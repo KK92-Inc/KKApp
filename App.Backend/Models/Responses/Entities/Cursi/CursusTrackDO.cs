@@ -3,14 +3,20 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-using App.Backend.Domain.Entities;
+using App.Backend.Domain.Enums;
 
 // ============================================================================
 
 namespace App.Backend.Models.Responses.Entities.Cursi;
 
-public class CursusTrackDO(Cursus cursus) : BaseEntityDO<Cursus>(cursus)
+/// <summary>
+/// A cursus's official track - the live master, not any one user's snapshot. Built by
+/// <see cref="Core.Services.Interface.ICursusService.AssembleTrack"/>.
+/// </summary>
+public class CursusTrackDO
 {
-
-    public static implicit operator CursusTrackDO?(Cursus? cursus) => cursus is null ? null : new(cursus);
+    public required Guid CursusId { get; init; }
+    public required string Name { get; init; }
+    public required CursusMode CompletionMode { get; init; }
+    public required IReadOnlyList<CursusTrackNodeDO> Nodes { get; init; }
 }

@@ -1,0 +1,1109 @@
+diff --git a/App.Backend/API/Bus/Handlers/GoalCompletionHandler.cs b/App.Backend/API/Bus/Handlers/GoalCompletionHandler.cs
+index 1eeccc9..eaffc69 100644
+--- a/App.Backend/API/Bus/Handlers/GoalCompletionHandler.cs
++++ b/App.Backend/API/Bus/Handlers/GoalCompletionHandler.cs
+@@ -70,18 +70,12 @@ public class GoalCompletionHandler(
+ 
+         var eligibleUserCursusIds = eligibleUserCursi.Select(uc => uc.Id).ToList();
+ 
+-        // Of those, keep only the ones where the user's own snapshot is fully satisfied:
+-        //   - Every required goal (ChoiceGroup == null) in their snapshot is completed
+-        //   - Every choice group in their snapshot has at least one completed goal
++        // Of those, keep only the ones where every goal in the user's own frozen
++        // snapshot is completed.
+         var completedUserCursusIds = await context.UserCursusGoal
+             .Where(ucg => eligibleUserCursusIds.Contains(ucg.UserCursusId))
+             .GroupBy(ucg => ucg.UserCursusId)
+-            .Where(g =>
+-                g.Where(ucg => ucg.ChoiceGroup == null)
+-                    .All(ucg => completedGoalIds.Contains(ucg.GoalId)) &&
+-                g.Where(ucg => ucg.ChoiceGroup != null)
+-                    .GroupBy(ucg => ucg.ChoiceGroup)
+-                    .All(choiceGroup => choiceGroup.Any(ucg => completedGoalIds.Contains(ucg.GoalId))))
++            .Where(g => g.All(ucg => completedGoalIds.Contains(ucg.GoalId)))
+             .Select(g => g.Key)
+             .ToHashSetAsync(ct);
+ 
+diff --git a/App.Backend/API/Controllers/CursusController.cs b/App.Backend/API/Controllers/CursusController.cs
+index 9fbcbeb..566c213 100644
+--- a/App.Backend/API/Controllers/CursusController.cs
++++ b/App.Backend/API/Controllers/CursusController.cs
+@@ -8,12 +8,11 @@ using Microsoft.AspNetCore.Authorization;
+ using App.Backend.API.Params;
+ using App.Backend.Core.Services.Interface;
+ using Keycloak.AuthServices.Authorization;
+-using App.Backend.Models.Responses.Entities.Cursus;
++using App.Backend.Models.Responses.Entities.Cursi;
+ using App.Backend.Domain.Relations;
+ using App.Backend.Domain.Enums;
+ using Microsoft.EntityFrameworkCore;
+ using App.Backend.Domain.Entities;
+-using Wolverine;
+ using App.Backend.API.Utils;
+ using App.Backend.Models.Requests.Cursus;
+ using System.Linq.Expressions;
+@@ -170,9 +169,14 @@ public class CursusController(
+         var cursus = await service.FindByIdAsync(id, token);
+         if (cursus is null) return NotFound();
+         var track = await service.GetTrackAsync(id, token);
+-        return Ok(AssembleTrack(cursus, track));
++        return Ok(service.AssembleTrack(cursus, track));
+     }
+ 
++    /// <summary>
++    /// Replaces a cursus's track. Existing subscribers are unaffected - this only
++    /// changes what future subscribers are cloned into. See SubscriptionService for
++    /// where that clone happens.
++    /// </summary>
+     [HttpPost("{id:guid}/track")]
+     [ProtectedResource("cursus", "cursus:write")]
+     [ProducesResponseType(StatusCodes.Status200OK)]
+@@ -180,25 +184,23 @@ public class CursusController(
+     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+     [ProducesErrorResponseType(typeof(ProblemDetails))]
+     [EndpointSummary("Replace cursus track")]
+-    [EndpointDescription("Fully replaces the hierarchical goal track for a static cursus.")]
++    [EndpointDescription("Fully replaces the hierarchical goal track for a static cursus. Existing subscribers are not affected.")]
+     public async Task<ActionResult<CursusTrackDO>> SetTrack(Guid id, [FromBody] PutCursusTrackRequestDTO body, CancellationToken token)
+     {
+         var cursus = await service.FindByIdAsync(id, token);
+         if (cursus is null) return NotFound();
+ 
+-        if (cursus.Variant is CursusVariant.Static)
+-            return UnprocessableEntity(new ProblemDetails() { Title = "Track can only be set on static cursi" });
+-
+-        await service.ValidateTrackAsync([.. body.Nodes.Select(n => (n.GoalId, n.ParentId, n.Group))], token);
++        // SetTrackAsync itself throws (422, via ServiceExceptionFilter) if the cursus
++        // isn't Static - no need to duplicate that guard here.
++        await service.ValidateTrackAsync([.. body.Nodes.Select(n => (n.GoalId, n.ParentId))], token);
+         var nodes = body.Nodes.Select(n => new CursusGoal
+         {
+             CursusId = id,
+             GoalId = n.GoalId,
+             ParentGoalId = n.ParentId,
+-            ChoiceGroup = n.Group
+         });
+ 
+         var track = await service.SetTrackAsync(id, nodes, token);
+-        return Ok(AssembleTrack(cursus, track));
++        return Ok(service.AssembleTrack(cursus, track));
+     }
+ }
+diff --git a/App.Backend/API/Controllers/GoalController.cs b/App.Backend/API/Controllers/GoalController.cs
+index 1818003..078d7d5 100644
+--- a/App.Backend/API/Controllers/GoalController.cs
++++ b/App.Backend/API/Controllers/GoalController.cs
+@@ -184,7 +184,7 @@ public class GoalController(
+         goal.Name = request.Name ?? goal.Name;
+         goal.Description = request.Description ?? goal.Description;
+         goal.Public = request.Public ?? goal.Public;
+-        goal.Active = request.Active ?? goal.Active;
++        goal.Enabled = request.Active ?? goal.Enabled;
+         await goals.SetProjectsAsync(goal.Id, request.Projects, token);
+         await goals.UpdateAsync(goal, token);
+         return Ok(new GoalDO(goal));
+diff --git a/App.Backend/API/Controllers/ProjectController.cs b/App.Backend/API/Controllers/ProjectController.cs
+index 471fd31..b2be383 100644
+--- a/App.Backend/API/Controllers/ProjectController.cs
++++ b/App.Backend/API/Controllers/ProjectController.cs
+@@ -13,7 +13,6 @@ using App.Backend.Core.Services.Implementation;
+ using App.Backend.Core.Services.Interface;
+ using App.Backend.Models;
+ using Keycloak.AuthServices.Authorization;
+-using App.Backend.Models.Responses.Entities.Cursus;
+ using App.Backend.Models.Requests.Cursus;
+ using Microsoft.EntityFrameworkCore;
+ using App.Backend.Models.Responses.Entities.Projects;
+diff --git a/App.Backend/API/Controllers/SubscriptionController.cs b/App.Backend/API/Controllers/SubscriptionController.cs
+index a5a1bc5..08dd877 100644
+--- a/App.Backend/API/Controllers/SubscriptionController.cs
++++ b/App.Backend/API/Controllers/SubscriptionController.cs
+@@ -9,7 +9,7 @@ using App.Backend.Core.Services.Interface;
+ using App.Backend.Models.Responses.Entities;
+ using App.Backend.Models.Responses.Entities.Projects;
+ using App.Backend.API.Utils;
+-using App.Backend.Models.Responses.Entities.Cursus;
++using App.Backend.Models.Responses.Entities.Cursi;
+ 
+ // ============================================================================
+ 
+@@ -50,7 +50,7 @@ public class SubscriptionController(
+ 
+         var cursus = await cursusService.FindByIdAsync(cursusId, token);
+         if (cursus is null) return NotFound();
+-        if (cursus.Deprecated || !cursus.Active)
++        if (cursus.Deprecated || !cursus.Enabled)
+         {
+             return UnprocessableEntity(new ProblemDetails()
+             {
+@@ -101,7 +101,7 @@ public class SubscriptionController(
+ 
+         var goal = await goalService.FindByIdAsync(goalId, token);
+         if (goal is null) return NotFound();
+-        if (goal.Deprecated || !goal.Active)
++        if (goal.Deprecated || !goal.Enabled)
+         {
+             return UnprocessableEntity(new ProblemDetails()
+             {
+diff --git a/App.Backend/API/Controllers/UserCursusController.cs b/App.Backend/API/Controllers/UserCursusController.cs
+index 039c529..46b23f6 100644
+--- a/App.Backend/API/Controllers/UserCursusController.cs
++++ b/App.Backend/API/Controllers/UserCursusController.cs
+@@ -9,7 +9,7 @@ using App.Backend.Core.Query;
+ using App.Backend.API.Params;
+ using App.Backend.Core.Services.Interface;
+ using App.Backend.Models;
+-using App.Backend.Models.Responses.Entities.Cursus;
++using App.Backend.Models.Responses.Entities.Cursi;
+ using App.Backend.Domain.Enums;
+ 
+ // ============================================================================
+diff --git a/App.Backend/API/Controllers/WorkspaceController.cs b/App.Backend/API/Controllers/WorkspaceController.cs
+index ba54d9d..724c65c 100644
+--- a/App.Backend/API/Controllers/WorkspaceController.cs
++++ b/App.Backend/API/Controllers/WorkspaceController.cs
+@@ -17,7 +17,7 @@ using App.Backend.Models.Requests.Goals;
+ using App.Backend.Models.Requests.Cursus;
+ using App.Backend.Models.Requests.Rubrics;
+ using App.Backend.Models.Responses.Entities.Projects;
+-using App.Backend.Models.Responses.Entities.Cursus;
++using App.Backend.Models.Responses.Entities.Cursi;
+ using App.Backend.Models.Responses.Entities.Reviews;
+ using App.Backend.Models.Responses.Entities.Applications;
+ using App.Backend.Domain.Entities;
+@@ -130,16 +130,16 @@ such as official cursi, projects or rubrics.
+             Slug = body.Name.ToSlug(),
+             Variant = body.Variant,
+             CompletionMode = body.Mode,
+-            Active = body.Active,
++            Enabled = body.Enabled,
+             Public = body.Public
+         };
+ 
+-        var nodes = body.Track.Select(n => new CursusGoal
++        var nodes = body.Track?.Nodes.Select(n => new CursusGoal
+         {
+             CursusId = cursus.Id,
+             GoalId = n.GoalId,
+             ParentGoalId = n.ParentId,
+-        });
++        }) ?? [];
+ 
+         cursus = await service.AddCursusAsync(space.Id, cursus, nodes, token);
+         return Ok(new CursusDO(cursus));
+@@ -176,7 +176,7 @@ such as official cursi, projects or rubrics.
+             WorkspaceId = workspace,
+             Description = body.Description,
+             Slug = body.Name.ToSlug(),
+-            Active = body.Active,
++            Enabled = body.Active,
+             Public = body.Public,
+         }, token);
+ 
+diff --git a/App.Backend/API/Notifications/Variants/CursusCompletedNotification.cs b/App.Backend/API/Notifications/Variants/CursusCompletedNotification.cs
+index 049f51b..ca0946e 100644
+--- a/App.Backend/API/Notifications/Variants/CursusCompletedNotification.cs
++++ b/App.Backend/API/Notifications/Variants/CursusCompletedNotification.cs
+@@ -12,7 +12,6 @@ using Microsoft.AspNetCore.SignalR;
+ using App.Backend.Models.Responses.Entities;
+ using App.Backend.Models.Responses.Entities.Notifications;
+ using App.Backend.API.Bus.Messages;
+-using App.Backend.Models.Responses.Entities.Cursus;
+ 
+ namespace App.Backend.API.Notifications.Variants;
+ 
+diff --git a/App.Backend/API/Services.cs b/App.Backend/API/Services.cs
+index a308692..395c52a 100644
+--- a/App.Backend/API/Services.cs
++++ b/App.Backend/API/Services.cs
+@@ -44,9 +44,7 @@ using Keycloak.AuthServices.Sdk.Kiota.Admin;
+ using Microsoft.Kiota.Http.HttpClientLibrary;
+ using Microsoft.Kiota.Abstractions.Authentication;
+ using KeycloakAdminClientOptions = Keycloak.AuthServices.Sdk.KeycloakAdminClientOptions;
+-using App.Backend.Core.Services.Persistence.Implementation;
+-using App.Backend.Core.Services.Persistence.Interface;
+-using System.Text.Json.Serialization;
++using System.Text.Json.Serialization;
+ using App.Backend.API.Jobs;
+ using App.Backend.API.Jobs.Extensions;
+ using App.Backend.API.Bus.Messages.Kickoff;
+@@ -282,8 +280,6 @@ public static class Services
+     {
+         // Infrastructure
+         builder.Services.AddScoped<ISystemService, SystemService>();
+-        builder.Services.AddTransient<ICursusSnapshot, CursusSnapshot>();
+-        builder.Services.AddTransient<IPersistenceGraphMesher, PersistenceGraphMesher>();
+         builder.Services.AddScoped<IGitService, GitService>();
+         builder.Services.AddScoped<INotificationService, NotificationService>();
+         builder.Services.AddScoped<ISpotlightService, SpotlightService>();
+diff --git a/App.Backend/Core/Services/Implementation/CursusService.cs b/App.Backend/Core/Services/Implementation/CursusService.cs
+index d72e284..79f7096 100644
+--- a/App.Backend/Core/Services/Implementation/CursusService.cs
++++ b/App.Backend/Core/Services/Implementation/CursusService.cs
+@@ -2,22 +2,24 @@
+ // Copyright (c) 2026 - W2Inc, All Rights Reserved.
+ // See README.md in the project root for license information.
+ // ============================================================================
++//
++// Track edits here ONLY affect this cursus's own CursusGoal rows. Nothing in this
++// file touches UserCursusGoal - existing subscribers keep whatever track they were
++// cloned into at subscribe time (see SubscriptionService.SubscribeToCursusAsync),
++// for as long as that UserCursus exists. This replaces the previous version, which
++// depended on IPersistenceGraphMesher/ICursusSnapshot to merge track edits into every
++// active subscriber's snapshot - both of those were deleted in the "Cursus model
++// refactoring" WIP commit but this file (and Services.cs's DI registration, and
++// SubscriptionService) hadn't been updated to match yet.
++// ============================================================================
+ 
+ using App.Backend.Database;
+ using App.Backend.Core.Services.Interface;
+ using App.Backend.Domain.Entities;
+-using App.Backend.Domain.Entities.Users;
+ using App.Backend.Domain.Relations;
+ using App.Backend.Domain.Enums;
+-using App.Backend.Models;
++using App.Backend.Models.Responses.Entities.Cursi;
+ using Microsoft.EntityFrameworkCore;
+-using Microsoft.Extensions.Logging;
+-using App.Backend.Core.Query;
+-using System.Linq.Expressions;
+-using App.Backend.Models.Responses.Entities.Cursus;
+-using App.Backend.Models.Responses.Entities.Goals;
+-using App.Backend.Core.Services.Persistence.Interface;
+-using System.Collections.Immutable;
+ 
+ // ============================================================================
+ 
+@@ -25,190 +27,40 @@ namespace App.Backend.Core.Services.Implementation;
+ 
+ public class CursusService(
+     DatabaseContext ctx,
+-    IGoalService goalService,
+-    ILogger<CursusService> log,
+-    IPersistenceGraphMesher mesher
++    IGoalService goalService
+ ) : BaseService<Cursus>(ctx), ICursusService, ISlugQueryable<Cursus>
+ {
+-    private readonly DatabaseContext ctx = ctx;
+-
+     public async Task<Cursus?> FindBySlugAsync(string slug, CancellationToken token = default)
+     {
+         return await ctx.Cursi.FirstOrDefaultAsync(g => g.Slug == slug, token);
+     }
+ 
+-    public async Task ValidateTrackAsync(IReadOnlyList<(Guid GoalId, Guid? ParentId, Guid? Group)> nodes, CancellationToken token = default)
++    public async Task ValidateTrackAsync(IReadOnlyList<(Guid GoalId, Guid? ParentId)> nodes, CancellationToken token = default)
+     {
+-        var allIds = nodes.Select(n => n.GoalId).ToList();
+-        var distinctIds = allIds.Distinct().ToList();
+-
+-        ServiceException.ThrowIf(distinctIds.Count != allIds.Count, "Duplicate goals are not allowed in a track");
+-        ServiceException.ThrowIf(!await goalService.ExistsAsync(distinctIds, token), "One or more goal IDs are invalid");
+-
+-        var validated = new HashSet<Guid>();
+-        var parentLookup = nodes.ToDictionary(n => n.GoalId, n => n.ParentId);
+-
+-        foreach (var (GoalId, ParentId, Group) in nodes)
+-        {
+-            var current = GoalId;
+-            var path = new HashSet<Guid>();
+-            while (parentLookup.TryGetValue(current, out var parentId) && parentId.HasValue)
+-            {
+-                if (!parentLookup.ContainsKey(parentId.Value))
+-                    throw new ServiceException($"Parent goal {parentId.Value} is not part of this track");
+-                if (validated.Contains(current))
+-                    break;
+-                if (!path.Add(current))
+-                    throw new ServiceException( $"Cyclic dependency detected involving goal {current}");
+-
+-                current = parentId.Value;
+-            }
+-
+-            validated.UnionWith(path);
+-        }
+-
+-        var invalid = nodes
+-            .Where(n => n.Group.HasValue)
+-            .GroupBy(n => n.Group!.Value)
+-            .FirstOrDefault(g => g.Select(n => n.ParentId).Distinct().Count() > 1);
+-
+-        if (invalid is not null)
+-            throw new ServiceException($"All goals in choice group {invalid.Key} must share the same parent");
++        // Structural checks (duplicates, dangling parents, cycles, depth, fan-out) already
++        // ran in PutCursusTrackRequestDTO.Validate before this is ever called - all that's
++        // left to check here is whether the referenced goals are real.
++        var goalIds = nodes.Select(n => n.GoalId).Distinct().ToList();
++        ServiceException.ThrowIf(!await goalService.ExistsAsync(goalIds, token), "One or more goal IDs are invalid");
+     }
+ 
+-
+     public async Task<IReadOnlyList<CursusGoal>> SetTrackAsync(Guid cursusId, IEnumerable<CursusGoal> nodes, CancellationToken token = default)
+     {
+-        var strategy = ctx.Database.CreateExecutionStrategy();
+-        return await strategy.ExecuteAsync(async (ct) =>
+-        {
+-            await using var transaction = await ctx.Database.BeginTransactionAsync(ct);
+-            var cursus = await FindByIdAsync(cursusId, ct) ?? throw new ServiceException(404, "Cursus not found");
+-
+-            ServiceException.ThrowIf(cursus.Variant is not CursusVariant.Static, "Track can only be replaced on static cursus types");
+-
+-            // Erase it all.
+-            var existing = await ctx.CursusGoal.Where(cg => cg.CursusId == cursusId).ToListAsync(ct);
+-            if (existing.Count > 0) ctx.CursusGoal.RemoveRange(existing);
+-
+-            // Add it all back.
+-            var list = nodes.Select(n => { n.CursusId = cursusId; return n; }).ToList();
+-            await ctx.CursusGoal.AddRangeAsync(list, ct);
+-            await ctx.SaveChangesAsync(ct);
+-
+-            // Now mesh the differences between users and track and stitch it all back together.
+-            await Propegate(cursusId, list, ct);
+-
+-            await ctx.SaveChangesAsync(ct);
+-            await transaction.CommitAsync(ct);
+-
+-            return await ctx.CursusGoal
+-                .Where(cg => cg.CursusId == cursusId)
+-                .Include(cg => cg.Goal)
+-                .ToListAsync(ct);
+-        }, token);
+-    }
+-
+-    /// <summary>
+-    /// Merges global track changes into every <em>actively subscribed</em> user's
+-    /// snapshot for this cursus, via <see cref="PersistenceGraphMesher"/>.
+-    ///
+-    /// Inactive (unsubscribed) user-cursuses are skipped here on purpose: there is
+-    /// no student watching that snapshot right now, so re-meshing it would be wasted
+-    /// work on every future track edit until they come back. Instead it is caught up
+-    /// in one shot by <see cref="CursusSnapshotTracker.AdvanceTrackAsync"/> when they
+-    /// resubscribe - see <see cref="SubscriptionService.SubscribeToCursusAsync"/>.
+-    ///
+-    /// Batched across the whole active cohort - a small, fixed number of queries
+-    /// regardless of how many students are subscribed, instead of per-student queries.
+-    /// </summary>
+-    private async Task Propegate(Guid cursusId, List<CursusGoal> newGoals, CancellationToken ct)
+-    {
+-        var userCursuses = await ctx.UserCursi
+-            .Where(uc => uc.CursusId == cursusId && uc.State != EntityObjectState.Inactive)
+-            .Select(uc => new { uc.Id, uc.UserId })
+-            .ToListAsync(ct);
+-
+-        if (userCursuses.Count == 0)
+-            return;
++        var cursus = await FindByIdAsync(cursusId, token) ?? throw new ServiceException(404, "Cursus not found");
++        ServiceException.ThrowIf(cursus.Variant is not CursusVariant.Static, "Track can only be replaced on static cursus types");
+ 
+-        var userCursusIds = userCursuses.Select(uc => uc.Id).ToImmutableList();
+-        var userIds = userCursuses.Select(uc => uc.UserId).Distinct().ToImmutableList();
++        var existing = await ctx.CursusGoal.Where(cg => cg.CursusId == cursusId).ToListAsync(token);
++        if (existing.Count > 0)
++            ctx.CursusGoal.RemoveRange(existing);
+ 
+-        var allSnapshotRows = await ctx.UserCursusGoal
+-            .Where(ucg => userCursusIds.Contains(ucg.UserCursusId))
+-            .ToListAsync(ct);
++        var list = nodes.Select(n => { n.CursusId = cursusId; return n; }).ToList();
++        await ctx.CursusGoal.AddRangeAsync(list, token);
++        await ctx.SaveChangesAsync(token);
+ 
+-        // Only the goals that could possibly matter here - anything already in a
+-        // snapshot, or anything the new master track could introduce - not every
+-        // goal these users have ever touched across every other cursus they're in.
+-        var relevantGoalIds = allSnapshotRows.Select(r => r.GoalId)
+-            .Concat(newGoals.Select(g => g.GoalId))
+-            .ToHashSet();
+-
+-        var lockedInRows = await ctx.UserGoals
+-            .Where(ug => userIds.Contains(ug.UserId) &&
+-                relevantGoalIds.Contains(ug.GoalId) &&
+-                (ug.State == EntityObjectState.Active || ug.State == EntityObjectState.Completed))
+-            .Select(ug => new { ug.UserId, ug.GoalId })
+-            .ToListAsync(ct);
+-
+-        var snapshotByUserCursus = allSnapshotRows
+-            .GroupBy(r => r.UserCursusId)
+-            .ToDictionary(g => g.Key, g => (IReadOnlyList<UserCursusGoal>)[.. g]);
+-
+-        var lockedByUser = lockedInRows
+-            .GroupBy(r => r.UserId)
+-            .ToDictionary(g => g.Key, g => (IReadOnlySet<Guid>)g.Select(r => r.GoalId).ToHashSet());
+-
+-        var emptyLockedIn = (IReadOnlySet<Guid>)new HashSet<Guid>();
+-        var toAdd = new List<UserCursusGoal>();
+-        var toRemoveKeys = new HashSet<(Guid UserCursusId, Guid GoalId)>();
+-        var repointByKey = new Dictionary<(Guid UserCursusId, Guid GoalId), Node>();
+-
+-        foreach (var uc in userCursuses)
+-        {
+-            var oldSnapshot = snapshotByUserCursus.GetValueOrDefault(uc.Id, []);
+-            var lockedIn = lockedByUser.GetValueOrDefault(uc.UserId, emptyLockedIn);
+-            var diff = mesher.Diff(oldSnapshot, newGoals, lockedIn);
+-
+-            foreach (var goalId in diff.ToRemove)
+-                toRemoveKeys.Add((uc.Id, goalId));
+-
+-            toAdd.AddRange(diff.ToAdd.Select(n => new UserCursusGoal
+-            {
+-                UserCursusId = uc.Id,
+-                GoalId = n.GoalId,
+-                ParentGoalId = n.ParentGoalId,
+-                ChoiceGroup = n.ChoiceGroup
+-            }));
+-
+-            foreach (var n in diff.ToRepoint)
+-                repointByKey[(uc.Id, n.GoalId)] = n;
+-        }
+-
+-        if (repointByKey.Count > 0)
+-        {
+-            foreach (var row in allSnapshotRows)
+-            {
+-                if (!repointByKey.TryGetValue((row.UserCursusId, row.GoalId), out var n))
+-                    continue;
+-
+-                row.ParentGoalId = n.ParentGoalId;
+-                row.ChoiceGroup = n.ChoiceGroup;
+-            }
+-        }
+-
+-        if (toRemoveKeys.Count > 0)
+-        {
+-            var rowsToRemove = allSnapshotRows
+-                .Where(r => toRemoveKeys.Contains((r.UserCursusId, r.GoalId)))
+-                .ToList();
+-            ctx.UserCursusGoal.RemoveRange(rowsToRemove);
+-        }
+-
+-        if (toAdd.Count > 0)
+-            await ctx.UserCursusGoal.AddRangeAsync(toAdd, ct);
++        return await ctx.CursusGoal
++            .Where(cg => cg.CursusId == cursusId)
++            .Include(cg => cg.Goal)
++            .ToListAsync(token);
+     }
+ 
+     public async Task<IReadOnlyList<CursusGoal>> GetTrackAsync(Guid cursusId, CancellationToken token = default)
+@@ -218,4 +70,18 @@ public class CursusService(
+             .Include(cg => cg.Goal)
+             .ToListAsync(token);
+     }
+-}
+\ No newline at end of file
++
++    public CursusTrackDO AssembleTrack(Cursus cursus, IReadOnlyList<CursusGoal> nodes) => new()
++    {
++        CursusId = cursus.Id,
++        Name = cursus.Name,
++        CompletionMode = cursus.CompletionMode,
++        Nodes = nodes.Select(n => new CursusTrackNodeDO
++        {
++            GoalId = n.GoalId,
++            Name = n.Goal.Name,
++            Slug = n.Goal.Slug,
++            ParentGoalId = n.ParentGoalId,
++        }).ToList()
++    };
++}
+diff --git a/App.Backend/Core/Services/Implementation/SubscriptionService.cs b/App.Backend/Core/Services/Implementation/SubscriptionService.cs
+index 818bcde..9ab33a6 100644
+--- a/App.Backend/Core/Services/Implementation/SubscriptionService.cs
++++ b/App.Backend/Core/Services/Implementation/SubscriptionService.cs
+@@ -22,7 +22,6 @@ public class SubscriptionService(
+     IGitService git,
+     TimeProvider time,
+     IEligibilityService eligibilityService,
+-    ICursusSnapshot snapshotTracker,
+     IOptions<SubscriptionOptions> options
+ ) : ISubscriptionService
+ {
+@@ -48,13 +47,10 @@ public class SubscriptionService(
+             await CascadeActivateGoalsAsync(userId, cursusId, token);
+             await context.SaveChangesAsync(token);
+ 
+-            // Catch the snapshot up on whatever the master track did while this
+-            // subscription sat inactive. Runs after goal states are restored above,
+-            // so anything the user was mid-progress on before unsubscribing is
+-            // correctly seen as locked-in and stays frozen rather than getting
+-            // swept up by a track change that happened in the meantime.
+-            await snapshotTracker.SyncTrackAsync(userId, cursusId, existing.Id, token);
+-
++            // No snapshot re-sync on reactivation, by design: the frozen track this user
++            // got at first subscribe IS their curriculum for the lifetime of this
++            // UserCursus, whether or not a staff member edited the master track while
++            // they were unsubscribed. See SetTrackAsync's doc comment.
+             return existing;
+         }
+ 
+@@ -74,7 +70,6 @@ public class SubscriptionService(
+             UserCursusId = result.Entity.Id,
+             GoalId = cg.GoalId,
+             ParentGoalId = cg.ParentGoalId,
+-            ChoiceGroup = cg.ChoiceGroup
+         }).ToList();
+ 
+         await context.UserCursusGoal.AddRangeAsync(userTrackSnapshots, token);
+@@ -289,22 +284,6 @@ public class SubscriptionService(
+             await CascadeDeactivateProjectsAsync(userId, [goalId], ct);
+             await context.SaveChangesAsync(ct);
+ 
+-            // This goal just gave up its locked-in state. If it's sitting in the
+-            // snapshot of any cursus the user is actively enrolled in, release that
+-            // branch back to the current master track right now, instead of leaving
+-            // it stale until the next unrelated staff-triggered track edit. Checked
+-            // against the user's own snapshot, not the live master track - the goal
+-            // may already have been renamed out of the master track entirely while
+-            // the user was frozen on it, which is exactly the case this exists for.
+-            var affectedCursi = await context.UserCursi
+-                .Where(uc => uc.UserId == userId && uc.State != EntityObjectState.Inactive)
+-                .Where(uc => context.UserCursusGoal.Any(ucg => ucg.UserCursusId == uc.Id && ucg.GoalId == goalId))
+-                .Select(uc => new { uc.Id, uc.CursusId })
+-                .ToListAsync(ct);
+-
+-            foreach (var uc in affectedCursi)
+-                await snapshotTracker.SyncTrackAsync(userId, uc.CursusId, uc.Id, ct);
+-
+             await transaction.CommitAsync(ct);
+             return existing;
+         }, token);
+diff --git a/App.Backend/Core/Services/Implementation/UserCursusService.cs b/App.Backend/Core/Services/Implementation/UserCursusService.cs
+index 3b9bf99..0af3a92 100644
+--- a/App.Backend/Core/Services/Implementation/UserCursusService.cs
++++ b/App.Backend/Core/Services/Implementation/UserCursusService.cs
+@@ -9,7 +9,7 @@ using App.Backend.Domain.Entities.Users;
+ using Microsoft.EntityFrameworkCore;
+ using App.Backend.Domain.Relations;
+ using App.Backend.Domain.Enums;
+-using App.Backend.Models.Responses.Entities.Cursus;
++using App.Backend.Models.Responses.Entities.Cursi;
+ using App.Backend.Domain.Entities;
+ 
+ // ============================================================================
+@@ -67,7 +67,6 @@ public class UserCursusService(DatabaseContext ctx) : BaseService<UserCursus>(ct
+                 Name = n.Goal.Name,
+                 Slug = n.Goal.Slug,
+                 ParentGoalId = n.ParentGoalId,
+-                ChoiceGroup = n.ChoiceGroup,
+                 State = states.TryGetValue(n.GoalId, out var s) ? s : null,
+                 IsUnlocked = unlocked.Contains(n.GoalId)
+             }).ToList()
+@@ -94,16 +93,7 @@ public class UserCursusService(DatabaseContext ctx) : BaseService<UserCursus>(ct
+         {
+             maxUnlocked = depthGroup.Key;
+ 
+-            var requiredDone = depthGroup
+-                .Where(n => n.ChoiceGroup is null)
+-                .All(n => completed.Contains(n.GoalId));
+-
+-            var choicesDone = depthGroup
+-                .Where(n => n.ChoiceGroup is not null)
+-                .GroupBy(n => n.ChoiceGroup)
+-                .All(g => g.Any(n => completed.Contains(n.GoalId)));
+-
+-            if (!requiredDone || !choicesDone)
++            if (!depthGroup.All(n => completed.Contains(n.GoalId)))
+                 break;
+ 
+             maxUnlocked = depthGroup.Key + 1;
+diff --git a/App.Backend/Core/Services/Interface/ICursusService.cs b/App.Backend/Core/Services/Interface/ICursusService.cs
+index 6acea0e..89d901e 100644
+--- a/App.Backend/Core/Services/Interface/ICursusService.cs
++++ b/App.Backend/Core/Services/Interface/ICursusService.cs
+@@ -8,7 +8,7 @@ using App.Backend.Domain.Entities.Users;
+ using App.Backend.Domain.Enums;
+ using App.Backend.Domain.Relations;
+ using App.Backend.Models;
+-using App.Backend.Models.Responses.Entities.Cursus;
++using App.Backend.Models.Responses.Entities.Cursi;
+ 
+ // ============================================================================
+ 
+@@ -17,14 +17,19 @@ namespace App.Backend.Core.Services.Interface;
+ public interface ICursusService : IDomainService<Cursus>, ISlugQueryable<Cursus>
+ {
+     /// <summary>
+-    /// Validates the structural integrity of a track payload.
+-    /// Returns an error message on failure, null on success.
++    /// Validates that every goal referenced in a proposed track actually exists.
++    /// Structural validity (duplicates, cycles, depth, fan-out) is already guaranteed
++    /// by <see cref="Models.Requests.Cursus.PutCursusTrackRequestDTO"/>'s own
++    /// IValidatableObject implementation by the time this runs - this only checks
++    /// what the DTO can't: whether the referenced goals are real.
+     /// </summary>
+-    Task ValidateTrackAsync(IReadOnlyList<(Guid GoalId, Guid? ParentId, Guid? Group)> nodes, CancellationToken token = default);
++    Task ValidateTrackAsync(IReadOnlyList<(Guid GoalId, Guid? ParentId)> nodes, CancellationToken token = default);
+ 
+     /// <summary>
+     /// Fully replaces the track for a static cursus, removing all existing nodes first.
+-    /// Returns the persisted nodes with Goal navigation properties loaded.
++    /// Existing UserCursusGoal snapshots are untouched - a track edit only affects users
++    /// who subscribe from this point forward. Returns the persisted nodes with Goal
++    /// navigation properties loaded.
+     /// </summary>
+     Task<IReadOnlyList<CursusGoal>> SetTrackAsync(Guid cursusId, IEnumerable<CursusGoal> nodes, CancellationToken token = default);
+ 
+@@ -32,4 +37,7 @@ public interface ICursusService : IDomainService<Cursus>, ISlugQueryable<Cursus>
+     /// Returns all track nodes for a cursus with Goal navigation properties loaded.
+     /// </summary>
+     Task<IReadOnlyList<CursusGoal>> GetTrackAsync(Guid cursusId, CancellationToken token = default);
++
++    /// <summary>Assembles the master-track DO from a cursus and its track nodes.</summary>
++    CursusTrackDO AssembleTrack(Cursus cursus, IReadOnlyList<CursusGoal> nodes);
+ }
+diff --git a/App.Backend/Core/Services/Interface/IUserCursusService.cs b/App.Backend/Core/Services/Interface/IUserCursusService.cs
+index da36638..11e5787 100644
+--- a/App.Backend/Core/Services/Interface/IUserCursusService.cs
++++ b/App.Backend/Core/Services/Interface/IUserCursusService.cs
+@@ -7,7 +7,7 @@ using App.Backend.Domain.Entities;
+ using App.Backend.Domain.Entities.Users;
+ using App.Backend.Domain.Enums;
+ using App.Backend.Domain.Relations;
+-using App.Backend.Models.Responses.Entities.Cursus;
++using App.Backend.Models.Responses.Entities.Cursi;
+ 
+ // ============================================================================
+ 
+diff --git a/App.Backend/Models/Requests/Cursus/CursusTrackNodeDO.cs b/App.Backend/Models/Requests/Cursus/CursusTrackNodeDO.cs
+new file mode 100644
+index 0000000..8eaed6f
+--- /dev/null
++++ b/App.Backend/Models/Requests/Cursus/CursusTrackNodeDO.cs
+@@ -0,0 +1,31 @@
++// ============================================================================
++// Copyright (c) 2026 - W2Inc, All Rights Reserved.
++// See README.md in the project root for license information.
++// ============================================================================
++
++using System.ComponentModel;
++using System.ComponentModel.DataAnnotations;
++
++namespace App.Backend.Models.Requests.Cursus;
++
++// ============================================================================
++
++/// <summary>
++/// A single node in the flat representation of a cursus track.
++/// </summary>
++public class CursusTrackNodeDO
++{
++    /// <summary>
++    /// The goal ID this node represents.
++    /// </summary>
++    [Required]
++    [Description("The goal ID this node represents.")]
++    public required Guid GoalId { get; init; }
++
++    /// <summary>
++    /// The parent goal ID within this cursus track.
++    /// Null for root-level goals.
++    /// </summary>
++    [Description("The parent goal ID within this cursus track. Null for root-level goals.")]
++    public Guid? ParentId { get; init; }
++}
+diff --git a/App.Backend/Models/Requests/Cursus/PostCursusRequestDTO.cs b/App.Backend/Models/Requests/Cursus/PostCursusRequestDTO.cs
+index d70ba8a..f62cedd 100644
+--- a/App.Backend/Models/Requests/Cursus/PostCursusRequestDTO.cs
++++ b/App.Backend/Models/Requests/Cursus/PostCursusRequestDTO.cs
+@@ -40,7 +40,6 @@ public class PostCursusRequestDTO
+     [Description("Defines the type of progression to be made in the cursus.")]
+     public CursusMode Mode { get; init; }
+ 
+-    [Required]
+-    [Description("The cursus track itself.")]
+-    public required PutCursusTrackRequestDTO Track { get; init; }
++    [Description("The cursus track, if you want to set it at creation time. Otherwise use PUT /cursus/{id}/track once the goals it references exist.")]
++    public PutCursusTrackRequestDTO? Track { get; init; }
+ }
+diff --git a/App.Backend/Models/Requests/Cursus/PutCursusTrackRequestDTO.cs b/App.Backend/Models/Requests/Cursus/PutCursusTrackRequestDTO.cs
+index 1e182b2..67f8082 100644
+--- a/App.Backend/Models/Requests/Cursus/PutCursusTrackRequestDTO.cs
++++ b/App.Backend/Models/Requests/Cursus/PutCursusTrackRequestDTO.cs
+@@ -2,6 +2,20 @@
+ // Copyright (c) 2026 - W2Inc, All Rights Reserved.
+ // See README.md in the project root for license information.
+ // ============================================================================
++//
++// Fixes from the previous (WIP) version of this file:
++//   - Nodes is now IEnumerable<CursusTrackNodeDO>, not IEnumerable<(Guid ParentGoalId,
++//     Guid GoalId)>. A tuple field doesn't bind from a JSON request body the way a POCO
++//     does - System.Text.Json serializes ValueTuple as {"item1":...,"item2":...}, not
++//     named properties, so the previous shape would never have accepted real requests.
++//   - The "missing parent" check used to test every node's ParentGoalId against the set
++//     of GoalIds, which rejects every root goal - a root's parent is null, not "some
++//     other node's GoalId", so it was flagged as "missing" on every submission.
++//   - Depth check now reports the actual limit it enforces (was checking `depth > 6` but
++//     reporting "exceeds ... 5" in the message).
++//   - Choice groups (the old `Group`/`ChoiceGroup` field) are gone - see the chat note on
++//     this change; CursusTrackNodeDO no longer carries one.
++// ============================================================================
+ 
+ using System.ComponentModel.DataAnnotations;
+ 
+@@ -10,88 +24,120 @@ using System.ComponentModel.DataAnnotations;
+ namespace App.Backend.Models.Requests.Cursus;
+ 
+ /// <summary>
+-/// 
++/// The full proposed track for a cursus. Always a complete replacement, never a delta -
++/// see <see cref="Core.Services.Interface.ICursusService.SetTrackAsync"/>.
+ /// </summary>
+ public class PutCursusTrackRequestDTO : IValidatableObject
+ {
+-    public required IEnumerable<(Guid ParentGoalId, Guid GoalId)> Nodes;
++    public required IEnumerable<CursusTrackNodeDO> Nodes { get; init; }
+ 
+     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+     {
+-        if (Nodes == null || !Nodes.Any())
++        var nodes = Nodes?.ToList() ?? [];
++
++        if (nodes.Count == 0)
+         {
+             yield return new ValidationResult("A track must contain at least one goal.", [nameof(Nodes)]);
+             yield break;
+         }
+ 
+-        var duplicates = Nodes
++        var duplicates = nodes
+             .GroupBy(n => n.GoalId)
+             .Where(g => g.Count() > 1)
+             .Select(g => g.Key)
+-            .Any();
++            .ToList();
+ 
+-        if (duplicates)
++        if (duplicates.Count > 0)
+         {
+-            yield return new ValidationResult("Track contains duplicate goals.", [nameof(Nodes)]);
++            yield return new ValidationResult(
++                $"Track contains duplicate goal(s): {string.Join(", ", duplicates)}.", [nameof(Nodes)]);
+             yield break;
+         }
+ 
+-        // Parent Existence Check
+-        var map = Nodes.ToDictionary(n => n.GoalId, n => n.ParentGoalId);
+-        foreach (var (ParentGoalId, GoalId) in Nodes)
++        var byId = nodes.ToDictionary(n => n.GoalId, n => n.ParentId);
++
++        // A parent reference is only valid if it points at another node IN THIS TRACK.
++        // Null (root) is always fine and is not checked here.
++        foreach (var node in nodes)
+         {
+-            if (!map.ContainsKey(ParentGoalId))
++            if (node.ParentId is Guid parentId && !byId.ContainsKey(parentId))
+             {
+                 yield return new ValidationResult(
+-                    $"A Goal references missing parent goal.",
++                    $"Goal {node.GoalId} references parent {parentId}, which is not part of this track.",
+                     [nameof(Nodes)]);
+             }
+         }
+ 
+-        // Maximum 4 Children Per Node Check
+-        var exceeding = Nodes
+-            .GroupBy(n => n.ParentGoalId)
+-            .Where(g => g.Count() > 4)
+-            .Select(g => new {
+-                ParentGoalId = g.Key,
+-                ChildCount = g.Count()
+-            });
++        const int maxChildrenPerParent = 4;
++        var overCrowded = nodes
++            .Where(n => n.ParentId is not null)
++            .GroupBy(n => n.ParentId!.Value)
++            .Where(g => g.Count() > maxChildrenPerParent);
+ 
+-        foreach (var excess in exceeding)
++        foreach (var group in overCrowded)
+         {
+             yield return new ValidationResult(
+-                $"Goal {excess.ParentGoalId} exceeds the maximum fan-out limit with {excess.ChildCount} children (max allowed is 4).",
++                $"Goal {group.Key} has {group.Count()} direct children, exceeding the maximum fan-out of {maxChildrenPerParent}.",
+                 [nameof(Nodes)]);
+         }
+ 
+-        foreach (var (ParentGoalId, GoalId) in Nodes)
++        const int maxDepth = 10;
++        var marks = new Dictionary<Guid, byte>(); // 0/unset = white, 1 = gray (on this walk), 2 = black (resolved)
++        var depths = new Dictionary<Guid, int>();
++
++        foreach (var start in byId.Keys)
+         {
+-            int depth = 0;
+-            var visited = new HashSet<Guid>();
+-            Guid? current = GoalId;
++            if (marks.GetValueOrDefault(start) == 2)
++                continue;
++
++            var path = new List<Guid>();
++            var current = start;
++            var cycle = false;
+ 
+-            while (current.HasValue)
++            while (true)
+             {
+-                if (!visited.Add(current.Value))
++                if (marks.GetValueOrDefault(current) == 1)
+                 {
+-                    yield return new ValidationResult($"Infinite Loop/cycle detected.", [nameof(Nodes)]);
++                    cycle = true;
+                     break;
+                 }
+ 
+-                depth++;
+-                if (depth > 6)
+-                {
+-                    yield return new ValidationResult(
+-                        $"Track depth exceeds the maximum allowed limit of 5 goals.",
+-                        [nameof(Nodes)]
+-                    );
++                if (marks.GetValueOrDefault(current) == 2)
+                     break;
+-                }
+ 
+-                if (map.TryGetValue(current.Value, out var parentId))
+-                    current = parentId;
+-                else
++                marks[current] = 1;
++                path.Add(current);
++
++                var parent = byId[current];
++                if (parent is null)
+                     break;
++
++                current = parent.Value;
++            }
++
++            if (cycle)
++            {
++                yield return new ValidationResult($"Track contains a cycle involving goal {current}.", [nameof(Nodes)]);
++                yield break;
++            }
++
++            // Walk the collected path back to front, assigning depth from the root down.
++            var baseDepth = marks.GetValueOrDefault(current) == 2 ? depths[current] : 0;
++            for (var i = path.Count - 1; i >= 0; i--)
++            {
++                baseDepth++;
++                depths[path[i]] = baseDepth;
++                marks[path[i]] = 2;
++            }
++        }
++
++        foreach (var (goalId, depth) in depths)
++        {
++            if (depth > maxDepth)
++            {
++                yield return new ValidationResult(
++                    $"Goal {goalId} sits at depth {depth}, exceeding the maximum track depth of {maxDepth}.",
++                    [nameof(Nodes)]);
+             }
+         }
+     }
+diff --git a/App.Backend/Models/Responses/Entities/Cursi/CursusDO.cs b/App.Backend/Models/Responses/Entities/Cursi/CursusDO.cs
+index 9a0bb61..7068e1f 100644
+--- a/App.Backend/Models/Responses/Entities/Cursi/CursusDO.cs
++++ b/App.Backend/Models/Responses/Entities/Cursi/CursusDO.cs
+@@ -4,6 +4,7 @@
+ // ============================================================================
+ 
+ using App.Backend.Domain.Entities;
++using App.Backend.Domain.Enums;
+ 
+ // ============================================================================
+ 
+@@ -11,6 +12,16 @@ namespace App.Backend.Models.Responses.Entities.Cursi;
+ 
+ public class CursusDO(Cursus cursus) : BaseEntityDO<Cursus>(cursus)
+ {
++    public Guid WorkspaceId { get; set; } = cursus.WorkspaceId;
++    public string Name { get; set; } = cursus.Name;
++    public string Description { get; set; } = cursus.Description;
++    public string Slug { get; set; } = cursus.Slug;
++    public string? Thumbnail { get; set; } = cursus.Thumbnail;
++    public bool Enabled { get; set; } = cursus.Enabled;
++    public bool Public { get; set; } = cursus.Public;
++    public bool Deprecated { get; set; } = cursus.Deprecated;
++    public CursusVariant Variant { get; set; } = cursus.Variant;
++    public CursusMode CompletionMode { get; set; } = cursus.CompletionMode;
+ 
+     public static implicit operator CursusDO?(Cursus? cursus) => cursus is null ? null : new(cursus);
+ }
+diff --git a/App.Backend/Models/Responses/Entities/Cursi/CursusTrackDO.cs b/App.Backend/Models/Responses/Entities/Cursi/CursusTrackDO.cs
+index 27e4e1a..e212e91 100644
+--- a/App.Backend/Models/Responses/Entities/Cursi/CursusTrackDO.cs
++++ b/App.Backend/Models/Responses/Entities/Cursi/CursusTrackDO.cs
+@@ -3,14 +3,20 @@
+ // See README.md in the project root for license information.
+ // ============================================================================
+ 
+-using App.Backend.Domain.Entities;
++using App.Backend.Domain.Enums;
+ 
+ // ============================================================================
+ 
+ namespace App.Backend.Models.Responses.Entities.Cursi;
+ 
+-public class CursusTrackDO(Cursus cursus) : BaseEntityDO<Cursus>(cursus)
++/// <summary>
++/// A cursus's official track - the live master, not any one user's snapshot. Built by
++/// <see cref="Core.Services.Interface.ICursusService.AssembleTrack"/>.
++/// </summary>
++public class CursusTrackDO
+ {
+-
+-    public static implicit operator CursusTrackDO?(Cursus? cursus) => cursus is null ? null : new(cursus);
++    public required Guid CursusId { get; init; }
++    public required string Name { get; init; }
++    public required CursusMode CompletionMode { get; init; }
++    public required IReadOnlyList<CursusTrackNodeDO> Nodes { get; init; }
+ }
+diff --git a/App.Backend/Models/Responses/Entities/Cursi/CursusTrackNodeDO.cs b/App.Backend/Models/Responses/Entities/Cursi/CursusTrackNodeDO.cs
+new file mode 100644
+index 0000000..8d01911
+--- /dev/null
++++ b/App.Backend/Models/Responses/Entities/Cursi/CursusTrackNodeDO.cs
+@@ -0,0 +1,15 @@
++// ============================================================================
++// Copyright (c) 2026 - W2Inc, All Rights Reserved.
++// See README.md in the project root for license information.
++// ============================================================================
++
++namespace App.Backend.Models.Responses.Entities.Cursi;
++
++/// <summary>One goal in a cursus's master track, with its Goal navigation resolved.</summary>
++public class CursusTrackNodeDO
++{
++    public required Guid GoalId { get; init; }
++    public required string Name { get; init; }
++    public required string Slug { get; init; }
++    public Guid? ParentGoalId { get; init; }
++}
+diff --git a/App.Backend/Models/Responses/Entities/Cursi/UserCursusDO.cs b/App.Backend/Models/Responses/Entities/Cursi/UserCursusDO.cs
+index 3e2cf96..4005d53 100644
+--- a/App.Backend/Models/Responses/Entities/Cursi/UserCursusDO.cs
++++ b/App.Backend/Models/Responses/Entities/Cursi/UserCursusDO.cs
+@@ -3,14 +3,19 @@
+ // See README.md in the project root for license information.
+ // ============================================================================
+ 
+-using App.Backend.Domain.Entities;
++using App.Backend.Domain.Entities.Users;
++using App.Backend.Domain.Enums;
+ 
+ // ============================================================================
+ 
+ namespace App.Backend.Models.Responses.Entities.Cursi;
+ 
+-public class UserCursusDO(Cursus cursus) : BaseEntityDO<Cursus>(cursus)
++public class UserCursusDO(UserCursus userCursus) : BaseEntityDO<UserCursus>(userCursus)
+ {
++    public Guid UserId { get; set; } = userCursus.UserId;
++    public Guid CursusId { get; set; } = userCursus.CursusId;
++    public EntityObjectState State { get; set; } = userCursus.State;
++    public DateTimeOffset? UnlocksAt { get; set; } = userCursus.UnlocksAt;
+ 
+-    public static implicit operator UserCursusDO?(Cursus? cursus) => cursus is null ? null : new(cursus);
++    public static implicit operator UserCursusDO?(UserCursus? userCursus) => userCursus is null ? null : new(userCursus);
+ }
+diff --git a/App.Backend/Models/Responses/Entities/Cursi/UserCursusTrackDO.cs b/App.Backend/Models/Responses/Entities/Cursi/UserCursusTrackDO.cs
+index 8bd1b6b..efe6afc 100644
+--- a/App.Backend/Models/Responses/Entities/Cursi/UserCursusTrackDO.cs
++++ b/App.Backend/Models/Responses/Entities/Cursi/UserCursusTrackDO.cs
+@@ -3,14 +3,23 @@
+ // See README.md in the project root for license information.
+ // ============================================================================
+ 
+-using App.Backend.Domain.Entities;
++using App.Backend.Domain.Enums;
+ 
+ // ============================================================================
+ 
+ namespace App.Backend.Models.Responses.Entities.Cursi;
+ 
+-public class UserCursusTrackDO(Cursus cursus) : BaseEntityDO<Cursus>(cursus)
++/// <summary>
++/// A user's frozen track snapshot, taken once at subscribe time - see
++/// <see cref="Core.Services.Implementation.SubscriptionService.SubscribeToCursusAsync"/>.
++/// Later edits to the cursus's master track never change this; it reflects the track
++/// exactly as it stood the moment the user enrolled. Built by
++/// <see cref="Core.Services.Interface.IUserCursusService.AssembleTrack"/>.
++/// </summary>
++public class UserCursusTrackDO
+ {
+-
+-    public static implicit operator UserCursusTrackDO?(Cursus? cursus) => cursus is null ? null : new(cursus);
++    public required Guid CursusId { get; init; }
++    public required string Name { get; init; }
++    public required CursusMode CompletionMode { get; init; }
++    public required IReadOnlyList<UserCursusTrackNodeDO> Nodes { get; init; }
+ }
+diff --git a/App.Backend/Models/Responses/Entities/Cursi/UserCursusTrackNodeDO.cs b/App.Backend/Models/Responses/Entities/Cursi/UserCursusTrackNodeDO.cs
+new file mode 100644
+index 0000000..0c1b73f
+--- /dev/null
++++ b/App.Backend/Models/Responses/Entities/Cursi/UserCursusTrackNodeDO.cs
+@@ -0,0 +1,25 @@
++// ============================================================================
++// Copyright (c) 2026 - W2Inc, All Rights Reserved.
++// See README.md in the project root for license information.
++// ============================================================================
++
++using App.Backend.Domain.Enums;
++
++// ============================================================================
++
++namespace App.Backend.Models.Responses.Entities.Cursi;
++
++/// <summary>One goal in a user's frozen track snapshot, with their progress on it.</summary>
++public class UserCursusTrackNodeDO
++{
++    public required Guid GoalId { get; init; }
++    public required string Name { get; init; }
++    public required string Slug { get; init; }
++    public Guid? ParentGoalId { get; init; }
++
++    /// <summary>Null if the user has no UserGoal row for this goal yet (hasn't started it).</summary>
++    public EntityObjectState? State { get; init; }
++
++    /// <summary>Whether the cursus's completion mode currently allows starting this goal.</summary>
++    public required bool IsUnlocked { get; init; }
++}
+diff --git a/App.Backend/Models/Responses/Entities/GoalDO.cs b/App.Backend/Models/Responses/Entities/GoalDO.cs
+index af3de25..342f11d 100644
+--- a/App.Backend/Models/Responses/Entities/GoalDO.cs
++++ b/App.Backend/Models/Responses/Entities/GoalDO.cs
+@@ -25,7 +25,7 @@ public class GoalDO(Goal goal) : BaseEntityDO<Goal>(goal)
+     public string Slug { get; set; } = goal.Slug;
+ 
+     [Required]
+-    public bool Active { get; set; } = goal.Active;
++    public bool Active { get; set; } = goal.Enabled;
+ 
+     [Required]
+     public bool Public { get; set; } = goal.Public;
+diff --git a/App.Backend/Models/Responses/Entities/Goals/GoalLightDO.cs b/App.Backend/Models/Responses/Entities/Goals/GoalLightDO.cs
+index ed0bf93..c5b0379 100644
+--- a/App.Backend/Models/Responses/Entities/Goals/GoalLightDO.cs
++++ b/App.Backend/Models/Responses/Entities/Goals/GoalLightDO.cs
+@@ -23,7 +23,7 @@ public class GoalLightDO(Goal goal) : BaseEntityDO<Goal>(goal)
+     public string Slug { get; set; } = goal.Slug;
+ 
+     [Required]
+-    public bool Active { get; set; } = goal.Active;
++    public bool Active { get; set; } = goal.Enabled;
+ 
+     [Required]
+     public bool Deprecated { get; set; } = goal.Deprecated;
+diff --git a/App.Backend/Models/Responses/Entities/WorkspaceDO.cs b/App.Backend/Models/Responses/Entities/WorkspaceDO.cs
+index 607962f..27b670f 100644
+--- a/App.Backend/Models/Responses/Entities/WorkspaceDO.cs
++++ b/App.Backend/Models/Responses/Entities/WorkspaceDO.cs
+@@ -7,7 +7,6 @@ using System.ComponentModel.DataAnnotations;
+ using App.Backend.Domain.Entities;
+ using App.Backend.Domain.Entities.Users;
+ using App.Backend.Domain.Enums;
+-using App.Backend.Models.Responses.Entities.Cursus;
+ using App.Backend.Models.Responses.Entities.Projects;
+ 
+ // ============================================================================

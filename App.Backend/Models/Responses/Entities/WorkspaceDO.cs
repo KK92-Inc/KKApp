@@ -7,7 +7,6 @@ using System.ComponentModel.DataAnnotations;
 using App.Backend.Domain.Entities;
 using App.Backend.Domain.Entities.Users;
 using App.Backend.Domain.Enums;
-using App.Backend.Models.Responses.Entities.Cursus;
 using App.Backend.Models.Responses.Entities.Projects;
 
 // ============================================================================

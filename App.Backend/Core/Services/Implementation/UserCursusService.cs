@@ -9,7 +9,7 @@ using App.Backend.Domain.Entities.Users;
 using Microsoft.EntityFrameworkCore;
 using App.Backend.Domain.Relations;
 using App.Backend.Domain.Enums;
-using App.Backend.Models.Responses.Entities.Cursus;
+using App.Backend.Models.Responses.Entities.Cursi;
 using App.Backend.Domain.Entities;
 
 // ============================================================================
@@ -67,7 +67,6 @@ public class UserCursusService(DatabaseContext ctx) : BaseService<UserCursus>(ct
                 Name = n.Goal.Name,
                 Slug = n.Goal.Slug,
                 ParentGoalId = n.ParentGoalId,
-                ChoiceGroup = n.ChoiceGroup,
                 State = states.TryGetValue(n.GoalId, out var s) ? s : null,
                 IsUnlocked = unlocked.Contains(n.GoalId)
             }).ToList()
@@ -94,25 +93,15 @@ public class UserCursusService(DatabaseContext ctx) : BaseService<UserCursus>(ct
         {
             maxUnlocked = depthGroup.Key;
 
-            var requiredDone = depthGroup
-                .Where(n => n.ChoiceGroup is null)
-                .All(n => completed.Contains(n.GoalId));
-
-            var choicesDone = depthGroup
-                .Where(n => n.ChoiceGroup is not null)
-                .GroupBy(n => n.ChoiceGroup)
-                .All(g => g.Any(n => completed.Contains(n.GoalId)));
-
-            if (!requiredDone || !choicesDone)
+            if (!depthGroup.All(n => completed.Contains(n.GoalId)))
                 break;
 
             maxUnlocked = depthGroup.Key + 1;
         }
 
-        return snapshot
+        return [.. snapshot
             .Where(n => depths[n.GoalId] <= maxUnlocked)
-            .Select(n => n.GoalId)
-            .ToHashSet();
+            .Select(n => n.GoalId)];
     }
 
     // Memoised parent-chain traversal; roots are depth 0.

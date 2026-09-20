@@ -13,7 +13,6 @@ using App.Backend.Domain.Enums;
 using App.Backend.Domain.Relations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using App.Backend.Core.Services.Persistence.Interface;
 
 namespace App.Backend.Core.Services.Implementation;
 
@@ -22,7 +21,6 @@ public class SubscriptionService(
     IGitService git,
     TimeProvider time,
     IEligibilityService eligibilityService,
-    ICursusSnapshot snapshotTracker,
     IOptions<SubscriptionOptions> options
 ) : ISubscriptionService
 {
@@ -47,14 +45,6 @@ public class SubscriptionService(
 
             await CascadeActivateGoalsAsync(userId, cursusId, token);
             await context.SaveChangesAsync(token);
-
-            // Catch the snapshot up on whatever the master track did while this
-            // subscription sat inactive. Runs after goal states are restored above,
-            // so anything the user was mid-progress on before unsubscribing is
-            // correctly seen as locked-in and stays frozen rather than getting
-            // swept up by a track change that happened in the meantime.
-            await snapshotTracker.SyncTrackAsync(userId, cursusId, existing.Id, token);
-
             return existing;
         }
 
@@ -74,7 +64,6 @@ public class SubscriptionService(
             UserCursusId = result.Entity.Id,
             GoalId = cg.GoalId,
             ParentGoalId = cg.ParentGoalId,
-            ChoiceGroup = cg.ChoiceGroup
         }).ToList();
 
         await context.UserCursusGoal.AddRangeAsync(userTrackSnapshots, token);
@@ -288,22 +277,6 @@ public class SubscriptionService(
 
             await CascadeDeactivateProjectsAsync(userId, [goalId], ct);
             await context.SaveChangesAsync(ct);
-
-            // This goal just gave up its locked-in state. If it's sitting in the
-            // snapshot of any cursus the user is actively enrolled in, release that
-            // branch back to the current master track right now, instead of leaving
-            // it stale until the next unrelated staff-triggered track edit. Checked
-            // against the user's own snapshot, not the live master track - the goal
-            // may already have been renamed out of the master track entirely while
-            // the user was frozen on it, which is exactly the case this exists for.
-            var affectedCursi = await context.UserCursi
-                .Where(uc => uc.UserId == userId && uc.State != EntityObjectState.Inactive)
-                .Where(uc => context.UserCursusGoal.Any(ucg => ucg.UserCursusId == uc.Id && ucg.GoalId == goalId))
-                .Select(uc => new { uc.Id, uc.CursusId })
-                .ToListAsync(ct);
-
-            foreach (var uc in affectedCursi)
-                await snapshotTracker.SyncTrackAsync(userId, uc.CursusId, uc.Id, ct);
 
             await transaction.CommitAsync(ct);
             return existing;

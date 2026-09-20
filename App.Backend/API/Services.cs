@@ -44,8 +44,6 @@ using Keycloak.AuthServices.Sdk.Kiota.Admin;
 using Microsoft.Kiota.Http.HttpClientLibrary;
 using Microsoft.Kiota.Abstractions.Authentication;
 using KeycloakAdminClientOptions = Keycloak.AuthServices.Sdk.KeycloakAdminClientOptions;
-using App.Backend.Core.Services.Persistence.Implementation;
-using App.Backend.Core.Services.Persistence.Interface;
 using System.Text.Json.Serialization;
 using App.Backend.API.Jobs;
 using App.Backend.API.Jobs.Extensions;
@@ -282,8 +280,6 @@ public static class Services
     {
         // Infrastructure
         builder.Services.AddScoped<ISystemService, SystemService>();
-        builder.Services.AddTransient<ICursusSnapshot, CursusSnapshot>();
-        builder.Services.AddTransient<IPersistenceGraphMesher, PersistenceGraphMesher>();
         builder.Services.AddScoped<IGitService, GitService>();
         builder.Services.AddScoped<INotificationService, NotificationService>();
         builder.Services.AddScoped<ISpotlightService, SpotlightService>();

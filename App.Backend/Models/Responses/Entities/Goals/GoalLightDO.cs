@@ -23,7 +23,10 @@ public class GoalLightDO(Goal goal) : BaseEntityDO<Goal>(goal)
     public string Slug { get; set; } = goal.Slug;
 
     [Required]
-    public bool Active { get; set; } = goal.Active;
+    public bool Enabled { get; set; } = goal.Enabled;
+
+    [Required]
+    public bool Public { get; set; } = goal.Public;
 
     [Required]
     public bool Deprecated { get; set; } = goal.Deprecated;
