@@ -10,7 +10,7 @@
 </script>
 
 <div class="grid grid-cols-[auto_1fr] gap-x-4">
-	<Avatar.Root>
+	<Avatar.Root class="border-2">
 		<Avatar.Image src={user.avatarUrl} alt="@{user.login}" />
 		<Avatar.Fallback>{user.login.slice(0,2).toUpperCase()}</Avatar.Fallback>
 	</Avatar.Root>

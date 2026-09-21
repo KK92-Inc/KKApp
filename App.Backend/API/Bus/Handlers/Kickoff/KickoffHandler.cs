@@ -26,21 +26,22 @@ public class KickoffHandler(DatabaseContext context, IMessageBus bus, TimeProvid
 {
     public async Task<IEnumerable<object>> Handle(StartKickoff message, CancellationToken ct)
     {
-        var kickoff = await context.Kickoffs.FirstOrDefaultAsync(k => k.Id == message.KickoffId, ct);
-        if (kickoff is null) return [];
+        return [];
+        // var kickoff = await context.Kickoffs.FirstOrDefaultAsync(k => k.Id == message.KickoffId, ct);
+        // if (kickoff is null) return [];
 
-        var now = time.GetUtcNow();
-        if (kickoff.StartsAt > now)
-        {
-            await bus.ScheduleAsync(message, kickoff.StartsAt);
-            return [];
-        }
+        // var now = time.GetUtcNow();
+        // if (kickoff.StartsAt > now)
+        // {
+        //     await bus.ScheduleAsync(message, kickoff.StartsAt);
+        //     return [];
+        // }
 
-        var pending = await context.UserKickoff
-            .Where(uk => uk.KickoffId == kickoff.Id)
-            .Select(uk => new { uk.UserId, uk.KickoffId })
-            .ToListAsync(ct);
+        // var pending = await context.UserKickoff
+        //     .Where(uk => uk.KickoffId == kickoff.Id)
+        //     .Select(uk => new { uk.UserId, uk.KickoffId })
+        //     .ToListAsync(ct);
 
-        return pending.Select(uk => new PromoteApplicant(uk.UserId, uk.KickoffId));
+        // return pending.Select(uk => new PromoteApplicant(uk.UserId, uk.KickoffId));
     }
 }

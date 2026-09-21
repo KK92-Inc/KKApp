@@ -81,8 +81,7 @@ public record PatchEventRequestDTO : IValidatableObject
     /// </summary>
     public IEnumerable<ValidationResult> Validate(ValidationContext context)
     {
-        var time = context.GetService<TimeProvider>();
-        var today = time is not null ? time.GetUtcNow().Date : DateTimeOffset.UtcNow.Date;
+        var today = DateTimeOffset.UtcNow.Date;
 
         if (StartsAt?.Date <= today)
         {

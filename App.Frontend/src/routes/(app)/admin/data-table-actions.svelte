@@ -3,7 +3,7 @@
 	import { Button, buttonVariants } from '$lib/components/button';
 	import * as DropdownMenu from '$lib/components/dropdown-menu';
 	import type { components } from '$lib/api/api';
-	import { Hammer, HatGlasses, IdCard, Snowflake, User } from '@lucide/svelte';
+	import { CloudLightning, Hammer, HatGlasses, IdCard, Snowflake, User, UserPen, Zap } from '@lucide/svelte';
 	import { useDialog } from '$lib/components/dialog';
 	import * as Dialog from '$lib/components/dialog';
 	import { Input } from '$lib/components/input';
@@ -53,20 +53,24 @@
 
 			<DropdownMenu.Item href="/users/{user.id}">
 				<User />
-				View Profile
+				View Account
+			</DropdownMenu.Item>
+			<DropdownMenu.Item href="/user/manage/{user.id}">
+				<UserPen />
+				Edit Account
 			</DropdownMenu.Item>
 		</DropdownMenu.Group>
 		<DropdownMenu.Separator />
 		<DropdownMenu.Group>
 			<DropdownMenu.Sub>
 				<DropdownMenu.SubTrigger>
-					<Hammer />
+					<Zap />
 					Actions
 				</DropdownMenu.SubTrigger>
 				<DropdownMenu.SubContent>
 					<DropdownMenu.Item variant="destructive" onclick={() => (freezeOpen = true)}>
 						<Snowflake />
-						Freeze
+						View Freeze
 					</DropdownMenu.Item>
 					<DropdownMenu.Item variant="destructive" onclick={anonymize}>
 						<HatGlasses />
@@ -123,7 +127,7 @@
 		<Separator />
 		<Dialog.Footer>
 			<Dialog.Close type="button" class={buttonVariants({ variant: 'outline' })}>Cancel</Dialog.Close>
-			<Button type="submit">Save changes</Button>
+			<Button type="submit" variant="destructive">Freeze <Snowflake /></Button>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>

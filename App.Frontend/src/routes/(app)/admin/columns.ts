@@ -3,12 +3,12 @@
 // See README in the root project for more information.
 // ============================================================================
 
-import { createColumnHelper, renderComponent, renderSnippet } from "@tanstack/svelte-table";
-import type { DataTableFeatures } from "./data-table-features.js";
 import type { components } from "$lib/api/api.js";
+import type { DataTableFeatures } from "./data-table-features.js";
+import { createRawSnippet } from "svelte";
+import { createColumnHelper, renderComponent, renderSnippet } from "@tanstack/svelte-table";
 import DataTableActions from "./data-table-actions.svelte";
 import DataTableStudent from "./data-table-student.svelte";
-import { createRawSnippet } from "svelte";
 
 // ============================================================================
 
@@ -24,14 +24,19 @@ export const columns = helper.columns([
 			return renderComponent(DataTableStudent, { user: row.original });
 		},
 	}),
-	helper.accessor("login", {
-		header: "Login",
+	helper.display({
+		header: "Name",
+		cell: ({ row }) => {
+			return renderSnippet(createRawSnippet(() => ({
+				render: () => `<span>${row.original.firstName} ${row.original.lastName}</span>`,
+			})));
+		},
 	}),
-	helper.accessor("details.email", {
+	helper.accessor("email", {
 		header: "Email",
 		cell: ({ row }) => {
 			return renderSnippet(createRawSnippet(() => ({
-				render: () => `<span>${row.original.details?.email ?? '-'}</span>`,
+				render: () => `<span>${row.original.email}</span>`,
 			})));
 		},
 	}),

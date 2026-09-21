@@ -6,15 +6,18 @@
 	import type { ComponentProps } from 'svelte';
 
 	interface Props extends Omit<ComponentProps<typeof Input>, 'type' | 'value' | 'files'> {
-		/** UTC ISO string (e.g. "2026-09-18T09:02:46.459Z"), or null. */
-		value?: string | null;
+		/**
+		 * UTC ISO string (e.g. "2026-09-18T09:02:46.459Z").
+		 * `undefined` means "nothing picked", never null and never "".
+		 */
+		value?: string;
 		/** IANA timezone the value is displayed/interpreted in. Defaults to the instance tz. */
 		tz?: string;
 	}
 
-	let { value = $bindable(null), tz = page.data.tz, ...rest }: Props = $props();
+	let { value = $bindable(), tz = page.data.tz, ...rest }: Props = $props();
 
-	function toLocalInputValue(utcIso: string | null | undefined, timeZone: string): string {
+	function toLocalInputValue(utcIso: string | undefined, timeZone: string): string {
 		if (!utcIso) return '';
 		try {
 			const zoned = parseAbsolute(utcIso, timeZone);
@@ -24,26 +27,20 @@
 		}
 	}
 
-	function toUtcIso(local: string, timeZone: string): string | null {
-		if (!local) return null;
+	function toUtcIso(local: string, timeZone: string): string | undefined {
+		if (!local) return undefined;
 		try {
 			// datetime-local's .value has no seconds; parseDateTime wants them.
 			const calendar = parseDateTime(local.length === 16 ? `${local}:00` : local);
 			return toZoned(calendar, timeZone).toAbsoluteString();
 		} catch {
-			return null;
+			return undefined;
 		}
 	}
 
-	// Re-synced whenever the underlying UTC value or tz changes from outside
-	// (e.g. context.hydrate() loading fresh data from the server).
-	let local = $derived(toLocalInputValue(value, tz));
-	$effect(() => { local = toLocalInputValue(value, tz) });
-
 	function onInput(e: Event & { currentTarget: HTMLInputElement }) {
-		local = e.currentTarget.value;
-		value = toUtcIso(local, tz);
+		value = toUtcIso(e.currentTarget.value, tz);
 	}
 </script>
 
-<Input type="datetime-local" value={local} oninput={onInput} {...rest} />
+<Input type="datetime-local" value={toLocalInputValue(value, tz)} oninput={onInput} {...rest} />

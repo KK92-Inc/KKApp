@@ -52,7 +52,7 @@ export interface Session {
 	username: string;
 	email: string;
 	roles: string[];
-	permissions: string[];
+	permissions: Scopes[];
 	verified: boolean;
 }
 

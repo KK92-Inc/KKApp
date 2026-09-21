@@ -40,6 +40,11 @@ public class User : BaseEntity
     [Column("avatar_url")]
     public string? AvatarUrl { get; set; }
 
+    [Column("kickoff_id")]
+    public Guid? KickoffId { get; set; }
+
+    public virtual Kickoff? Kickoff { get; set; }
+
     public virtual Details? Details { get; set; }
 
     //= Relations =//

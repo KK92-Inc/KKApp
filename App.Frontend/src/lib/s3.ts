@@ -57,7 +57,6 @@ export function useS3Storage({
       const file = Bun.s3.file(keyFor(id), { bucket, endpoint: env.PUBLIC_S3_ENDPOINT });
       await pipeline.write(file);
 
-      // public bucket/CDN? build the URL directly instead:
       return `${env.PUBLIC_S3_ENDPOINT}/${bucket}/${keyFor(id)}`;
       // return file.presign({ acl: 'public-read', expiresIn: 60 * 60 * 24 * 365 });
     },

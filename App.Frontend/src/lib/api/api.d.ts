@@ -1059,7 +1059,7 @@ export interface paths {
         put?: never;
         /**
          * Replace cursus track
-         * @description Fully replaces the hierarchical goal track for a static cursus.
+         * @description Fully replaces the hierarchical goal track for a static cursus. Existing subscribers are not affected.
          */
         post: {
             parameters: {
@@ -1072,9 +1072,9 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["PostCursusTrackRequestDTO"];
-                    "text/json": components["schemas"]["PostCursusTrackRequestDTO"];
-                    "application/*+json": components["schemas"]["PostCursusTrackRequestDTO"];
+                    "application/json": components["schemas"]["PutCursusTrackRequestDTO"];
+                    "text/json": components["schemas"]["PutCursusTrackRequestDTO"];
+                    "application/*+json": components["schemas"]["PutCursusTrackRequestDTO"];
                 };
             };
             responses: {
@@ -9278,27 +9278,33 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
-            name: string;
-            description: string;
-            slug: string;
-            variant: components["schemas"]["CursusVariant"];
-            completionMode: components["schemas"]["CursusMode"];
-            workspace: components["schemas"]["WorkspaceDO"];
+            name?: string;
+            description?: string;
+            slug?: string;
+            thumbnail?: null | string;
+            enabled?: boolean;
+            public?: boolean;
+            deprecated?: boolean;
+            variant?: components["schemas"]["CursusVariant"];
+            mode?: components["schemas"]["CursusMode"];
+            workspace?: components["schemas"]["WorkspaceDO"];
         };
         /** @enum {unknown} */
         CursusMode: "Ring" | "FreeStyle";
         CursusTrackDO: {
             /** Format: uuid */
             cursusId: string;
-            variant: components["schemas"]["CursusVariant"];
+            name: string;
             completionMode: components["schemas"]["CursusMode"];
-            nodes?: components["schemas"]["CursusTrackNodeDO"][];
+            nodes: components["schemas"]["CursusTrackNodeDO"][];
         };
         CursusTrackNodeDO: {
-            goal: components["schemas"]["GoalLightDO"];
             /** Format: uuid */
-            choiceGroup?: null | string;
-            children?: components["schemas"]["CursusTrackNodeDO"][];
+            goalId: string;
+            name: string;
+            slug: string;
+            /** Format: uuid */
+            parentGoalId?: null | string;
         };
         /** @enum {unknown} */
         CursusVariant: "Dynamic" | "Static" | "Hybrid";
@@ -9384,22 +9390,10 @@ export interface components {
             name: string;
             description: string;
             slug: string;
-            active: boolean;
+            enabled: boolean;
             public: boolean;
             deprecated: boolean;
             workspace: components["schemas"]["WorkspaceDO"];
-        };
-        GoalLightDO: {
-            /** Format: uuid */
-            id: string;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
-            name: string;
-            slug: string;
-            active: boolean;
-            deprecated: boolean;
         };
         MemberDO: {
             /** Format: uuid */
@@ -9598,23 +9592,19 @@ export interface components {
             files: components["schemas"]["CommitFileDTO"][];
         };
         PostCursusRequestDTO: {
+            /** @description The name of cursus */
             name: string;
             /** @description Description of the cursus. */
             description: string;
-            /** @description Indicates whether the cursus is currently active. */
-            active: boolean;
+            /** @description Indicates whether the cursus can be subscribed to. */
+            enabled: boolean;
             /** @description Indicates whether the cursus is publicly visible. */
             public: boolean;
-            /** @description The cursus variant: Static (fixed track) or Dynamic (free-roam). */
+            /** @description What kind of cursus this is. */
             variant: components["schemas"]["CursusVariant"];
-            /** @description How users progress through the track: Ring (level-by-level) or FreeStyle (branch-independent). */
+            /** @description Defines the type of progression to be made in the cursus. */
             mode: components["schemas"]["CursusMode"];
-            /** @description The flat list of track nodes forming the cursus hierarchy. */
-            track: components["schemas"]["PostCursusTrackRequestDTO"];
-        };
-        PostCursusTrackRequestDTO: {
-            /** @description The flat list of track nodes forming the cursus hierarchy. */
-            nodes: components["schemas"]["CursusTrackNodeDO"][];
+            track?: null | components["schemas"]["PutCursusTrackRequestDTO"];
         };
         PostEventFeedbackRequestDTO: {
             /**
@@ -9641,7 +9631,7 @@ export interface components {
              * Format: int32
              * @description The maximum number of participants allowed.
              */
-            capacity?: number | string;
+            capacity: number | string;
             /**
              * Format: int32
              * @description Minimum required occupancy for the event to switch state. Only staff can set it to null.
@@ -9668,7 +9658,7 @@ export interface components {
             /** @description Optional description of the goal. */
             description: string;
             /** @description Indicates whether the goal is currently active. */
-            active?: boolean;
+            enabled?: boolean;
             /** @description Indicates whether the goal is publicly visible. */
             public?: boolean;
             /** @description The list of project IDs to initalize this goal with. */
@@ -9797,6 +9787,9 @@ export interface components {
              */
             maxMembers: number | string;
         };
+        PutCursusTrackRequestDTO: {
+            nodes: components["schemas"]["CursusTrackNodeDO"][];
+        };
         ReviewDO: {
             /** Format: uuid */
             id: string;
@@ -9919,11 +9912,13 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
-            state: components["schemas"]["EntityObjectState"];
+            /** Format: uuid */
+            userId?: string;
+            /** Format: uuid */
+            cursusId?: string;
+            state?: components["schemas"]["EntityObjectState"];
             /** Format: date-time */
-            unlocksAt: null | string;
-            cursus: components["schemas"]["CursusDO"];
-            user: null | components["schemas"]["UserLightDO"];
+            unlocksAt?: null | string;
         };
         UserCursusTrackDO: {
             /** Format: uuid */
@@ -9937,12 +9932,10 @@ export interface components {
             goalId: string;
             name: string;
             slug: string;
-            isUnlocked: boolean;
             /** Format: uuid */
             parentGoalId?: null | string;
-            /** Format: uuid */
-            choiceGroup?: null | string;
             state?: null | components["schemas"]["EntityObjectState"];
+            isUnlocked: boolean;
         };
         UserDetailsDO: {
             /** Format: uuid */
@@ -9951,10 +9944,7 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
-            email: null | string;
             markdown: null | string;
-            firstName: null | string;
-            lastName: null | string;
             githubUrl: null | string;
             linkedinUrl: null | string;
             redditUrl: null | string;
@@ -9968,6 +9958,9 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
             login: string;
+            email: string;
+            firstName: string;
+            lastName: string;
             displayName: null | string;
             avatarUrl: null | string;
             details?: null | components["schemas"]["UserDetailsDO"];

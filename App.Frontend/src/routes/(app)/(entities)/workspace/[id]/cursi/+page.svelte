@@ -23,7 +23,6 @@
 </script>
 
 <div class="md:container mx-auto space-y-6 px-4 py-4 lg:px-6">
-	<!-- Toolbar Header -->
 	<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 		<Button variant="secondary" href="..">
 			<ArrowLeft />
@@ -75,9 +74,9 @@
 						<Button
 							variant="outline"
 							size="sm"
-							href="/users/{page.data.session.userId}/cursus/{cursus.id}"
+							href="/cursus/manage/{cursus.id}"
 						>
-							View
+							Edit
 						</Button>
 					{/snippet}
 				</Item.Cursus>

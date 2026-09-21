@@ -20,6 +20,15 @@ public class UserLightDO(User user) : BaseEntityDO<User>(user)
     public string Login { get; set; } = user.Login;
 
     [Required]
+    public string Email { get; set; } = user.Email; 
+    
+    [Required]
+    public string FirstName { get; set; } = user.FirstName;
+
+    [Required]
+    public string LastName { get; set; } = user.LastName;
+
+    [Required]
     public string? DisplayName { get; set; } = user.Display;
 
     [Required]

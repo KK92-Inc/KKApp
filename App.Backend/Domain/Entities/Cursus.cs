@@ -52,7 +52,7 @@ public class Cursus : BaseEntity
     /// branch-independent (FreeStyle).
     /// </summary>
     [Column("completion")]
-    public CursusMode CompletionMode { get; set; }
+    public CursusMode Mode { get; set; }
 
     [Column("workspace_id")]
     public Guid WorkspaceId { get; set; }

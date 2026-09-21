@@ -3,99 +3,44 @@
 // See README in the root project for more information.
 // ============================================================================
 
-import {
-	Archive,
-	Bot,
-	FlaskConical,
-	GraduationCap,
-	HeartHandshake,
-	KeyRound,
-	Sparkles,
-	Target,
-	Trophy,
-	UserPen,
-	Users
-} from '@lucide/svelte';
 import type { RouteId } from '$app/types';
+import type { MetaEntry, MetaRecord } from '$lib/utils';
+
 // ============================================================================
 
-export const UNAUTHED = ["/auth", "/setup"];
+export const UNAUTHED = ['/auth', '/setup'];
 export const isPublic = (pathname: string) => UNAUTHED.some((r) => pathname.startsWith(r));
 
 // ============================================================================
 
-type MetaEntry = { scopes?: Scopes[] } & Record<string, unknown>;
-const meta: Partial<Record<RouteId, MetaEntry>> = {
-	'/(app)/users/[userId]/projects': {
-		icon: Archive,
-		label: 'Projects',
-		scopes: ['projects:read']
-	},
-	'/(app)/users/[userId]/goals': {
-		icon: Trophy,
-		label: 'Goals',
-		scopes: ['goals:read']
-	},
-	'/(app)/users/[userId]/galaxy': {
-		icon: Sparkles,
-		label: 'Galaxy',
-		scopes: ['cursus:read']
-	},
-	'/(app)/users/[userId]/cursus': {
-		icon: GraduationCap,
-		label: 'Cursus',
-		scopes: ['cursus:read']
-	},
-	'/(app)/settings/profile': {
-		icon: UserPen,
-		label: 'Profile',
-	},
-	'/(app)/settings/apps': {
-		icon: Bot,
-		label: 'Applications',
-		scopes: ['applications:read']
-	},
-	'/(app)/settings/features': {
-		icon: FlaskConical,
-		label: 'Features',
-		//@ts-expect-error TOOD: Add this scopes!
-		scopes: ['features:read']
-	},
-	'/(app)/settings/ssh': {
-		icon: KeyRound,
-		label: 'Keys'
-	},
-	'/(app)/reviews': {
-		icon: HeartHandshake,
-		label: 'Reviews',
-		scopes: ['reviews:read']
-	},
-	'/(app)/users': {
-		icon: Users,
-		label: 'Users',
-		scopes: ['users:read']
-	},
-	'/(app)/(entities)/workspace/[id]/projects': {
-		icon: Archive,
-		label: 'View Projects',
-		scopes: ['projects:read', 'workspaces:read']
-	},
-	'/(app)/(entities)/workspace/[id]/goals': {
-		icon: Trophy,
-		label: 'View Goals',
-		scopes: ['goals:read', 'workspaces:read']
-	},
-	'/(app)/(entities)/workspace/[id]/rubrics': {
-		icon: Target,
-		label: 'View Rubrics',
-		scopes: ['rubrics:read', 'rubrics:write', 'workspaces:read']
-	},
-	'/(app)/(entities)/workspace/[id]/cursi': {
-		icon: GraduationCap,
-		label: 'View Cursus',
-		scopes: ['cursus:read', 'workspaces:read']
-	},
-};
+// Collect every `index.meta.ts` under src/routes.
+//  - `eager: true`    -> bundled up-front, which is what you want for nav / sidebar data
+//  - `import: 'Meta'` -> only pull the named `Meta` export out of each file
+const modules = import.meta.glob<MetaRecord>('/src/routes/**/index.meta.ts', {
+	eager: true,
+	import: 'Meta'
+});
+
+/**
+ * Flattens all the per-folder records into one, and in dev
+ * yells if two files define the same route.
+ */
+function merge(sources: Record<string, MetaRecord>): MetaRecord {
+	const merged: MetaRecord = {};
+
+	for (const [file, record] of Object.entries(sources)) {
+		for (const [route, entry] of Object.entries(record) as [RouteId, MetaEntry][]) {
+			if (import.meta.env.DEV && route in merged) {
+				throw new Error(`Duplicate route meta for "${route}" (again in ${file})`);
+			}
+			merged[route] = entry;
+		}
+	}
+
+	return merged;
+}
+
+const meta = merge(modules);
 
 // ============================================================================
 

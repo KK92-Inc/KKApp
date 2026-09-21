@@ -64,7 +64,7 @@ public class CursusService(
     {
         CursusId = cursus.Id,
         Name = cursus.Name,
-        CompletionMode = cursus.CompletionMode,
+        CompletionMode = cursus.Mode,
         Nodes = [.. nodes.Select(n => new CursusTrackNodeDO
         {
             GoalId = n.GoalId,

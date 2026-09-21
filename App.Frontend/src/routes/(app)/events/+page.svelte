@@ -3,16 +3,15 @@
 	import * as InputGroup from '$lib/components/input-group';
 	import * as Card from '$lib/components/card';
 	import * as Empty from '$lib/components/empty';
-	import * as ButtonGroup from '$lib/components/button-group';
 
 	import { Separator } from '$lib/components/separator';
 	import useDebounce from '$lib/hooks/debounce.svelte';
-	import { Calendar, FolderCodeIcon, Megaphone, Plus, Search } from '@lucide/svelte';
+	import { Calendar, Plus, Search } from '@lucide/svelte';
 	import * as Events from '$lib/remotes/events.remote';
 	import { Button } from '$lib/components/button';
-	import teleport from '$lib/hooks/teleport.svelte';
 	import Paginate from '$lib/components/paginate.svelte';
 	import CardEvent from './card-event.svelte';
+
 
 	let index = $state(0);
 	let search = $state('');

@@ -5,6 +5,7 @@
 
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using App.Backend.Domain.Enums;
 
 namespace App.Backend.Models.Requests.Users;
 
@@ -15,39 +16,29 @@ namespace App.Backend.Models.Requests.Users;
 /// </summary>
 public record PostUserRequestDTO
 {
-    /// <summary>
-    /// The unique login/username for the user.
-    /// </summary>
-    [Required, StringLength(255, MinimumLength = 4)]
+    [Required, StringLength(7)]
     [RegularExpression(@"^[a-zA-Z0-9_-]+$", ErrorMessage = "Login can only contain letters, numbers, underscores, and hyphens.")]
-    [Description("The unique login/username for the user.")]
+    [Description("The user's unique login name.")]
     public required string Login { get; init; }
 
-    /// <summary>
-    /// Optional display name.
-    /// </summary>
     [Required, EmailAddress, StringLength(100, MinimumLength = 1)]
-    [Description("Optional display name for the user.")]
+    [Description("The user's email address.")]
     public required string Email { get; init; }
 
-    /// <summary>
-    /// Optional first name of the user.
-    /// </summary>
     [StringLength(255, MinimumLength = 1)]
-    [Description("Optional first name of the user.")]
+    [Description("The user's first name.")]
     public required string FirstName { get; init; }
 
-    /// <summary>
-    /// Optional last name of the user.
-    /// </summary>
     [StringLength(255, MinimumLength = 1)]
-    [Description("Optional last name of the user.")]
+    [Description("The user's last name.")]
     public required string LastName { get; init; }
 
-    /// <summary>
-    /// Optional avatar URL.
-    /// </summary>
-    [Url]
-    [Description("Optional URL to the user's avatar image.")]
+    [Url, Description("An optional URL for the user's avatar image.")]
     public string? AvatarUrl { get; init; }
+
+    [Required, Description("The user's role in the application.")]
+    public UserRole Role { get; init; }
+
+    [Description("The kickoff to which the user is assigned, if applicable.")]
+    public Guid? Kickoff { get; init; }
 }

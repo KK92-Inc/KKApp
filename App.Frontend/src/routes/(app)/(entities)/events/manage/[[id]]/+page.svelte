@@ -22,6 +22,7 @@
 	});
 </script>
 
+{JSON.stringify(context.fields)}
 <svelte:boundary>
 	{#snippet pending()}
 		<Skeleton class="mx-auto mt-4 h-100 w-full max-w-lg" />
@@ -94,7 +95,7 @@
 							<Field.Error errors={context.errors.capacity} />
 						</Field.Field>
 
-						<Field.Field data-invalid={!!context.errors.closesAt}>
+						<Field.Field>
 							<Field.Label for="closes-at">Closes At</Field.Label>
 							<InputDate id="closes-at" bind:value={context.fields.closesAt} class="w-full" />
 							<Field.Description>When registrations close for this event.</Field.Description>
@@ -104,7 +105,7 @@
 
 					<Separator />
 
-					<Field.Field data-invalid={!!context.errors.threshold}>
+					<Field.Field>
 						<Field.Label for="threshold">Threshold</Field.Label>
 						{#if page.data.session.roles.includes('staff')}
 							<div class="flex items-center gap-2">

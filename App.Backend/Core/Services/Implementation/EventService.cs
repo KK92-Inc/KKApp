@@ -138,11 +138,11 @@ public class EventService(DatabaseContext ctx, TimeProvider time) : BaseService<
                 .FirstOrDefaultAsync(token);
 
             ServiceException.ThrowIf(status is null, "Event not found");
-            ServiceException.ThrowIf(status!.Event.State is EventState.Rejected, "Event was rejected.");
-            ServiceException.ThrowIf(status.Event.State is EventState.Finished, "Event has already completed.");
+            ServiceException.ThrowIf(status.Event.State is EventState.Rejected, "Event was rejected.");
+            ServiceException.ThrowIf(status.Event.State is EventState.Finished, "Event has already finished.");
             ServiceException.ThrowIf(status.Event.UserId == userId, "You can't join your own event.");
             ServiceException.ThrowIf(status.Joined, "Already joined this event.");
-            ServiceException.ThrowIf(status.Event.ClosesAt.HasValue && now > status.Event.ClosesAt.Value, "Registration for this event is closed.");
+            ServiceException.ThrowIf(now > status.Event.ClosesAt, "Registration for this event is closed.");
             ServiceException.ThrowIf(status.AttendeeCount >= status.Event.Capacity, "Unable to join, event is full.");
 
             await context.UserEvent.AddAsync(new UserEvent { EventId = eventId, UserId = userId }, token);
@@ -165,7 +165,7 @@ public class EventService(DatabaseContext ctx, TimeProvider time) : BaseService<
             {
                 Event = e,
                 AttendeeCount = context.UserEvent.Count(ue => ue.EventId == e.Id),
-                IsClosed = e.ClosesAt.HasValue && now > e.ClosesAt.Value,
+                IsClosed = now > e.ClosesAt,
                 IsJoined = context.UserEvent.Any(ue => ue.EventId == e.Id && ue.UserId == userId)
             })
             .FirstOrDefaultAsync(token);

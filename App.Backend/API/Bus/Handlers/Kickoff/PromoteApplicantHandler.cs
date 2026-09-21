@@ -26,41 +26,41 @@ public class PromoteApplicantHandler(
 
     public async Task Handle(PromoteApplicant message, CancellationToken ct)
     {
-        var realmName = configuration["KeycloakStudent:realm"] ?? "student";
-        var link = await context.UserKickoff
-            .Include(uk => uk.Kickoff)
-            .FirstOrDefaultAsync(
-                uk => uk.UserId == message.UserId &&
-                uk.KickoffId == message.KickoffId,
-            ct);
+        // var realmName = configuration["KeycloakStudent:realm"] ?? "student";
+        // var link = await context.UserKickoff
+        //     .Include(uk => uk.Kickoff)
+        //     .FirstOrDefaultAsync(
+        //         uk => uk.UserId == message.UserId &&
+        //         uk.KickoffId == message.KickoffId,
+        //     ct);
 
-        // This user has no kickoff or is already processed.
-        if (link is null || link.ProcessedAt is not null)
-            return;
+        // // This user has no kickoff or is already processed.
+        // if (link is null || link.ProcessedAt is not null)
+        //     return;
 
-        var realm = client.Admin.Realms[realmName];
-        var userId = link.UserId.ToString();
+        // var realm = client.Admin.Realms[realmName];
+        // var userId = link.UserId.ToString();
 
-        var kcUser = await realm.Users[userId].GetAsync(cancellationToken: ct)
-            ?? throw new InvalidOperationException($"Keycloak user {link.UserId} not found");
+        // var kcUser = await realm.Users[userId].GetAsync(cancellationToken: ct)
+        //     ?? throw new InvalidOperationException($"Keycloak user {link.UserId} not found");
 
-        if (kcUser.Enabled is not true)
-        {
-            kcUser.Enabled = true;
-            await realm.Users[userId].PutAsync(kcUser, cancellationToken: ct);
-        }
+        // if (kcUser.Enabled is not true)
+        // {
+        //     kcUser.Enabled = true;
+        //     await realm.Users[userId].PutAsync(kcUser, cancellationToken: ct);
+        // }
 
-        // Assign to student role
-        var targetRole = await realm.Roles[RoleTo].GetAsync(cancellationToken: ct)
-            ?? throw new InvalidOperationException($"Role '{RoleTo}' not found");
-        await realm.Users[userId].RoleMappings.Realm.PostAsync([targetRole], cancellationToken: ct);
+        // // Assign to student role
+        // var targetRole = await realm.Roles[RoleTo].GetAsync(cancellationToken: ct)
+        //     ?? throw new InvalidOperationException($"Role '{RoleTo}' not found");
+        // await realm.Users[userId].RoleMappings.Realm.PostAsync([targetRole], cancellationToken: ct);
 
-        // Remove the applicant role.
-        var role = await realm.Roles[RoleFrom].GetAsync(cancellationToken: ct);
-        if (role is not null)
-            await realm.Users[userId].RoleMappings.Realm.DeleteAsync([role], cancellationToken: ct);
+        // // Remove the applicant role.
+        // var role = await realm.Roles[RoleFrom].GetAsync(cancellationToken: ct);
+        // if (role is not null)
+        //     await realm.Users[userId].RoleMappings.Realm.DeleteAsync([role], cancellationToken: ct);
 
-        link.ProcessedAt = time.GetUtcNow();
-        await context.SaveChangesAsync(ct);
+        // link.ProcessedAt = time.GetUtcNow();
+        // await context.SaveChangesAsync(ct);
     }
 }

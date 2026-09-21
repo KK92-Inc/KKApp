@@ -4,23 +4,17 @@
 	import * as Users from '$lib/remotes/user.remote';
 	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
 
-	// State for query params
 	let page = $state(0);
 	let size = $state(25);
 	let login = $state('');
-
-	// Re-run query whenever page, size, or login changes
-	let usersPromise = $derived(
-		Users.getPage({
-			page,
-			size,
-			login: login || undefined
-		})
-	);
 </script>
 
 <svelte:boundary>
-	{@const users = await usersPromise}
+	{@const users = await Users.getPage({
+		page,
+		size,
+		login,
+	})}
 
 	{#snippet pending()}
 		<Skeleton class="h-40" />

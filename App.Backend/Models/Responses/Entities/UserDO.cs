@@ -4,7 +4,6 @@
 // ============================================================================
 
 using App.Backend.Domain.Entities.Users;
-using System.ComponentModel.DataAnnotations;
 
 // ============================================================================
 
@@ -14,28 +13,9 @@ namespace App.Backend.Models.Responses.Entities;
 /// A detailed data object representing a user.
 /// </summary>
 /// <param name="user"></param>
-public class UserDO : BaseEntityDO<User>
+public class UserDO(User user) : UserLightDO(user)
 {
-    public UserDO() { } // REQUIRED for deserialization
-
-    public UserDO(User user) : base(user)
-    {
-        Login = user.Login;
-        DisplayName = user.Display;
-        AvatarUrl = user.AvatarUrl;
-        Details = user.Details;
-    }
-
-    [Required]
-    public string Login { get; set; } = default!;
-
-    [Required]
-    public string? DisplayName { get; set; }
-
-    [Required]
-    public string? AvatarUrl { get; set; }
-
-    public UserDetailsDO? Details { get; set; }
+    public UserDetailsDO? Details { get; set; } = user.Details;
 
     public static implicit operator UserDO?(User? user) => user is null ? null : new(user);
 }

@@ -163,9 +163,9 @@ public class EventController(IAuthorizationService auth, IEventService service) 
             Thumbnail = body.Thumbnail,
             Threshold = body.Threshold,
             Capacity = body.Capacity,
-            StartsAt = body.StartsAt.ToUniversalTime(),
             EndsAt = body.EndsAt.ToUniversalTime(),
-            ClosesAt = body.ClosesAt?.ToUniversalTime(),
+            StartsAt = body.StartsAt.ToUniversalTime(),
+            ClosesAt = body.ClosesAt.ToUniversalTime(),
         }, token);
 
         return CreatedAtAction(
@@ -210,7 +210,7 @@ public class EventController(IAuthorizationService auth, IEventService service) 
         if (body.Threshold.HasValue) @event.Threshold = body.Threshold;
         if (body.StartsAt.HasValue) @event.StartsAt = body.StartsAt.Value;
         if (body.EndsAt.HasValue) @event.EndsAt = body.EndsAt.Value;
-        if (body.ClosesAt.HasValue) @event.ClosesAt = body.ClosesAt;
+        if (body.ClosesAt.HasValue) @event.ClosesAt = body.ClosesAt.Value;
 
         await service.UpdateAsync(@event, token);
         return Ok(new EventDO(@event, await service.Participants(id, token)));

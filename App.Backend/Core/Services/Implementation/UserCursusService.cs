@@ -49,19 +49,19 @@ public class UserCursusService(DatabaseContext ctx) : BaseService<UserCursus>(ct
             .Select(kvp => kvp.Key)
             .ToHashSet();
 
-        var unlocked = cursus.CompletionMode switch
+        var unlocked = cursus.Mode switch
         {
             CursusMode.FreeStyle => ComputeFreestyleUnlocked(snapshot, completed),
             CursusMode.Ring => ComputeRingUnlocked(snapshot, completed),
-            _ => throw new ArgumentOutOfRangeException(nameof(cursus.CompletionMode))
+            _ => throw new ArgumentOutOfRangeException(nameof(cursus.Mode))
         };
 
         return new UserCursusTrackDO
         {
             CursusId = cursus.Id,
             Name = cursus.Name,
-            CompletionMode = cursus.CompletionMode,
-            Nodes = snapshot.Select(n => new UserCursusTrackNodeDO
+            CompletionMode = cursus.Mode,
+            Nodes = [.. snapshot.Select(n => new UserCursusTrackNodeDO
             {
                 GoalId = n.GoalId,
                 Name = n.Goal.Name,
@@ -69,22 +69,20 @@ public class UserCursusService(DatabaseContext ctx) : BaseService<UserCursus>(ct
                 ParentGoalId = n.ParentGoalId,
                 State = states.TryGetValue(n.GoalId, out var s) ? s : null,
                 IsUnlocked = unlocked.Contains(n.GoalId)
-            }).ToList()
+            })]
         };
     }
 
     // FreeStyle: a goal is unlocked when its direct parent is completed (roots always unlocked).
-    private static HashSet<Guid> ComputeFreestyleUnlocked(
-        IReadOnlyList<UserCursusGoal> snapshot,
-        HashSet<Guid> completed) =>
-        [.. snapshot
-        .Where(n => n.ParentGoalId is null || completed.Contains(n.ParentGoalId.Value))
-        .Select(n => n.GoalId)];
+    private static HashSet<Guid> ComputeFreestyleUnlocked(IReadOnlyList<UserCursusGoal> snapshot, HashSet<Guid> completed)
+    {
+        return [.. snapshot
+            .Where(n => n.ParentGoalId is null || completed.Contains(n.ParentGoalId.Value))
+            .Select(n => n.GoalId)];
+    }
 
     // Ring: all goals at depth N must be satisfied before depth N+1 unlocks.
-    private static HashSet<Guid> ComputeRingUnlocked(
-        IReadOnlyList<UserCursusGoal> snapshot,
-        HashSet<Guid> completed)
+    private static HashSet<Guid> ComputeRingUnlocked(IReadOnlyList<UserCursusGoal> snapshot, HashSet<Guid> completed)
     {
         var depths = ComputeDepths(snapshot);
         int maxUnlocked = 0;

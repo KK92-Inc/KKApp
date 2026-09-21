@@ -11,6 +11,7 @@ import { Problem, type Fields, type ValidationErrors } from "$lib/api";
 import { toast } from "svelte-sonner";
 import { goto } from "$app/navigation";
 import { page } from "$app/state";
+import { now,  } from "@internationalized/date";
 
 // ============================================================================
 
@@ -22,7 +23,6 @@ type Variables = Omit<Fields<components['schemas']['EventDO']>, "state" | "userI
 export class Context {
 	constructor(public readonly eventId: () => string | undefined) { }
 
-	// State
 	public errors = $state<ValidationErrors>({});
 	public fields = $state<Variables>({
 		name: "",
@@ -31,9 +31,9 @@ export class Context {
 		markdown: "",
 		capacity: 0,
 		threshold: null,
-		startsAt: "",
-		endsAt: "",
-		closesAt: null,
+		startsAt: now(page.data.tz).toAbsoluteString(),
+		endsAt: now(page.data.tz).add({ days: 1}).toAbsoluteString(),
+		closesAt: now(page.data.tz).subtract({ days: 1}).toAbsoluteString()
 	});
 
 	private original = $state.snapshot(this.fields);

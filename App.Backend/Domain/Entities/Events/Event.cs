@@ -73,7 +73,7 @@ public class Event : BaseEntity
     /// other users from leaving.
     /// </summary>
     [Column("closes_at")]
-    public DateTimeOffset? ClosesAt { get; set; }
+    public DateTimeOffset ClosesAt { get; set; }
 
     /// <summary>
     /// State of the event, e.g: It's being proposed

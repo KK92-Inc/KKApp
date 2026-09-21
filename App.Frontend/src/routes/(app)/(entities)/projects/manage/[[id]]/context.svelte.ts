@@ -57,7 +57,7 @@ export class Context {
 			return;
 		}
 
-		const project = await Project.get(id);
+		const project = await Action.load(id);
 		const branches = await Git.getBranches(project.gitInfo.id);
 		const master = branches.find(b => b.head);
 		if (master) { // There is a branch established...
@@ -67,9 +67,9 @@ export class Context {
 				path: "readme.md"
 			});
 
-			this.readme = blob;
+			this.readme = new TextDecoder('utf-8', { fatal: true }).decode(blob);
 			this.branch = master.name;
-			this.checksum = await this.compute(blob);
+			this.checksum = await this.compute(this.readme);
 		}
 
 		this.fields = { ...project };

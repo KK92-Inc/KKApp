@@ -4,7 +4,7 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import { query, getRequestEvent } from '$app/server';
+import { query, getRequestEvent, command } from '$app/server';
 import { Filters, paginate, Problem } from '$lib/api';
 
 // ============================================================================
@@ -55,4 +55,30 @@ export const getPage = query(PageSchema, async (params) => {
 
 	if (error) Problem.throw(error)
 	return paginate(data, response);
+});
+
+// ============================================================================
+
+export const join = command(Filters.id, async (id) => {
+	const { locals } = getRequestEvent();
+	const { error } = await locals.api.POST("/events/{id}/join", { params: { path: { id } } });
+	if (error) Problem.throw(error)
+
+	get(id).refresh();
+});
+
+export const leave = command(Filters.id, async (id) => {
+	const { locals } = getRequestEvent();
+	const { error } = await locals.api.POST("/events/{id}/leave", { params: { path: { id } } });
+	if (error) Problem.throw(error)
+
+	get(id).refresh();
+});
+
+export const cancel = command(Filters.id, async (id) => {
+	const { locals } = getRequestEvent();
+	const { error } = await locals.api.DELETE("/events/{id}", { params: { path: { id } } });
+	if (error) Problem.throw(error)
+
+	get(id).refresh();
 });

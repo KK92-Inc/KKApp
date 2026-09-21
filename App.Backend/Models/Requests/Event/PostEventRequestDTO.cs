@@ -5,7 +5,6 @@
 
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace App.Backend.Models.Requests.Event;
 
@@ -78,16 +77,14 @@ public record PostEventRequestDTO : IValidatableObject
     /// </summary>
     [Required]
     [Description("When the event stops accepting new attendees or allowing leaves.")]
-    public DateTimeOffset? ClosesAt { get; init; }
+    public DateTimeOffset ClosesAt { get; init; }
 
     /// <summary>
     /// Cross-property logical validations executed automatically during model binding.
     /// </summary>
     public IEnumerable<ValidationResult> Validate(ValidationContext context)
     {
-        var time = context.GetService<TimeProvider>();
-        var today = time is not null ? time.GetUtcNow().Date : DateTimeOffset.UtcNow.Date;
-
+        var today = DateTimeOffset.UtcNow.Date;
         if (StartsAt.Date <= today)
         {
             yield return new ValidationResult(
@@ -104,7 +101,7 @@ public record PostEventRequestDTO : IValidatableObject
             );
         }
 
-        if (ClosesAt.HasValue && ClosesAt.Value.Date <= today)
+        if (ClosesAt.Date <= today)
         {
             yield return new ValidationResult(
                 "Registration close time must be after today.",
@@ -120,7 +117,7 @@ public record PostEventRequestDTO : IValidatableObject
             );
         }
 
-        if (ClosesAt.HasValue && ClosesAt > StartsAt)
+        if (ClosesAt > StartsAt)
         {
             yield return new ValidationResult(
                 "Registration close time cannot be set after the event start time.",

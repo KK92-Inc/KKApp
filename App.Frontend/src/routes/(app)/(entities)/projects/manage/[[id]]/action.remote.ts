@@ -3,12 +3,29 @@
 // See README in the root project for more information.
 // ============================================================================
 
+import { error } from '@sveltejs/kit';
 import { Filters, Problem } from '$lib/api';
-import { command, getRequestEvent } from '$app/server';
 import type { components } from '$lib/api/api';
 import * as Project from "$lib/remotes/projects.remote";
+import { command, getRequestEvent, query } from '$app/server';
 
 // ============================================================================
+
+export const load = query(Filters.id, async (id) => {
+	const { locals } = getRequestEvent();
+	const project = await Project.get(id);
+
+	// Either be staff, or workspace owner.
+	const staff = locals.session.roles.includes("staff");
+	const ownerId = project.workspace.owner?.id ?? null;
+	if (ownerId === null ? !staff : ownerId !== locals.session.userId)
+		error(403);
+
+	return project;
+});
+
+// ============================================================================
+
 
 type CreateProject = { workspace: string; } & components['schemas']['PostProjectRequestDTO'];
 export const create = command('unchecked', async (body: CreateProject) => {
@@ -23,6 +40,7 @@ export const create = command('unchecked', async (body: CreateProject) => {
 		Problem.throw(error);
 	}
 
+	Project.get(data.id).refresh();
 	return data;
 });
 
@@ -39,6 +57,7 @@ export const update = command('unchecked', async (body: UpdateProject) => {
 		Problem.throw(error);
 	}
 
+	Project.get(id).refresh();
 	return data;
 });
 

@@ -124,7 +124,7 @@ such as official cursi, projects or rubrics.
             Description = body.Description,
             Slug = body.Name.ToSlug(),
             Variant = body.Variant,
-            CompletionMode = body.Mode,
+            Mode = body.Mode,
             Enabled = body.Enabled,
             Public = body.Public
         };

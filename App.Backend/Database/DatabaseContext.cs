@@ -20,19 +20,6 @@ namespace App.Backend.Database;
 /// <inheritdoc />
 public class DatabaseContext(DbContextOptions<DatabaseContext> options) : DbContext(options)
 {
-    // protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    // {
-    //     optionsBuilder.UseAsyncSeeding(async (context, _, cancellationToken) =>
-    //     {
-    //         // var testBlog = await context.Set<Blog>().FirstOrDefaultAsync(b => b.Url == "http://test.com", cancellationToken);
-    //         // if (testBlog == null)
-    //         // {
-    //         //     context.Set<Blog>().Add(new Blog { Url = "http://test.com" });
-    //         //     await context.SaveChangesAsync(cancellationToken);
-    //         // }
-    //     });
-    // }
-
 #nullable disable
     public DbSet<Domain.Entities.System> System { get; set; }
     public DbSet<User> Users { get; set; }
@@ -67,31 +54,5 @@ public class DatabaseContext(DbContextOptions<DatabaseContext> options) : DbCont
     public DbSet<CursusGoal> CursusGoal { get; set; }
     public DbSet<UserCursusGoal> UserCursusGoal { get; set; }
     public DbSet<UserEvent> UserEvent { get; set; }
-    public DbSet<UserKickoff> UserKickoff { get; set; }
 #nullable restore
-
-    // protected override void OnModelCreating(ModelBuilder modelBuilder)
-    // {
-    //     base.OnModelCreating(modelBuilder);
-
-    //     // Rule collections are stored as jsonb. Register value converters so
-    //     // EF Core serializes them via System.Text.Json (which supports the
-    //     // [JsonPolymorphic] attributes on Rule) rather than delegating to Npgsql,
-    //     // which requires an explicit dynamic-JSON opt-in for interface types.
-    //     var jsonOptions = new JsonSerializerOptions();
-
-    //     modelBuilder.Entity<Rubric>()
-    //         .Property(r => r.ReviewerRules)
-    //         .HasConversion(
-    //             v => JsonSerializer.Serialize(v, jsonOptions),
-    //             v => JsonSerializer.Deserialize<ICollection<Rule>>(v, jsonOptions) ?? new List<Rule>()
-    //         );
-
-    //     modelBuilder.Entity<Rubric>()
-    //         .Property(r => r.RevieweeRules)
-    //         .HasConversion(
-    //             v => JsonSerializer.Serialize(v, jsonOptions),
-    //             v => JsonSerializer.Deserialize<ICollection<Rule>>(v, jsonOptions) ?? new List<Rule>()
-    //         );
-    // }
 }

@@ -12,16 +12,24 @@ namespace App.Backend.Models.Responses.Entities.Cursi;
 
 public class CursusDO(Cursus cursus) : BaseEntityDO<Cursus>(cursus)
 {
-    public Guid WorkspaceId { get; set; } = cursus.WorkspaceId;
     public string Name { get; set; } = cursus.Name;
+
     public string Description { get; set; } = cursus.Description;
+
     public string Slug { get; set; } = cursus.Slug;
+
     public string? Thumbnail { get; set; } = cursus.Thumbnail;
+
     public bool Enabled { get; set; } = cursus.Enabled;
+
     public bool Public { get; set; } = cursus.Public;
+
     public bool Deprecated { get; set; } = cursus.Deprecated;
+
     public CursusVariant Variant { get; set; } = cursus.Variant;
-    public CursusMode CompletionMode { get; set; } = cursus.CompletionMode;
+
+    public CursusMode Mode { get; set; } = cursus.Mode;
+    public WorkspaceDO Workspace { get; set; } = cursus.Workspace;
 
     public static implicit operator CursusDO?(Cursus? cursus) => cursus is null ? null : new(cursus);
 }
