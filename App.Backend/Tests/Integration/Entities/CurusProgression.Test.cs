@@ -8,7 +8,7 @@ namespace App.Backend.Tests.Integration.Entities;
 
 public class CursusCompletionTests3
 {
-    private static async Task PutTrackAsync(HttpClient client, Guid cursusId, List<Models.Requests.Cursus.CursusTrackNodeDO> nodes)
+    private static async Task PutTrackAsync(HttpClient client, Guid cursusId, List<Models.Requests.Cursus.PutCursusTrackNodeDO> nodes)
     {
         var response = await client.PostAsJsonAsync($"/cursus/{cursusId}/track",
             new PutCursusTrackRequestDTO { Nodes = nodes }, JsonOptions.Default);

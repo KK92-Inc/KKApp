@@ -313,6 +313,8 @@ export class GalaxyRenderer<TMeta = unknown> {
 	 * choice dots — pass the resting stroke width for whichever you're
 	 * pulsing (1.5 for cores, 1 for dots).
 	 */
+
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	private pulse(circle: d3.Selection<SVGCircleElement, any, any, any>, restStrokeWidth = 1.5) {
 		circle
 			.transition().duration(80)

@@ -5,99 +5,28 @@
 // Adapter for rendering a cursus entity onto the Galaxy
 // ============================================================================
 
+import type { GalaxyAdapter } from './index';
 import type { components } from '$lib/api/api';
-import type { GalaxyNode } from '../types';
+import { NEUTRAL, createFlatAdapter } from './shared';
 
 // ============================================================================
 
 export type Track = components['schemas']['CursusTrackDO'];
 export type TrackNode = components['schemas']['CursusTrackNodeDO'];
 
-function cluster(clusterId: string, members: TrackNode[]): GalaxyNode<TrackNode> {
-	return {
-		id: clusterId,
-		label: members.map((m) => m.goal.name),
-		color: 'var(--card)',
-		textColor: 'var(--muted-foreground)',
-		items: members.map((node) => {
-			return {
-				id: node.goal.id,
-				label: node.goal.name,
-				color: 'var(--card)',
-				textColor: 'var(--muted-foreground)',
-				meta: node,
-			}
-		}),
-	};
-}
+// ============================================================================
 
-function build(node: TrackNode): GalaxyNode<TrackNode> {
-	const groups = new Map<string | null, TrackNode[]>();
-	for (const child of node.children ?? []) {
-		const key = child.choiceGroup ?? null;
-		if (!groups.has(key)) groups.set(key, []);
-		groups.get(key)!.push(child);
+/**
+ * Renders a cursus definition: structure only, no per-user progress, so every
+ * node gets the neutral look.
+ */
+export const Adapter: GalaxyAdapter<Track, TrackNode> = createFlatAdapter<Track, TrackNode>({
+	nodes: (track) => track.nodes,
+	synthetic: (track) => ({ id: track.cursusId, label: track.name }),
+	spec: {
+		id: (n) => n.goalId,
+		label: (n) => n.name,
+		parentId: (n) => n.parentGoalId,
+		style: () => NEUTRAL
 	}
-
-	const children: GalaxyNode<TrackNode>[] = [];
-	for (const [key, members] of groups) {
-		if (key === null) members.forEach((m) => children.push(build(m)));
-		else children.push(cluster(key, members));
-	}
-
-	const item = {
-		id: node.goal.id,
-		label: node.goal.name,
-		color: 'var(--card)',
-		textColor: 'var(--muted-foreground)',
-		meta: node,
-	};
-
-	return {
-		id: node.goal.id,
-		label: [node.goal.name],
-		color: item.color,
-		textColor: item.textColor,
-		items: [item],
-		children: children.length ? children : undefined,
-	};
-}
-
-export const Adapter = {
-	/**
-	 * Builds a generic tree from a cursus definition (no per-user progress).
-	 * @param track The track of the cursus
-	 * @returns A GalaxyNode entity to render
-	 */
-	construct(track: Track): GalaxyNode<TrackNode> {
-		const roots = track.nodes ?? [];
-		if (roots.length === 0) throw new Error('Cursus track has no nodes.');
-		if (roots.length === 1) return build(roots[0]);
-
-		// Multiple top-level nodes → wrap in a synthetic root so the renderer
-		// still gets a single tree. Flag: I don't have a real sample of a
-		// multi-root CursusTrackDO, so double check this matches your data.
-		return {
-			id: track.cursusId,
-			label: [''],
-			color: 'var(--card)',
-			textColor: 'var(--muted-foreground)',
-			items: [{ id: track.cursusId, label: '', color: 'var(--card)', textColor: 'var(--muted-foreground)', meta: roots[0] }],
-			children: roots.map(build),
-		};
-	},
-
-	/** Flattens an assembled tree back into its underlying track nodes.
-	 * @param tree The constructed Galaxy tree
-	 * @returns A flat array of TrackNodes
-	 */
-	flatten(tree: GalaxyNode<TrackNode>): TrackNode[] {
-		const out: TrackNode[] = [];
-		const visit = (node: GalaxyNode<TrackNode>) => {
-			node.items.forEach((i) => out.push(i.meta));
-			node.children?.forEach(visit);
-		};
-		visit(tree);
-		return out;
-	}
-}
+});

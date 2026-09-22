@@ -3,6 +3,7 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 // ============================================================================
@@ -10,12 +11,34 @@ using System.ComponentModel.DataAnnotations;
 namespace App.Backend.Models.Requests.Cursus;
 
 /// <summary>
+/// A single node in the flat representation of a cursus track.
+/// </summary>
+public class PutCursusTrackNodeDO
+{
+    /// <summary>
+    /// The goal ID this node represents.
+    /// </summary>
+    [Required]
+    [Description("The goal ID this node represents.")]
+    public required Guid GoalId { get; init; }
+
+    /// <summary>
+    /// The parent goal ID within this cursus track.
+    /// Null for root-level goals.
+    /// </summary>
+    [Required]
+    [Description("The parent goal ID within this cursus track. Null for root-level goals.")]
+    public Guid? ParentId { get; init; }
+}
+
+
+/// <summary>
 /// The full proposed track for a cursus. Always a complete replacement, never a delta -
 /// see <see cref="Core.Services.Interface.ICursusService.SetTrackAsync"/>.
 /// </summary>
 public class PutCursusTrackRequestDTO : IValidatableObject
 {
-    public required IEnumerable<CursusTrackNodeDO> Nodes { get; init; }
+    public required IEnumerable<PutCursusTrackNodeDO> Nodes { get; init; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {

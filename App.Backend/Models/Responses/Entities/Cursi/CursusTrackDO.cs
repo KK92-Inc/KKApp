@@ -3,6 +3,7 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using System.ComponentModel.DataAnnotations;
 using App.Backend.Domain.Enums;
 
 // ============================================================================
@@ -15,8 +16,15 @@ namespace App.Backend.Models.Responses.Entities.Cursi;
 /// </summary>
 public class CursusTrackDO
 {
+    [Required]
     public required Guid CursusId { get; init; }
+
+    [Required]
     public required string Name { get; init; }
+
+    [Required]
     public required CursusMode CompletionMode { get; init; }
+    
+    [Required]
     public required IReadOnlyList<CursusTrackNodeDO> Nodes { get; init; }
 }

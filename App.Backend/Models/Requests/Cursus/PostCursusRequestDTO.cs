@@ -40,6 +40,7 @@ public class PostCursusRequestDTO
     [Description("Defines the type of progression to be made in the cursus.")]
     public CursusMode Mode { get; init; }
 
+    [Required]
     [Description("The cursus track, if you want to set it at creation time. Otherwise use PUT /cursus/{id}/track once the goals it references exist.")]
-    public PutCursusTrackRequestDTO? Track { get; init; }
+    public required PutCursusTrackRequestDTO Track { get; init; }
 }

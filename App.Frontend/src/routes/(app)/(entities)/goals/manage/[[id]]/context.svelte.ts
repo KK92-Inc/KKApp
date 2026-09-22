@@ -18,6 +18,7 @@ import { useDialog } from "$lib/components/dialog";
 
 type Variables = Omit<Fields<components['schemas']['GoalDO']>, "gitInfo" | "workspace" | "slug">
 type ProjectEntry = { id: string, name: string, description: string, thumbnail: string };
+
 // ============================================================================
 
 export class Context {

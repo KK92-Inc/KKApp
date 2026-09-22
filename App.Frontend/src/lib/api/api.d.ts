@@ -3194,6 +3194,909 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/kickoffs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Query all kickoffs
+         * @description Retrieve a paginated list of all kickoffs
+         */
+        get: {
+            parameters: {
+                query?: {
+                    "filter[id]"?: string;
+                    "filter[name]"?: string;
+                    "filter[after]"?: string;
+                    "filter[before]"?: string;
+                    /** @description The name of the property to use for sorting. */
+                    "sort[by]"?: string;
+                    /** @description The sort direction. */
+                    "sort[order]"?: components["schemas"]["Order"];
+                    /** @description The 0-based page index */
+                    "page[index]"?: number | string;
+                    /** @description The amount of results per page */
+                    "page[size]"?: number | string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["KickoffDO"][];
+                        "application/json": components["schemas"]["KickoffDO"][];
+                        "text/json": components["schemas"]["KickoffDO"][];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Create a kickoff
+         * @description Create a new kickoff (cohort)
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PostKickoffRequestDTO"];
+                    "text/json": components["schemas"]["PostKickoffRequestDTO"];
+                    "application/*+json": components["schemas"]["PostKickoffRequestDTO"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["KickoffDO"];
+                        "application/json": components["schemas"]["KickoffDO"];
+                        "text/json": components["schemas"]["KickoffDO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/kickoffs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Query a kickoff
+         * @description Retrieve a specific kickoff by ID
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["KickoffDO"];
+                        "application/json": components["schemas"]["KickoffDO"];
+                        "text/json": components["schemas"]["KickoffDO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        /**
+         * Delete a kickoff
+         * @description Delete a kickoff. Fails with 409 if it still has members.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        /**
+         * Update a kickoff
+         * @description Update kickoff information
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PatchKickoffRequestDTO"];
+                    "text/json": components["schemas"]["PatchKickoffRequestDTO"];
+                    "application/*+json": components["schemas"]["PatchKickoffRequestDTO"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["KickoffDO"];
+                        "application/json": components["schemas"]["KickoffDO"];
+                        "text/json": components["schemas"]["KickoffDO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/kickoffs/{id}/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Query all users of a kickoff
+         * @description Retrieve a paginated list of the users that belong to a kickoff
+         */
+        get: {
+            parameters: {
+                query?: {
+                    "filter[processed]"?: boolean;
+                    /** @description The name of the property to use for sorting. */
+                    "sort[by]"?: string;
+                    /** @description The sort direction. */
+                    "sort[order]"?: components["schemas"]["Order"];
+                    /** @description The 0-based page index */
+                    "page[index]"?: number | string;
+                    /** @description The amount of results per page */
+                    "page[size]"?: number | string;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["UserLightDO"][];
+                        "application/json": components["schemas"]["UserLightDO"][];
+                        "text/json": components["schemas"]["UserLightDO"][];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Add multiple users to a kickoff
+         * @description Bulk add. Per-user problems are reported in the result; exceeding capacity rejects the whole batch with 409.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": string[];
+                    "text/json": string[];
+                    "application/*+json": string[];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": string[];
+                        "application/json": string[];
+                        "text/json": string[];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/kickoffs/{id}/users/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Add a user to a kickoff
+         * @description Idempotent. 409 if the kickoff is full or the user already belongs to another kickoff.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    userId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["UserLightDO"];
+                        "application/json": components["schemas"]["UserLightDO"];
+                        "text/json": components["schemas"]["UserLightDO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        post?: never;
+        /** Remove a user from a kickoff */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    userId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/kickoffs/{id}/users/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove multiple users from a kickoff
+         * @description Bulk remove. POST instead of DELETE because a request body on DELETE is unreliable through proxies and some clients.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": string[];
+                    "text/json": string[];
+                    "application/*+json": string[];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": string[];
+                        "application/json": string[];
+                        "text/json": string[];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/{userId}/kickoff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Query the kickoff of a user
+         * @description Retrieve the kickoff a user belongs to. 404 if the user has none (e.g: staff).
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    userId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["KickoffDO"];
+                        "application/json": components["schemas"]["KickoffDO"];
+                        "text/json": components["schemas"]["KickoffDO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/projects": {
         parameters: {
             query?: never;
@@ -9278,16 +10181,16 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
-            name?: string;
-            description?: string;
-            slug?: string;
-            thumbnail?: null | string;
-            enabled?: boolean;
-            public?: boolean;
-            deprecated?: boolean;
-            variant?: components["schemas"]["CursusVariant"];
-            mode?: components["schemas"]["CursusMode"];
-            workspace?: components["schemas"]["WorkspaceDO"];
+            name: string;
+            description: string;
+            slug: string;
+            thumbnail: null | string;
+            enabled: boolean;
+            public: boolean;
+            deprecated: boolean;
+            variant: components["schemas"]["CursusVariant"];
+            mode: components["schemas"]["CursusMode"];
+            workspace: components["schemas"]["WorkspaceDO"];
         };
         /** @enum {unknown} */
         CursusMode: "Ring" | "FreeStyle";
@@ -9304,7 +10207,7 @@ export interface components {
             name: string;
             slug: string;
             /** Format: uuid */
-            parentGoalId?: null | string;
+            parentGoalId: null | string;
         };
         /** @enum {unknown} */
         CursusVariant: "Dynamic" | "Static" | "Hybrid";
@@ -9394,6 +10297,25 @@ export interface components {
             public: boolean;
             deprecated: boolean;
             workspace: components["schemas"]["WorkspaceDO"];
+        };
+        KickoffDO: {
+            /**
+             * Format: uuid
+             * @description The unique identifier of the kickoff.
+             */
+            id?: string;
+            /** @description The name of the kickoff. */
+            name?: string;
+            /**
+             * Format: int32
+             * @description The max amount of users that can join this kickoff.
+             */
+            capacity?: number | string;
+            /**
+             * Format: date-time
+             * @description The scheduled date on when this kickoff is invoked.
+             */
+            startsAt?: string;
         };
         MemberDO: {
             /** Format: uuid */
@@ -9509,6 +10431,20 @@ export interface components {
             /** @description The list of project IDs to initalize this goal with. */
             projects: string[];
         };
+        PatchKickoffRequestDTO: {
+            /** @description A new name for the kickoff. */
+            name?: null | string;
+            /**
+             * Format: int32
+             * @description The new max amount of users that can join this kickoff.
+             */
+            capacity?: null | number | string;
+            /**
+             * Format: date-time
+             * @description The new scheduled date on when to invoke this kickoff.
+             */
+            startsAt?: null | string;
+        };
         PatchProjectRequestDTO: {
             /** @description The name of the project. */
             name?: null | string;
@@ -9604,7 +10540,8 @@ export interface components {
             variant: components["schemas"]["CursusVariant"];
             /** @description Defines the type of progression to be made in the cursus. */
             mode: components["schemas"]["CursusMode"];
-            track?: null | components["schemas"]["PutCursusTrackRequestDTO"];
+            /** @description The cursus track, if you want to set it at creation time. Otherwise use PUT /cursus/{id}/track once the goals it references exist. */
+            track: components["schemas"]["PutCursusTrackRequestDTO"];
         };
         PostEventFeedbackRequestDTO: {
             /**
@@ -9651,7 +10588,7 @@ export interface components {
              * Format: date-time
              * @description When the event stops accepting new attendees or allowing leaves.
              */
-            closesAt: null | string;
+            closesAt: string;
         };
         PostGoalRequestDTO: {
             name: string;
@@ -9663,6 +10600,20 @@ export interface components {
             public?: boolean;
             /** @description The list of project IDs to initalize this goal with. */
             projects: string[];
+        };
+        PostKickoffRequestDTO: {
+            /** @description A name for the kickoff, e.g: Kickoff::2026::Summer */
+            name: string;
+            /**
+             * Format: int32
+             * @description The max amount of users that can join this kickoff.
+             */
+            capacity: number | string;
+            /**
+             * Format: date-time
+             * @description The scheduled date on when to invoke this kickoff.
+             */
+            startsAt: string;
         };
         PostProjectRequestDTO: {
             /** @description The name of the project. */
@@ -9736,19 +10687,26 @@ export interface components {
             endsAt: string;
         };
         PostUserRequestDTO: {
-            /** @description The unique login/username for the user. */
+            /** @description The user's unique login name. */
             login: string;
-            /** @description Optional display name for the user. */
+            /** @description The user's email address. */
             email: string;
-            /** @description Optional first name of the user. */
+            /** @description The user's first name. */
             firstName: string;
-            /** @description Optional last name of the user. */
+            /** @description The user's last name. */
             lastName: string;
             /**
              * Format: uri
-             * @description Optional URL to the user's avatar image.
+             * @description An optional URL for the user's avatar image.
              */
             avatarUrl?: null | string;
+            /** @description The user's role in the application. */
+            role: components["schemas"]["UserRole"];
+            /**
+             * Format: uuid
+             * @description The kickoff to which the user is assigned, if applicable.
+             */
+            kickoff?: null | string;
         };
         ProblemDetails: {
             type?: null | string;
@@ -9787,8 +10745,20 @@ export interface components {
              */
             maxMembers: number | string;
         };
+        PutCursusTrackNodeDO: {
+            /**
+             * Format: uuid
+             * @description The goal ID this node represents.
+             */
+            goalId: string;
+            /**
+             * Format: uuid
+             * @description The parent goal ID within this cursus track. Null for root-level goals.
+             */
+            parentId: null | string;
+        };
         PutCursusTrackRequestDTO: {
-            nodes: components["schemas"]["CursusTrackNodeDO"][];
+            nodes: components["schemas"]["PutCursusTrackNodeDO"][];
         };
         ReviewDO: {
             /** Format: uuid */
@@ -9913,12 +10883,12 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
             /** Format: uuid */
-            userId?: string;
+            userId: string;
             /** Format: uuid */
-            cursusId?: string;
-            state?: components["schemas"]["EntityObjectState"];
+            cursusId: string;
+            state: components["schemas"]["EntityObjectState"];
             /** Format: date-time */
-            unlocksAt?: null | string;
+            unlocksAt: null | string;
         };
         UserCursusTrackDO: {
             /** Format: uuid */
@@ -9933,8 +10903,8 @@ export interface components {
             name: string;
             slug: string;
             /** Format: uuid */
-            parentGoalId?: null | string;
-            state?: null | components["schemas"]["EntityObjectState"];
+            parentGoalId: null | string;
+            state: null | components["schemas"]["EntityObjectState"];
             isUnlocked: boolean;
         };
         UserDetailsDO: {
@@ -9957,13 +10927,13 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
+            details?: null | components["schemas"]["UserDetailsDO"];
             login: string;
             email: string;
             firstName: string;
             lastName: string;
             displayName: null | string;
             avatarUrl: null | string;
-            details?: null | components["schemas"]["UserDetailsDO"];
         };
         UserGoalDO: {
             /** Format: uuid */
@@ -9988,6 +10958,9 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
             login: string;
+            email: string;
+            firstName: string;
+            lastName: string;
             displayName: null | string;
             avatarUrl: null | string;
         };
@@ -10025,6 +10998,8 @@ export interface components {
         };
         /** @enum {unknown} */
         UserProjectTransactionVariant: "Started" | "MemberJoined" | "MemberLeft" | "GitCommit" | "StateChangedToInActive" | "StateChangedToActive" | "StateChangedToCompleted" | "StateChangedToAwaiting" | "MemberInvited" | "MemberUninvited" | "MemberAccepted" | "MemberDeclined" | "MemberKicked" | "LeadershipTransferred";
+        /** @enum {unknown} */
+        UserRole: "Applicant" | "Student" | "Staff";
         WorkspaceDO: {
             /** Format: uuid */
             id: string;

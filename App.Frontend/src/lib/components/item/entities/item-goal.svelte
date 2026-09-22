@@ -27,7 +27,7 @@
 	let promise = $state<ReturnType<typeof getSessions>>();
 
 	const initials = $derived(goal.name.slice(0, 2).toUpperCase());
-	const src = $derived(goal.avatarUrl ?? `https://placehold.co/128x128?text=${initials}`);
+	const src = $derived(goal.thumbnail ?? `https://placehold.co/128x128?text=${initials}`);
 	const to = $derived(href ?? `/users/${session?.userId ?? page.data.session.userId}/goals/${goal.id}`);
 
 	async function getSessions() {
