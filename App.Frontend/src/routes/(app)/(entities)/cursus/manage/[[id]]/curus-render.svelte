@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Adapter, type TrackNode } from '$lib/components/galaxy/adapters/cursus';
 	import { GalaxyRenderer } from '$lib/components/galaxy/render';
-	import type { GalaxyNode } from '$lib/components/galaxy/types';
+	import type { GalaxyNode, RenderMode } from '$lib/components/galaxy/types';
 	import type { Attachment } from 'svelte/attachments';
 	import * as Page from './context.svelte';
 	import * as Empty from '$lib/components/empty';
@@ -10,23 +10,20 @@
 
 	const context = Page.getContext();
 	const renderer = new GalaxyRenderer<TrackNode>();
-
-	// Drafts can be empty or mid-edit (e.g. a parent cycle), so don't let construct() throw into the boundary.
 	const built = $derived.by(() => {
 		if (!context.track.length) return null;
 		return Adapter.construct({
 			name: '',
-			completionMode: 'Ring',
+			completionMode: context.fields.mode,
 			cursusId: '',
 			nodes: context.track
 		});
 	});
 
-	const render = (tree: GalaxyNode<TrackNode>): Attachment<SVGElement> => {
-		return (element) => renderer.mount(element, tree);
+	// renderer.onSingleClick((node) => console.log('clicked', node.goalId));
+	const render = (tree: GalaxyNode<TrackNode>, mode: RenderMode): Attachment<SVGElement> => {
+		return (element) => renderer.mount(element, tree, mode);
 	};
-
-	renderer.onSingleClick((node) => console.log('clicked', node.goalId));
 </script>
 
 <Alert.Root>
@@ -49,8 +46,8 @@
 	</Empty.Root>
 {:else if built !== null}
 	<svg
-		{@attach render(built)}
+		{@attach render(built, context.fields.mode === 'Ring' ? 'ring' : 'tree')}
 		style="background-image: radial-gradient(color-mix(in oklab, var(--foreground) 12%, transparent) 1px, transparent 1px); background-size: 14px 14px;"
-		class="h-full w-full cursor-grab active:cursor-grabbing border rounded-md mt-2 bg-muted/30">
+		class="w-full max-h-200 cursor-grab active:cursor-grabbing border rounded-md mt-2 bg-muted/30">
 	</svg>
 {/if}

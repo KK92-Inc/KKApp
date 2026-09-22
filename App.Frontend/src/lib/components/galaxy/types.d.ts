@@ -42,3 +42,16 @@ export interface GalaxyNode<TMeta = unknown> {
 
 export type SimNode<TMeta = unknown> = d3.HierarchyNode<GalaxyNode<TMeta>> & d3.SimulationNodeDatum;
 export type SimLink<TMeta = unknown> = d3.SimulationLinkDatum<SimNode<TMeta>>;
+
+/**
+ * How the renderer lays nodes out.
+ *
+ * - `tree`: free-form force-directed hierarchy. Distance from the root is
+ *   whatever the link/charge forces settle on — good for `FreeStyle` cursi,
+ *   where progression follows individual branches.
+ * - `ring`: nodes are pulled to a radius determined purely by their depth, so
+ *   every goal at the same depth ends up on the same concentric ring around
+ *   the root. Matches `Ring` mode progression, where you clear an entire
+ *   depth before the next one opens up.
+ */
+export type RenderMode = 'tree' | 'ring';

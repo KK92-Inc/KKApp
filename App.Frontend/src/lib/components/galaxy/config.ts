@@ -39,5 +39,26 @@ export default {
 		"endAlphaTarget": 0,
 		"restartOnDrag": true
 	},
+	ring: {
+		/** Radius of the depth-1 ring. */
+		"baseRadius": 190,
+		/** Radial distance added per extra depth level. */
+		"gap": 75,
+		/** How hard nodes are pulled onto their depth's ring (0-1). */
+		"strength": 0.85,
+		/** Kept weak on purpose: only used to nudge children near their parent's angle. */
+		"linkStrength": 0.15,
+		/** CSS color for the depth-ring guide circles. */
+		"guideColor": "var(--ring)",
+		"guideOpacity": 0.45,
+		"guideWidth": 2,
+		"guideDash": "0 0",
+		/**
+		 * Slower than `simulation.alphaDecay` (0.0228) on purpose: ring mode
+		 * seeds nodes close to their target radius but still needs extra ticks
+		 * to jostle them apart along the ring before the sim cools down.
+		 */
+		"alphaDecay": 0.01
+	},
 	colors: STATE_COLORS
 }

@@ -7,7 +7,7 @@
 
 import * as d3 from 'd3';
 import config from './config';
-import type { GalaxyNode, SimLink, SimNode } from './types';
+import type { GalaxyNode, RenderMode, SimLink, SimNode } from './types';
 
 // ============================================================================
 // Sizing
@@ -32,8 +32,6 @@ function sizeKey<TMeta>(d: d3.HierarchyNode<GalaxyNode<TMeta>>): SizeKey {
 }
 
 // ============================================================================
-// GalaxyRenderer — imperative D3 engine, framework-agnostic AND data-agnostic
-// ============================================================================
 
 /**
  * Owns the D3 force-graph rendering pipeline for a single `<svg>` element.
@@ -48,6 +46,7 @@ export class GalaxyRenderer<TMeta = unknown> {
 	private nodeG?: d3.Selection<SVGGElement, SimNode<TMeta>, SVGGElement, unknown>;
 	private width = 0;
 	private height = 0;
+	private mode: RenderMode = 'tree';
 
 	private singleClickHandler?: (meta: TMeta) => void;
 	private groupClickHandler?: (metas: TMeta[]) => void;
@@ -63,12 +62,16 @@ export class GalaxyRenderer<TMeta = unknown> {
 	/**
 	 * Mounts the renderer onto an SVG element for the given tree.
 	 * Returns a cleanup function (for use inside a Svelte {@attach}).
+	 *
+	 * @param mode `'tree'` (default) for a free-form force layout, or
+	 * `'ring'` to group nodes of the same depth onto concentric rings.
 	 */
-	mount(element: SVGElement, tree: GalaxyNode<TMeta>): () => void {
+	mount(element: SVGElement, tree: GalaxyNode<TMeta>, mode: RenderMode = 'tree'): () => void {
 		const controller = new AbortController();
 		const style = getComputedStyle(document.documentElement);
 		const header = parseFloat(style.getPropertyValue('--header-height'));
 
+		this.mode = mode;
 		this.width = window.innerWidth;
 		this.height = window.innerHeight - 1 - header;
 		document.body.style.overflow = 'hidden';
@@ -115,9 +118,19 @@ export class GalaxyRenderer<TMeta = unknown> {
 		const root = d3.hierarchy<GalaxyNode<TMeta>>(tree, (d) => d.children);
 		this.simNodes = root.descendants() as unknown as SimNode<TMeta>[];
 		const links = root.links() as unknown as SimLink<TMeta>[];
+		const maxDepth = d3.max(this.simNodes, (d) => d.depth) ?? 0;
 
-		const simulation = this.buildSimulation(this.simNodes, links);
-		const linkSel = this.renderLinks(canvas, links);
+		if (this.mode === 'ring' && maxDepth > 0) {
+			this.appendRingGuides(canvas, maxDepth);
+			this.seedRingPositions(this.simNodes);
+		}
+
+		// Ring mode positions communicate parent/child depth on their own; the
+		// straight lines are still built into the simulation (they gently pull
+		// a child toward its parent's angle) but skipped visually so they don't
+		// crisscross the rings.
+		const simulation = this.buildSimulation(this.simNodes, links, maxDepth);
+		const linkSel = this.renderLinks(canvas, this.mode === 'ring' ? [] : links);
 		this.nodeG = this.renderNodes(canvas, this.simNodes, simulation);
 
 		simulation.on('tick', () => {
@@ -131,16 +144,75 @@ export class GalaxyRenderer<TMeta = unknown> {
 		});
 	}
 
-	private buildSimulation(nodes: SimNode<TMeta>[], links: SimLink<TMeta>[]) {
-		return d3
+	/** Radius the given depth's ring sits at. Depth 0 (the root) is always 0. */
+	private ringRadius(depth: number): number {
+		if (depth <= 0) return 0;
+		return config.ring.baseRadius + (depth - 1) * config.ring.gap;
+	}
+
+	/** Gives nodes a sane starting position before the simulation takes over. */
+	private seedRingPositions(nodes: SimNode<TMeta>[]): void {
+		const byDepth = new Map<number, SimNode<TMeta>[]>();
+		for (const node of nodes) {
+			if (!byDepth.has(node.depth)) byDepth.set(node.depth, []);
+			byDepth.get(node.depth)!.push(node);
+		}
+
+		for (const [depth, group] of byDepth) {
+			const radius = this.ringRadius(depth);
+			group.forEach((node, i) => {
+				const angle = (2 * Math.PI * i) / group.length - Math.PI / 2;
+				node.x = radius * Math.cos(angle);
+				node.y = radius * Math.sin(angle);
+			});
+		}
+	}
+
+	/** Dashed backdrop circles marking each depth's ring, drawn behind everything else. */
+	private appendRingGuides(canvas: d3.Selection<SVGGElement, unknown, null, undefined>, maxDepth: number): void {
+		const guides = canvas.append('g').attr('class', 'ring-guides');
+		const radii = Array.from({ length: maxDepth }, (_, i) => this.ringRadius(i + 1));
+
+		guides
+			.selectAll('circle')
+			.data(radii)
+			.join('circle')
+			.attr('r', (r) => r)
+			.attr('fill', 'none')
+			.attr('stroke', config.ring.guideColor)
+			.attr('stroke-width', config.ring.guideWidth)
+			.attr('stroke-dasharray', config.ring.guideDash)
+			.attr('stroke-opacity', config.ring.guideOpacity);
+	}
+
+	private buildSimulation(nodes: SimNode<TMeta>[], links: SimLink<TMeta>[], maxDepth: number) {
+		const simulation = d3
 			.forceSimulation<SimNode<TMeta>>(nodes)
-			.force('link', d3.forceLink<SimNode<TMeta>, SimLink<TMeta>>(links).distance(config.link.distance).strength(config.link.strength).iterations(config.link.iterations))
 			.force('charge', d3.forceManyBody<SimNode<TMeta>>().strength(config.charge.strength).distanceMax(config.charge.distanceMax))
-			.force('center', d3.forceCenter<SimNode<TMeta>>(0, 0))
 			.force('collide', d3.forceCollide<SimNode<TMeta>>((d) => RADII[sizeKey(d)].outer + config.collision.padding).strength(config.collision.strength))
 			.alphaMin(config.simulation.alphaMin)
 			.alphaDecay(config.simulation.alphaDecay)
 			.velocityDecay(config.simulation.velocityDecay);
+
+		if (this.mode === 'ring' && maxDepth > 0) {
+			simulation
+				.force('radial', d3.forceRadial<SimNode<TMeta>>((d) => this.ringRadius(d.depth), 0, 0).strength(config.ring.strength))
+				.force(
+					'link',
+					d3
+						.forceLink<SimNode<TMeta>, SimLink<TMeta>>(links)
+						.distance(config.ring.gap)
+						.strength(config.ring.linkStrength)
+						.iterations(config.link.iterations)
+				)
+				.alphaDecay(config.ring.alphaDecay);
+		} else {
+			simulation
+				.force('link', d3.forceLink<SimNode<TMeta>, SimLink<TMeta>>(links).distance(config.link.distance).strength(config.link.strength).iterations(config.link.iterations))
+				.force('center', d3.forceCenter<SimNode<TMeta>>(0, 0));
+		}
+
+		return simulation;
 	}
 
 	private renderLinks(canvas: d3.Selection<SVGGElement, unknown, null, undefined>, links: SimLink<TMeta>[]) {
@@ -306,13 +378,6 @@ export class GalaxyRenderer<TMeta = unknown> {
 	// =========================================================================
 	// Interactivity / Focus
 	// =========================================================================
-
-	/**
-	 * Flashes a circle's stroke to `var(--ring)` then fades back to the
-	 * border color/width it should rest at. Used for both node cores and
-	 * choice dots — pass the resting stroke width for whichever you're
-	 * pulsing (1.5 for cores, 1 for dots).
-	 */
 
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	private pulse(circle: d3.Selection<SVGCircleElement, any, any, any>, restStrokeWidth = 1.5) {

@@ -18,6 +18,7 @@
 	import { page } from '$app/state';
 	import {
 		Blend,
+		CircleDot,
 		CirclePlay,
 		Database,
 		Download,
@@ -30,6 +31,7 @@
 		Link,
 		ListTree,
 		LocateFixed,
+		Network,
 		TrendingUpDown,
 		Unlink,
 		Upload,
@@ -37,7 +39,6 @@
 	} from '@lucide/svelte';
 	import CurusRender from './curus-render.svelte';
 	import CursusSchematic from './cursus-schematic.svelte';
-	import Badge from '$lib/components/badge/badge.svelte';
 	import { useDialog } from '$lib/components/dialog';
 
 	const dialog = useDialog();
@@ -181,8 +182,8 @@
 							<Field.Label for="mode">Progression Mode</Field.Label>
 							<Tabs.Root id="mode" bind:value={context.fields.mode}>
 								<Tabs.List class="w-auto">
-									<Tabs.Trigger value="FreeStyle">Freestyle <Unlink /></Tabs.Trigger>
-									<Tabs.Trigger value="Ring">Ring <Link /></Tabs.Trigger>
+									<Tabs.Trigger value="FreeStyle">Freestyle <Network /></Tabs.Trigger>
+									<Tabs.Trigger value="Ring">Ring <CircleDot /></Tabs.Trigger>
 								</Tabs.List>
 							</Tabs.Root>
 							<Field.Description>
@@ -204,8 +205,8 @@
 								<Tabs.Root id="variant" bind:value={context.fields.variant}>
 									<Tabs.List class="w-auto">
 										<Tabs.Trigger disabled value="Dynamic">Dynamic <TrendingUpDown /></Tabs.Trigger>
-										<Tabs.Trigger value="Static">Static <LocateFixed /></Tabs.Trigger>
 										<Tabs.Trigger disabled value="Hybrid">Hybrid <Blend /></Tabs.Trigger>
+										<Tabs.Trigger value="Static">Static <LocateFixed /></Tabs.Trigger>
 									</Tabs.List>
 								</Tabs.Root>
 								<Field.Description>

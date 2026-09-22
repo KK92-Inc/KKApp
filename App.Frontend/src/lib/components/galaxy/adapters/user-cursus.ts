@@ -7,6 +7,7 @@
 
 import type { components } from '$lib/api/api';
 import config from '../config';
+import type { GalaxyItem } from '../types';
 import type { GalaxyAdapter } from './index';
 import { NEUTRAL, createFlatAdapter, type NodeStyle } from './shared';
 
@@ -18,16 +19,8 @@ export type TrackNode = components['schemas']['UserCursusTrackNodeDO'];
 // ============================================================================
 
 const ON_COLOR = '#fff';
+const STATE_PRIORITY: readonly NonNullable<TrackNode['state']>[] = ['Completed', 'Active', 'Awaiting'];
 
-/**
- * Resolves a node's look from the user's progress.
- *
- * - Active / Awaiting / Completed: the state color.
- * - Otherwise (no state, or `Inactive`): highlighted if the user can start it,
- *   neutral if it's still locked. `Inactive` deliberately doesn't use its own
- *   entry in `config.colors`; that one is `var(--card)`, which would beat the
- *   unlocked highlight and make unlocked-but-not-started goals look locked.
- */
 function styleFor(node: TrackNode): NodeStyle {
 	const { state, isUnlocked } = node;
 
@@ -36,6 +29,17 @@ function styleFor(node: TrackNode): NodeStyle {
 		if (color) return { color, textColor: ON_COLOR };
 	}
 	if (isUnlocked) return { color: 'var(--chart-2)', textColor: ON_COLOR };
+	return NEUTRAL;
+}
+
+/** Look for a choice-group hub: the "best" state found among its members. */
+function aggregateStyle(items: GalaxyItem<TrackNode>[]): NodeStyle {
+	for (const state of STATE_PRIORITY) {
+		if (items.some((i) => i.meta.state === state)) {
+			return { color: config.colors[state], textColor: ON_COLOR };
+		}
+	}
+	if (items.some((i) => i.meta.isUnlocked)) return { color: 'var(--chart-2)', textColor: ON_COLOR };
 	return NEUTRAL;
 }
 
@@ -48,6 +52,12 @@ export const Adapter: GalaxyAdapter<Track, TrackNode> = createFlatAdapter<Track,
 		id: (n) => n.goalId,
 		label: (n) => n.name,
 		parentId: (n) => n.parentGoalId,
-		style: styleFor
+		style: styleFor,
+		cluster: (clusterId, items) => ({
+			id: clusterId,
+			label: items.map((i) => i.label),
+			...aggregateStyle(items),
+			items
+		})
 	}
 });
