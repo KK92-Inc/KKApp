@@ -4,6 +4,8 @@
 // ============================================================================
 
 import * as v from 'valibot';
+import * as UserGoal from "./user-goal.remote";
+import * as UserCursus from "./user-cursus.remote";
 import * as UserProject from "./user-project.remote";
 import { command, getRequestEvent } from '$app/server';
 import { Filters, Problem } from '$lib/api';
@@ -24,6 +26,7 @@ export const subscribeToCursus = command(CursusSchema, async ({ userId, cursusId
 	});
 
 	if (error || !data) Problem.throw(error);
+	UserCursus.get(data.id).refresh();
 	return data;
 });
 
@@ -35,6 +38,7 @@ export const unsubscribeFromCursus = command(CursusSchema, async ({ userId, curs
 	});
 
 	if (error || !data) Problem.throw(error);
+	UserCursus.get(data.id).refresh();
 	return data;
 });
 
@@ -48,6 +52,7 @@ export const subscribeToGoal = command(GoalSchema, async ({ userId, goalId }) =>
 	});
 
 	if (error || !data) Problem.throw(error);
+	UserGoal.get(data.id).refresh();
 	return data;
 });
 
@@ -58,7 +63,9 @@ export const unsubscribeFromGoal = command(GoalSchema, async ({ userId, goalId }
 		params: { path: { userId, goalId } }
 	});
 
+
 	if (error || !data) Problem.throw(error);
+	UserGoal.get(data.id).refresh();
 	return data;
 });
 
@@ -72,6 +79,7 @@ export const subscribeToProject = command(ProjectSchema, async ({ userId, projec
 	});
 
 	if (error || !data) Problem.throw(error);
+	UserProject.get(data.id).refresh();
 	return data;
 });
 
@@ -83,5 +91,6 @@ export const unsubscribeFromProject = command(ProjectSchema, async ({ userId, pr
 	});
 
 	if (error || !data) Problem.throw(error);
+	UserProject.get(data.id).refresh();
 	return data;
 });

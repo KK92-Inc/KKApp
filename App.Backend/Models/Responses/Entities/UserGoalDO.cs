@@ -25,6 +25,9 @@ public class UserGoalDO(UserGoal userGoal) : BaseEntityDO<UserGoal>(userGoal)
     [Required]
     public EntityObjectState State { get; set; } = userGoal.State;
 
+    [Required]
+    public DateTimeOffset? UnlocksAt { get; set; } = userGoal.UnlocksAt;
+
     /// <summary>
     /// The goal the user is enrolled in.
     /// </summary>

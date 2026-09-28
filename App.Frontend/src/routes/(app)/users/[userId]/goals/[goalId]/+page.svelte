@@ -1,6 +1,8 @@
 <script lang="ts">
 	import * as Card from '$lib/components/card';
 	import * as Goal from '$lib/remotes/goals.remote';
+	import * as User from '$lib/remotes/user.remote';
+
 	import * as UserGoal from '$lib/remotes/user-goal.remote';
 	import * as Item from '$lib/components/item';
 	import { Badge } from '$lib/components/badge';
@@ -13,46 +15,49 @@
 	import { Button } from '$lib/components/button/index.js';
 	import { Archive, BellIcon } from '@lucide/svelte';
 	import { Avatar } from '$lib/components/avatar';
+	import Thumbnail from '$lib/components/thumbnail.svelte';
+	import * as Field from '$lib/components/field';
+	import { Input } from '$lib/components/input';
+	import { Textarea } from '$lib/components/textarea';
+	import Separator from '$lib/components/separator/separator.svelte';
+	import PageActions from './page-actions.svelte';
+	import * as Page from './context.svelte';
+	import PageInfo from './page-info.svelte';
 
 	const { params }: PageProps = $props();
-	const [goal, projects, instance] = $derived(
-		await Promise.all([
-			Goal.get(params.goalId),
-			Goal.getProjects(params.goalId),
-			// UserGoal.getByUser({ userId: params.userId, goalId: params.goalId })
-		])
+	Page.setContext(
+		new Page.Context(
+			() => params.userId,
+			() => params.goalId
+		)
 	);
 </script>
 
 <svelte:boundary>
+	{@const [goal, projects] = await Promise.all([
+		Goal.get(params.goalId),
+		Goal.getProjects(params.goalId)
+		// UserGoal.getByUser({ userId: params.userId, goalId: params.goalId })
+	])}
+
 	{#snippet pending()}
 		Loading...
 	{/snippet}
-	<Layout>
+	<Layout classL="gap-y-4 mt-4" classR="mt-4">
 		{#snippet left()}
-			<h1 class="text-3xl font-bold tracking-tight text-foreground">{goal.name}</h1>
+			<PageInfo />
+			<PageActions />
 		{/snippet}
 
 		{#snippet right()}
-			<Item.Group>
+			<div class="w-full flex items-center gap-2">
+				<h1 class="text-muted-foreground text-sm">Projects</h1>
+				<Separator class="flex-1"/>
+			</div>
+
+			<Item.Group class="pt-2">
 				{#each projects as project, index (project.id)}
-					<Item.Root>
-						<!-- <Item.Media>
-						<Avatar.Root>
-							<Avatar.Image src={person.avatar} class="grayscale" />
-							<Avatar.Fallback>{person.username.charAt(0)}</Avatar.Fallback>
-						</Avatar.Root>
-					</Item.Media> -->
-						<Item.Content class="gap-1">
-							<Item.Title>{project.name}</Item.Title>
-							<Item.Description>{project.description}</Item.Description>
-						</Item.Content>
-						<Item.Actions>
-							<!-- <Button variant="ghost" size="icon" class="rounded-full">
-							<Plus />
-						</Button> -->
-						</Item.Actions>
-					</Item.Root>
+					<Item.Project {project} />
 				{:else}
 					<Empty.Root class="h-full bg-linear-to-b from-muted/50 from-30% to-background">
 						<Empty.Header>

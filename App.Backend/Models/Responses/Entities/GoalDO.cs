@@ -3,6 +3,7 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using App.Backend.Domain.Entities;
 
@@ -23,6 +24,9 @@ public class GoalDO(Goal goal) : BaseEntityDO<Goal>(goal)
 
     [Required]
     public string Slug { get; set; } = goal.Slug;
+
+    [Required, Description("The URL to the image containing the thumbnail of the goal.")]
+    public string? Thumbnail { get; set; } = goal.Thumbnail;
 
     [Required]
     public bool Enabled { get; set; } = goal.Enabled;

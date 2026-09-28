@@ -141,7 +141,7 @@
 
 			<Access
 				bind:visible={context.fields.public}
-				bind:enabled={context.fields.active}
+				bind:enabled={context.fields.enabled}
 				disabled={context.fields.deprecated}
 			/>
 

@@ -10947,6 +10947,8 @@ export interface components {
             /** Format: uuid */
             goalId: string;
             state: components["schemas"]["EntityObjectState"];
+            /** Format: date-time */
+            unlocksAt: null | string;
             goal: components["schemas"]["GoalDO"];
             user: components["schemas"]["UserLightDO"];
         };

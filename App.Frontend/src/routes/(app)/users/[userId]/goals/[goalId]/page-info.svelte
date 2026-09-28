@@ -7,21 +7,19 @@
 	import { Calendar, Clock, Globe, Lock, TriangleAlert } from '@lucide/svelte';
 	import * as Tooltip from '$lib/components/tooltip';
 	import Separator from '$lib/components/separator/separator.svelte';
-	import * as Projects from '$lib/remotes/projects.remote';
-	import * as Subscription from '$lib/remotes/subscription.remote';
-	import * as Reviews from '$lib/remotes/review.remote';
-	import * as UserProjects from '$lib/remotes/user-project.remote';
+	import * as Goal from '$lib/remotes/goals.remote';
 
 	const context = Page.getContext();
-	const formatter = new Intl.DateTimeFormat(page.data.locale ?? 'en-US', {
+	const formatter = new Intl.DateTimeFormat(page.data.locale, {
+		timeZone: page.data.tz,
 		month: 'short',
 		day: 'numeric',
 		year: 'numeric'
 	});
 
-	const project = await Projects.get(context.projectId());
-	const createdAt = $derived(formatter.format(new Date(project.createdAt)));
-	const updatedAt = $derived(formatter.format(new Date(project.updatedAt)));
+	const goal = await Goal.get(context.goalId());
+	const createdAt = $derived(formatter.format(new Date(goal.createdAt)));
+	const updatedAt = $derived(formatter.format(new Date(goal.updatedAt)));
 </script>
 
 <Card.Root class="gap-1 overflow-hidden p-0">
@@ -32,13 +30,13 @@
 		<Thumbnail
 			readonly
 			size={128}
-			value={project.thumbnail ?? `https://placehold.co/128x128?text=${project.name}`}
+			value={goal.thumbnail ?? `https://placehold.co/128x128?text=${goal.name}`}
 			class="rounded-lg border"
 		/>
 	</div>
 
 	<Card.Content class="space-y-2 p-4">
-		<h1 class="text-xl font-semibold tracking-tight text-foreground">{project.name}</h1>
+		<h1 class="text-xl font-semibold tracking-tight text-foreground">{goal.name}</h1>
 
 		<Tooltip.Root>
 			<Tooltip.Trigger class="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
@@ -54,11 +52,11 @@
 			</Tooltip.Trigger>
 			<Tooltip.Content>Last update on {updatedAt}</Tooltip.Content>
 		</Tooltip.Root>
-		<p class="text-sm leading-6 text-muted-foreground">{project.description}</p>
+		<p class="text-sm leading-6 text-muted-foreground">{goal.description}</p>
+
 
 		<Separator />
-
-		{#if project.public}
+		{#if goal.public}
 			<Badge variant="secondary">
 				<Globe class="size-3" /> Public
 			</Badge>
@@ -67,12 +65,12 @@
 				<Lock class="size-3" /> Private
 			</Badge>
 		{/if}
-		{#if project.deprecated}
+		{#if goal.deprecated}
 			<Badge variant="destructive">
 				<TriangleAlert class="size-3" /> Deprecated
 			</Badge>
 		{/if}
-		{#if !project.active}
+		{#if !goal.enabled}
 			<Badge variant="destructive">
 				<TriangleAlert class="size-3" /> Disabled
 			</Badge>

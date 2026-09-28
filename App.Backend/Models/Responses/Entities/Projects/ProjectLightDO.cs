@@ -22,6 +22,9 @@ public class ProjectLightDO(Project project) : BaseEntityDO<Project>(project)
     [Required, Description("The URL-friendly slug identifier for the project.")]
     public string Slug { get; set; } = project.Slug;
 
+    [Required, Description("The URL to the image containing the thumbnail of the project.")]
+    public string? Thumbnail { get; set; } = project.AvatarUrl;
+
     [Required, Description("Indicates whether the project is currently active.")]
     public bool Active { get; set; } = project.Active;
 

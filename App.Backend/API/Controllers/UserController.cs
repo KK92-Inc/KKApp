@@ -237,13 +237,14 @@ In regards to rubrics it will evaluate if user is elligible to conduct a review 
 	)
 	{
 		var existing = await users.FindByLoginAsync(request.Login, token);
-		if (existing is not null) return Conflict();
+		if (existing is not null) return Problem("Login is already taken", statusCode: 409);
 
 		var user = await users.CreateAsync(new()
 		{
 			Login = request.Login,
 			FirstName = request.FirstName,
 			LastName = request.LastName,
+			AvatarUrl = request.AvatarUrl,
 			Email = request.Email,
 		}, request.Role, token);
 

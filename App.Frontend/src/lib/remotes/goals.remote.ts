@@ -16,11 +16,6 @@ const PageSchema = v.object({
 	name: v.optional(v.string()),
 });
 
-const SetSchema = v.object({
-	id: Filters.id,
-	projects: v.array(Filters.id)
-});
-
 // ============================================================================
 
 /** Get a single goal */
@@ -63,16 +58,4 @@ export const getProjects = query(Filters.id, async (id) => {
 
 	if (error || !data) Problem.throw(error)
 	return data;
-});
-
-
-export const setProjects = query(SetSchema, async ({ id, projects}) => {
-	// const { locals } = getRequestEvent();
-	// const { error, data } = await locals.api.POST("/goals/{id}/projects", {
-	// 	params: { path: { id }},
-	// 	body: projects
-	// });
-
-	// if (error || !data) Problem.throw(error)
-	// return data;
 });

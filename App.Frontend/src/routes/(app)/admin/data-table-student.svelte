@@ -12,18 +12,14 @@
 <div class="grid grid-cols-[auto_1fr] gap-x-4">
 	<Avatar.Root class="border-2">
 		<Avatar.Image src={user.avatarUrl} alt="@{user.login}" />
-		<Avatar.Fallback>{user.login.slice(0,2).toUpperCase()}</Avatar.Fallback>
+		<Avatar.Fallback>{user.login.slice(0, 2).toUpperCase()}</Avatar.Fallback>
 	</Avatar.Root>
 
 	<div>
-		<a class="font-medium hover:underline" href="/users/174824">
-			{#if user.details?.firstName && user.details.lastName}
-				{user.details?.firstName} {user.details?.lastName}
-			{:else}
-				{user.displayName ?? user.login}
-			{/if}
+		<a class="font-medium hover:underline" href="/users/{user.id}">
+			{user.firstName}
+			{user.lastName}
 		</a>
 		<p class="text-xs text-muted-foreground">@{user.login}</p>
 	</div>
 </div>
-

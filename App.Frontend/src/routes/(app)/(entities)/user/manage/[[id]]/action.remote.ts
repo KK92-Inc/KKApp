@@ -32,7 +32,7 @@ export const create = command('unchecked', async (body: CreateUser) => {
 	}
 
 	const { error, data } = await locals.api.POST("/users", {
-		body: { ...rest, id, thumbnail: thumbnailUrl }
+		body: { ...rest, id, avatarUrl: thumbnailUrl }
 	});
 
 	if (error || !data) {
@@ -42,8 +42,8 @@ export const create = command('unchecked', async (body: CreateUser) => {
 	return data;
 });
 
-type UpdateProject = { id: string; } & components['schemas']['PatchUserRequestDTO'];
-export const update = command('unchecked', async (body: UpdateProject) => {
+type UpdateUser = { id: string; } & components['schemas']['PatchUserRequestDTO'];
+export const update = command('unchecked', async (body: UpdateUser) => {
 	const { locals } = getRequestEvent();
 	const { id, avatarUrl, ...rest } = body;
 	let thumbnailUrl = avatarUrl;
@@ -58,7 +58,7 @@ export const update = command('unchecked', async (body: UpdateProject) => {
 
 	const { error, data } = await locals.api.PATCH("/users/{userId}", {
 		params: { path: { userId: id } },
-    body: { ...rest, thumbnail: thumbnailUrl }
+    body: { ...rest, avatarUrl: thumbnailUrl }
 	});
 
 	if (error || !data) {

@@ -60,7 +60,7 @@
 		<InputGroup.Root>
 			<InputGroup.Input
 				value={login}
-				placeholder="Filter Emails..."
+				placeholder="Filter by Login..."
 				oninput={(e) => {
 					login = e.currentTarget.value;
 					page = 0;

@@ -23,7 +23,6 @@
 	});
 
 	const user = $derived(await User.get(params.userId));
-	const avatar = $derived(`${env.PUBLIC_S3_ENDPOINT}/avatars/${user.id}`);
 	const socials = $derived(
 		[
 			{ label: 'Website', url: user.details?.websiteUrl, icon: Globe },
@@ -61,7 +60,7 @@
 				style="background-image: radial-gradient(color-mix(in oklab, var(--foreground) 12%, transparent) 1px, transparent 1px); background-size: 14px 14px;"
 			>
 				<Avatar.Root class="mx-auto size-36 rounded-lg border-2 border-background shadow-md">
-					<Avatar.Image src={avatar} alt={user.login} class="block" />
+					<Avatar.Image src={user.avatarUrl} alt={user.login} class="block" />
 					<Avatar.Fallback class="rounded-lg text-xl font-bold">
 						{user.login.slice(0, 2).toUpperCase()}
 					</Avatar.Fallback>
