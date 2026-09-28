@@ -143,6 +143,18 @@ public static class Services
 
         AddRealmAdminClient(builder, "admin", "kc_admin_admin", "KeycloakAdmin");
         AddRealmAdminClient(builder, "student", "kc_admin_student", "KeycloakStudent");
+
+        // Realm specific services to simplify common API Actions
+        builder.Services.AddKeyedScoped<IKeycloakService>("student", (sp, _) => new KeycloakService(
+            sp.GetRequiredKeyedService<KeycloakAdminApiClient>("student"),
+            builder.Configuration["KeycloakStudent:realm"] ?? "student")
+        );
+ 
+        builder.Services.AddKeyedScoped<IKeycloakService>("admin", (sp, _) => new KeycloakService(
+            sp.GetRequiredKeyedService<KeycloakAdminApiClient>("admin"),
+            builder.Configuration["KeycloakAdmin:realm"] ?? "admin")
+        );
+
         AddKeycloakProtectionHttpClient(builder);
     }
 

@@ -4,6 +4,7 @@
 // ============================================================================
 
 import { env } from "$env/dynamic/public";
+import { ensure } from "./utils";
 
 // ============================================================================
 
@@ -55,8 +56,8 @@ export function useS3Storage({
         .webp({ quality });
 
       const file = Bun.s3.file(keyFor(id), { bucket, endpoint: env.PUBLIC_S3_ENDPOINT });
-      await pipeline.write(file);
-
+			await ensure(pipeline.write(file));
+			// if (error) Log.err(`Failed to write image: ${error.message}`);
       return `${env.PUBLIC_S3_ENDPOINT}/${bucket}/${keyFor(id)}`;
       // return file.presign({ acl: 'public-read', expiresIn: 60 * 60 * 24 * 365 });
     },

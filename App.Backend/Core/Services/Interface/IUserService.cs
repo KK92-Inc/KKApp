@@ -7,6 +7,7 @@ using System.Linq.Dynamic.Core;
 using App.Backend.Core.Query;
 using App.Backend.Domain.Entities;
 using App.Backend.Domain.Entities.Users;
+using App.Backend.Domain.Enums;
 using App.Backend.Models;
 
 // ============================================================================
@@ -16,13 +17,21 @@ namespace App.Backend.Core.Services.Interface;
 public interface IUserService : IDomainService<User>
 {
     /// <summary>
-    /// Creates a new user with a randomly generated temporary password.
-    /// Once they log in via the IDP they are forced to update it.
+    /// Creates a new user, provisioning their account in the Keycloak realm that matches
+    /// <paramref name="role"/> (applicants and students in the student realm, staff in the admin realm)
+    /// and persisting the database user along with their personal workspace.
+    ///
+    /// No password is generated; the user sets one through the "Forgot password" flow.
     /// </summary>
+    /// <remarks>
+    /// Use this instead of the role-less <c>CreateAsync(User, CancellationToken)</c> inherited from
+    /// <see cref="IDomainService{T}"/>, which does not provision anything in Keycloak.
+    /// </remarks>
     /// <param name="user">The entity to create.</param>
+    /// <param name="role">The role of the user, which decides the realm they are created in.</param>
     /// <param name="token">Cancellation token.</param>
-    /// <returns></returns>
-    public Task<(User User, string TempPassword)> CreateUserAsync(User user, CancellationToken token = default);
+    /// <returns>The created user.</returns>
+    public Task<User> CreateAsync(User user, UserRole role, CancellationToken token = default);
 
     /// <summary>
     /// Find the user by its login.

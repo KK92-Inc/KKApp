@@ -85,13 +85,10 @@
 	}
 
 	let items = $state<GoalNode[]>([]);
-
-	// Rebuild tree whenever context.track updates externally or via dialog
 	$effect(() => {
 		items = flatToTree(context.track);
 	});
 
-	// Sync changes to context.track when dragging/moving nodes
 	function syncToContext() {
 		context.track = treeToFlat(items);
 	}

@@ -7,7 +7,7 @@ namespace App.Backend.API.Bus.Handlers.Freeze;
 
 using Wolverine.Attributes;
 using App.Backend.Database;
-using Keycloak.AuthServices.Sdk.Kiota.Admin;
+using App.Backend.Core.Services.Interface;
 using Microsoft.EntityFrameworkCore;
 using App.Backend.API.Bus.Messages.Freeze;
 using Wolverine;
@@ -20,12 +20,9 @@ public class FreezeUserHandler(
     DatabaseContext context,
     TimeProvider time,
     IMessageBus bus,
-    IConfiguration configuration,
-    [FromKeyedServices("student")] KeycloakAdminApiClient keycloak
+    [FromKeyedServices("student")] IKeycloakService keycloak
 )
 {
-    private readonly string realm = configuration["KeycloakStudent:realm"] ?? "student";
-
     public async Task Handle(FreezeUserMessage message, CancellationToken token)
     {
         var now = time.GetUtcNow();
@@ -36,16 +33,9 @@ public class FreezeUserHandler(
         // No active freeze found (cancelled, expired, or never started).
         if (freeze is null) return;
 
-        var studentRealm = keycloak.Admin.Realms[realm].Users[freeze.UserId.ToString()];
-        var user = await studentRealm.GetAsync(null, token)
-            ?? throw new InvalidOperationException($"{message.UserId} does not exist in keycloak");
-
-        if (user.Enabled is not false)
-        {
-            user.Enabled = false;
-            await studentRealm.PutAsync(user, null, token);
-        }
-
+        // No-op if the account is already disabled.
+        // Schedule the unfreeze on that date
+        await keycloak.DisableUserAsync(freeze.UserId, token);
         await bus.ScheduleAsync(new UnFreezeUserMessage(freeze.UserId), freeze.EndsAt);
     }
 }

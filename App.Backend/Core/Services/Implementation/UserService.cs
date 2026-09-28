@@ -3,15 +3,12 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-using System.Security.Cryptography;
 using App.Backend.Database;
 using App.Backend.Core.Services.Interface;
 using App.Backend.Domain.Entities.Users;
 using App.Backend.Domain.Enums;
-using Keycloak.AuthServices.Sdk.Kiota.Admin;
 using Keycloak.AuthServices.Sdk.Kiota.Admin.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using App.Backend.Domain.Entities;
@@ -25,25 +22,51 @@ public class UserService(
     DatabaseContext ctx,
     ILogger<UserService> log,
     TimeProvider time,
-    IConfiguration configuration,
-    [FromKeyedServices("student")] KeycloakAdminApiClient keycloak
+    [FromKeyedServices("student")] IKeycloakService student,
+    [FromKeyedServices("admin")] IKeycloakService admin
 ) : BaseService<User>(ctx), IUserService
 {
     private readonly DatabaseContext context = ctx;
 
-    private readonly string realm = configuration["KeycloakStudent:realm"] ?? "student";
+    #region Keycloak helpers
+
+    /// <summary>
+    /// Maps a domain role to the Keycloak service (realm) to create the user in and the realm
+    /// role to assign. Applicants and students live in the student realm, staff in the admin realm.
+    /// Only used for creation; anonymize discovers the realm via <see cref="FindKeycloakUserAsync"/>.
+    /// </summary>
+    private (IKeycloakService Keycloak, string RealmRole) Resolve(UserRole role) => role switch
+    {
+        UserRole.Applicant => (student, "applicant"),
+        UserRole.Student => (student, "student"),
+        UserRole.Staff => (admin, "staff"),
+        _ => throw new ArgumentOutOfRangeException(nameof(role), role, "Unknown user role."),
+    };
+
+    /// <summary>
+    /// Finds which realm a user lives in by asking Keycloak itself, so there is no
+    /// realm/role column to keep in sync. IDs are server-generated UUIDs, so a hit in
+    /// one realm can't be a different person in the other.
+    /// Student realm goes first since most accounts live there.
+    /// </summary>
+    private async Task<(IKeycloakService Keycloak, UserRepresentation User)?> FindKeycloakUserAsync(
+        Guid id,
+        CancellationToken token
+    )
+    {
+        foreach (var keycloak in new[] { student, admin })
+            if (await keycloak.FindUserAsync(id, token) is { } user)
+                return (keycloak, user);
+        return null;
+    }
+
+    #endregion
+
+    #region Queries
 
     public override async Task<User?> FindByIdAsync(Guid id, CancellationToken token = default)
     {
         return await _dbSet.Include(u => u.Details).FirstOrDefaultAsync(u => u.Id == id, token);
-    }
-
-    public override async Task UpdateAsync(User entity, CancellationToken token = default)
-    {
-        if (entity.Details is not null && context.Entry(entity.Details).State is EntityState.Detached)
-            context.Add(entity.Details);
-
-        await base.UpdateAsync(entity, token);
     }
 
     public async Task<User?> FindByLoginAsync(string login, CancellationToken token = default)
@@ -56,65 +79,53 @@ public class UserService(
         return await _dbSet.FirstOrDefaultAsync(u => u.Display == displayName, cancellationToken: token);
     }
 
-    [Obsolete("Use CreateUserAsync instead as it propegates to keycloak and returns a password")]
-    public override Task<User> CreateAsync(User entity, CancellationToken token = default)
+    #endregion
+
+    #region Create / Update
+
+    public override async Task UpdateAsync(User entity, CancellationToken token = default)
     {
-        return base.CreateAsync(entity, token);
+        if (entity.Details is not null && context.Entry(entity.Details).State is EntityState.Detached)
+            context.Add(entity.Details);
+
+        await base.UpdateAsync(entity, token);
     }
 
-    /// <summary>
-    /// Provision a new user in Keycloak and persist their database account & personal workspace.
-    /// Returns the created <see cref="User"/> along with their generated temporary password.
-    /// </summary>
-    public async Task<(User User, string TempPassword)> CreateUserAsync(User user, CancellationToken token = default)
-    {
-        var temp = Guid.CreateVersion7().ToString();
-        var realm = configuration["KeycloakStudent:realm"] ?? "student";
+    // The base overload would skip Keycloak entirely, so make it unusable.
+    public override Task<User> CreateAsync(User entity, CancellationToken token = default)
+        => throw new NotSupportedException(
+            "Use CreateAsync(User, UserRole, CancellationToken) so the account is provisioned in Keycloak.");
 
-        // Post to Keycloak (Keycloak server-generates its own UUID ID)
-        await keycloak.Admin.Realms[realm].Users.PostAsync(new()
+    /// <summary>
+    /// Provision the user in the Keycloak realm matching <paramref name="role"/>, then persist
+    /// the database user and their personal workspace. No password is generated: the user
+    /// sets one through the "Forgot password" flow.
+    /// </summary>
+    public async Task<User> CreateAsync(User user, UserRole role, CancellationToken token = default)
+    {
+        var (keycloak, realmRole) = Resolve(role);
+
+        var id = await keycloak.CreateUserAsync(new UserRepresentation
         {
             Username = user.Login,
             Email = user.Email,
             FirstName = user.FirstName,
             LastName = user.LastName,
             Enabled = true,
-            EmailVerified = true,
-            RealmRoles = ["student"],
-            Credentials =
-            [
-                new CredentialRepresentation
-                {
-                    Type = "password",
-                    Value = temp,
-                    Temporary = true,
-                }
-            ],
-            // TODO: Force them to use 2FA from the get go ?
-            RequiredActions = ["UPDATE_PASSWORD"],
-        }, null, token);
-
-        // Query Keycloak to resolve the generated UUID
-        var lookup = await keycloak.Admin.Realms[realm].Users.GetAsync(cfg =>
-        {
-            cfg.QueryParameters.Username = user.Login;
-            cfg.QueryParameters.Exact = true;
+            EmailVerified = true, // required for "Forgot password" to send mail
+            // TODO: Force 2FA from the get go ?
         }, token);
-
-        var created = lookup?.FirstOrDefault()
-            ?? throw new ServiceException(500, "Failed to create user: could not resolve created user in Keycloak.");
-
-        var id = Guid.Parse(created.Id!);
 
         // Bind the server-generated ID to the domain entity
         user.Id = id;
         user.Details?.UserId = id;
 
-        // Persist User and Personal Workspace atomically
         try
         {
+            await keycloak.AddRoleAsync(id, realmRole, token);
+
             var strategy = context.Database.CreateExecutionStrategy();
-            var account = await strategy.ExecuteAsync(async (ct) =>
+            return await strategy.ExecuteAsync(async (ct) =>
             {
                 await using var transaction = await context.Database.BeginTransactionAsync(ct);
 
@@ -129,15 +140,14 @@ public class UserService(
                 await transaction.CommitAsync(ct);
                 return newUser.Entity;
             }, token);
-
-            return (account, temp);
         }
         catch (Exception ex)
         {
-            log.LogError(ex, "Failed to create user DB records for {Login}. Rolling back Keycloak account.", user.Login);
+            log.LogError(ex, "Failed to finish creating user {Login}. Rolling back Keycloak account.", user.Login);
             try
             {
-                await keycloak.Admin.Realms[realm].Users[id.ToString()].DeleteAsync(null, token);
+                // CancellationToken.None: the cleanup must still run if the request was cancelled.
+                await keycloak.DeleteUserAsync(id, CancellationToken.None);
             }
             catch (Exception kcEx)
             {
@@ -147,6 +157,10 @@ public class UserService(
             throw new ServiceException(500, "Failed to create user account.");
         }
     }
+
+    #endregion
+
+    #region SSH keys
 
     public async Task AddSshKeyAsync(Guid userId, SshKey sshKey, CancellationToken token = default)
     {
@@ -179,6 +193,10 @@ public class UserService(
             .ToListAsync(token);
     }
 
+    #endregion
+
+    #region Anonymize
+
     public async Task AnonymizeAsync(Guid id, CancellationToken token = default)
     {
         var handle = $"n0bdy-{time.GetUtcNow().ToUnixTimeSeconds()}";
@@ -186,8 +204,13 @@ public class UserService(
         ServiceException.ThrowIf(user is null, 404, "User not found.");
         ServiceException.ThrowIf(user.Login.StartsWith("n0bdy"), 422, "User is already anonymized.");
 
-        var studentRealm = keycloak.Admin.Realms[realm].Users[id.ToString()];
-        var kcUser = await studentRealm.GetAsync(null, token)!;
+        var kc = await FindKeycloakUserAsync(id, token);
+        if (kc is null)
+        {
+            // Erasure shouldn't be blocked by an account someone already removed from Keycloak.
+            // Swap this for a ThrowIf(404) if you'd rather fail loudly.
+            log.LogWarning("User {UserId} was not found in any Keycloak realm; anonymizing DB records only.", id);
+        }
 
         await context.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
         {
@@ -205,16 +228,27 @@ public class UserService(
                 .Where(k => k.UserId == id)
                 .ToListAsync(ct));
 
-            kcUser.Enabled = false;
-            kcUser.FirstName = "";
-            kcUser.LastName = "";
-            kcUser.Email = $"{handle}@unknown.com";
-            kcUser.EmailVerified = false;
-            await studentRealm.PutAsync(kcUser, null, token);
             await context.SaveChangesAsync(ct);
+
+            // Keycloak last: if this throws, the DB transaction rolls back with it.
+            if (kc is not null)
+            {
+                var (keycloak, kcUser) = kc.Value;
+                kcUser.Enabled = false;
+                kcUser.FirstName = "";
+                kcUser.LastName = "";
+                kcUser.Email = $"{handle}@unknown.com";
+                kcUser.EmailVerified = false;
+                await keycloak.SetUserAsync(id, kcUser, ct);
+            }
+
             await transaction.CommitAsync(ct);
         }, token);
     }
+
+    #endregion
+
+    #region Freezes
 
     public async Task<Freeze?> GetFreezeAsync(Guid id, CancellationToken token = default)
     {
@@ -247,4 +281,6 @@ public class UserService(
     {
         return await context.Freezes.AsNoTracking().Sort(sorting).PaginateAsync(pagination, token);
     }
+
+    #endregion
 }

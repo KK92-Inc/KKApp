@@ -10,10 +10,7 @@ using App.Backend.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using App.Backend.Domain.Entities.Users;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Configuration;
-using Keycloak.AuthServices.Sdk.Kiota.Admin;
 using Keycloak.AuthServices.Sdk.Kiota.Admin.Models;
-using System.Security.Cryptography;
 using Microsoft.Extensions.Logging;
 
 // ============================================================================
@@ -24,8 +21,7 @@ namespace App.Backend.Core.Services.Implementation;
 public class SystemService(
     DatabaseContext context,
     ILogger<SystemService> log,
-    IConfiguration configuration,
-    [FromKeyedServices("admin")] KeycloakAdminApiClient keycloak
+    [FromKeyedServices("admin")] IKeycloakService keycloak
 ) : ISystemService
 {
     /// <inheritdoc />
@@ -42,39 +38,26 @@ public class SystemService(
         if (await context.System.AsNoTracking().AnyAsync(token))
             throw new ServiceException(403, "System is already initialized.");
 
-        var realm = configuration["KeycloakAdmin:realm"] ?? "admin";
-
         // NOTE(W2): Keycloak ignores any client-supplied "Id" on user creation and
         // always server-generates its own UUID, so we don't send one here.
         // See: https://github.com/keycloak/keycloak/issues/12454
-        await keycloak.Admin.Realms[realm].Users.PostAsync(new()
+        var id = await keycloak.CreateUserAsync(new UserRepresentation
         {
             Username = Login,
             Email = Email,
             Enabled = true,
             EmailVerified = true,
-            RequiredActions = ["UPDATE_PASSWORD"],
             Credentials =
             [
                 new CredentialRepresentation
                 {
                     Type = "password",
                     Value = Login,
-                    Temporary = false,
+                    Temporary = true,
                 }
             ],
-        }, null, token);
-
-        var lookup = await keycloak.Admin.Realms[realm].Users.GetAsync(cfg =>
-        {
-            cfg.QueryParameters.Username = Login;
-            cfg.QueryParameters.Exact = true;
         }, token);
 
-        var created = lookup?.SingleOrDefault();
-        ServiceException.ThrowIf(created is null, 500, "Failed to bootstrap: Could not resolve created user in keycloak.");
-
-        var id = Guid.Parse(created.Id!);
         try
         {
             var strategy = context.Database.CreateExecutionStrategy();
@@ -123,16 +106,19 @@ public class SystemService(
                 return account.Entity;
             }, token);
         }
-        catch
+        catch (Exception ex)
         {
+            log.LogError(ex, "Failed to bootstrap the system. Rolling back Keycloak user {UserId}.", id);
             try
             {
-                await keycloak.Admin.Realms[realm].Users[id.ToString()].DeleteAsync(null, token);
+                // CancellationToken.None: the cleanup must still run if the request was cancelled.
+                await keycloak.DeleteUserAsync(id, CancellationToken.None);
             }
-            catch
+            catch (Exception kcEx)
             {
-                log.LogError("Failed to delete initial User, please report this bug...");
+                log.LogError(kcEx, "Failed to delete initial User, please report this bug...");
             }
+
             throw new ServiceException(500, "Failed to bootstrap, please report this.");
         }
     }

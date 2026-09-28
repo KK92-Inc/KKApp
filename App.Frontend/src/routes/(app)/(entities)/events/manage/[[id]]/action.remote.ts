@@ -60,8 +60,8 @@ export const create = command('unchecked', async (body: CreateEvent) => {
   return data;
 });
 
-type UpdateCursus = { id: string } & components['schemas']['PatchEventRequestDTO'];
-export const update = command('unchecked', async (body: UpdateCursus) => {
+type UpdateEvent = { id: string } & components['schemas']['PatchEventRequestDTO'];
+export const update = command('unchecked', async (body: UpdateEvent) => {
   const { locals } = getRequestEvent();
   const { id, thumbnail, ...rest } = body;
   let thumbnailUrl = thumbnail;

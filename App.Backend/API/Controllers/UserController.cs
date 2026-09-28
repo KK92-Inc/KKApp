@@ -239,16 +239,15 @@ In regards to rubrics it will evaluate if user is elligible to conduct a review 
 		var existing = await users.FindByLoginAsync(request.Login, token);
 		if (existing is not null) return Conflict();
 
-		var (user, password) = await users.CreateUserAsync(new()
+		var user = await users.CreateAsync(new()
 		{
 			Login = request.Login,
 			FirstName = request.FirstName,
 			LastName = request.LastName,
 			Email = request.Email,
-		}, token);
+		}, request.Role, token);
 
 		await bus.PublishAsync(new WelcomeUserNotification(user!));
-		Response.Headers.TryAdd("X-Password", password);
 		return Ok(new UserDO(user));
 	}
 
