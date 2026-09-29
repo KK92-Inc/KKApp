@@ -1,1 +1,1 @@
-Admin intro page, add
+Freeze Page

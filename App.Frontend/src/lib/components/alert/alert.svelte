@@ -9,7 +9,9 @@
 				destructive:
 					"text-destructive bg-card *:data-[slot=alert-description]:text-destructive/90 [&>svg]:text-current",
 				warning:
-					"text-yellow-600 bg-card *:data-[slot=alert-description]:text-yellow-600/90 [&>svg]:text-current",
+					"text-yellow-600 dark:text-yellow-500 bg-card *:data-[slot=alert-description]:text-yellow-600/90 dark:*:data-[slot=alert-description]:text-yellow-500/90 [&>svg]:text-current",
+				success:
+					"text-green-600 dark:text-green-500 bg-card *:data-[slot=alert-description]:text-green-600/90 dark:*:data-[slot=alert-description]:text-green-500/90 [&>svg]:text-current",
 			},
 		},
 		defaultVariants: {

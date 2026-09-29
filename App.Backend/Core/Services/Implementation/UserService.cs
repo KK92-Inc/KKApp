@@ -35,11 +35,11 @@ public class UserService(
     /// role to assign. Applicants and students live in the student realm, staff in the admin realm.
     /// Only used for creation; anonymize discovers the realm via <see cref="FindKeycloakUserAsync"/>.
     /// </summary>
-    private (IKeycloakService Keycloak, string RealmRole) Resolve(UserRole role) => role switch
+    private (IKeycloakService Keycloak, string? RealmRole) Resolve(UserRole role) => role switch
     {
         UserRole.Applicant => (student, "applicant"),
         UserRole.Student => (student, "student"),
-        UserRole.Staff => (admin, "staff"),
+        UserRole.Staff => (admin, null),
         _ => throw new ArgumentOutOfRangeException(nameof(role), role, "Unknown user role."),
     };
 
@@ -122,7 +122,8 @@ public class UserService(
 
         try
         {
-            await keycloak.AddRoleAsync(id, realmRole, token);
+            if (realmRole is not null)
+                await keycloak.AddRoleAsync(id, realmRole, token);
 
             var strategy = context.Database.CreateExecutionStrategy();
             return await strategy.ExecuteAsync(async (ct) =>

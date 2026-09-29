@@ -26,7 +26,10 @@ export const subscribeToCursus = command(CursusSchema, async ({ userId, cursusId
 	});
 
 	if (error || !data) Problem.throw(error);
-	UserCursus.get(data.id).refresh();
+	await Promise.all([
+		UserCursus.get(data.id).refresh(),
+		UserCursus.getByUserAndCursus({ userId, cursusId }).refresh()
+	]);
 	return data;
 });
 
@@ -38,7 +41,10 @@ export const unsubscribeFromCursus = command(CursusSchema, async ({ userId, curs
 	});
 
 	if (error || !data) Problem.throw(error);
-	UserCursus.get(data.id).refresh();
+	await Promise.all([
+		UserCursus.get(data.id).refresh(),
+		UserCursus.getByUserAndCursus({ userId, cursusId }).refresh()
+	]);
 	return data;
 });
 
@@ -52,7 +58,9 @@ export const subscribeToGoal = command(GoalSchema, async ({ userId, goalId }) =>
 	});
 
 	if (error || !data) Problem.throw(error);
-	UserGoal.get(data.id).refresh();
+	// getByUser is what page-actions.svelte actually reads - refreshing only get(id)
+	// left that query's cached data stale until a full reload re-ran everything.
+	await Promise.all([UserGoal.get(data.id).refresh(), UserGoal.getByUser({ userId, goalId }).refresh()]);
 	return data;
 });
 
@@ -63,9 +71,8 @@ export const unsubscribeFromGoal = command(GoalSchema, async ({ userId, goalId }
 		params: { path: { userId, goalId } }
 	});
 
-
 	if (error || !data) Problem.throw(error);
-	UserGoal.get(data.id).refresh();
+	await Promise.all([UserGoal.get(data.id).refresh(), UserGoal.getByUser({ userId, goalId }).refresh()]);
 	return data;
 });
 
@@ -79,7 +86,10 @@ export const subscribeToProject = command(ProjectSchema, async ({ userId, projec
 	});
 
 	if (error || !data) Problem.throw(error);
-	UserProject.get(data.id).refresh();
+	await Promise.all([
+		UserProject.get(data.id).refresh(),
+		UserProject.getByUserAndProject({ userId, projectId }).refresh()
+	]);
 	return data;
 });
 
@@ -91,6 +101,9 @@ export const unsubscribeFromProject = command(ProjectSchema, async ({ userId, pr
 	});
 
 	if (error || !data) Problem.throw(error);
-	UserProject.get(data.id).refresh();
+	await Promise.all([
+		UserProject.get(data.id).refresh(),
+		UserProject.getByUserAndProject({ userId, projectId }).refresh()
+	]);
 	return data;
 });
