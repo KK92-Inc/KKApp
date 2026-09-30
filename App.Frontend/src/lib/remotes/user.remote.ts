@@ -7,7 +7,6 @@ import * as v from 'valibot';
 import { S3Client } from "bun";
 import { query, command, getRequestEvent } from '$app/server';
 import { EntityObjectState, EntityType, Filters, paginate, Problem } from '$lib/api';
-import { avatars } from '$lib/s3';
 import { env } from '$env/dynamic/public';
 
 // ============================================================================
@@ -131,22 +130,22 @@ export const update = command(UpdateSchema, async (params) => {
 	const { locals } = getRequestEvent();
 	const { avatarUrl, userId, ...rest } = params;
 
-	let avatar: string | null | undefined = undefined;
+	// let avatar: string | null | undefined = undefined;
 
-	if (avatarUrl instanceof File) {
-		await avatars.write(userId, avatarUrl);
-		avatar = `${env.PUBLIC_S3_ENDPOINT}/avatars/${userId}?v=${Date.now()}`;
-	} else if (typeof avatarUrl === 'string') {
-		avatar = avatarUrl;
-	} else if (avatarUrl === null) {
-		avatar = null;
-		await avatars.delete(userId).catch(() => { });
-	}
+	// if (avatarUrl instanceof File) {
+	// 	await avatars.write(userId, avatarUrl);
+	// 	avatar = `${env.PUBLIC_S3_ENDPOINT}/avatars/${userId}?v=${Date.now()}`;
+	// } else if (typeof avatarUrl === 'string') {
+	// 	avatar = avatarUrl;
+	// } else if (avatarUrl === null) {
+	// 	avatar = null;
+	// 	await avatars.delete(userId).catch(() => { });
+	// }
 
 	const { error, data } = await locals.api.PATCH('/users/{userId}', {
 		params: { path: { userId } },
 		body: {
-			...(avatar !== undefined ? { avatarUrl: avatar } : {}),
+			// ...(avatar !== undefined ? { avatarUrl: avatar } : {}),
 			...rest
 		}
 	});
