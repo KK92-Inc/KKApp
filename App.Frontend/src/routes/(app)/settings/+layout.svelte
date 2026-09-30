@@ -10,7 +10,7 @@
 		<Navgroup
 			title="Profile Settings"
 			routes={[
-				'/(app)/settings/profile',
+				'/(app)/settings',
 				'/(app)/settings/features',
 				'/(app)/settings/apps',
 				'/(app)/settings/ssh'

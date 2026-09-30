@@ -8,7 +8,6 @@ import { Filters, Problem } from '$lib/api';
 import type { components } from '$lib/api/api';
 import { command, getRequestEvent, query } from '$app/server';
 import { useS3Storage } from '$lib/s3';
-import { page } from "$app/state";
 import { error } from "@sveltejs/kit";
 
 // ============================================================================

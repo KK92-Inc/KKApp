@@ -27,7 +27,7 @@ export class Context {
 	public fields = $state<Variables>({
 		name: "",
 		description: "",
-		thumbnail: null,
+		thumbnail: "https://placehold.co/128x128?text=Event",
 		markdown: "",
 		capacity: 0,
 		threshold: null,

@@ -9,27 +9,26 @@ import { Trophy, Target, GraduationCap, Archive } from "@lucide/svelte";
 // ============================================================================
 
 export const Meta: MetaRecord = {
-	'/(app)/(entities)/workspace/[id]/projects': {
+	'/(app)/workspace/[id]/projects': {
 		icon: Archive,
 		label: 'View Projects',
 		scopes: ['projects:read', 'workspaces:read']
 	},
-	'/(app)/(entities)/workspace/[id]/goals': {
+	'/(app)/workspace/[id]/goals': {
 		icon: Trophy,
 		label: 'View Goals',
 		scopes: ['goals:read', 'workspaces:read']
 	},
-	'/(app)/(entities)/workspace/[id]/rubrics': {
+	'/(app)/workspace/[id]/rubrics': {
 		icon: Target,
 		label: 'View Rubrics',
-		scopes: ['rubrics:read', 'rubrics:write', 'workspaces:read']
+		scopes: ['rubrics:read', 'workspaces:read']
 	},
-	'/(app)/(entities)/workspace/[id]/cursi': {
+	'/(app)/workspace/[id]/cursus': {
 		icon: GraduationCap,
 		label: 'View Cursus',
 		scopes: ['cursus:read', 'workspaces:read']
 	},
 }
-
 
 

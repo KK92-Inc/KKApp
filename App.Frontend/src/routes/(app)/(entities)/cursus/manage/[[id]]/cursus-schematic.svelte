@@ -7,6 +7,7 @@
 	import * as Page from './context.svelte';
 	import * as Empty from '$lib/components/empty';
 	import AddGoalDialog from './goal-select.svelte';
+	import { SvelteMap } from 'svelte/reactivity';
 
 	interface GoalNode {
 		id: string;
@@ -37,7 +38,7 @@
 	 * Converts flat context.track ({ goalId, name, slug, parentGoalId }) to nested GoalNode tree.
 	 */
 	function flatToTree(flat: typeof context.track): GoalNode[] {
-		const map = new Map<string, GoalNode>();
+		const map = new SvelteMap<string, GoalNode>();
 		const roots: GoalNode[] = [];
 
 		for (const item of flat) {
@@ -84,7 +85,7 @@
 		return flat;
 	}
 
-	let items = $state<GoalNode[]>([]);
+	let items = $derived<GoalNode[]>([]);
 	$effect(() => {
 		items = flatToTree(context.track);
 	});

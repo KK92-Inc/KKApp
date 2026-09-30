@@ -1,8 +1,8 @@
 <script lang="ts">
 	import DataTable from './data-table.svelte';
-	import { columns } from './columns.js';
 	import * as Users from '$lib/remotes/user.remote';
 	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
+	import { columns } from './column';
 
 	let page = $state(0);
 	let size = $state(25);

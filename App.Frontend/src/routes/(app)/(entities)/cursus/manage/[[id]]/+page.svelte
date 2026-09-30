@@ -37,7 +37,7 @@
 		Upload,
 		VectorSquare
 	} from '@lucide/svelte';
-	import CurusRender from './curus-render.svelte';
+	import CurusRender from './cursus-render.svelte';
 	import CursusSchematic from './cursus-schematic.svelte';
 	import { useDialog } from '$lib/components/dialog';
 
@@ -249,7 +249,7 @@
 						</Button>
 					{/if}
 
-					<Button onclick={() => context.submit()} disabled={context.fields.deprecated}>
+					<Button onclick={() => { /* context.submit() */ }} disabled={context.fields.deprecated}>
 						{params.id ? 'Save Changes' : 'Create Cursus'}
 						<CirclePlay />
 					</Button>

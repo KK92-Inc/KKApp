@@ -3,31 +3,14 @@
 	import { afterNavigate, goto } from '$app/navigation';
 	import * as Header from '$lib/components/header';
 	import Button from '$lib/components/button/button.svelte';
-	import { EventSourceContext, init } from '$lib/contexts/events.svelte';
 	import WhiteLabel from '$lib/components/white-label.svelte';
-	import { page } from '$app/state';
 	import Separator from '$lib/components/separator/separator.svelte';
-	import { toast } from 'svelte-sonner';
 	import { isHttpError } from '@sveltejs/kit';
 	import { Calendar } from '@lucide/svelte';
 
 	let open = $state(false);
-	let { children }: LayoutProps = $props();
-
-	// const events = init(new EventSourceContext('/proxy/events'));
-	// events.listen('DemoEvent', (data) => {
-	// 	toast.success(`Received event: ${JSON.stringify(data)}`, {
-	// 		action: {
-	// 			label: 'View',
-	// 			onClick: () => alert(`Event details:\n\n${JSON.stringify(data, null, 2)}`)
-	// 		}
-	// 	});
-	// });
-	// events.listen('DemoEvent', (data) => {
-	// 	console.log(data);
-	// });
-
 	afterNavigate(() => (open = false));
+	const { children }: LayoutProps = $props();
 </script>
 
 <svelte:window

@@ -34,7 +34,7 @@
 
 {#if session}
 	<svelte:boundary>
-		{@const members = await UserProject.getMembersPage({ id: session.id })}
+		{@const members = await UserProject.getMembersPage({ id: session.id, active: true })}
 		{@const abandoned = members.data.find((v) => v.userId === page.data.session.userId && v.leftAt)}
 		{#snippet failed(error, reset)}
 			<Failed {error} {reset} />
@@ -66,7 +66,7 @@
 				{/if}
 
 				<ul class="flex items-center gap-1">
-					{#each members.data.filter((m) => !m.leftAt) as member (member.id)}
+					{#each members.data as member (member.id)}
 						<HoverCard.Root>
 							<HoverCard.Trigger
 								href="/users/{member.user.id}"

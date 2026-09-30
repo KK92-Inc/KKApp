@@ -26,10 +26,10 @@
 	let errors = $state<ValidationErrors>({});
 	let payload = $state({
 		displayName: user.displayName ?? '',
-		avatar: user.avatarUrl as File | string | null,
+		avatar: user.avatarUrl,
 		details: {
-			firstName: user.details?.firstName ?? '',
-			lastName: user.details?.lastName ?? '',
+			firstName: user.firstName ?? '',
+			lastName: user.lastName ?? '',
 			markdown: user.details?.markdown ?? '',
 			websiteUrl: user.details?.websiteUrl ?? '',
 			githubUrl: user.details?.githubUrl ?? '',
@@ -104,7 +104,7 @@
 	<Field.Group class="grid grid-cols-[auto_1fr] gap-2">
 		<Field.Field>
 			<Field.Label>Thumbnail</Field.Label>
-			<Thumbnail size={256} bind:value={payload.avatar} readonly={!writeAvatar} />
+			<Thumbnail size={256} value={payload.avatar} readonly={!writeAvatar} />
 			<Field.Description>Your profile picture</Field.Description>
 			<Field.Error />
 		</Field.Field>

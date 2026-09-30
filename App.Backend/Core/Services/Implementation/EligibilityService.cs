@@ -108,7 +108,8 @@ public class EligibilityService(
                 m => m.EntityType == MemberEntityType.UserProject &&
                 m.EntityId == up.Id &&
                 m.UserId == userId &&
-                m.Role != MemberRole.Pending
+                m.Role != MemberRole.Pending &&
+                m.LeftAt == null
             )
         ).FirstOrDefaultAsync(token);
 
@@ -244,7 +245,8 @@ public class EligibilityService(
                 m.EntityType == MemberEntityType.UserProject &&
                 m.EntityId == up.Id &&
                 m.UserId == u.Id &&
-                m.Role != MemberRole.Pending) &&
+                m.Role != MemberRole.Pending &&
+                m.LeftAt == null) &&
             (
                 up.State != EntityObjectState.Inactive ||
                 (up.UnlocksAt.HasValue && up.UnlocksAt > now)

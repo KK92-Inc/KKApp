@@ -6,15 +6,15 @@
 	let { children }: LayoutProps = $props();
 </script>
 
-<Layout classL="mt-4" classR="mt-4">
+<Layout classL="mt-4 px-2" classR="mt-4">
 	{#snippet left()}
 
 		<Navgroup
-			title="Personal"
+			title="Administration"
 			routes={[
 				'/(app)/admin',
-				'/(app)/admin/freeze',
-				'/(app)/admin/progress'
+				// '/(app)/admin/freeze',
+				// '/(app)/admin/progress'
 			]}
 		/>
 	{/snippet}

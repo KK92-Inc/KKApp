@@ -10237,7 +10237,7 @@ export interface components {
             /** Format: date-time */
             endsAt: string;
             /** Format: date-time */
-            closesAt: null | string;
+            closesAt: string;
             state: components["schemas"]["EventState"];
             /** Format: uuid */
             userId: string;
@@ -10293,6 +10293,8 @@ export interface components {
             name: string;
             description: string;
             slug: string;
+            /** @description The URL to the image containing the thumbnail of the goal. */
+            thumbnail: null | string;
             enabled: boolean;
             public: boolean;
             deprecated: boolean;
@@ -10733,6 +10735,8 @@ export interface components {
             description: string;
             /** @description The URL-friendly slug identifier for the project. */
             slug: string;
+            /** @description The URL to the image containing the thumbnail of the project. */
+            thumbnail: null | string;
             /** @description Indicates whether the project is currently active. */
             active: boolean;
             /** @description Indicates whether the project is publicly visible. */

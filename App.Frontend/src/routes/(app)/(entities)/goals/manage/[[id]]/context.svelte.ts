@@ -30,7 +30,7 @@ export class Context {
 	public fields = $state<Variables>({
 		name: "",
 		description: "",
-		active: false,
+		enabled: false,
 		public: false,
 		deprecated: false
 	});

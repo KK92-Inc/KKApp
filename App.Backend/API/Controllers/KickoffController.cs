@@ -192,7 +192,7 @@ public class KickoffController(
         throw new NotImplementedException();
     }
 
-    [Tags("users")]
+    [Tags("Users")]
     [HttpGet("~/users/{userId:guid}/kickoff")]
     [ProtectedResource("kickoffs", "kickoffs:read")]
     [ProducesResponseType(StatusCodes.Status200OK)]

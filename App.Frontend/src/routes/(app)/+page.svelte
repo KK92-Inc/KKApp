@@ -1,4 +1,4 @@
-<script lang="ts" scopes="[users:read, users:write]">
+<script lang="ts">
 	import { Sparkles } from '@lucide/svelte';
 	import Spotlight from './spotlight.svelte';
 	import Button from '$lib/components/button/button.svelte';

@@ -3,15 +3,16 @@
 // See README in the root project for more information.
 // ============================================================================
 
-import { UserPlus } from "@lucide/svelte";
 import type { MetaRecord } from "$lib/utils";
+import { Bot, FlaskConical, KeyRound, Rocket, UserPen, Users } from "@lucide/svelte";
 
 // ============================================================================
 
 export const Meta: MetaRecord = {
-	"/(app)/(entities)/user/manage/[[id]]": {
-		scopes: ["users:write"],
-		label: "Manage Users",
-		icon: UserPlus
-	}
+	'/(app)/admin': {
+		icon: Users,
+		label: 'Users',
+		scopes: ['users:read']
+	},
 }
+

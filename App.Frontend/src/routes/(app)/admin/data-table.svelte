@@ -2,11 +2,11 @@
 	import { type ColumnDef, type RowData, createTable, FlexRender } from '@tanstack/svelte-table';
 	import * as Table from '$lib/components/table';
 	import * as InputGroup from '$lib/components/input-group';
-	import { features, type DataTableFeatures } from './data-table-features.js';
 	import { Button } from '$lib/components/button';
 	import Separator from '$lib/components/separator/separator.svelte';
 	import { Input } from '$lib/components/input';
 	import { Search, UserPlus } from '@lucide/svelte';
+	import { features, type DataTableFeatures } from './features';
 
 	type DataTableProps<TData extends RowData> = {
 		columns: ColumnDef<DataTableFeatures, TData>[];
@@ -71,7 +71,7 @@
 			</InputGroup.Addon>
 		</InputGroup.Root>
 
-		<Button href="/user/manage" variant="outline">
+		<Button href="/users/manage" variant="outline">
 			<UserPlus />
 			Add User
 		</Button>

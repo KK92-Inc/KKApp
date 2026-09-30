@@ -6,12 +6,12 @@
 import { Filters, Problem } from '$lib/api';
 import { command, getRequestEvent } from '$app/server';
 import type { components } from '$lib/api/api';
-import * as Project from "$lib/remotes/projects.remote";
+import * as Rubric from "$lib/remotes/rubric.remote";
 
 // ============================================================================
 
-type CreateProject = { workspace: string; } & components['schemas']['PostRubricRequestDTO'];
-export const create = command('unchecked', async (body: CreateProject) => {
+type CreateRubric = { workspace: string; } & components['schemas']['PostRubricRequestDTO'];
+export const create = command('unchecked', async (body: CreateRubric) => {
 	const { locals } = getRequestEvent();
 	const { workspace, ...rest } = body;
 	const { error, data } = await locals.api.POST("/workspace/{workspace}/rubric", {
@@ -26,8 +26,8 @@ export const create = command('unchecked', async (body: CreateProject) => {
 	return data;
 });
 
-type UpdateProject = { id: string; } & components['schemas']['PatchRubricRequestDTO'];
-export const update = command('unchecked', async (body: UpdateProject) => {
+type UpdateRubric = { id: string; } & components['schemas']['PatchRubricRequestDTO'];
+export const update = command('unchecked', async (body: UpdateRubric) => {
 	const { locals } = getRequestEvent();
 	const { id, ...rest } = body;
 	const { error, data } = await locals.api.PATCH("/rubrics/{id}", {
@@ -55,7 +55,7 @@ export const deprecate = command(Filters.id, async (id) => {
 		Problem.throw(error);
 	}
 
-	Project.get(id).refresh();
+	Rubric.get(id).refresh();
 });
 
 export const undeprecate = command(Filters.id, async (id) => {
@@ -68,5 +68,5 @@ export const undeprecate = command(Filters.id, async (id) => {
 		Problem.throw(error);
 	}
 
-	Project.get(id).refresh();
+	Rubric.get(id).refresh();
 });

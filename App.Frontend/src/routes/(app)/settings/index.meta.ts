@@ -9,7 +9,7 @@ import { Bot, FlaskConical, KeyRound, UserPen } from "@lucide/svelte";
 // ============================================================================
 
 export const Meta: MetaRecord = {
-	'/(app)/settings/profile': {
+	'/(app)/settings': {
 		icon: UserPen,
 		label: 'Profile',
 		scopes: ['user:profile:read']

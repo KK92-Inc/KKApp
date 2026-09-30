@@ -40,7 +40,7 @@ public class EventDO(Event @event, IEnumerable<User> users) : BaseEntityDO<Event
     public DateTimeOffset EndsAt { get; set; } = @event.EndsAt;
 
     [Required]
-    public DateTimeOffset? ClosesAt { get; set; } = @event.ClosesAt;
+    public DateTimeOffset ClosesAt { get; set; } = @event.ClosesAt;
 
     [Required]
     public EventState State { get; set; } = @event.State;

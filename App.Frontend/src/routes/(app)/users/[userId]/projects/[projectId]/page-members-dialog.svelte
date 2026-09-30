@@ -23,7 +23,7 @@
 	import * as Project from '$lib/remotes/projects.remote';
 	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
 
-	let index = $state(1);
+	let index = $state(0);
 	let search = $state('');
 	let login = $state(false);
 	let tab = $state<'search' | 'manage'>('manage');
@@ -45,7 +45,7 @@
 
 {#if session}
 	<svelte:boundary>
-		{@const members = await UserProject.getMembersPage({ id: session.id })}
+		{@const members = await UserProject.getMembersPage({ id: session.id, active: true })}
 
 		{#snippet pending()}
 			<Skeleton class="h-20 w-50" />
@@ -85,7 +85,7 @@
 							</Tabs.Trigger>
 						</Tabs.List>
 						<Tabs.Content value="manage">
-							<Item.Group class="flex gap-2 *:w-fit">
+							<Item.Group class="grid gap-2 grid-cols-3">
 								{#each members.data as member (member.id)}
 									<Item.User user={member.user}>
 										{#snippet actions()}
@@ -125,7 +125,7 @@
 													variant="outline"
 													size="sm"
 												>
-													Make Leader
+													Leader
 												</Button>
 
 												<Button
@@ -201,18 +201,18 @@
 							<svelte:boundary>
 								{@const viable = await User.getEligiblePage({
 									size: 3,
-									page: index,
-									id: project.id,
+									page: 0,
+									id: "01a0f1fc-0883-72a4-9c0b-d04b94fbdeb3",
 									type: 'Project',
-									display: login ? undefined : search,
-									login: login ? search : undefined
+									display: search,
+									// login: login ? search : undefined
 								})}
 
 								{#snippet pending()}
 									<Skeleton class="h-20 w-50" />
 								{/snippet}
 
-								<Item.Group class="flex gap-2">
+								<Item.Group class="grid grid-cols-3 gap-2">
 									{#each viable.data.filter((u) => u.id !== page.data.session.userId) as user (user.id)}
 										<Item.User {user}>
 											{#snippet actions()}

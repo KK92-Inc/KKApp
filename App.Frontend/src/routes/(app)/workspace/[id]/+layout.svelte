@@ -48,10 +48,10 @@
 								id: params.id
 							}}
 							routes={[
-								'/(app)/(entities)/workspace/[id]/cursi',
-								'/(app)/(entities)/workspace/[id]/projects',
-								'/(app)/(entities)/workspace/[id]/goals',
-								'/(app)/(entities)/workspace/[id]/rubrics',
+								'/(app)/workspace/[id]/cursus',
+								'/(app)/workspace/[id]/projects',
+								'/(app)/workspace/[id]/goals',
+								'/(app)/workspace/[id]/rubrics',
 								'/(app)/settings/apps'
 							]}
 						/>

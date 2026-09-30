@@ -22,7 +22,6 @@
 	});
 </script>
 
-{JSON.stringify(context.fields)}
 <svelte:boundary>
 	{#snippet pending()}
 		<Skeleton class="mx-auto mt-4 h-100 w-full max-w-lg" />

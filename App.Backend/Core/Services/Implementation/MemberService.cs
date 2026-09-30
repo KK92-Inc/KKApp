@@ -83,40 +83,36 @@ public class MemberService(DatabaseContext context, TimeProvider time) : BaseSer
 
     public async Task<Member> InviteAsync(Guid entityId, Guid userId, Guid? gitId, int? max, CancellationToken token = default)
     {
-        // Check existing membership
+        // Look for an existing row (tracked, so we can modify it directly)
         var existing = await FindByEntityAndUserId(entityId, userId, token);
-        if (existing is not null && existing.UserId == userId)
+        if (existing is not null && existing.LeftAt is null)
             throw new ServiceException(409, "User is already a member or pending an invite");
 
-        // Check if there is space left to join
-        var members = ctx.Members.AsNoTracking().Where(m => m.EntityId == entityId);
+        // Space check: only count people who haven't left
+        var members = ctx.Members.AsNoTracking().Where(m => m.EntityId == entityId && m.LeftAt == null);
         var count = await members.CountAsync(token);
         if (max.HasValue && count >= max.Value)
             throw new ServiceException(422, $"Membership is full (max {max})");
 
-        // Implement the membership
-        Member member;  // Reuse a previously-left row to avoid accumulating duplicates.
-        var left = members.FirstOrDefault(m => m.UserId == userId && m.LeftAt != null);
-        if (left is not null)
+        Member member;
+        if (existing is not null)
         {
-            left.Role = MemberRole.Pending;
-            left.LeftAt = null;
-            left.GitId = gitId;
-            ctx.Members.Update(left);
-            member = left;
+            // They left or were kicked before: reuse the row instead of creating a duplicate
+            existing.Role = MemberRole.Pending;
+            existing.LeftAt = null;
+            existing.GitId = gitId;
+            member = existing;
         }
         else
         {
             var leader = await members
-                .AsNoTracking()
                 .Where(m => m.Role == MemberRole.Leader)
                 .FirstOrDefaultAsync(token)
-            ?? throw new ServiceException(500, "Entity has no leader, corrupted.");
+                ?? throw new ServiceException(500, "Entity has no leader, corrupted.");
 
             member = new Member
             {
                 // NOTE(W2): We inherit the type from leader.
-                // Wonder if this will lead to bugs... but shouldn't.
                 EntityType = leader.EntityType,
                 EntityId = entityId,
                 GitId = gitId,

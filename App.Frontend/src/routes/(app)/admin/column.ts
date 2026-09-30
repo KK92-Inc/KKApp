@@ -4,11 +4,11 @@
 // ============================================================================
 
 import type { components } from "$lib/api/api.js";
-import type { DataTableFeatures } from "./data-table-features.js";
 import { createRawSnippet } from "svelte";
 import { createColumnHelper, renderComponent, renderSnippet } from "@tanstack/svelte-table";
 import DataTableActions from "./data-table-actions.svelte";
 import DataTableStudent from "./data-table-student.svelte";
+import type { DataTableFeatures } from "./features";
 
 // ============================================================================
 

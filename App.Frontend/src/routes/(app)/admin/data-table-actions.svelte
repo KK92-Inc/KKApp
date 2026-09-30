@@ -55,7 +55,7 @@
 				<User />
 				View Account
 			</DropdownMenu.Item>
-			<DropdownMenu.Item href="/user/manage/{user.id}">
+			<DropdownMenu.Item href="/users/manage/{user.id}">
 				<UserPen />
 				Edit Account
 			</DropdownMenu.Item>

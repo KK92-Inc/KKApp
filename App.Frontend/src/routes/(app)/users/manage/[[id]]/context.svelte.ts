@@ -73,7 +73,7 @@ export class Context {
 			});
 
 			toast.success(`Account for '${user.firstName} ${user.lastName}' create`);
-			await goto(`/user/manage/${user.id}`);
+			await goto(`/users/manage/${user.id}`);
 		}, { onValidation: (fields) => this.errors = fields });
 	}
 }

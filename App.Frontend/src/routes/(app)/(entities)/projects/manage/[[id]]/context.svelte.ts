@@ -35,6 +35,7 @@ export class Context {
 		name: "",
 		description: "",
 		active: false,
+		thumbnail: null,
 		public: false,
 		deprecated: false,
 		maxMembers: 1

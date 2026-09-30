@@ -40,17 +40,14 @@
 			<Plus />
 		</Button>
 
-		<div class="flex items-center gap-2">
 			<Tabs.Root bind:value={status} class="flex-1">
-				<Tabs.List class="w-full">
+				<Tabs.List class="w-full flex-1 max-lg:h-full max-[350px]:h-auto max-[350px]:flex-wrap">
 					<Tabs.Trigger value="Accepted">Upcoming</Tabs.Trigger>
 					<Tabs.Trigger value="Pending">Proposed</Tabs.Trigger>
 					<Tabs.Trigger value="Finished">Finished</Tabs.Trigger>
 					<Tabs.Trigger value="Rejected">Rejected</Tabs.Trigger>
 				</Tabs.List>
 			</Tabs.Root>
-			<span id="pagination"></span>
-		</div>
 	</div>
 
 	<Separator class="mb-2" />

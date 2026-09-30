@@ -11,14 +11,13 @@
 	import type { PageProps } from './$types';
 	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
 	import * as ButtonGroup from '$lib/components/button-group';
-	import RecentProjects from '../recent-projects.svelte';
-	import RecentGoals from '../recent-goals.svelte';
-	import RecentCursi from '../recent-cursi.svelte';
+	import RecentProjects from './recent-projects.svelte';
+	import RecentGoals from './recent-goals.svelte';
+	import RecentCursi from './recent-cursus.svelte';
 	import * as Accordion from '$lib/components/accordion';
 
-	const userId = $derived(page.data.session.userId);
-	const permissions = $derived(page.data.session.permissions);
 	const { params }: PageProps = $props();
+	const permissions = $derived(page.data.session.permissions);
 </script>
 
 <div class="pt-4 not-md:mx-4 sm:mr-4">
