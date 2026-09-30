@@ -5,17 +5,21 @@
 	import { page } from '$app/state';
 	import type { ComponentProps } from 'svelte';
 
-	interface Props extends Omit<ComponentProps<typeof Input>, 'type' | 'value' | 'files'> {
+	interface Props extends Omit<ComponentProps<typeof Input>, 'type' | 'value' | 'files' | 'min' | 'max'> {
 		/**
 		 * UTC ISO string (e.g. "2026-09-18T09:02:46.459Z").
 		 * `undefined` means "nothing picked", never null and never "".
 		 */
 		value?: string;
+		/** Earliest selectable moment, as a UTC ISO string. Optional. */
+		min?: string;
+		/** Latest selectable moment, as a UTC ISO string. Optional. */
+		max?: string;
 		/** IANA timezone the value is displayed/interpreted in. Defaults to the instance tz. */
 		tz?: string;
 	}
 
-	let { value = $bindable(), tz = page.data.tz, ...rest }: Props = $props();
+	let { value = $bindable(), min, max, tz = page.data.tz, ...rest }: Props = $props();
 
 	function toLocalInputValue(utcIso: string | undefined, timeZone: string): string {
 		if (!utcIso) return '';
@@ -43,4 +47,11 @@
 	}
 </script>
 
-<Input type="datetime-local" value={toLocalInputValue(value, tz)} oninput={onInput} {...rest} />
+<Input
+	type="datetime-local"
+	value={toLocalInputValue(value, tz)}
+	min={toLocalInputValue(min, tz) || undefined}
+	max={toLocalInputValue(max, tz) || undefined}
+	oninput={onInput}
+	{...rest}
+/>

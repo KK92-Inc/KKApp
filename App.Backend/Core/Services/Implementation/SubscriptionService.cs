@@ -227,7 +227,8 @@ public class SubscriptionService(
                 m => m.EntityType == MemberEntityType.UserProject &&
                 m.EntityId == up.Id &&
                 m.UserId == userId &&
-                m.Role != MemberRole.Pending
+                m.Role != MemberRole.Pending &&
+                m.LeftAt == null
             )
         ).FirstOrDefaultAsync(token);
 
@@ -235,6 +236,35 @@ public class SubscriptionService(
             throw new ServiceException("Not currently subscribed to this project.");
         if (existing.State is EntityObjectState.Completed)
             throw new ServiceException("Cannot unsubscribe from a completed project.");
+
+        // Only the leader owns the session. Regular members have to leave the team instead.
+        var role = await context.Members
+            .Where(m => m.EntityType == MemberEntityType.UserProject
+                     && m.EntityId == existing.Id
+                     && m.UserId == userId
+                     && m.LeftAt == null)
+            .Select(m => m.Role)
+            .FirstAsync(token);
+
+        ServiceException.ThrowIf(
+            role is not MemberRole.Leader,
+            "You are working on this project as part of a team. Leave the team instead of unsubscribing."
+        );
+
+        // Leader with teammates: unsubscribing would lock the project for everyone.
+        var hasTeammates = await context.Members.AnyAsync(
+            m => m.EntityType == MemberEntityType.UserProject
+              && m.EntityId == existing.Id
+              && m.UserId != userId
+              && m.LeftAt == null
+              && m.Role != MemberRole.Pending,
+            token
+        );
+
+        ServiceException.ThrowIf(
+            hasTeammates,
+            "Your team still has active members. Transfer leadership and leave, or remove them first."
+        );
 
         return await context.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
         {
@@ -317,7 +347,7 @@ public class SubscriptionService(
             .Where(ug => context.CursusGoal.Any(cg => cg.CursusId == reactivatedCursusId && cg.GoalId == ug.GoalId))
             .ToListAsync(ct);
 
-        if (inactiveGoals.Count == 0) return ;
+        if (inactiveGoals.Count == 0) return;
 
         foreach (var goal in inactiveGoals)
         {
@@ -338,7 +368,7 @@ public class SubscriptionService(
             .Where(up => context.GoalProject.Any(gp => reactivatedGoalIds.Contains(gp.GoalId) && gp.ProjectId == up.ProjectId))
             .ToListAsync(ct);
 
-        if (inactiveProjects.Count == 0) return ;
+        if (inactiveProjects.Count == 0) return;
 
         var transactions = new List<UserProjectTransaction>();
         foreach (var project in inactiveProjects)
@@ -369,7 +399,7 @@ public class SubscriptionService(
                 context.UserCursi.Any(uc => uc.CursusId == cg.CursusId && uc.UserId == userId && uc.State != EntityObjectState.Inactive)))
             .ToListAsync(ct);
 
-        if (orphanedGoals.Count == 0) return ;
+        if (orphanedGoals.Count == 0) return;
 
         foreach (var goal in orphanedGoals)
         {
@@ -397,7 +427,7 @@ public class SubscriptionService(
                 )))
             .ToListAsync(ct);
 
-        if (orphanedProjects.Count == 0) return ;
+        if (orphanedProjects.Count == 0) return;
 
         var transactions = new List<UserProjectTransaction>();
         foreach (var project in orphanedProjects)

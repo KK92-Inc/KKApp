@@ -21,6 +21,7 @@
 	import { Label } from '$lib/components/label';
 	import Badge from '$lib/components/badge/badge.svelte';
 	import { goto } from '$app/navigation';
+	import { env } from '$env/dynamic/public';
 
 	const dialog = Dialog.useDialog();
 	const context = Page.getContext();
@@ -34,10 +35,10 @@
 	);
 
 	const git = $derived(session?.gitInfo ? await Git.getBranches(session.gitInfo.id) : []);
-	const initialized = $derived(!!git.find(b => b.head));
+	const initialized = $derived(!!git.find((b) => b.head));
 
 	$effect(() => {
-		if (initialized) context.branch = git.find(b => b.head)!.name;
+		if (initialized) context.branch = git.find((b) => b.head)!.name;
 	});
 
 	let name = $state('');
@@ -83,13 +84,17 @@
 					<Command.List>
 						{#if session.state === 'Active'}
 							<Command.Empty class="p-0">
-								{@render createBranch()}
+								<!-- {@render createBranch()} -->
 							</Command.Empty>
 						{/if}
 						<Command.Group>
 							<svelte:boundary>
 								{#each git as branch (branch.name)}
-									<Command.Item value={branch.name} class="h-8" onSelect={() => (context.branch = branch.name)}>
+									<Command.Item
+										value={branch.name}
+										class="h-8"
+										onSelect={() => (context.branch = branch.name)}
+									>
 										<CheckIcon class={cn(context.branch !== branch.name && 'text-transparent')} />
 										<span class="flex-1">{branch.name}</span>
 										{#if !branch.head && session.state === 'Active'}
@@ -112,7 +117,7 @@
 								{/each}
 							</svelte:boundary>
 						</Command.Group>
-						<Command.Separator />
+						<!-- <Command.Separator />
 						{#if initialized && session.state === 'Active'}
 							<Command.Group>
 								<Dialog.Root
@@ -148,11 +153,47 @@
 									</Dialog.Content>
 								</Dialog.Root>
 							</Command.Group>
-						{/if}
+						{/if} -->
 					</Command.List>
 				</Command.Root>
 			</Popover.Content>
 		</Popover.Root>
+
+
+	{@const url = `${env.PUBLIC_GIT_URL}/${session.project.id}/${session.id}`}
+	{@const cmd = `git clone ${url}`}
+	<InputGroup.Root class="w-auto">
+		<InputGroup.Addon align="inline-end">
+			<InputGroup.Copy value={cmd} />
+		</InputGroup.Addon>
+		<InputGroup.Input
+			id="title"
+			autocomplete="off"
+			autocorrect="off"
+			autosave="off"
+			class="w-full"
+			readonly
+			value={cmd}
+		/>
+		<InputGroup.Addon align="inline-start">
+			<DropdownMenu.Root>
+				<DropdownMenu.Trigger>
+					{#snippet child({ props })}
+						<InputGroup.Button {...props} variant="ghost" aria-label="More" size="icon-xs">
+							<Ellipsis />
+						</InputGroup.Button>
+					{/snippet}
+				</DropdownMenu.Trigger>
+				<DropdownMenu.Content align="start" class="[--radius:0.95rem]">
+					<DropdownMenu.Item href={`vscode://vscode.git/clone?url=${url}`}>Open in VS Code</DropdownMenu.Item>
+					<DropdownMenu.Item href={`cursor://vscode.git/clone?url=${url}`}>Open in Cursor</DropdownMenu.Item>
+					<DropdownMenu.Item href={`jetbrains://idea/checkout/git?checkout_url=${url}`}>
+						Open in IntelliJ
+					</DropdownMenu.Item>
+				</DropdownMenu.Content>
+			</DropdownMenu.Root>
+		</InputGroup.Addon>
+	</InputGroup.Root>
 	{/if}
 
 	<!-- {#if context.view === 'submission'}

@@ -64,7 +64,7 @@
 		<Item.Description class="text-xs">{project.description}</Item.Description>
 	</Item.Content>
 	{#if actions}
-		<Item.Actions onclick={(e) => e.stopPropagation()}>
+		<Item.Actions>
 			{@render actions()}
 		</Item.Actions>
 	{/if}

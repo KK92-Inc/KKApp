@@ -239,8 +239,7 @@ public class UserProjectController(
         var member = await memberService.FindByEntityAndUserId(id, userId, token);
         if (member is null) return NotFound();
 
-        member = await memberService.UnInviteAsync(id, member.Id, token);
-
+        member = await memberService.UnInviteAsync(id, member.UserId, token);
         await service.LogTransactionAsync(
             up.Id,
             User.GetSID(),

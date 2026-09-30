@@ -198,7 +198,6 @@
 						</Item.Root>
 					</Item.Group>
 				{:else}
-					{@const value = `git clone ${env.PUBLIC_GIT_URL}/project/${params.id}`}
 					{#if context.fields.deprecated}
 						<Alert.Root variant="destructive">
 							<CircleAlert />
@@ -211,6 +210,8 @@
 							</Alert.Description>
 						</Alert.Root>
 					{:else}
+						{@const url = `${env.PUBLIC_GIT_URL}/project/${params.id}`}
+						{@const cmd = `git clone ${url}`}
 						<Alert.Root>
 							<CircleAlert />
 							<Alert.Title>Advanced File Editing</Alert.Title>
@@ -221,7 +222,7 @@
 								</p>
 								<InputGroup.Root class="mt-2">
 									<InputGroup.Addon align="inline-end">
-										<InputGroup.Copy {value} />
+										<InputGroup.Copy value={cmd} />
 									</InputGroup.Addon>
 									<InputGroup.Input
 										id="title"
@@ -230,7 +231,7 @@
 										autosave="off"
 										class="w-full"
 										readonly
-										{value}
+										value={cmd}
 									/>
 									<InputGroup.Addon align="inline-start">
 										<DropdownMenu.Root>
@@ -242,13 +243,13 @@
 												{/snippet}
 											</DropdownMenu.Trigger>
 											<DropdownMenu.Content align="start" class="[--radius:0.95rem]">
-												<DropdownMenu.Item href={`vscode://vscode.git/clone?url=${value}`}>
+												<DropdownMenu.Item href={`vscode://vscode.git/clone?url=${url}`}>
 													Open in VS Code
 												</DropdownMenu.Item>
-												<DropdownMenu.Item href={`cursor://vscode.git/clone?url=${value}`}>
+												<DropdownMenu.Item href={`cursor://vscode.git/clone?url=${url}`}>
 													Open in Cursor
 												</DropdownMenu.Item>
-												<DropdownMenu.Item href={`jetbrains://idea/checkout/git?checkout_url=${value}`}>
+												<DropdownMenu.Item href={`jetbrains://idea/checkout/git?checkout_url=${url}`}>
 													Open in IntelliJ
 												</DropdownMenu.Item>
 											</DropdownMenu.Content>

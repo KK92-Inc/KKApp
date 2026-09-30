@@ -31,6 +31,7 @@ public class ReviewService(DatabaseContext ctx, IRuleService rules, IGitService 
             .Include(r => r.UserProject)
             .ThenInclude(up => up.GitInfo)
             .ThenInclude(up => up.Projects)
+            .ThenInclude(p => p.Workspace)
             .Include(r => r.Reviewer)
             .PaginateAsync(pagination, token);
     }

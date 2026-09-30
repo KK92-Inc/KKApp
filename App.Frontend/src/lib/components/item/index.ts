@@ -14,6 +14,7 @@ import Cursus from "./entities/item-cursus.svelte"
 import Rubric from "./entities/item-rubric.svelte"
 import User from "./entities/item-user.svelte"
 import Event from "./entities/item-event.svelte"
+import Review from "./entities/item-review.svelte"
 import Spotlight from "./misc/item-spotlight.svelte"
 
 export {
@@ -34,6 +35,7 @@ export {
 	User,
 	Spotlight,
 	Event,
+	Review,
 	//
 	Root as Item,
 	Group as ItemGroup,
@@ -51,5 +53,6 @@ export {
 	Rubric as ItemRubric,
 	User as ItemUser,
 	Spotlight as ItemSpotlight,
-	Event as ItemEvent
+	Event as ItemEvent,
+	Review as ItemReview
 };

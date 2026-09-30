@@ -126,6 +126,20 @@ public class MemberService(DatabaseContext context, TimeProvider time) : BaseSer
         return member;
     }
 
+    public async Task<Member> UnInviteAsync(Guid entityId, Guid userId, CancellationToken token = default)
+    {
+        // Check existing membership
+        var existing = await FindByEntityAndUserId(entityId, userId, token)
+            ?? throw new ServiceException(404, "No pending invite to revoke");
+
+        // ServiceException.ThrowIf(existing.UserId == userId, "You cannot uninvite yourself");
+        ServiceException.ThrowIf(existing.Role is not MemberRole.Pending, "User has already accepted, kick them instead");
+
+        ctx.Members.Remove(existing);
+        await ctx.SaveChangesAsync(token);
+        return existing;
+    }
+
 
     public async Task<Member> KickAsync(Guid memberId, CancellationToken token = default)
     {
@@ -161,19 +175,5 @@ public class MemberService(DatabaseContext context, TimeProvider time) : BaseSer
     public Task<Member> SetRoleAsync(Guid memberId, MemberRole role, CancellationToken token = default)
     {
         throw new NotImplementedException();
-    }
-
-    public async Task<Member> UnInviteAsync(Guid entityId, Guid userId, CancellationToken token = default)
-    {
-        // Check existing membership
-        var existing = await FindByEntityAndUserId(entityId, userId, token)
-            ?? throw new ServiceException(404, "No pending invite to revoke");
-
-        // ServiceException.ThrowIf(existing.UserId == userId, "You cannot uninvite yourself");
-        ServiceException.ThrowIf(existing.Role is not MemberRole.Pending, "User has already accepted, kick them instead");
-
-        ctx.Members.Remove(existing);
-        await ctx.SaveChangesAsync(token);
-        return existing;
     }
 }

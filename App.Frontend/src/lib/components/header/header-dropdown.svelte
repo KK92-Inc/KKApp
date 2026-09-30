@@ -16,9 +16,10 @@
 		</Avatar.Root>
 		<span class="max-md:hidden">Account</span>
 	</Button>
-	<Button variant="outline" href="/notifications">
+	<!-- TODO: Implement at a later stage. -->
+	<!-- <Button variant="outline" href="/notifications">
 		<Bell />
-	</Button>
+	</Button> -->
 	<DropdownMenu.Root>
 		<DropdownMenu.Trigger>
 			{#snippet child({ props })}
@@ -33,17 +34,13 @@
 					<Cog />
 					Settings
 				</DropdownMenu.Item>
-				<!-- <DropdownMenu.Item href="/notifications">
-					<Bell />
-					Notifications
-				</DropdownMenu.Item> -->
 			</DropdownMenu.Group>
 			<DropdownMenu.Separator />
 			<DropdownMenu.Group>
-				<DropdownMenu.Item href="/">
+				<!-- <DropdownMenu.Item href="/">
 					<CircleQuestionMark />
 					FAQ
-				</DropdownMenu.Item>
+				</DropdownMenu.Item> -->
 				{#if page.data.session.roles.includes('staff')}
 					<DropdownMenu.Item href="/admin">
 						<Rocket />

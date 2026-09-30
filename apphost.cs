@@ -257,7 +257,10 @@ var frontend = builder.AddViteApp("frontend", "./App.Frontend")
     .WithEnvironment("S3_SECRET_ACCESS_KEY", s3pwd)
     .WithEnvironment("KC_ORIGIN", kcHostname)
     .WithEnvironment("PUBLIC_KC_ORIGIN", kcHostname)
-    .WithEnvironment("PUBLIC_GIT_URL", $"git@{domain}")
+    // Locally we can't really use port 22 without doing a whole lot of bullshit.
+    .WithEnvironment("PUBLIC_GIT_URL", builder.ExecutionContext.IsRunMode
+        ? ReferenceExpression.Create($"ssh://git@{domain}:2222")
+        : ReferenceExpression.Create($"git@{domain}"))
     .WithEnvironment("PUBLIC_API_URL", backend.GetEndpoint("http"))
     .WithEnvironment("PUBLIC_S3_ENDPOINT", s3Hostname)
     .WithEnvironment("ORIGIN", feHostname)

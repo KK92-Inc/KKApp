@@ -95,7 +95,6 @@
 	<svelte:boundary>
 		{@const members = await UserProject.getMembersPage({ id: session.id })}
 		{@const membership = members.data.find((m) => m.userId === page.data.session.userId && !m.leftAt)}
-
 		<!-- If you're seeing someone elses page and you're not a member -->
 		{#if page.params.userId !== page.data.session.userId && !membership}
 			<p class="text-xs leading-relaxed text-muted-foreground">
@@ -130,62 +129,45 @@
 					Decline
 				</Button>
 			</div>
-			<!-- There is an active session! -->
+		<!-- There is an active session! -->
 		{:else if session.state === 'Active'}
-			<Button
-				variant="destructive"
-				class="w-full"
-				loading={Subscription.unsubscribeFromProject.pending > 0}
-				onclick={async () => {
-					if (!(await unsubscribe)) return;
-					await Problem.try(async () => {
-						const data = await Subscription.unsubscribeFromProject({
-							userId: context.userId(),
-							projectId: context.projectId()
+			{#if membership?.role === "Leader"}
+				<Button
+					variant="destructive"
+					class="w-full"
+					loading={Subscription.unsubscribeFromProject.pending > 0}
+					onclick={async () => {
+						if (!(await unsubscribe)) return;
+						await Problem.try(async () => {
+							await Subscription.unsubscribeFromProject({
+								userId: context.userId(),
+								projectId: context.projectId()
+							});
 						});
-
-						UserProjects.getMembersPage({ id: data.id, active: true }).refresh();
-						UserProjects.getByUserAndProject({
-							userId: context.userId(),
-							projectId: context.projectId()
-						}).refresh();
-					});
-				}}
-			>
-				Unsubscribe
-			</Button>
-			<!-- You're done -->
-		{:else if session.state === 'Completed'}
-			<Alert.Root
-				class="relative overflow-hidden rounded-xl border-emerald-500/40 bg-linear-to-br from-emerald-500/10 via-emerald-400/5 to-teal-500/10 shadow-[0_0_25px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/20 ring-inset"
-			>
-				<div class="absolute -top-6 -right-6 h-32 w-32 rounded-full bg-emerald-500/20 blur-3xl"></div>
-
-				<Sparkles size={20} class="shrink-0 text-emerald-500" />
-				<Alert.Title
-					class="bg-linear-to-r from-emerald-600 to-teal-600 bg-clip-text text-lg font-bold tracking-tight text-transparent dark:from-emerald-400 dark:to-teal-400"
+					}}
 				>
-					Project Completed!
-				</Alert.Title>
+					Unsubscribe
+				</Button>
+			{/if}
+		{:else if session.state === 'Completed'}
+			<Alert.Root variant="success">
+				<Sparkles />
+				<Alert.Title>Project Completed!</Alert.Title>
 				<Alert.Description class="font-medium text-emerald-700/80 dark:text-emerald-300/80">
 					Outstanding work! You've successfully finished this project.
 				</Alert.Description>
 			</Alert.Root>
-			<!-- Pending -->
 		{:else if session.state === 'Awaiting'}
-			<Alert.Root class="border-dashed border-amber-500/30 bg-amber-500/5 shadow-sm">
-				<Hourglass class="h-5 w-5 shrink-0 text-amber-500" />
-				<Alert.Title class="text-amber-700 dark:text-amber-400">Project Awaiting</Alert.Title>
-				<Alert.Description class="text-amber-600/80 dark:text-amber-300/80">
-					The project is currently awaiting further action. Hang tight!
-				</Alert.Description>
+			<Alert.Root variant="warning">
+				<Hourglass />
+				<Alert.Title>Project Awaiting</Alert.Title>
+				<Alert.Description>The project is currently awaiting further action. Hang tight!</Alert.Description>
 			</Alert.Root>
-			<!-- Cooldown -->
 		{:else if cooldown && unlocksAt}
-			<Alert.Root>
+			<Alert.Root variant="warning">
 				<ClockFading />
-				<Alert.Title class="text-amber-700 dark:text-amber-400">Resubscription Cooldown</Alert.Title>
-				<Alert.Description class="text-amber-600/80 dark:text-amber-300/80">
+				<Alert.Title>Resubscription Cooldown</Alert.Title>
+				<Alert.Description>
 					<p>
 						You recently unsubscribed. You can resubscribe or reactivate after
 						<span class="inline font-semibold">{formatter.format(unlocksAt)}</span>.
@@ -193,10 +175,10 @@
 				</Alert.Description>
 			</Alert.Root>
 		{:else if project.deprecated && !membership}
-			<Alert.Root class="border-dashed border-destructive/30 bg-destructive/5 shadow-sm">
-				<Ban class="h-5 w-5 shrink-0 text-destructive" />
-				<Alert.Title class="text-destructive">Project Deprecated</Alert.Title>
-				<Alert.Description class="text-destructive/80">
+			<Alert.Root variant="destructive" class="border-dashed">
+				<Ban />
+				<Alert.Title>Project Deprecated</Alert.Title>
+				<Alert.Description>
 					This project has been deprecated and is no longer accepting new subscriptions.
 				</Alert.Description>
 			</Alert.Root>
@@ -213,28 +195,22 @@
 						class="w-full"
 						loading={Subscription.subscribeToProject.pending > 0}
 						onclick={async () => {
-							// if (!(await subscribe)) return;
+							if (!(await subscribe)) return;
 							Problem.try(async () => {
-								const data = await Subscription.subscribeToProject({
+								await Subscription.subscribeToProject({
 									userId: context.userId(),
 									projectId: context.projectId()
 								});
-
-								UserProjects.getMembersPage({ id: data.id, active: true }).refresh();
-								UserProjects.getByUserAndProject({
-									userId: context.userId(),
-									projectId: context.projectId()
-								}).refresh();
 							});
 						}}
 					>
 						{reactivation ? 'Reactivate Project' : 'Subscribe'}
 					</Button>
 				{:else}
-					<Alert.Root class="border-dashed border-destructive/30 bg-destructive/5 shadow-sm">
-						<TriangleAlert size={32} class="shrink-0 stroke-destructive" />
-						<Alert.Title class="text-destructive">Unable to subscribe</Alert.Title>
-						<Alert.Description class="text-destructive/80">
+					<Alert.Root variant="destructive" class="border-dashed">
+						<TriangleAlert />
+						<Alert.Title>Unable to subscribe</Alert.Title>
+						<Alert.Description>
 							You do not meet the prerequisites to subscribe to this project at the moment.
 						</Alert.Description>
 					</Alert.Root>
