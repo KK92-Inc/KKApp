@@ -16,9 +16,10 @@ using Microsoft.EntityFrameworkCore;
 using App.Backend.API.Controllers.Interfaces;
 using Wolverine;
 using App.Backend.API.Notifications.Variants;
-using System.Linq.Expressions;
 using App.Backend.API.Utils;
 using App.Backend.Core;
+using App.Backend.Database;
+using ImTools;
 
 // ============================================================================
 
@@ -39,7 +40,8 @@ namespace App.Backend.API.Controllers;
 public class UserProjectController(
     IUserProjectService service,
     IMemberService memberService,
-    IAuthorizationService auth
+    IAuthorizationService auth,
+    DatabaseContext ctx
 ) : Controller, IInviteController
 {
     private async Task<bool> Access(Guid entityId, CancellationToken token)
@@ -69,6 +71,12 @@ public class UserProjectController(
     )
     {
         var page = await service.GetAllAsync(sorting, pagination, token,
+            up => ctx.Members.Any(m => // Correctly scope the query to find the user's sessions, not all of them.
+                m.EntityType == MemberEntityType.UserProject &&
+                m.EntityId == up.Id &&
+                m.UserId == userId &&
+                m.LeftAt == null
+            ),
             name is null ? null : up => up.Project.Name.Contains(name),
             slug is null ? null : up => up.Project.Slug == slug,
             state is null ? null : up => up.State == state

@@ -6333,9 +6333,7 @@ export interface paths {
          */
         post: {
             parameters: {
-                query?: {
-                    role?: string;
-                };
+                query?: never;
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -10934,6 +10932,7 @@ export interface components {
             details?: null | components["schemas"]["UserDetailsDO"];
             login: string;
             email: string;
+            role: components["schemas"]["UserRole"];
             firstName: string;
             lastName: string;
             displayName: null | string;
@@ -10965,6 +10964,7 @@ export interface components {
             updatedAt: string;
             login: string;
             email: string;
+            role: components["schemas"]["UserRole"];
             firstName: string;
             lastName: string;
             displayName: null | string;

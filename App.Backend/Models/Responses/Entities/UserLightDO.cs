@@ -4,6 +4,7 @@
 // ============================================================================
 
 using App.Backend.Domain.Entities.Users;
+using App.Backend.Domain.Enums;
 using System.ComponentModel.DataAnnotations;
 
 // ============================================================================
@@ -21,6 +22,9 @@ public class UserLightDO(User user) : BaseEntityDO<User>(user)
 
     [Required]
     public string Email { get; set; } = user.Email; 
+
+    [Required]
+    public UserRole Role { get; set; } = user.Role; 
     
     [Required]
     public string FirstName { get; set; } = user.FirstName;

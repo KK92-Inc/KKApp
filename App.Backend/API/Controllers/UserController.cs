@@ -89,10 +89,24 @@ In regards to rubrics it will evaluate if user is elligible to conduct a review 
 		if (id == Guid.Empty)
 			return BadRequest(new ProblemDetails() { Title = "type[id] and type[entity] are required" });
 
+		// Only a Applicant can find elligible applicants.
+		// Only a Student can find elligible students.
+		// Staff however can have anyone and everyone.
+		var user = await users.FindByIdAsync(User.GetSID(), token);
+		UserRole[] eligible = user?.Role switch
+		{
+			UserRole.Applicant => [UserRole.Applicant],
+			UserRole.Student => [UserRole.Student],
+			UserRole.Staff => [UserRole.Applicant, UserRole.Student],
+			_ => []
+        };
+
 		var page = await service.GetAllEligibleAsync(id, type, sorting, pagination, token,
 			u => !userId.HasValue || u.Id == userId.Value,
-			string.IsNullOrWhiteSpace(login) ? null : u => EF.Functions.ILike(u.Login, $"%{login}%"),
-			string.IsNullOrWhiteSpace(display) ? null : u => EF.Functions.ILike(u.Display, $"%{display}%")
+			u => eligible.Contains(u.Role),
+			u => !u.Login.StartsWith("n0bdy"), // Remove anonymized users
+			string.IsNullOrWhiteSpace(login) ? null : u => u.Login != null && EF.Functions.ILike(u.Login, $"%{login}%"),
+			string.IsNullOrWhiteSpace(display) ? null : u => u.Display != null && EF.Functions.ILike(u.Display, $"%{display}%")
 		);
 
 		page.AppendHeaders(Response.Headers);
@@ -230,11 +244,7 @@ In regards to rubrics it will evaluate if user is elligible to conduct a review 
 	[ProducesErrorResponseType(typeof(ProblemDetails))]
 	[EndpointSummary("Create a user")]
 	[EndpointDescription("Provision a new user and create a Keycloak account for them.")]
-	public async Task<ActionResult<UserDO>> Create(
-		[FromBody] PostUserRequestDTO request,
-		[FromQuery(Name = "role")] string? role,
-		CancellationToken token
-	)
+	public async Task<ActionResult<UserDO>> Create([FromBody] PostUserRequestDTO request, CancellationToken token)
 	{
 		var existing = await users.FindByLoginAsync(request.Login, token);
 		if (existing is not null) return Problem("Login is already taken", statusCode: 409);
@@ -246,6 +256,7 @@ In regards to rubrics it will evaluate if user is elligible to conduct a review 
 			LastName = request.LastName,
 			AvatarUrl = request.AvatarUrl,
 			Email = request.Email,
+			Role = request.Role
 		}, request.Role, token);
 
 		await bus.PublishAsync(new WelcomeUserNotification(user!));

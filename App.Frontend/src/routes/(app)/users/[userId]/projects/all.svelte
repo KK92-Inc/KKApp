@@ -1,21 +1,9 @@
 <script lang="ts">
-	import Layout from '$lib/components/layout.svelte';
-	import * as v from 'valibot';
 	import * as Workspace from '$lib/remotes/workspace.remote';
-	import * as InputGroup from '$lib/components/input-group';
-	import * as Field from '$lib/components/field';
-	import * as Tabs from '$lib/components/tabs';
-	import * as Select from '$lib/components/select';
 	import * as Empty from '$lib/components/empty';
 	import * as Item from '$lib/components/item';
 	import * as Projects from '$lib/remotes/projects.remote';
-	import * as UserProjects from '$lib/remotes/user-project.remote';
-	import { Archive, FolderCode, Search } from '@lucide/svelte';
-	import useDebounce from '$lib/hooks/debounce.svelte';
-	import { page } from '$app/state';
-	import type { PageProps } from './$types';
-	import { EntityObjectState } from '$lib/api';
-	import { Separator } from '$lib/components/separator';
+	import { FolderCode} from '@lucide/svelte';
 	import Paginate from '$lib/components/paginate.svelte';
 	import teleport from '$lib/hooks/teleport.svelte';
 	import Skeleton from '$lib/components/skeleton/skeleton.svelte';

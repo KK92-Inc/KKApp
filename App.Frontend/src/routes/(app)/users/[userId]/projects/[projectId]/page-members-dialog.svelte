@@ -149,7 +149,7 @@
 										{/snippet}
 									</Item.User>
 								{:else}
-									<Item.Root>
+									<Item.Root class="col-span-full">
 										<Empty.Root class="col-span-full">
 											<Empty.Header>
 												<Empty.Media variant="icon">
@@ -237,7 +237,7 @@
 											{/snippet}
 										</Item.User>
 									{:else}
-										<Item.Root>
+										<Item.Root class="col-span-full">
 											<Empty.Root class="col-span-full">
 												<Empty.Header>
 													<Empty.Media variant="icon">

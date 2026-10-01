@@ -6,7 +6,7 @@
 		variant?: 'default' | 'short';
 	};
 
-	let { page = $bindable(1), variant = 'default', ...rest }: Props = $props();
+	let { page = $bindable(0), variant = 'default', ...rest }: Props = $props();
 </script>
 
 <Pagination.Root bind:page {...rest}>

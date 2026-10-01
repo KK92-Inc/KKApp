@@ -5,6 +5,7 @@
 
 using System.ComponentModel.DataAnnotations.Schema;
 using App.Backend.Domain.Entities.Events;
+using App.Backend.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 // ============================================================================
@@ -42,6 +43,9 @@ public class User : BaseEntity
 
     [Column("kickoff_id")]
     public Guid? KickoffId { get; set; }
+
+    [Column("role")]
+    public UserRole Role { get; set; }
 
     public virtual Kickoff? Kickoff { get; set; }
 

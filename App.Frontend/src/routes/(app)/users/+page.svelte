@@ -1,5 +1,4 @@
 <script lang="ts">
-	import * as v from 'valibot';
 	import * as InputGroup from '$lib/components/input-group';
 	import * as Empty from '$lib/components/empty';
 	import * as Item from '$lib/components/item';
@@ -8,62 +7,40 @@
 		Archive,
 		ArrowDownWideNarrow,
 		ArrowUpNarrowWide,
-		CalendarDays,
 		FolderCode,
 		Search
 	} from '@lucide/svelte';
 	import useDebounce from '$lib/hooks/debounce.svelte';
-	import useSearchParams from '$lib/hooks/url.svelte';
-	import { page } from '$app/state';
-	import { Order } from '$lib/api';
 	import { Separator } from '$lib/components/separator';
 	import Paginate from '$lib/components/paginate.svelte';
 	import teleport from '$lib/hooks/teleport.svelte';
 	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
-	import type { components } from '$lib/api/api';
 	import { Button } from '$lib/components/button';
-	import * as Avatar from '$lib/components/avatar';
-	import { DateFormatter } from '@internationalized/date';
 	import Checkbox from '$lib/components/checkbox/checkbox.svelte';
 	import * as Tooltip from '$lib/components/tooltip';
 	import Label from '$lib/components/label/label.svelte';
 	import { Toggle } from '$lib/components/toggle';
 	import * as Select from '$lib/components/select';
 
-	const orderByOptions = v.picklist(['CreatedAt', 'UpdatedAt']);
-	const url = useSearchParams({
-		index: v.fallback(
-			v.pipe(
-				v.string(),
-				v.transform(Number),
-				v.check((n) => !isNaN(n) && n > 0)
-			),
-			0
-		),
-		search: v.fallback(v.string(), ''),
-		order: v.fallback(Order, 'Ascending'),
-		orderBy: v.fallback(orderByOptions, 'CreatedAt'),
-		login: v.fallback(v.boolean(), false)
-	});
+	const OrderOptions = ['CreatedAt', 'UpdatedAt'];
 
-	const login = url.query('login');
-	const search = url.query('search');
-	const index = url.query('index');
-	const order = url.query('order');
-	const orderBy = url.query('orderBy');
+	let login = $state(true);
+	let search = $state('');
+	let index = $state(0);
+	let order = $state<"Ascending" | "Descending">('Ascending');
+	let orderBy = $state('CreatedAt');
 	const debounced = useDebounce((query: string) => {
-		if (query.length <= 0) search.clear();
-		else search.value = query;
+		if (query.length <= 0) search = '';
+		else search = query;
 	});
 </script>
 
 <div class="container mx-auto px-4">
-	<span class="flex items-center gap-2 py-2">
-		<p class="pr-4 font-bold whitespace-nowrap">Users</p>
-		<InputGroup.Root class="w-auto">
+	<div class="flex items-center gap-2 py-2">
+		<InputGroup.Root>
 			<InputGroup.Input
-				placeholder="Search by {login.value ? 'login' : 'display name'}..."
-				value={search.value}
+				placeholder="Search by {login ? 'login' : 'display name'}..."
+				value={search}
 				oninput={(e) => debounced.fn(e.currentTarget.value)}
 			/>
 			<InputGroup.Addon>
@@ -75,14 +52,7 @@
 						{#snippet child({ props })}
 							<span {...props} class="flex items-center gap-1">
 								<Label class="text-xs" for="filter-login">Login</Label>
-								<Checkbox
-									id="filter-login"
-									checked={login.value}
-									onCheckedChange={(v) => {
-										if (v) login.value = v;
-										else login.clear();
-									}}
-								/>
+								<Checkbox id="filter-login" bind:checked={login} />
 							</span>
 						{/snippet}
 					</Tooltip.Trigger>
@@ -99,25 +69,26 @@
 			aria-label="Toggle bookmark"
 			size="sm"
 			variant="outline"
+			class="max-md:hidden"
 			onclick={() => {
-				order.value = order.value === 'Ascending' ? 'Descending' : 'Ascending';
+				order = order === 'Ascending' ? 'Descending' : 'Ascending';
 			}}
 		>
-			{#if order.value === 'Ascending'}
+			{#if order === 'Ascending'}
 				<ArrowUpNarrowWide />
 			{:else}
 				<ArrowDownWideNarrow />
 			{/if}
 		</Toggle>
 
-		<Select.Root type="single" name="favoriteFruit" bind:value={orderBy.value}>
-			<Select.Trigger class="w-45">
-				{orderBy.value}
+		<Select.Root type="single" name="favoriteFruit" bind:value={orderBy}>
+			<Select.Trigger class="w-45 max-md:hidden">
+				{orderBy}
 			</Select.Trigger>
 			<Select.Content>
 				<Select.Group>
 					<Select.Label>Fields</Select.Label>
-					{#each orderByOptions.options as order (order)}
+					{#each OrderOptions as order (order)}
 						<Select.Item value={order} label={order}>
 							{order}
 						</Select.Item>
@@ -128,29 +99,29 @@
 
 		<Separator orientation="horizontal" class="flex-1" />
 		<span id="pagination"></span>
-	</span>
+	</div>
 
 	<svelte:boundary>
 		{@const page = await Users.getPage({
 			size: 100,
-			page: index.value,
-			display: login.value ? undefined : search.value,
-			login: login.value ? search.value : undefined,
-			sort: order.value,
-			sortBy: orderBy.value
+			page: index,
+			display: login ? undefined : search,
+			login: login ? search : undefined,
+			sort: order,
+			sortBy: orderBy
 		})}
 
 		<span {@attach teleport('pagination')} class="pr-4">
 			<Paginate
-				page={index.value}
-				onPageChange={(p) => (index.value = p)}
+				page={index}
+				onPageChange={(p) => (index = p - 1)}
 				perPage={page.perPage}
 				count={page.count}
 			/>
 		</span>
 
 		{#snippet pending()}
-			<div class="grid grid-cols-2 gap-4 p-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+			<div class="grid gap-4 max-sm:grid-cols-2 max-md:grid-cols-3 max-lg:grid-cols-4 max-xl:grid-cols-6 grid-cols-7">
 				<Skeleton class="h-60" />
 				<Skeleton class="h-60" />
 				<Skeleton class="h-60" />
@@ -159,7 +130,7 @@
 			</div>
 		{/snippet}
 
-		<div class="flex gap-4">
+		<div class="grid gap-4 max-sm:grid-cols-2 max-md:grid-cols-3 max-lg:grid-cols-4 max-xl:grid-cols-6 grid-cols-7">
 			{#each page.data as user (user.id)}
 				<Item.User {user}>
 					{#snippet actions()}

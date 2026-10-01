@@ -7,6 +7,8 @@
 	import { CalendarDays } from '@lucide/svelte';
 	import { DateFormatter } from '@internationalized/date';
 	import { page } from '$app/state';
+	import Badge from '$lib/components/badge/badge.svelte';
+	import Separator from '$lib/components/separator/separator.svelte';
 
 	interface Props {
 		user: components['schemas']['UserDO'];
@@ -28,7 +30,10 @@
 			{...props}
 			class="grid rounded border transition-all hover:border-ring hover:ring-2 hover:ring-ring/50"
 		>
-			<Avatar.Root class="h-40 w-full rounded-none border-b">
+			<Avatar.Root class="relative h-40 w-full rounded-none border-b">
+				<Badge variant={user.role === "Staff" ? "destructive" : "secondary"} class="absolute text-xs rounded-sm m-1 bottom-0">
+					{user.role}
+				</Badge>
 				<Avatar.Image src={user.avatarUrl} alt={user.login} class="object-cover" />
 				<Avatar.Fallback class="min-w-40 rounded-none text-xl font-medium">
 					{user.displayName?.slice(0, 2)}
@@ -36,14 +41,14 @@
 			</Avatar.Root>
 
 			<Item.Content class="border-b p-2">
-				<Item.Title class="text-md items-center font-semibold">
-					{user.displayName} <span class="text-xs text-muted-foreground">@{user.login}</span>
+				<Item.Title class="text-xs items-center font-semibold">
+					{user.displayName} <span class="text-xs text-muted-foreground text-[10px]">@{user.login}</span>
 				</Item.Title>
 				<Item.Description class="text-xs">
 					<Tooltip.Root delayDuration={100}>
 						<Tooltip.Trigger class="flex items-center text-xs text-muted-foreground">
-							<CalendarDays class="me-1.5 size-3.5 opacity-70" />
-							<span>{formatter.format(new Date(user.createdAt))}</span>
+							<CalendarDays size={14} class="me-1.5 opacity-70" />
+							<span class="text-xs">{formatter.format(new Date(user.createdAt))}</span>
 						</Tooltip.Trigger>
 						<Tooltip.Content>
 							<p>User joined {formatter.format(new Date(user.createdAt))}</p>

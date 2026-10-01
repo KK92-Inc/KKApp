@@ -26,7 +26,7 @@ export const load = query(Filters.id, async (id) => {
 
 	// Check access
 	const staff = locals.session.roles.includes("staff");
-	if (event.userId === locals.session.userId && !staff)
+	if (event.userId !== locals.session.userId && !staff)
 		error(403);
 	return event;
 });

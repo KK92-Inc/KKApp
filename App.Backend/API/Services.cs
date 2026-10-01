@@ -149,7 +149,7 @@ public static class Services
             sp.GetRequiredKeyedService<KeycloakAdminApiClient>("student"),
             builder.Configuration["KeycloakStudent:realm"] ?? "student")
         );
- 
+
         builder.Services.AddKeyedScoped<IKeycloakService>("admin", (sp, _) => new KeycloakService(
             sp.GetRequiredKeyedService<KeycloakAdminApiClient>("admin"),
             builder.Configuration["KeycloakAdmin:realm"] ?? "admin")
@@ -219,8 +219,12 @@ public static class Services
 
         builder.Services.AddOutputCache(options =>
         {
-            options.AddBasePolicy(b => b.Expire(TimeSpan.FromSeconds(30)));
+            // Set base policy expiration to 1 second for all routes
+            // This helps reduce the load by quite a bit.
+            options.AddBasePolicy(b => b.Expire(TimeSpan.FromSeconds(1)));
+
             options.AddPolicy("NoCache", b => b.NoCache());
+            options.AddPolicy("1s", b => b.Expire(TimeSpan.FromSeconds(1)));
             options.AddPolicy("1m", b => b.Expire(TimeSpan.FromMinutes(1)));
             options.AddPolicy("5m", b => b.Expire(TimeSpan.FromMinutes(5)));
             options.AddPolicy("30m", b => b.Expire(TimeSpan.FromMinutes(30)));
