@@ -31,15 +31,16 @@ public class PostCompleteReviewRequestDTO : IValidatableObject
         if (Annotations.Count() > 256)
         {
             yield return new ValidationResult(
-                "You can only submit at most 256 annotations in a single review",
+                "You can only submit at most 256 annotations in a single review.",
                 [nameof(Annotations)]
             );
         }
 
-        if (Annotations.Count(a => a.Kind is AnnotationKind.Conclusion) > 1)
+        var count = Annotations.Count(a => a.Kind is AnnotationKind.Conclusion);
+        if (count is not 1)
         {
             yield return new ValidationResult(
-                "There can only be a single conclusion be made for completing a review",
+                "You must provide exactly 1 conclusive annotation for the review.",
                 [nameof(Annotations)]
             );
         }

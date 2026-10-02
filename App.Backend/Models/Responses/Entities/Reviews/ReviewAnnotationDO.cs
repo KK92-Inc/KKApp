@@ -19,7 +19,7 @@ public class ReviewAnnotationDO(Review review, IEnumerable<AnnotationData> annot
     public Guid ReviewId { get; set; } = review.Id;
 
     [Required]
-    public UserLightDO? Author { get; set; } = review.Reviewer;
+    public UserBriefDO? Author { get; set; } = review.Reviewer;
 
     [Required]
     public IEnumerable<AnnotationData> Annotations { get; set; } = annotations;

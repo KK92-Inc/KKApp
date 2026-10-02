@@ -74,10 +74,18 @@ public class Review : BaseEntity
     public Guid RubricId { get; set; }
 
     /// <summary>
-    /// The SHA of the commit that this review is associated with, if applicable.
+    /// The ref (branch name) that was targeted when the review was created, e.g. "master".
+    /// This moves with every push, see <see cref="Sha"/> for what was actually reviewed.
     /// </summary>
     [Column("ref")]
     public string Ref { get; set; }
+
+    /// <summary>
+    /// The exact commit that was reviewed, resolved from <see cref="Ref"/> when the review
+    /// was created. Null for reviews created before SHAs were recorded.
+    /// </summary>
+    [Column("sha")]
+    public string? Sha { get; set; }
 
     /// <summary>
     /// When the reviewer has committed to carrying out the review.

@@ -285,4 +285,9 @@ public class LocalGitService(DatabaseContext db) : IGitService
     {
         throw new NotImplementedException();
     }
+
+    public Task<string?> ResolveShaAsync(string owner, string name, string @ref, CancellationToken token = default)
+    {
+        throw new NotImplementedException();
+    }
 }

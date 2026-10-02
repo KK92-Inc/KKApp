@@ -32,7 +32,6 @@ namespace App.Backend.API.Controllers;
 [Authorize]
 public class ReviewController(
     IReviewService service,
-    IRubricService rubricService,
     IMemberService memberService,
     IOnsiteNetworkService onsite,
     IUserProjectService userProjects,
@@ -46,8 +45,8 @@ public class ReviewController(
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [EndpointSummary("Query all reviews")]
-    [EndpointDescription("Returns a paginated list of reviews")]
+    [EndpointSummary("List reviews")]
+    [EndpointDescription("Returns a paginated list of reviews, optionally filtered by project session, reviewer, reviewee, rubric, kind or state. Each review is a summary; use the review endpoints for annotations.")]
     public async Task<ActionResult<IEnumerable<ReviewDO>>> GetReviews(
         [FromQuery(Name = "filter[user_project_id]")] Guid? userProjectId,
         [FromQuery(Name = "filter[reviewer_id]"), Description("User conducting a review")] Guid? reviewerId,
@@ -84,8 +83,8 @@ public class ReviewController(
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [EndpointSummary("Get a single review by its ID")]
-    [EndpointDescription("Returns the review with full details including reviewer and rubric.")]
+    [EndpointSummary("Get a review")]
+    [EndpointDescription("Returns a single review: its kind, state, verdict, the commit (`sha`) it evaluated, and brief info on the project session, reviewer and rubric.")]
     public async Task<ActionResult<ReviewDO>> GetReviewById(Guid reviewId, CancellationToken token)
     {
         var review = await service.FindByIdAsync(reviewId, token);
@@ -98,12 +97,13 @@ public class ReviewController(
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [EndpointSummary("Get annotations made in a review")]
+    [EndpointSummary("List a review's annotations")]
     [EndpointDescription(@"
-Returns annotations made by the reviewer during a review.
+Returns the annotations written by the reviewer, in creation order. The reviewer is returned once at the top level,
+since a review only has one author.
 
-Annotations themselves are basically notes, suggestions or comments made on a particual section
-on a file, a conclusive comment, ... They serve as noting down feedback for a review.
+An annotation is either a `Comment` on a line range of a file, or the `Conclusion` summing up the whole review.
+Use `filter[file]` to get the comments on one file and `filter[type]` to get only comments or only the conclusion.
     ")]
     public async Task<ActionResult<ReviewAnnotationDO>> GetAnnotations(
         Guid reviewId,
@@ -131,12 +131,13 @@ on a file, a conclusive comment, ... They serve as noting down feedback for a re
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [EndpointSummary("Request a review round for the user project")]
+    [EndpointSummary("Request an evaluation round")]
     [EndpointDescription(@"
-'Pull' / Request for reviews from other users.
+Requests an evaluation of the project session (a 'pull'). Only the team leader can do this.
 
-Locks the user project and initiates are review round. A round requires a set of required reviews to be conducted.
-All reviews must pass for the session to be marked as completed
+Locks the session and opens a round with the review slots the rubric requires. The current commit of the
+default branch is pinned as the round's `sha`, so every review of the round evaluates exactly that commit.
+All slots must pass for the session to be marked as completed.
     ")]
     public async Task<ActionResult<IEnumerable<ReviewDO>>> PullReview(Guid userProjectId, CancellationToken token)
     {
@@ -173,12 +174,14 @@ All reviews must pass for the session to be marked as completed
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [EndpointSummary("Provide a review onto a user project")]
+    [EndpointSummary("Give a review")]
     [EndpointDescription(@"
-Claims a Peer or Async review slot for a user project, scheduled for a specific time, without waiting to be assigned.
-The reviewed ref is always the project's default branch.
+Offers to review a project session (a 'push'), without waiting to be assigned.
+If the session has an open round, a free slot of the requested kind is claimed. Otherwise an advisory review is
+created: feedback that never counts towards completing the project.
 
-Submits as the requesting user unless a different reviewer is specified, which requires staff.
+The reviewed commit is the current head of the project's default branch, recorded as the review's `sha`.
+Reviews as the requesting user unless a different reviewer is specified, which requires staff.
 ")]
     public async Task<ActionResult<ReviewDO>> PushReview(Guid userProjectId, [FromBody] PostPushReviewRequestDTO dto, CancellationToken token)
     {
@@ -207,8 +210,8 @@ Submits as the requesting user unless a different reviewer is specified, which r
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [EndpointSummary("Get the evaluation rounds of a user project")]
-    [EndpointDescription("Returns every evaluation attempt of the user project, oldest first, including the slots and verdicts of each.")]
+    [EndpointSummary("List evaluation rounds of a project session")]
+    [EndpointDescription("Returns every evaluation attempt of the session, oldest first. Each round includes the commit (`sha`) it evaluated and the state and verdict of its review slots.")]
     public async Task<ActionResult<IEnumerable<ReviewRoundDO>>> GetRounds(Guid userProjectId, CancellationToken token)
     {
         var userProject = await userProjects.FindByIdAsync(userProjectId, token);
@@ -251,7 +254,7 @@ Submits as the requesting user unless a different reviewer is specified, which r
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Assign a reviewer to a pending review")]
-    [EndpointDescription("Assigns the specified user as reviewer for the review. Validates that the reviewer meets the rubric's eligibility requirements.")]
+    [EndpointDescription("Assigns the user as reviewer of a pending review. Anyone can assign themselves; assigning someone else requires staff. The reviewer must meet the rubric's eligibility rules.")]
     public async Task<ActionResult<ReviewDO>> AssignReviewer(Guid reviewId, Guid reviewerId, CancellationToken token)
     {
         // NOTE(W2): You can always assign yourself but not someone else, unless you're staff.
@@ -270,7 +273,7 @@ Submits as the requesting user unless a different reviewer is specified, which r
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Start a review")]
-    [EndpointDescription("Transitions the review to InProgress and assigns the current user as the reviewer.")]
+    [EndpointDescription("Moves a pending review to InProgress. Only the reviewer (or staff) can start it, and Peer reviews must be started from onsite.")]
     public async Task<ActionResult<ReviewDO>> StartReview(Guid reviewId, CancellationToken token)
     {
         var review = await service.FindByIdAsync(reviewId, token);

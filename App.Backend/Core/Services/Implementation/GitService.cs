@@ -151,6 +151,17 @@ public class GitService : IGitService
     }
 
     /// <inheritdoc />
+    public async Task<string?> ResolveShaAsync(string owner, string name, string @ref, CancellationToken token = default)
+    {
+        var response = await _http.GetAsync($"repo/{owner}/{name}/resolve/{@ref}", token);
+        if (response.StatusCode is HttpStatusCode.NotFound)
+            return null;
+
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadAsStringAsync(token)).Trim();
+    }
+
+    /// <inheritdoc />
     public async Task<bool> CreateBranchAsync(string owner, string name, string @ref, string child, CancellationToken token = default)
     {
         var response = await _http.PostAsync($"repo/{owner}/{name}/branches/{@ref}/{child}", null, token);

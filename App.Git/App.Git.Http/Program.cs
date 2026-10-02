@@ -107,6 +107,17 @@ branches.MapGet("/", (string owner, string name) =>
     return Results.Ok(branches.ToArray());
 });
 
+repos.MapGet("/resolve/{**ref}", (string owner, string name, string @ref) =>
+{
+    var dir = Path.Combine(root, owner, name);
+    if (!Repository.IsValid(dir))
+        return Results.NotFound();
+
+    using var repo = new Repository(dir);
+    var commit = repo.Branches[@ref]?.Tip ?? repo.Lookup<Commit>(@ref);
+    return commit is null ? Results.NotFound() : Results.Text(commit.Sha);
+}).WithTags("Branches");
+
 branches.MapPost("/{ref}/{**child}", (string owner, string name, string @ref, string child) =>
 {
     var dir = Path.Combine(root, owner, name);

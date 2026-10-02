@@ -51,10 +51,17 @@ public class ReviewRound : BaseEntity
     public Guid RubricId { get; set; }
 
     /// <summary>
-    /// The commit SHA/branch that was submitted when the round was requested.
+    /// The ref (branch name) that was submitted when the round was requested.
     /// </summary>
     [Column("ref")]
     public string Ref { get; set; }
+
+    /// <summary>
+    /// The exact commit every review of this round evaluates. Pinned at request time so the
+    /// round stays reproducible after the branch moves on. Null for rounds created before this existed.
+    /// </summary>
+    [Column("sha")]
+    public string Sha { get; set; }
 
     /// <summary>
     /// The team leader that requested the round.

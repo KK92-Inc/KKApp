@@ -13,7 +13,7 @@ namespace App.Backend.Domain.Values;
 /// <summary>
 /// Represents the base class for different types of annotation data.
 /// </summary>
-[JsonPolymorphic(TypeDiscriminatorPropertyName = "kind")]
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
 [JsonDerivedType(typeof(CommentAnnotationData), nameof(AnnotationKind.Comment))]
 [JsonDerivedType(typeof(ConclusionAnnotationData), nameof(AnnotationKind.Conclusion))]
 public abstract record AnnotationData

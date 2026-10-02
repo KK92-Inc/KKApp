@@ -33,8 +33,7 @@ public class ReviewService(
             .Sort(sorting)
             .Include(r => r.Rubric)
             .Include(r => r.UserProject)
-            .ThenInclude(up => up.GitInfo)
-            .ThenInclude(up => up.Projects)
+            .ThenInclude(up => up.Project)
             .ThenInclude(p => p.Workspace)
             .Include(r => r.Reviewer)
             .PaginateAsync(pagination, token);
@@ -60,6 +59,10 @@ public class ReviewService(
 
         var @ref = await git.GetDefaultBranchAsync(up.GitInfo.Owner, up.GitInfo.Name, token);
         ServiceException.ThrowIf(@ref is null, "Session repository has no default branch.");
+
+        // Pin the exact commit: the branch will move on, the round must keep pointing at what was submitted.
+        var sha = await git.ResolveShaAsync(up.GitInfo.Owner, up.GitInfo.Name, @ref, token);
+        ServiceException.ThrowIf(sha is null, "Could not resolve the submitted commit.");
 
         var rubric = await GetRubricForProjectAsync(up.ProjectId, token);
         var variants = rubric.Variants.Where(v => v.Count > 0).ToList();
@@ -95,6 +98,7 @@ public class ReviewService(
                 Attempt = maxAttempt + 1,
                 RubricId = rubric.Id,
                 Ref = @ref,
+                Sha = sha,
                 RequestedById = initiatorId,
             };
 
@@ -106,6 +110,7 @@ public class ReviewService(
                 State = ReviewState.Pending,
                 UserProjectId = userProjectId,
                 Ref = @ref,
+                Sha = sha,
                 ReviewerId = v.Kind is ReviewKinds.Self ? initiatorId : null, // We can already determine the evaluator.
             }));
 
@@ -269,6 +274,9 @@ public class ReviewService(
             var @ref = await git.GetDefaultBranchAsync(up.GitInfo!.Owner, up.GitInfo.Name, ct);
             ServiceException.ThrowIf(@ref is null, "Session repository has no default branch.");
 
+            var sha = await git.ResolveShaAsync(up.GitInfo.Owner, up.GitInfo.Name, @ref, ct);
+            ServiceException.ThrowIf(sha is null, "Could not resolve the reviewed commit.");
+
             var review = new Review
             {
                 RoundId = null,
@@ -277,6 +285,7 @@ public class ReviewService(
                 State = ReviewState.Pending,
                 UserProjectId = userProjectId,
                 Ref = @ref,
+                Sha = sha,
                 ReviewerId = reviewerId,
                 ScheduledAt = scheduled,
                 // TODO: Make configurable via system row.

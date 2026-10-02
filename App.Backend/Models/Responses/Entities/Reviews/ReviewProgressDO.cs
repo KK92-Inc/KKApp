@@ -86,7 +86,14 @@ public class ReviewRoundDO(ReviewRound round) : BaseEntityDO<ReviewRound>(round)
     [Required]
     public string Ref { get; init; } = round.Ref;
 
-    public Guid? RequestedById { get; init; } = round.RequestedById;
+    /// <summary>
+    /// The exact commit this round evaluated. Null for rounds created before SHAs were recorded.
+    /// </summary>
+    [Required]
+    public string Sha { get; init; } = round.Sha;
+
+    [Required]
+    public Guid RequestedById { get; init; } = round.RequestedById;
 
     public DateTimeOffset? ClosedAt { get; init; } = round.ClosedAt;
 
