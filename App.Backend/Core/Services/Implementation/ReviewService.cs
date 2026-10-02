@@ -124,7 +124,7 @@ public class ReviewService(
         }, token);
     }
 
-    public async Task<Review> PushReviewAsync(Guid userProjectId, DateTimeOffset scheduledAt, ReviewKinds kind, Guid reviewerId, CancellationToken token = default)
+    public async Task<Review> PushReviewAsync(Guid userProjectId, ReviewKinds kind, Guid reviewerId, CancellationToken token = default)
     {
         switch (kind)
         {
@@ -187,10 +187,6 @@ public class ReviewService(
             }
         }
 
-        // Self is on demand: nothing to schedule and nothing to forget about, so it never expires.
-        var scheduled = kind is ReviewKinds.Self ? now : scheduledAt;
-        var expiresAt = kind is ReviewKinds.Async ? scheduledAt.AddDays(3) : (DateTimeOffset?)null;
-
         return await context.Database.CreateExecutionStrategy().ExecuteAsync(async (ct) =>
         {
             await using var transaction = await context.Database.BeginTransactionAsync(ct);
@@ -250,7 +246,7 @@ public class ReviewService(
 
                 foreach (var slot in slots)
                 {
-                    if (!await TryClaimSlotAsync(slot, reviewerId, scheduled, expiresAt, ct))
+                    if (!await TryClaimSlotAsync(slot, reviewerId, ct))
                         continue;
 
                     await transaction.CommitAsync(ct);
@@ -287,10 +283,7 @@ public class ReviewService(
                 Ref = @ref,
                 Sha = sha,
                 ReviewerId = reviewerId,
-                ScheduledAt = scheduled,
-                // TODO: Make configurable via system row.
-                // NOTE(W2): Only Async reviews auto-expire for now.
-                ExpiresAt = expiresAt,
+                ClaimedAt = now,
             };
 
             var result = _dbSet.Add(review);
@@ -372,6 +365,7 @@ public class ReviewService(
         ServiceException.ThrowIf(review.Round is { State: not ReviewRoundState.Open }, "The evaluation round of this review is closed.");
 
         review.State = ReviewState.InProgress;
+        review.StartedAt = time.GetUtcNow();
         await context.SaveChangesAsync(token);
         return review;
     }
@@ -392,8 +386,8 @@ public class ReviewService(
             // rather than cancelling it. Cancelling would leave the round unresolvable.
             review.ReviewerId = null;
             review.State = ReviewState.Pending;
-            review.ScheduledAt = null;
-            review.ExpiresAt = null;
+            review.ClaimedAt = null;
+            review.StartedAt = null;
         }
         else
         {
@@ -479,7 +473,7 @@ public class ReviewService(
         var result = await rules.CanReviewAsync(review.Rubric, reviewer, review.UserProject, token);
         ServiceException.ThrowIf(!result.IsSuccess, 403, string.Join("; ", result.Reasons));
 
-        if (!await TryClaimSlotAsync(review.Id, reviewerId, review.ScheduledAt, review.ExpiresAt, token))
+        if (!await TryClaimSlotAsync(review.Id, reviewerId, token))
             throw new ServiceException(409, "This review was just claimed by someone else, or you already hold a slot in this round.");
 
         return await _dbSet
@@ -515,8 +509,6 @@ public class ReviewService(
     private async Task<bool> TryClaimSlotAsync(
         Guid reviewId,
         Guid reviewerId,
-        DateTimeOffset? scheduledAt,
-        DateTimeOffset? expiresAt,
         CancellationToken ct
     )
     {
@@ -530,18 +522,9 @@ public class ReviewService(
                     && o.State != ReviewState.Cancelled))
             .ExecuteUpdateAsync(s => s
                 .SetProperty(r => r.ReviewerId, (Guid?)reviewerId)
-                .SetProperty(r => r.ScheduledAt, scheduledAt)
-                .SetProperty(r => r.ExpiresAt, expiresAt)
+                .SetProperty(r => r.ClaimedAt, (DateTimeOffset?)now)
                 .SetProperty(r => r.UpdatedAt, now), ct);
 
         return rows == 1;
     }
-
-    // public async Task<IEnumerable<Annotation>> GetAnnotationsAsync(Guid reviewId, CancellationToken token = default)
-    // {
-    //     return await context.Annotations
-    //         .AsNoTracking()
-    //         .Where(a => a.ReviewId == reviewId)
-    //         .ToListAsync(token);
-    // }
 }

@@ -93,8 +93,17 @@ public class ReviewDO(Review review) : BaseEntityDO<Review>(review)
     [Required]
     public bool? Passed { get; init; } = review.Passed;
 
+    /// <summary>
+    /// When the reviewer claimed this review. They then have 2 days to start it, and 24 hours to finish it once started.
+    /// </summary>
     [Required]
-    public DateTimeOffset? ScheduledAt { get; init; } = review.ScheduledAt;
+    public DateTimeOffset? ClaimedAt { get; init; } = review.ClaimedAt;
+
+    /// <summary>
+    /// When the reviewer started. A started review has 24 hours to be finished before it is released.
+    /// </summary>
+    [Required]
+    public DateTimeOffset? StartedAt { get; init; } = review.StartedAt;
 
     [Required]
     public DateTimeOffset? FinishedAt { get; init; } = review.FinishedAt;

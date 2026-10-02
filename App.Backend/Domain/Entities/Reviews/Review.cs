@@ -88,20 +88,23 @@ public class Review : BaseEntity
     public string? Sha { get; set; }
 
     /// <summary>
-    /// When the reviewer has committed to carrying out the review.
-    /// For Async reviews this is "now" or up to 2 hours out; for Peer reviews
-    /// this is a time today or tomorrow. Null for reviews that don't go through
-    /// the self-service "give a review" flow (e.g. Self, Auto, staff-assigned).
+    /// When the reviewer claimed this review, i.e. committed to doing it. Cleared again if the slot
+    /// is released. Null while unclaimed, and for the pre-assigned self slot of a round (self reviews
+    /// are on demand and never go stale).
+    ///
+    /// There is no scheduling: whoever claims a review has a fixed window to start it, and another
+    /// fixed window to finish it once started. Deadlines are never stored, the cleanup job derives
+    /// them from this and <see cref="StartedAt"/>.
     /// </summary>
-    [Column("scheduled_at")]
-    public DateTimeOffset? ScheduledAt { get; set; }
+    [Column("claimed_at")]
+    public DateTimeOffset? ClaimedAt { get; set; }
 
     /// <summary>
-    /// When a still-pending review should be considered stale and eligible for
-    /// automatic cancellation. Currently only set for Async reviews.
+    /// When the reviewer started working on the review. Set when the review moves to InProgress and
+    /// cleared again if the slot is released. The cleanup job measures the finish window from this.
     /// </summary>
-    [Column("expires_at")]
-    public DateTimeOffset? ExpiresAt { get; set; }
+    [Column("started_at")]
+    public DateTimeOffset? StartedAt { get; set; }
 
     /// <summary>
     /// The evaluation round this review is a slot of. Null means the review is

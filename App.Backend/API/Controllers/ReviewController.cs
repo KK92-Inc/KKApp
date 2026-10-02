@@ -181,6 +181,9 @@ If the session has an open round, a free slot of the requested kind is claimed. 
 created: feedback that never counts towards completing the project.
 
 The reviewed commit is the current head of the project's default branch, recorded as the review's `sha`.
+
+Claiming starts a clock: start the review within 2 days and finish it within 24 hours of starting, otherwise
+it is released for someone else. Self reviews have no deadline while pending.
 Reviews as the requesting user unless a different reviewer is specified, which requires staff.
 ")]
     public async Task<ActionResult<ReviewDO>> PushReview(Guid userProjectId, [FromBody] PostPushReviewRequestDTO dto, CancellationToken token)
@@ -195,10 +198,8 @@ Reviews as the requesting user unless a different reviewer is specified, which r
             if (!result.Succeeded) return Forbid();
         }
 
-        var scheudle = dto.ScheduledAt.HasValue ? dto.ScheduledAt.Value.ToUniversalTime() : time.GetUtcNow();
         var review = await service.PushReviewAsync(
             userProjectId,
-            scheudle,
             dto.Kind,
             reviewerId,
             token

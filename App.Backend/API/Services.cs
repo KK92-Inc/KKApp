@@ -350,6 +350,7 @@ public static class Services
             quartz.UseDefaultThreadPool(x => x.MaxConcurrency = 5);
 
             quartz.Register<EventStateJob>();
+            quartz.Register<CleanupReviews>();
         });
 
         builder.Services.AddQuartzHostedService(o => o.WaitForJobsToComplete = true);

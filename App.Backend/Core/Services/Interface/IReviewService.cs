@@ -44,20 +44,19 @@ public interface IReviewService : IDomainService<Review>
     /// for or against the project, even when the project is completed.
     /// 
     /// The review is <see cref="Enums.ReviewState.Pending"/> and attached to the reviewer, ready to be
-    /// started via the normal start/complete lifecycle once the scheduled time arrives.
+    /// started via the normal start/complete lifecycle. There is no scheduling, a claimed review that
+    /// isn't started in time is released again by the cleanup job.
     /// 
     /// Only <see cref="Enums.ReviewKinds.Peer"/> and <see cref="Enums.ReviewKinds.Async"/>
     /// are supported. The reviewed ref is always the project's default (master) branch.
     /// </summary>
     /// <param name="userProjectId">The user project being reviewed.</param>
     /// <param name="kind">The kind of review being given (Peer or Async).</param>
-    /// <param name="scheduledAt">When the reviewer commits to doing the review.</param>
     /// <param name="reviewerId">Only null if the kind is Auto, else it must be specified.</param>
     /// <param name="token">Cancellation token.</param>
     /// <returns>The claimed slot or the created advisory review (check <see cref="Review.RoundId"/>).</returns>
     public Task<Review> PushReviewAsync(
         Guid userProjectId,
-        DateTimeOffset scheduledAt,
         ReviewKinds kind,
         Guid reviewerId,
         CancellationToken token = default
