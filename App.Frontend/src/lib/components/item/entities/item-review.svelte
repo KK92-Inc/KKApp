@@ -7,7 +7,7 @@
 	import Badge from '$lib/components/badge/badge.svelte';
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/state';
-	import { ArrowRight, Bot, CalendarDaysIcon, Globe, User, Users } from '@lucide/svelte';
+	import { ArrowRight, Bot, CalendarDaysIcon, CalendarIcon, Globe, User, Users } from '@lucide/svelte';
 	import { DateFormatter } from '@internationalized/date';
 
 	interface Props {
@@ -20,24 +20,18 @@
 
 	const { review, href, actions }: Props = $props();
 
-	const projectName = $derived(review.userProject.project.name);
+	const projectName = $derived(review.userProject.name);
 	const to = $derived(href ?? `/reviews/${review.id}`);
 
 	const icons = { Self: User, Peer: Users, Async: Globe, Auto: Bot } as const;
 	const Icon = $derived(icons[review.kind] ?? User);
-
 	const formatter = new DateFormatter(page.data.locale, {
 		month: 'short',
+		year: 'numeric',
 		day: 'numeric',
 		hour: 'numeric',
 		minute: 'numeric',
 		hour12: true
-	});
-
-	const joinedFormatter = new DateFormatter(page.data.locale, {
-		day: 'numeric',
-		month: 'long',
-		year: 'numeric'
 	});
 </script>
 
@@ -84,10 +78,6 @@
 										{reviewer.displayName ?? reviewer.login}
 										<span class="ml-1 text-xs font-normal text-muted-foreground">@{reviewer.login}</span>
 									</h4>
-									<div class="flex items-center text-xs text-muted-foreground">
-										<CalendarDaysIcon class="me-1.5 size-3.5 opacity-70" />
-										<span>Joined {joinedFormatter.format(new Date(reviewer.createdAt))}</span>
-									</div>
 								</div>
 							</div>
 						</HoverCard.Content>
@@ -97,7 +87,7 @@
 				{/if}
 
 				{#if review.state === 'InProgress'}
-					<span class="text-muted-foreground">{review.kind === 'Self' ? 'are' : 'is'} reviewing</span>
+					<span class="text-muted-foreground">{review.kind === 'Self' ? 'are' : 'will be'} reviewing</span>
 				{:else}
 					<span class="text-muted-foreground">reviewed</span>
 				{/if}
@@ -108,8 +98,18 @@
 
 		<Item.Description class="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
 			<Badge variant="outline" class="rounded-sm font-normal">{review.kind}</Badge>
+			{#if review.passed === true}
+				<span class="text-muted-foreground/40 select-none">•</span>
+				<Badge variant="success" class="rounded-sm font-normal">Passed</Badge>
+			{:else if !review.passed && review.state !== "Cancelled"}
+				<span class="text-muted-foreground/40 select-none">•</span>
+				<Badge variant="destructive" class="rounded-sm font-normal">Failed</Badge>
+			{/if}
 			<span class="text-muted-foreground/40 select-none">•</span>
-			<span class="shrink-0">{formatter.format(new Date(review.createdAt))}</span>
+			<span class="shrink-0 flex items-center gap-1">
+				<CalendarIcon size={12}/>
+				{formatter.format(new Date(review.createdAt))}
+			</span>
 		</Item.Description>
 	</Item.Content>
 

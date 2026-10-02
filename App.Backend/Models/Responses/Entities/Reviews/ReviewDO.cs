@@ -35,6 +35,7 @@ public class ReviewProjectDO(UserProject userProject)
     [Required]
     public string Slug { get; init; } = userProject.Project.Slug;
 
+    [Required]
     public string? Thumbnail { get; init; } = userProject.Project.AvatarUrl;
 
     /// <summary>
@@ -71,6 +72,7 @@ public class ReviewDO(Review review) : BaseEntityDO<Review>(review)
     /// The evaluation round this review is a slot of. Null means it is advisory
     /// feedback that doesn't count towards completing the project.
     /// </summary>
+    [Required]
     public Guid? RoundId { get; init; } = review.RoundId;
 
     /// <summary>
@@ -82,15 +84,19 @@ public class ReviewDO(Review review) : BaseEntityDO<Review>(review)
     /// <summary>
     /// The exact commit that was reviewed. Null for reviews created before SHAs were recorded.
     /// </summary>
+    [Required]
     public string? Sha { get; init; } = review.Sha;
 
     /// <summary>
     /// The reviewer's verdict ("is this project a pass?"), once the review is finished.
     /// </summary>
+    [Required]
     public bool? Passed { get; init; } = review.Passed;
 
+    [Required]
     public DateTimeOffset? ScheduledAt { get; init; } = review.ScheduledAt;
 
+    [Required]
     public DateTimeOffset? FinishedAt { get; init; } = review.FinishedAt;
 
     [Required]
@@ -99,6 +105,7 @@ public class ReviewDO(Review review) : BaseEntityDO<Review>(review)
     /// <summary>
     /// The user performing the review, if assigned.
     /// </summary>
+    [Required]
     public UserBriefDO? Reviewer { get; init; } = review.Reviewer;
 
     [Required]

@@ -195,9 +195,10 @@ Reviews as the requesting user unless a different reviewer is specified, which r
             if (!result.Succeeded) return Forbid();
         }
 
+        var scheudle = dto.ScheduledAt.HasValue ? dto.ScheduledAt.Value.ToUniversalTime() : time.GetUtcNow();
         var review = await service.PushReviewAsync(
             userProjectId,
-            dto.ScheduledAt ?? time.GetUtcNow().AddMinutes(15), // Basically start it now then.
+            scheudle,
             dto.Kind,
             reviewerId,
             token
@@ -206,7 +207,7 @@ Reviews as the requesting user unless a different reviewer is specified, which r
         return CreatedAtAction(nameof(PushReview), new { reviewId = review.Id }, new ReviewDO(review));
     }
 
-    [HttpGet("user-project/{userProjectId:guid}/rounds")]
+    [HttpGet("~/user-project/{userProjectId:guid}/reviews/rounds")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]

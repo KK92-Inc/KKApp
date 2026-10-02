@@ -4583,8 +4583,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Query all reviews
-         * @description Returns a paginated list of reviews
+         * List reviews
+         * @description Returns a paginated list of reviews, optionally filtered by project session, reviewer, reviewee, rubric, kind or state. Each review is a summary; use the review endpoints for annotations.
          */
         get: {
             parameters: {
@@ -4658,88 +4658,7 @@ export interface paths {
             };
         };
         put?: never;
-        /**
-         * Request a review for a user project
-         * @description Creates review entries for the specified kinds. Self reviews are auto-assigned to the requesting user. The reviewed ref is always the project's default branch.
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["PostPullReviewRequestDTO"];
-                    "text/json": components["schemas"]["PostPullReviewRequestDTO"];
-                    "application/*+json": components["schemas"]["PostPullReviewRequestDTO"];
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ReviewDO"][];
-                        "application/json": components["schemas"]["ReviewDO"][];
-                        "text/json": components["schemas"]["ReviewDO"][];
-                    };
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ProblemDetails"];
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "text/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ProblemDetails"];
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "text/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4754,8 +4673,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get a single review by its ID
-         * @description Returns the review with full details including reviewer and rubric.
+         * Get a review
+         * @description Returns a single review: its kind, state, verdict, the commit (`sha`) it evaluated, and brief info on the project session, reviewer and rubric.
          */
         get: {
             parameters: {
@@ -4880,7 +4799,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/reviews/{reviewId}/{file}/annotations": {
+    "/reviews/{reviewId}/annotations": {
         parameters: {
             query?: never;
             header?: never;
@@ -4888,16 +4807,23 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get annotations for a specific file in a review
-         * @description Returns the review with full details including reviewer and rubric.
+         * List a review's annotations
+         * @description Returns the annotations written by the reviewer, in creation order. The reviewer is returned once at the top level,
+         *     since a review only has one author.
+         *
+         *     An annotation is either a `Comment` on a line range of a file, or the `Conclusion` summing up the whole review.
+         *     Use `filter[file]` to get the comments on one file and `filter[type]` to get only comments or only the conclusion.
          */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description Get the annotations made on a specific file */
+                    "filter[file]"?: string;
+                    "filter[type]"?: components["schemas"]["AnnotationKind"];
+                };
                 header?: never;
                 path: {
                     reviewId: string;
-                    file: string;
                 };
                 cookie?: never;
             };
@@ -4909,9 +4835,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["AnnotationDO"][];
-                        "application/json": components["schemas"]["AnnotationDO"][];
-                        "text/json": components["schemas"]["AnnotationDO"][];
+                        "text/plain": components["schemas"]["ReviewAnnotationDO"];
+                        "application/json": components["schemas"]["ReviewAnnotationDO"];
+                        "text/json": components["schemas"]["ReviewAnnotationDO"];
                     };
                 };
                 /** @description Unauthorized */
@@ -4948,67 +4874,7 @@ export interface paths {
                 };
             };
         };
-        /**
-         * Get annotations for a specific file in a review
-         * @description Returns the review with full details including reviewer and rubric.
-         */
-        put: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    reviewId: string;
-                    file: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["AnnotationDO"][];
-                        "application/json": components["schemas"]["AnnotationDO"][];
-                        "text/json": components["schemas"]["AnnotationDO"][];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ProblemDetails"];
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "text/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -5016,7 +4882,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/reviews/give": {
+    "/user-project/{userProjectId}/reviews/pull": {
         parameters: {
             query?: never;
             header?: never;
@@ -5026,14 +4892,118 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Give a review for a user project
-         * @description Claims a Peer or Async review slot for a user project, scheduled for a specific time, without waiting to be assigned. The reviewed ref is always the project's default branch. Submits as the requesting user unless a different reviewer is specified, which requires staff.
+         * Request an evaluation round
+         * @description Requests an evaluation of the project session (a 'pull'). Only the team leader can do this.
+         *
+         *     Locks the session and opens a round with the review slots the rubric requires. The current commit of the
+         *     default branch is pinned as the round's `sha`, so every review of the round evaluates exactly that commit.
+         *     All slots must pass for the session to be marked as completed.
          */
         post: {
             parameters: {
                 query?: never;
                 header?: never;
-                path?: never;
+                path: {
+                    userProjectId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ReviewDO"][];
+                        "application/json": components["schemas"]["ReviewDO"][];
+                        "text/json": components["schemas"]["ReviewDO"][];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/user-project/{userProjectId}/reviews/push": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Give a review
+         * @description Offers to review a project session (a 'push'), without waiting to be assigned.
+         *     If the session has an open round, a free slot of the requested kind is claimed. Otherwise an advisory review is
+         *     created: feedback that never counts towards completing the project.
+         *
+         *     The reviewed commit is the current head of the project's default branch, recorded as the review's `sha`.
+         *     Reviews as the requesting user unless a different reviewer is specified, which requires staff.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    userProjectId: string;
+                };
                 cookie?: never;
             };
             requestBody: {
@@ -5121,14 +5091,17 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/reviews/user-project/{userProjectId}/status": {
+    "/user-project/{userProjectId}/reviews/rounds": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Get review progress for a user project */
+        /**
+         * List evaluation rounds of a project session
+         * @description Returns every evaluation attempt of the session, oldest first. Each round includes the commit (`sha`) it evaluated and the state and verdict of its review slots.
+         */
         get: {
             parameters: {
                 query?: never;
@@ -5146,9 +5119,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["ReviewProgressDO"];
-                        "application/json": components["schemas"]["ReviewProgressDO"];
-                        "text/json": components["schemas"]["ReviewProgressDO"];
+                        "text/plain": components["schemas"]["ReviewRoundDO"][];
+                        "application/json": components["schemas"]["ReviewRoundDO"][];
+                        "text/json": components["schemas"]["ReviewRoundDO"][];
                     };
                 };
                 /** @description Unauthorized */
@@ -5170,7 +5143,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
                 };
                 /** @description Too Many Requests */
                 429: {
@@ -5189,6 +5166,92 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/reviews/rounds/{roundId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Cancel an open evaluation round
+         * @description Cancels the unfinished reviews of the round and unlocks the project. Only the team leader or staff can do this.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    roundId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/reviews/{reviewId}/assign/{reviewerId}": {
         parameters: {
             query?: never;
@@ -5200,7 +5263,7 @@ export interface paths {
         put?: never;
         /**
          * Assign a reviewer to a pending review
-         * @description Assigns the specified user as reviewer for the review. Validates that the reviewer meets the rubric's eligibility requirements.
+         * @description Assigns the user as reviewer of a pending review. Anyone can assign themselves; assigning someone else requires staff. The reviewer must meet the rubric's eligibility rules.
          */
         post: {
             parameters: {
@@ -5287,7 +5350,7 @@ export interface paths {
         put?: never;
         /**
          * Start a review
-         * @description Transitions the review to InProgress and assigns the current user as the reviewer.
+         * @description Moves a pending review to InProgress. Only the reviewer (or staff) can start it, and Peer reviews must be started from onsite.
          */
         post: {
             parameters: {
@@ -5373,7 +5436,7 @@ export interface paths {
         put?: never;
         /**
          * Complete a review
-         * @description Transitions the review to Finished. The review content should be included in the request body.
+         * @description Transitions the review to Finished and records the verdict. Reviews that are part of an evaluation round must include `passed`: "Do you think this project is a pass?". When every review of the round is finished and passed the project is completed; a single fail closes the round and the team has to request a new one.
          */
         post: {
             parameters: {
@@ -5384,7 +5447,13 @@ export interface paths {
                 };
                 cookie?: never;
             };
-            requestBody?: never;
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PostCompleteReviewRequestDTO"];
+                    "text/json": components["schemas"]["PostCompleteReviewRequestDTO"];
+                    "application/*+json": components["schemas"]["PostCompleteReviewRequestDTO"];
+                };
+            };
             responses: {
                 /** @description OK */
                 200: {
@@ -10103,29 +10172,24 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        AnnotationData: components["schemas"]["AnnotationDataTextAnnotationData"];
-        AnnotationDataTextAnnotationData: {
+        AnnotationData: components["schemas"]["AnnotationDataCommentAnnotationData"] | components["schemas"]["AnnotationDataConclusionAnnotationData"];
+        AnnotationDataCommentAnnotationData: {
             /** @enum {string} */
-            kind?: "Text";
-            comment: string;
+            $type: "Comment";
+            filepath: string;
+            body: string;
             /** Format: int32 */
-            start: number | string;
+            rowStart: number | string;
             /** Format: int32 */
-            end: number | string;
+            rowEnd: number | string;
         };
-        AnnotationDO: {
-            /** Format: uuid */
-            id: string;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
-            filePath: string;
-            data: null | components["schemas"]["AnnotationData"];
-            /** Format: uuid */
-            reviewId: string;
-            author: components["schemas"]["UserLightDO"];
+        AnnotationDataConclusionAnnotationData: {
+            /** @enum {string} */
+            $type: "Conclusion";
+            body: string;
         };
+        /** @enum {unknown} */
+        AnnotationKind: "Comment" | "Conclusion" | null;
         ApplicationDO: {
             /** Format: uuid */
             id: string;
@@ -10527,6 +10591,12 @@ export interface components {
             /** @description Files included in this commit. */
             files: components["schemas"]["CommitFileDTO"][];
         };
+        PostCompleteReviewRequestDTO: {
+            /** @description If the project is deemed enough to pass. */
+            passed: boolean;
+            /** @description The various kinds of annotations made by the reviewer */
+            annotations: components["schemas"]["AnnotationData"][];
+        };
         PostCursusRequestDTO: {
             /** @description The name of cursus */
             name: string;
@@ -10632,29 +10702,18 @@ export interface components {
             /** @description The initial projet commit. */
             commit: components["schemas"]["PostCommitDTO"];
         };
-        PostPullReviewRequestDTO: {
-            /**
-             * Format: uuid
-             * @description The user project ID being reviewed.
-             */
-            userProjectId: string;
-        };
         PostPushReviewRequestDTO: {
-            /**
-             * Format: uuid
-             * @description The user project ID being reviewed.
-             */
-            userProjectId: string;
-            /** @description The kind of review being given. Only Peer and Async are supported. */
+            /** @description The kind of review being given. Auto is currently not supported. */
             kind: components["schemas"]["ReviewKinds"];
             /**
              * Format: date-time
-             * @description When the reviewer commits to doing the review. Async: now or within 2 hours. Peer: today or tomorrow.
+             * @description When Kind is Peer, needs to be either today or tomorrow. Other kind of evaluations can leave this null.
              */
-            scheduledAt: string;
+            scheduledAt: null | string;
             /**
              * Format: uuid
              * @description The user giving the review. Defaults to the caller; only staff may set this to another user.
+             *     For self reviews cannot be set.
              */
             reviewerId?: null | string;
         };
@@ -10762,6 +10821,12 @@ export interface components {
         PutCursusTrackRequestDTO: {
             nodes: components["schemas"]["PutCursusTrackNodeDO"][];
         };
+        ReviewAnnotationDO: {
+            /** Format: uuid */
+            reviewId: string;
+            author: null | components["schemas"]["UserBriefDO"];
+            annotations: components["schemas"]["AnnotationData"][];
+        };
         ReviewDO: {
             /** Format: uuid */
             id: string;
@@ -10771,27 +10836,73 @@ export interface components {
             updatedAt: string;
             kind: components["schemas"]["ReviewKinds"];
             state: components["schemas"]["ReviewState"];
-            userProject: components["schemas"]["UserProjectDO"];
-            reviewer: null | components["schemas"]["UserLightDO"];
-            rubric: components["schemas"]["RubricLightDO"];
+            /** Format: uuid */
+            roundId: null | string;
+            ref: string;
+            sha: null | string;
+            passed: null | boolean;
+            /** Format: date-time */
+            scheduledAt: null | string;
+            /** Format: date-time */
+            finishedAt: null | string;
+            userProject: components["schemas"]["ReviewProjectDO"];
+            reviewer: null | components["schemas"]["UserBriefDO"];
+            rubric: components["schemas"]["ReviewRubricDO"];
         };
         /** @enum {unknown} */
         ReviewKinds: "Self" | "Peer" | "Async" | "Auto";
-        ReviewProgressDO: {
-            rubric: components["schemas"]["RubricLightDO"];
-            variants: components["schemas"]["ReviewVariantProgressDO"][];
+        ReviewProjectDO: {
+            /** Format: uuid */
+            id: string;
+            state: components["schemas"]["EntityObjectState"];
+            /** Format: uuid */
+            projectId: string;
+            name: string;
+            slug: string;
+            thumbnail: null | string;
+            official: boolean;
+        };
+        ReviewRoundDO: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: uuid */
+            userProjectId: string;
+            /** Format: int32 */
+            number: number | string;
+            state: components["schemas"]["ReviewRoundState"];
+            /** Format: uuid */
+            rubricId: string;
+            ref: string;
+            sha: string;
+            /** Format: uuid */
+            requestedById: string;
+            /** Format: date-time */
+            closedAt?: null | string;
+            slots: components["schemas"]["ReviewSlotDO"][];
+        };
+        /** @enum {unknown} */
+        ReviewRoundState: "Open" | "Passed" | "Failed" | "Cancelled";
+        ReviewRubricDO: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            slug: string;
+        };
+        ReviewSlotDO: {
+            /** Format: uuid */
+            reviewId: string;
+            kind: components["schemas"]["ReviewKinds"];
+            state: components["schemas"]["ReviewState"];
+            /** Format: uuid */
+            reviewerId?: null | string;
+            passed?: null | boolean;
         };
         /** @enum {unknown} */
         ReviewState: "Pending" | "InProgress" | "Finished" | "Cancelled";
-        ReviewVariantProgressDO: {
-            kind: components["schemas"]["ReviewKinds"];
-            /** Format: int32 */
-            required: number | string;
-            /** Format: int32 */
-            finished: number | string;
-            /** Format: int32 */
-            active: number | string;
-        };
         RubricDO: {
             /** Format: uuid */
             id: string;
@@ -10808,19 +10919,6 @@ export interface components {
             /** Format: uuid */
             projectId: null | string;
             gitInfo: components["schemas"]["GitDO"];
-        };
-        RubricLightDO: {
-            /** Format: uuid */
-            id: string;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
-            name: string;
-            slug: string;
-            public: boolean;
-            enabled: boolean;
-            gitInfo: null | components["schemas"]["GitDO"];
         };
         RubricVariantDO: {
             /** @description The kind of review this variant represents. */
@@ -10876,6 +10974,13 @@ export interface components {
             /** Format: int64 */
             size: number | string;
             commit: components["schemas"]["CommitDTO"];
+        };
+        UserBriefDO: {
+            /** Format: uuid */
+            id: string;
+            login: string;
+            displayName?: null | string;
+            avatarUrl?: null | string;
         };
         UserCursusDO: {
             /** Format: uuid */
