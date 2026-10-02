@@ -23,8 +23,24 @@ public class ReviewDO(Review review) : BaseEntityDO<Review>(review)
     [Required]
     public ReviewState State { get; set; } = review.State;
 
+    /// <summary>
+    /// The evaluation round this review is a slot of. Null means it is advisory
+    /// feedback that doesn't count towards completing the project.
+    /// </summary>
     [Required]
-    public UserProjectDO UserProject { get; set; } = review.UserProject;
+    public Guid? RoundId { get; set; } = review.RoundId;
+
+    /// <summary>
+    /// The reviewer's verdict ("is this project a pass?"), once the review is finished.
+    /// </summary>
+    [Required]
+    public bool? Passed { get; set; } = review.Passed;
+
+    [Required]
+    public DateTimeOffset? FinishedAt { get; set; } = review.FinishedAt;
+
+    [Required]
+    public UserProjectLightDO UserProject { get; set; } = review.UserProject;
 
     /// <summary>
     /// The user performing the review, if assigned.

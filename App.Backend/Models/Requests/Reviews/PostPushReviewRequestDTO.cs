@@ -18,36 +18,47 @@ namespace App.Backend.Models.Requests.Reviews;
 /// <c>POST /reviews/{id}/start</c>) and completed as usual once the reviewer sits down
 /// to actually do it. The ref reviewed is always the project's default (master) branch.
 /// </summary>
-public class PostPushReviewRequestDTO
+public class PostPushReviewRequestDTO : IValidatableObject
 {
-    /// <summary>
-    /// The user project ID being reviewed.
-    /// </summary>
     [Required]
-    [Description("The user project ID being reviewed.")]
-    public required Guid UserProjectId { get; init; }
-
-    /// <summary>
-    /// The kind of review being given. Only Peer and Async are supported here;
-    /// Self reviews are auto-assigned on request, and Auto reviews aren't manual.
-    /// </summary>
-    [Required]
-    [Description("The kind of review being given. Only Peer and Async are supported.")]
+    [Description("The kind of review being given. Auto is currently not supported.")]
     public required ReviewKinds Kind { get; init; }
 
-    /// <summary>
-    /// When the reviewer commits to carrying out the review.
-    /// For Async reviews, this must be now or within the next 2 hours.
-    /// For Peer reviews, this must fall today or tomorrow.
-    /// </summary>
     [Required]
-    [Description("When the reviewer commits to doing the review. Async: now or within 2 hours. Peer: today or tomorrow.")]
-    public required DateTimeOffset ScheduledAt { get; init; }
+    [Description("When Kind is Peer, needs to be either today or tomorrow. Other kind of evaluations can leave this null.")]
+    public DateTimeOffset? ScheduledAt { get; init; }
 
-    /// <summary>
-    /// The user giving the review. Defaults to the requesting user.
-    /// Only staff may set this to someone other than themselves.
-    /// </summary>
-    [Description("The user giving the review. Defaults to the caller; only staff may set this to another user.")]
+    [Description(@"
+The user giving the review. Defaults to the caller; only staff may set this to another user.
+For self reviews cannot be set.
+")]
     public Guid? ReviewerId { get; init; }
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (Kind is ReviewKinds.Self && ReviewerId is not null)
+        {
+            yield return new ValidationResult(
+                "You cannot define the reviewer if doing a self evaluation",
+                [nameof(ScheduledAt)]
+            );
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        if (Kind is ReviewKinds.Peer)
+        {
+            if (ScheduledAt is null)
+            {
+                yield return new ValidationResult(
+                    "Peer reviews need to be scheduled at a specific time.",
+                    [nameof(ScheduledAt)]);
+            }
+            else if (ScheduledAt.Value.Date < now.Date || ScheduledAt.Value.Date > now.Date.AddDays(1))
+            {
+                yield return new ValidationResult(
+                    "Peer reviews must be scheduled for today or tomorrow.",
+                    [nameof(ScheduledAt)]);
+            }
+        }
+    }
 }

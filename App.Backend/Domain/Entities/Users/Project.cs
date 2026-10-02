@@ -28,6 +28,7 @@ public class UserProject : BaseEntity
         ProjectId = Guid.Empty;
 
         Reviews = [];
+        Rounds = [];
         Transactions = [];
     }
 
@@ -68,4 +69,9 @@ public class UserProject : BaseEntity
     /// Reviews conducted for this user project.
     /// </summary>
     public virtual ICollection<Review> Reviews { get; set; }
+
+    /// <summary>
+    /// The evaluation attempts of this user project, oldest first by <see cref="ReviewRound.Attempt"/>.
+    /// </summary>
+    public virtual ICollection<ReviewRound> Rounds { get; set; }
 }

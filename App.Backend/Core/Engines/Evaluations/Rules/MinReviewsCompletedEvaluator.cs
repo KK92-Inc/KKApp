@@ -16,8 +16,12 @@ public sealed class MinReviewsCompletedEvaluator(DatabaseContext db) : IRuleEval
 {
     public async Task<Result> EvaluateAsync(MinReviewsCompletedRule rule, Context ctx, CancellationToken ct)
     {
-        // TODO: Add column to see which ones are done
-        var count = await db.Reviews.CountAsync(r => r.ReviewerId == ctx.User.Id && r.State == ReviewState.Finished, ct); // && r.CompletedAt != null, ct);
+        // NOTE: Only reviews that were part of an evaluation round count, advisory feedback
+        // is excluded so it can't be farmed to become eligible.
+        var count = await db.Reviews.CountAsync(r =>
+            r.ReviewerId == ctx.User.Id &&
+            r.State == ReviewState.Finished &&
+            r.RoundId != null, ct);
 
         return count >= rule.Count
             ? Result.Success()

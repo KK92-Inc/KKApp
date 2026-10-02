@@ -21,6 +21,7 @@ using Wolverine;
 using System.ComponentModel;
 using System.Linq.Expressions;
 using App.Backend.API.Utils;
+using App.Backend.Domain.Values;
 
 // ============================================================================
 
@@ -37,6 +38,7 @@ public class ReviewController(
     IUserProjectService userProjects,
     IAuthorizationService auth,
     IMessageBus bus,
+    TimeProvider time,
     DatabaseContext ctx
 ) : Controller
 {
@@ -92,71 +94,78 @@ public class ReviewController(
         return Ok(new ReviewDO(review));
     }
 
-    [HttpGet("{reviewId:guid}/{file}/annotations")]
+    [HttpGet("{reviewId:guid}/annotations")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [EndpointSummary("Get annotations for a specific file in a review")]
-    [EndpointDescription("Returns the review with full details including reviewer and rubric.")]
-    public async Task<ActionResult<IEnumerable<AnnotationDO>>> GetAnnotations(Guid reviewId, string file, CancellationToken token)
+    [EndpointSummary("Get annotations made in a review")]
+    [EndpointDescription(@"
+Returns annotations made by the reviewer during a review.
+
+Annotations themselves are basically notes, suggestions or comments made on a particual section
+on a file, a conclusive comment, ... They serve as noting down feedback for a review.
+    ")]
+    public async Task<ActionResult<ReviewAnnotationDO>> GetAnnotations(
+        Guid reviewId,
+        [FromQuery(Name = "filter[file]"), Description("Get the annotations made on a specific file")] string? file,
+        [FromQuery(Name = "filter[type]")] AnnotationKind? type,
+        CancellationToken token
+    )
     {
         var review = await service.FindByIdAsync(reviewId, token);
         if (review is null) return NotFound("Review not found");
 
-        var annotations = await service.GetAnnotationsAsync(reviewId, file, token);
-        return Ok(annotations.Select(a => new AnnotationDO(a)));
+        var query = ctx.Annotations.AsNoTracking().Where(a => a.ReviewId == reviewId);
+        if (type.HasValue) query = query.Where(a => a.Kind == type.Value);
+
+        var rows = await query.OrderBy(a => a.Id).ToListAsync(token);
+        if (!string.IsNullOrWhiteSpace(file)) // in-memory, since Data is opaque to EF
+            rows = [.. rows.Where(a => a.Data is CommentAnnotationData c && c.Filepath == file)];
+
+        return Ok(new ReviewAnnotationDO(review, rows.Select(a => a.Data)));
     }
 
-    [HttpPut("{reviewId:guid}/{file}/annotations")]
-    [RequireScope("evaluation")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [EndpointSummary("Get annotations for a specific file in a review")]
-    [EndpointDescription("Returns the review with full details including reviewer and rubric.")]
-    public async Task<ActionResult<IEnumerable<AnnotationDO>>> SetAnnotations(Guid reviewId, string file, CancellationToken token)
-    {
-        var review = await service.FindByIdAsync(reviewId, token);
-        if (review is null) return NotFound("Review not found");
-
-        var annotations = await service.SetAnnotationsAsync(reviewId, User.GetSID(), file, [], token);
-        return Ok(annotations.Select(a => new AnnotationDO(a)));
-    }
-
-    [HttpPost]
+    [HttpPost("~/user-project/{userProjectId:guid}/reviews/pull")]
     [RequireScope("evaluation")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [EndpointSummary("Request a review for a user project")]
-    [EndpointDescription("Creates review entries for the specified kinds. Self reviews are auto-assigned to the requesting user. The reviewed ref is always the project's default branch.")]
-    public async Task<ActionResult<IEnumerable<ReviewDO>>> PullReview([FromBody] PostPullReviewRequestDTO dto, CancellationToken token)
+    [EndpointSummary("Request a review round for the user project")]
+    [EndpointDescription(@"
+'Pull' / Request for reviews from other users.
+
+Locks the user project and initiates are review round. A round requires a set of required reviews to be conducted.
+All reviews must pass for the session to be marked as completed
+    ")]
+    public async Task<ActionResult<IEnumerable<ReviewDO>>> PullReview(Guid userProjectId, CancellationToken token)
     {
         var requester = User.GetSID();
-        var reviews = await service.PullReviewAsync(
-            dto.UserProjectId,
+        var round = await service.PullReviewAsync(
+            userProjectId,
             requester,
             token
         );
 
-        foreach (var review in reviews)
+        // Lets us handle review feedback i.e: Launch a agent to clone and review the project.
+        // Schedule notifications to evaluators, ...
+        foreach (var review in round.Reviews)
         {
             object message = review.Kind switch
             {
-                ReviewKinds.Self => new RequestSelfReview(review.Id, dto.UserProjectId, requester),
-                ReviewKinds.Peer => new RequestPeerReview(review.Id, dto.UserProjectId),
-                ReviewKinds.Async => new RequestAsyncReview(review.Id, dto.UserProjectId),
-                ReviewKinds.Auto => new RequestAutoReview(review.Id, dto.UserProjectId),
+                ReviewKinds.Self => new RequestSelfReview(review.Id, userProjectId, requester),
+                ReviewKinds.Peer => new RequestPeerReview(review.Id, userProjectId),
+                ReviewKinds.Async => new RequestAsyncReview(review.Id, userProjectId),
+                ReviewKinds.Auto => new RequestAutoReview(review.Id, userProjectId),
                 _ => throw new ServiceException(500, $"Unhandled review kind: {review.Kind}")
             };
             await bus.PublishAsync(message);
         }
 
-        return Ok(reviews.Select(r => new ReviewDO(r)));
+        return Ok(round.Reviews.Select(r => new ReviewDO(r)));
     }
 
-    [HttpPost("give")]
+    [HttpPost("~/user-project/{userProjectId:guid}/reviews/push")]
     [RequireScope("evaluation")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -164,9 +173,14 @@ public class ReviewController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [EndpointSummary("Give a review for a user project")]
-    [EndpointDescription("Claims a Peer or Async review slot for a user project, scheduled for a specific time, without waiting to be assigned. The reviewed ref is always the project's default branch. Submits as the requesting user unless a different reviewer is specified, which requires staff.")]
-    public async Task<ActionResult<ReviewDO>> PushReview([FromBody] PostPushReviewRequestDTO dto, CancellationToken token)
+    [EndpointSummary("Provide a review onto a user project")]
+    [EndpointDescription(@"
+Claims a Peer or Async review slot for a user project, scheduled for a specific time, without waiting to be assigned.
+The reviewed ref is always the project's default branch.
+
+Submits as the requesting user unless a different reviewer is specified, which requires staff.
+")]
+    public async Task<ActionResult<ReviewDO>> PushReview(Guid userProjectId, [FromBody] PostPushReviewRequestDTO dto, CancellationToken token)
     {
         var actorId = User.GetSID();
         var reviewerId = dto.ReviewerId ?? actorId;
@@ -178,40 +192,56 @@ public class ReviewController(
             if (!result.Succeeded) return Forbid();
         }
 
-        var review = await service.PushReviewAsync(dto.UserProjectId, reviewerId, dto.Kind, dto.ScheduledAt, token);
-        object message = review.Kind switch
-        {
-            ReviewKinds.Peer => new RequestPeerReview(review.Id, dto.UserProjectId),
-            ReviewKinds.Async => new RequestAsyncReview(review.Id, dto.UserProjectId),
-            _ => throw new ServiceException(500, $"Unhandled review kind: {review.Kind}")
-        };
-        await bus.PublishAsync(message);
+        var review = await service.PushReviewAsync(
+            userProjectId,
+            dto.ScheduledAt ?? time.GetUtcNow().AddMinutes(15), // Basically start it now then.
+            dto.Kind,
+            reviewerId,
+            token
+        );
+
         return CreatedAtAction(nameof(PushReview), new { reviewId = review.Id }, new ReviewDO(review));
     }
 
-    [HttpGet("user-project/{userProjectId:guid}/status")]
-    [EndpointSummary("Get review progress for a user project")]
-    public async Task<ActionResult<ReviewProgressDO>> GetProgress(Guid userProjectId, CancellationToken token)
+    [HttpGet("user-project/{userProjectId:guid}/rounds")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Get the evaluation rounds of a user project")]
+    [EndpointDescription("Returns every evaluation attempt of the user project, oldest first, including the slots and verdicts of each.")]
+    public async Task<ActionResult<IEnumerable<ReviewRoundDO>>> GetRounds(Guid userProjectId, CancellationToken token)
     {
         var userProject = await userProjects.FindByIdAsync(userProjectId, token);
         if (userProject is null) return NotFound(new ProblemDetails { Title = "User project not found." });
 
-        var rubric = await rubricService.FindByProjectId(userProject.ProjectId, token);
-        if (rubric is null) return NotFound(new ProblemDetails { Title = "No rubric found for the project associated with this user project." });
+        var rounds = await service.GetRoundsAsync(userProjectId, token);
+        return Ok(rounds.Select(r => new ReviewRoundDO(r)));
+    }
 
-        var reviews = userProject.Reviews.ToList();
-        return Ok(new ReviewProgressDO(rubric)
+    [HttpDelete("rounds/{roundId:guid}")]
+    [RequireScope("evaluation")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("Cancel an open evaluation round")]
+    [EndpointDescription("Cancels the unfinished reviews of the round and unlocks the project. Only the team leader or staff can do this.")]
+    public async Task<ActionResult> CancelRound(Guid roundId, CancellationToken token)
+    {
+        var round = await service.FindRoundByIdAsync(roundId, token);
+        if (round is null) return NotFound();
+
+        var isStaff = await auth.AuthorizeAsync(User, "staff");
+        if (!isStaff.Succeeded)
         {
-            Variants = [.. rubric.Variants
-               .Where(v => v.Count > 0)
-               .Select(v => new ReviewVariantProgressDO()
-               {
-                   Kind = v.Kind,
-                   Required = v.Count,
-                   Finished = reviews.Count(r => r.Kind == v.Kind && r.State is ReviewState.Finished),
-                   Active = reviews.Count(r => r.Kind == v.Kind && r.State is ReviewState.InProgress),
-               })]
-        });
+            var member = await memberService.FindByEntityAndUserId(round.UserProjectId, User.GetSID(), token);
+            if (member?.Role is not MemberRole.Leader)
+                return Forbid();
+        }
+
+        await service.CancelRoundAsync(roundId, token);
+        return NoContent();
     }
 
     [HttpPost("{reviewId:guid}/assign/{reviewerId:guid}")]
@@ -265,18 +295,29 @@ public class ReviewController(
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Complete a review")]
-    [EndpointDescription("Transitions the review to Finished. The review content should be included in the request body.")]
-    public async Task<ActionResult<ReviewDO>> CompleteReview(Guid reviewId, CancellationToken token)
+    [EndpointDescription("Transitions the review to Finished and records the verdict. Reviews that are part of an evaluation round must include `passed`: \"Do you think this project is a pass?\". When every review of the round is finished and passed the project is completed; a single fail closes the round and the team has to request a new one.")]
+    public async Task<ActionResult<ReviewDO>> CompleteReview(Guid reviewId, [FromBody] PostCompleteReviewRequestDTO dto, CancellationToken token)
     {
         var review = await service.FindByIdAsync(reviewId, token);
         if (review is null) return NotFound();
+
+        var reviewerId = review.ReviewerId;
+        if (!reviewerId.HasValue)
+            return Problem(title: "No Evaluator assigned to this review", statusCode: 422);
 
         // NOTE(W2): The reviewer decides when to complete, unless you're staff.
         var result = await auth.AuthorizeAsync(User, "staff");
         if (!result.Succeeded && review.ReviewerId != User.GetSID())
             return Forbid();
 
-        review = await service.CompleteReviewAsync(review.Id, token);
+        review = await service.CompleteReviewAsync(review.Id, dto.Passed, dto.Annotations.Select(d => new Annotation
+        {
+            Kind = d.Kind,
+            AuthorId = reviewerId.Value,
+            ReviewId = reviewId,
+            Data = d
+        }), token);
+
         await bus.PublishAsync(new ReviewCompletionMessage(review.Id));
         return Ok(new ReviewDO(review));
     }
@@ -298,6 +339,7 @@ public class ReviewController(
 
         var isLeader = false;
         var isReviewer = review.ReviewerId == actorId;
+
         var isStaff = await auth.AuthorizeAsync(User, "staff");
         if (!isReviewer && !isStaff.Succeeded)
         {
@@ -308,7 +350,7 @@ public class ReviewController(
         if (!isReviewer && !isStaff.Succeeded && !isLeader)
             return Forbid();
 
-        await service.CancelReviewAsync(reviewId, token);
+        await service.StopReviewAsync(reviewId, token);
         return NoContent();
     }
 }

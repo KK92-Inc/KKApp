@@ -18,18 +18,24 @@ public enum AnnotationKind
     /// <summary>
     /// Represents a text annotation, which typically contains a comment or note.
     /// </summary>
-    [JsonPropertyName(nameof(Text))]
-    Text = 0,
+    [JsonPropertyName(nameof(Comment))]
+    Comment = 0,
 
     /// <summary>
-    /// Represents a suggestion annotation, which may contain proposed changes or recommendations.
+    /// Represents a text annotation, which typically contains a comment or note.
     /// </summary>
-    [JsonPropertyName(nameof(Suggestion))]
-    Suggestion = 1,
+    [JsonPropertyName(nameof(Conclusion))]
+    Conclusion = 1,
 
-    /// <summary>
-    /// Represents a drawing annotation, which may contain visual elements or sketches.
-    /// </summary>
-    [JsonPropertyName(nameof(Drawing))]
-    Drawing = 2,
+    // /// <summary>
+    // /// Represents a suggestion annotation, which may contain proposed changes or recommendations.
+    // /// </summary>
+    // [JsonPropertyName(nameof(Suggestion))]
+    // Suggestion = 1,
+
+    // /// <summary>
+    // /// Represents a drawing annotation, which may contain visual elements or sketches.
+    // /// </summary>
+    // [JsonPropertyName(nameof(Drawing))]
+    // Drawing = 2,
 }

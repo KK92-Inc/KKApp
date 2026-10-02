@@ -15,133 +15,131 @@ namespace App.Backend.Core.Services.Interface;
 
 public interface IReviewService : IDomainService<Review>
 {
-    /// <summary>
-    /// Creates a review request for a user project.
-    /// Validates that:
-    /// - The user project exists and is in a valid state
-    /// - The rubric supports the requested review kind
-    /// - No duplicate review of the same kind exists
-    /// - The reviewee meets the rubric's eligibility requirements
-    /// The reviewed ref is always the project's default (master) branch, resolved server-side.
-    /// </summary>
-    /// <param name="userProjectId">The user project to be reviewed.</param>
-    /// <param name="initiatorId">The user requesting the review.</param>
-    /// <param name="token">Cancellation token.</param>
-    /// <returns>The created reviews based on the variants that the rubric supports.</returns>
-    public Task<IEnumerable<Review>> PullReviewAsync(
-        Guid userProjectId,
-        Guid initiatorId,
-        CancellationToken token = default
-    );
+    #region ReviewPushAndPull
 
     /// <summary>
-    /// Directly gives (claims) a review slot for a user project as the specified reviewer.
-    /// Unlike <see cref="PullReviewAsync"/>, this skips the open request/assignment step:
-    /// the reviewer is attached immediately and the review is created
-    /// <see cref="Enums.ReviewState.Pending"/>, ready to be started via the normal
-    /// start/complete lifecycle once the scheduled time arrives.
+    /// "Pulls" for reviews meaning it will open a new evaluation round for a
+    /// user project and create review "slots" from the rubric.
+    /// 
+    /// The session moves to <see cref="Enums.EntityObjectState.Awaiting"/> and
+    /// locks the repository.
+    /// 
+    /// Validates that:
+    /// - The user project exists, has something submitted and is not completed or inactive
+    /// - The project has no open round already (one open round at a time)
+    /// </summary>
+    /// <param name="userProjectId"></param>
+    /// <param name="initiatorId"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public Task<ReviewRound> PullReviewAsync(Guid userProjectId, Guid initiatorId, CancellationToken token = default);
+
+    /// <summary>
+    /// Directly gives a review for a user project as the specified reviewer.
+    /// 
+    /// If the project has an open round with a "free slot" of the requested kind,
+    /// the slot is claimed (first come, first served) and the review counts towards the round.
+    /// 
+    /// Otherwise an advisory review is created (no round): it carries feedback but never counts
+    /// for or against the project, even when the project is completed.
+    /// 
+    /// The review is <see cref="Enums.ReviewState.Pending"/> and attached to the reviewer, ready to be
+    /// started via the normal start/complete lifecycle once the scheduled time arrives.
+    /// 
     /// Only <see cref="Enums.ReviewKinds.Peer"/> and <see cref="Enums.ReviewKinds.Async"/>
     /// are supported. The reviewed ref is always the project's default (master) branch.
-    /// Validates that:
-    /// - The user project exists and has something submitted for review
-    /// - The rubric supports the requested review kind
-    /// - The reviewer is not a member of the project being reviewed
-    /// - <paramref name="scheduledAt"/> falls within the allowed window for the kind
-    ///   (Async: now or within 2 hours; Peer: today or tomorrow)
     /// </summary>
     /// <param name="userProjectId">The user project being reviewed.</param>
-    /// <param name="reviewerId">The user giving the review.</param>
     /// <param name="kind">The kind of review being given (Peer or Async).</param>
     /// <param name="scheduledAt">When the reviewer commits to doing the review.</param>
+    /// <param name="reviewerId">Only null if the kind is Auto, else it must be specified.</param>
     /// <param name="token">Cancellation token.</param>
-    /// <returns>The created, pending review.</returns>
+    /// <returns>The claimed slot or the created advisory review (check <see cref="Review.RoundId"/>).</returns>
     public Task<Review> PushReviewAsync(
         Guid userProjectId,
-        Guid reviewerId,
-        ReviewKinds kind,
         DateTimeOffset scheduledAt,
+        ReviewKinds kind,
+        Guid reviewerId,
         CancellationToken token = default
     );
 
+    #endregion
+
+    #region ReviewActions
+
     /// <summary>
-    /// Assigns a reviewer to a pending review.
-    /// Validates that the reviewer meets the rubric's eligibility requirements.
+    /// Assigns a reviewer to an unclaimed pending slot of an open round (first come, first served).
+    /// Validates that the reviewer meets the rubric's eligibility requirements and doesn't
+    /// already hold another slot in the same round.
     /// </summary>
     /// <param name="reviewId">The review to assign.</param>
     /// <param name="reviewerId">The user to assign as reviewer.</param>
     /// <param name="token">Cancellation token.</param>
     /// <returns>The updated review.</returns>
-    public Task<Review> AssignReviewerAsync(
-        Guid reviewId,
-        Guid reviewerId,
-        CancellationToken token = default
-    );
+    public Task<Review> AssignReviewerAsync(Guid reviewId, Guid reviewerId, CancellationToken token = default);
 
     /// <summary>
-    /// Starts a review, changing its state from Pending to InProgress.
+    /// Starts a pending review.
     /// </summary>
-    /// <param name="reviewId">The review to start.</param>
-    /// <param name="token">Cancellation token.</param>
-    /// <returns>The updated review.</returns>
+    /// <param name="reviewId"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
     public Task<Review> StartReviewAsync(Guid reviewId, CancellationToken token = default);
 
     /// <summary>
-    /// Cancels a pending review, removing it entirely.
-    /// Only pending reviews can be canceled.
+    /// Stops / cancels a review and invalidates it.
     /// </summary>
-    /// <param name="reviewId">The review to cancel.</param>
-    /// <param name="token">Cancellation token.</param>
-    public Task CancelReviewAsync(Guid reviewId, CancellationToken token = default);
+    /// <param name="reviewId"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public Task<Review> StopReviewAsync(Guid reviewId, CancellationToken token = default);
 
     /// <summary>
-    /// Completes a review, changing its state to Finished.
+    /// Completes / finishes a review.
     /// </summary>
-    /// <param name="reviewId">The review to complete.</param>
-    /// <param name="token">Cancellation token.</param>
-    /// <returns>The updated review.</returns>
-    public Task<Review> CompleteReviewAsync(Guid reviewId, CancellationToken token = default);
+    /// <param name="reviewId"></param>
+    /// <param name="passed">Was this project good enough to consider it passing ?</param>
+    /// <param name="annotations">Any annotations that were given for this review</param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public Task<Review> CompleteReviewAsync(Guid reviewId, bool passed, IEnumerable<Annotation> annotations, CancellationToken token = default);
+
+    #endregion
+
+    #region RoundActions
 
     /// <summary>
-    /// Gets all pending reviews for a user project.
+    /// Finds a round by id, including its slots.
     /// </summary>
-    /// <param name="userProjectId">The user project ID.</param>
+    /// <param name="roundId">The round to cancel.</param>
     /// <param name="token">Cancellation token.</param>
-    /// <returns>List of pending reviews.</returns>
-    public Task<IEnumerable<Review>> GetPendingReviewsAsync(Guid userProjectId, CancellationToken token = default);
+    /// <returns>The round.</returns>
+    public Task<ReviewRound?> FindRoundByIdAsync(Guid roundId, CancellationToken token = default);
 
     /// <summary>
-    /// Gets reviews assigned to a specific reviewer.
+    /// Gets all evaluation rounds of a user project.
     /// </summary>
-    /// <param name="reviewerId">The reviewer's user ID.</param>
+    /// <param name="userProjectId">The user project being reviewed.</param>
     /// <param name="token">Cancellation token.</param>
-    /// <returns>List of reviews assigned to the reviewer.</returns>
-    public Task<IEnumerable<Review>> GetReviewerAssignmentsAsync(Guid reviewerId, CancellationToken token = default);
+    /// <returns>A list of all the rounds.</returns>
+    public Task<IEnumerable<ReviewRound>> GetRoundsAsync(Guid userProjectId, CancellationToken token = default);
 
     /// <summary>
-    /// Gets all annotations for a specific file in a review.
+    /// Cancels an ongoing / open round. Will not proceed if there is a currently started review.
+    /// If any reviews have not yet started it will cancel them. Completed reviews will not be affected.
+    /// 
+    /// Additionally it will lock the session for 1 hour to prevent abuse.
     /// </summary>
-    /// <param name="reviewId">The review ID.</param>
-    /// <param name="ref">The git ref.</param>
-    /// <param name="filePath">The file path.</param>
+    /// <param name="roundId">The round to cancel.</param>
     /// <param name="token">Cancellation token.</param>
-    /// <returns>List of annotations.</returns>
-    public Task<IEnumerable<Annotation>> GetAnnotationsAsync(Guid reviewId, string filePath, CancellationToken token = default);
+    public Task<ReviewRound> CancelRoundAsync(Guid roundId, CancellationToken token = default);
 
-    /// <summary>
-    /// Sets all annotations for a specific file in a review.
-    /// </summary>
-    /// <param name="reviewId">The review ID.</param>
-    /// <param name="authorId">The author of the annotations.</param>
-    /// <param name="ref">The git ref.</param>
-    /// <param name="filePath">The file path.</param>
-    /// <param name="annotations">The annotations to set.</param>
-    /// <param name="token">Cancellation token.</param>
-    /// <returns>List of annotations.</returns>
-    public Task<IEnumerable<Annotation>> SetAnnotationsAsync(
-        Guid reviewId,
-        Guid authorId,
-        string filePath,
-        IEnumerable<Annotation> annotations,
-        CancellationToken token = default
-    );
+    #endregion
+
+    #region Annotations
+
+    // public Task<IEnumerable<Annotation>> GetAnnotationsAsync(Guid reviewId, CancellationToken token = default);
+
+    #endregion
+
 }

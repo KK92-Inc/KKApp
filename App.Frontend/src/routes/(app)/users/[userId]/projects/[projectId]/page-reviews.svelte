@@ -39,6 +39,30 @@
 </script>
 
 {#if session}
+	<Card.Root class="gap-2 py-3">
+		<Card.Header class="flex items-center  justify-between px-4">
+			<Card.Title
+				class="flex items-center gap-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase"
+			>
+				<HeartHandshake size={16} />
+				Reviews
+			</Card.Title>
+		</Card.Header>
+
+		<!-- Show Review state -->
+		 <!-- Basically compare the  -->
+		<Card.Content>
+
+		</Card.Content>
+
+		<!-- Show Recent Reviews -->
+		<Card.Content>
+
+		</Card.Content>
+	</Card.Root>
+{/if}
+
+<!-- {#if session}
 	<svelte:boundary>
 		{@const members = await UserProjects.getMembersPage({ id: session.id })}
 		{@const membership = members.data.find((v) => v.userId === page.data.session.userId && !v.leftAt)}
@@ -70,16 +94,13 @@
 				<Card.Action>
 					<ButtonGroup.Root>
 						{#if membership?.role === 'Leader' && session?.state !== 'Inactive'}
-							<!-- Only leader can request it -->
 							<Button size="sm" variant="outline" onclick={requestReview}>
 								Request <Plus />
 							</Button>
 						{:else if !membership}
-							<!-- Other user can review it -->
-							<!-- TODO: Implement, for now only team leader can request it -->
-							<!-- <Button size="sm" variant="outline" onclick={provideReview}>
+							<Button size="sm" variant="outline" onclick={provideReview}>
 								Review <TextSearch />
-							</Button> -->
+							</Button>
 						{/if}
 						<Button
 							size="sm"
@@ -121,4 +142,4 @@
 			</Card.Content>
 		</Card.Root>
 	</svelte:boundary>
-{/if}
+{/if} -->

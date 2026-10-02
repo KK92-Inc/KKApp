@@ -3,13 +3,16 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-// ============================================================================
+using System.Text.Json.Serialization;
+using App.Backend.Domain.Enums;
 
 namespace App.Backend.Domain.Values;
 
 /// <summary>
 /// Represents a text annotation data that contains a comment string.
 /// </summary>
-/// <param name="Comment">The comment associated with the annotation.</param>
-/// <param name="Range">The range of text to be annotated.</param>
-public sealed record TextAnnotationData(string Comment, int Start, int End) : AnnotationData;
+public sealed record CommentAnnotationData(string Filepath, string Body, int RowStart, int RowEnd) : AnnotationData
+{
+    [JsonIgnore]
+    public override AnnotationKind Kind => AnnotationKind.Comment;
+}

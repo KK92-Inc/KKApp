@@ -27,8 +27,7 @@ public class RubricLightDO(Rubric rubric) : BaseEntityDO<Rubric>(rubric)
     [Required]
     public bool Enabled { get; set; } = rubric.Enabled;
 
-    [Required]
-    public GitDO? GitInfo { get; set; } = rubric.GitInfo;
+    public IEnumerable<RubricVariantDO> Variants { get; set; } = rubric.Variants.Select(v => new RubricVariantDO(v));
 
     public static implicit operator RubricLightDO?(Rubric? rubric) =>
         rubric is null ? null : new(rubric);

@@ -36,6 +36,7 @@ public class DatabaseContext(DbContextOptions<DatabaseContext> options) : DbCont
     public DbSet<Rubric> Rubrics { get; set; }
     public DbSet<RubricVariant> RubricsVariants { get; set; }
     public DbSet<Review> Reviews { get; set; }
+    public DbSet<ReviewRound> ReviewRounds { get; set; }
     public DbSet<Annotation> Annotations { get; set; }
     public DbSet<GitInfo> GitInfo { get; set; }
     public DbSet<Notification> Notifications { get; set; }
@@ -55,4 +56,22 @@ public class DatabaseContext(DbContextOptions<DatabaseContext> options) : DbCont
     public DbSet<UserCursusGoal> UserCursusGoal { get; set; }
     public DbSet<UserEvent> UserEvent { get; set; }
 #nullable restore
+
+    /// <inheritdoc />
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        // A user project can have many rounds over time, but only one open at once.
+        // This also makes a double-submitted "request reviews" harmless.
+        modelBuilder.Entity<ReviewRound>()
+            .HasIndex(r => r.UserProjectId, "IX_tbl_review_round_user_project_id_open")
+            .IsUnique()
+            .HasFilter("\"state\" = 0");
+
+        // Round numbers are unique per user project.
+        modelBuilder.Entity<ReviewRound>()
+            .HasIndex(r => new { r.UserProjectId, r.Attempt })
+            .IsUnique();
+    }
 }

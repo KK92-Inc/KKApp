@@ -14,7 +14,10 @@ namespace App.Backend.Domain.Values;
 /// Represents the base class for different types of annotation data.
 /// </summary>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "kind")]
-[JsonDerivedType(typeof(TextAnnotationData), nameof(AnnotationKind.Text))]
-// [JsonDerivedType(typeof(DrawingAnnotationData), nameof(AnnotationKind.Drawing))]
-// [JsonDerivedType(typeof(SuggestionAnnotationData), nameof(AnnotationKind.Suggestion))]
-public abstract record AnnotationData;
+[JsonDerivedType(typeof(CommentAnnotationData), nameof(AnnotationKind.Comment))]
+[JsonDerivedType(typeof(ConclusionAnnotationData), nameof(AnnotationKind.Conclusion))]
+public abstract record AnnotationData
+{
+    [JsonIgnore]
+    public abstract AnnotationKind Kind { get; }
+}

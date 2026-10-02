@@ -7,6 +7,7 @@ using App.Backend.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using App.Backend.Domain.Entities.Users;
 using System.ComponentModel.DataAnnotations.Schema;
+using App.Backend.Domain.Values;
 
 // ============================================================================
 
@@ -32,11 +33,11 @@ public class Annotation : BaseEntity
     [Column("kind")]
     public AnnotationKind Kind { get; set; }
 
-    [Column("file_path")]
-    public string FilePath { get; set; } = string.Empty;
-
+    /// <summary>
+    /// Stores the actual type of <see cref="AnnotationData"/> determined by the Kind.
+    /// </summary>
     [Column("data", TypeName = "jsonb")]
-    public required string Data { get; set; }
+    public required AnnotationData Data { get; set; }
 
     [ForeignKey(nameof(ReviewId))]
     public virtual Review Review { get; set; } = null!;

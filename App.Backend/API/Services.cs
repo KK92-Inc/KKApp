@@ -242,7 +242,12 @@ public static class Services
 
         var source = new NpgsqlDataSourceBuilder(builder.Configuration.GetConnectionString("db"));
         source.EnableDynamicJson();
-
+        source.ConfigureJsonOptions(new JsonSerializerOptions
+        {
+            // jsonb doesn't preserve key order, so "kind" may not come first
+            AllowOutOfOrderMetadataProperties = true,
+        });
+        
         builder.Services.AddDbContextPool<DatabaseContext>(options =>
         {
             options.UseNpgsql(source.Build());

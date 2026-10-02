@@ -32,6 +32,11 @@ public class Review : BaseEntity
         RubricId = Guid.Empty;
         Rubric = null!;
 
+        RoundId = null;
+        Round = null;
+        Passed = null;
+        FinishedAt = null;
+
         Comments = [];
         Annotations = [];
     }
@@ -90,7 +95,31 @@ public class Review : BaseEntity
     [Column("expires_at")]
     public DateTimeOffset? ExpiresAt { get; set; }
 
+    /// <summary>
+    /// The evaluation round this review is a slot of. Null means the review is
+    /// advisory feedback: it can carry comments and annotations but it never
+    /// counts towards (or against) completing the project.
+    /// </summary>
+    [Column("round_id")]
+    public Guid? RoundId { get; set; }
+
+    /// <summary>
+    /// The reviewer's verdict: "Do you think this project is a pass?".
+    /// Required to finish a review that belongs to a round, null otherwise.
+    /// </summary>
+    [Column("passed")]
+    public bool? Passed { get; set; }
+
+    /// <summary>
+    /// When the review was finished.
+    /// </summary>
+    [Column("finished_at")]
+    public DateTimeOffset? FinishedAt { get; set; }
+
     // Relations //
+
+    [ForeignKey(nameof(RoundId))]
+    public virtual ReviewRound? Round { get; set; }
 
     [ForeignKey(nameof(ReviewerId))]
     public virtual User? Reviewer { get; set; }
