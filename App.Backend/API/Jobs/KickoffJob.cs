@@ -14,27 +14,33 @@ using App.Backend.API.Bus.Messages.Kickoff;
 
 namespace App.Backend.API.Jobs;
 
+/// <summary>
+/// Starts kickoffs that are due.
+///
+/// This polls instead of scheduling a message at the start time ahead of time, so a kickoff
+/// that was created or moved after the last run is still picked up, a start time that moves in
+/// either direction needs no cleanup, and downtime just means it runs on the next tick.
+///
+/// It only announces which kickoffs are due, the kickoff handler does the
+/// work and is safe to run more than once for the same kickoff.
+/// </summary>
 [DisallowConcurrentExecution]
 public class KickoffJob(IMessageBus bus, DatabaseContext context, TimeProvider time) : IScheduledJob
 {
-    public static string? Schedule => "0 0 * * *"; // Every night at 00:00 UTC
+    public static string? Schedule => "0 */5 * ? * *"; // Every 5 minutes
 
     public static string Identity => nameof(KickoffJob);
 
     public async Task Execute(IJobExecutionContext job)
     {
-        var startOfDay = time.GetUtcNow().Date;
-        var endOfDay = startOfDay.AddDays(1);
-
-        var pending = await context.Kickoffs
+        var now = time.GetUtcNow();
+        var due = await context.Kickoffs
             .AsNoTracking()
-            .Where(k => k.StartsAt >= startOfDay && k.StartsAt < endOfDay)
-            .Select(k => new { k.Id, k.StartsAt })
+            .Where(k => k.StartedAt == null && k.StartsAt <= now)
+            .Select(k => k.Id)
             .ToListAsync(job.CancellationToken);
 
-        foreach (var kickoff in pending)
-        {
-            await bus.ScheduleAsync(new StartKickoff(kickoff.Id), kickoff.StartsAt);
-        }
+        foreach (var id in due)
+            await bus.PublishAsync(new StartKickoff(id));
     }
 }

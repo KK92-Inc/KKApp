@@ -3,45 +3,34 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-namespace App.Backend.API.Bus.Handlers;
-
 using Wolverine.Attributes;
-using App.Backend.Database;
-using Wolverine;
-using JasperFx.Events.Documents;
-using Keycloak.AuthServices.Sdk.Kiota.Admin;
 using App.Backend.API.Bus.Messages.Kickoff;
+using App.Backend.Core.Services.Interface;
+using App.Backend.Domain.Enums;
 
 // ============================================================================
 
+namespace App.Backend.API.Bus.Handlers.Kickoff;
+
 /// <summary>
 /// Handles a starting kickoff.
-/// 
-/// Kickoffs essentially just activate user accounts and promotes them to
+///
+/// Kickoffs essentially just activate user accounts and promote them to
 /// actual students into a campus. Unless they were already students then
 /// nothing changes.
 /// </summary>
 [WolverineHandler]
-public class KickoffHandler(DatabaseContext context, IMessageBus bus, TimeProvider time)
+public class KickoffHandler(IKickoffService kickoffs, ILogger<KickoffHandler> log)
 {
     public async Task<IEnumerable<object>> Handle(StartKickoff message, CancellationToken ct)
     {
-        return [];
-        // var kickoff = await context.Kickoffs.FirstOrDefaultAsync(k => k.Id == message.KickoffId, ct);
-        // if (kickoff is null) return [];
+        // Missing, or moved to a later date after the job picked it up.
+        if (!await kickoffs.EnsureStartedAsync(message.KickoffId, ct))
+            return [];
 
-        // var now = time.GetUtcNow();
-        // if (kickoff.StartsAt > now)
-        // {
-        //     await bus.ScheduleAsync(message, kickoff.StartsAt);
-        //     return [];
-        // }
+        var applicants = await kickoffs.GetUserIdsAsync(message.KickoffId, UserRole.Applicant, ct);
+        log.LogInformation("Kickoff {KickoffId} started, promoting {Count} applicant(s)", message.KickoffId, applicants.Count);
 
-        // var pending = await context.UserKickoff
-        //     .Where(uk => uk.KickoffId == kickoff.Id)
-        //     .Select(uk => new { uk.UserId, uk.KickoffId })
-        //     .ToListAsync(ct);
-
-        // return pending.Select(uk => new PromoteApplicant(uk.UserId, uk.KickoffId));
+        return applicants.Select(id => new PromoteApplicant(id, message.KickoffId));
     }
 }

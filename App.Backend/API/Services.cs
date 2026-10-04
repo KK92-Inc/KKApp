@@ -311,6 +311,7 @@ public static class Services
         // User
         builder.Services.AddScoped<IUserService, UserService>();
         builder.Services.AddScoped<IMemberService, MemberService>();
+        builder.Services.AddScoped<IKickoffService, KickoffService>();
         builder.Services.AddScoped<IUserCursusService, UserCursusService>();
         builder.Services.AddScoped<IUserGoalService, UserGoalService>();
         builder.Services.AddScoped<IUserProjectService, UserProjectService>();
@@ -351,6 +352,7 @@ public static class Services
 
             quartz.Register<EventStateJob>();
             quartz.Register<CleanupReviews>();
+            quartz.Register<KickoffJob>();
         });
 
         builder.Services.AddQuartzHostedService(o => o.WaitForJobsToComplete = true);

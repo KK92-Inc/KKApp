@@ -5,6 +5,7 @@
 
 using App.Backend.Domain.Entities.Users;
 using App.Backend.Domain.Enums;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations.Schema;
 
 // ============================================================================
@@ -18,6 +19,7 @@ namespace App.Backend.Domain.Entities.Reviews;
 /// Reviews without a round are advisory feedback and never count.
 /// </summary>
 [Table("tbl_review_round")]
+[Index(nameof(UserProjectId), nameof(Attempt), IsUnique = true)]
 public class ReviewRound : BaseEntity
 {
     public ReviewRound()
@@ -54,14 +56,14 @@ public class ReviewRound : BaseEntity
     /// The ref (branch name) that was submitted when the round was requested.
     /// </summary>
     [Column("ref")]
-    public string Ref { get; set; }
+    public required string Ref { get; set; }
 
     /// <summary>
     /// The exact commit every review of this round evaluates. Pinned at request time so the
     /// round stays reproducible after the branch moves on. Null for rounds created before this existed.
     /// </summary>
     [Column("sha")]
-    public string Sha { get; set; }
+    public required string Sha { get; set; }
 
     /// <summary>
     /// The team leader that requested the round.

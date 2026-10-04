@@ -19,6 +19,8 @@ using App.Backend.API.Utils;
 using Keycloak.AuthServices.Authorization.Requirements;
 using System.ComponentModel.DataAnnotations;
 using App.Backend.API.Bus.Messages.Freeze;
+using App.Backend.API.Bus.Messages.Kickoff;
+using App.Backend.Core;
 
 // ============================================================================
 
@@ -33,6 +35,7 @@ namespace App.Backend.API.Controllers;
 [Authorize]
 public class UserController(
 	IUserService users,
+	IKickoffService kickoffs,
 	IMessageBus bus,
 	TimeProvider time,
 	IAuthorizationService auth
@@ -249,6 +252,15 @@ In regards to rubrics it will evaluate if user is elligible to conduct a review 
 		var existing = await users.FindByLoginAsync(request.Login, token);
 		if (existing is not null) return Problem("Login is already taken", statusCode: 409);
 
+		// Check the kickoff before provisioning anything, so a typo doesn't leave a stray account behind.
+		if (request.Kickoff is { } kickoffId)
+		{
+			if (request.Role is UserRole.Staff)
+				return Problem(title: "Staff can't take part in a kickoff.", statusCode: 422);
+			if (await kickoffs.FindByIdAsync(kickoffId, token) is null)
+				return Problem(title: "Kickoff not found.", statusCode: 404);
+		}
+
 		var user = await users.CreateAsync(new()
 		{
 			Login = request.Login,
@@ -258,6 +270,21 @@ In regards to rubrics it will evaluate if user is elligible to conduct a review 
 			Email = request.Email,
 			Role = request.Role
 		}, request.Role, token);
+
+		if (request.Kickoff is { } kickoff)
+		{
+			try
+			{
+				var joined = await kickoffs.AddUsersAsync(kickoff, [user.Id], token);
+				if (joined.StartedAt is not null)
+					await bus.PublishAsync(new PromoteApplicant(user.Id, kickoff));
+			}
+			catch (ServiceException ex)
+			{
+				// The account exists at this point, so say so instead of failing as if it didn't.
+				return Problem(title: $"User was created, but could not join the kickoff: {ex.Message}", statusCode: ex.StatusCode);
+			}
+		}
 
 		await bus.PublishAsync(new WelcomeUserNotification(user!));
 		return Ok(new UserDO(user));

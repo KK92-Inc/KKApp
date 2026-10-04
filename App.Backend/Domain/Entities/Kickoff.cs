@@ -38,4 +38,12 @@ public class Kickoff : BaseEntity
     /// </summary>
     [Column("starts_at")]
     public DateTimeOffset StartsAt { get; set; }
+
+    /// <summary>
+    /// When the kickoff actually started, i.e. when its applicants were queued for promotion.
+    /// Null while it is still upcoming. Once set the kickoff never runs again, so users that join
+    /// afterwards have to be promoted right away.
+    /// </summary>
+    [Column("started_at")]
+    public DateTimeOffset? StartedAt { get; set; }
 }

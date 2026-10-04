@@ -3,64 +3,48 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-namespace App.Backend.API.Bus.Handlers;
-
-using Wolverine.Attributes;
-using App.Backend.Database;
-using Keycloak.AuthServices.Sdk.Kiota.Admin;
-using App.Backend.API.Bus.Messages.Kickoff;
 using Microsoft.EntityFrameworkCore;
+using Wolverine.Attributes;
+using App.Backend.API.Bus.Messages.Kickoff;
+using App.Backend.Core.Services.Interface;
+using App.Backend.Database;
+using App.Backend.Domain.Enums;
 
 // ============================================================================
 
+namespace App.Backend.API.Bus.Handlers.Kickoff;
+
+/// <summary>
+/// Promotes a single applicant of a started kickoff to a student: enables their account, swaps the
+/// applicant realm role for the student one, and updates the role of the database user.
+///
+/// One message per user so a failure for one account (e.g: Keycloak hiccup) is retried
+/// on its own without holding up the rest of the cohort.
+///
+/// Safe to run more than once. Keycloak goes first and each of its calls can be repeated, so if saving
+/// fails the retry just runs through them again. The other way around could leave a student who can't log in.
+/// </summary>
 [WolverineHandler]
 public class PromoteApplicantHandler(
     DatabaseContext context,
-    TimeProvider time,
-    IConfiguration configuration,
-    [FromKeyedServices("student")] KeycloakAdminApiClient client
-)
+    [FromKeyedServices("student")] IKeycloakService student,
+    ILogger<PromoteApplicantHandler> log)
 {
-    private const string RoleTo = "student";
-    private const string RoleFrom = "applicant";
-
     public async Task Handle(PromoteApplicant message, CancellationToken ct)
     {
-        // var realmName = configuration["KeycloakStudent:realm"] ?? "student";
-        // var link = await context.UserKickoff
-        //     .Include(uk => uk.Kickoff)
-        //     .FirstOrDefaultAsync(
-        //         uk => uk.UserId == message.UserId &&
-        //         uk.KickoffId == message.KickoffId,
-        //     ct);
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == message.UserId, ct);
 
-        // // This user has no kickoff or is already processed.
-        // if (link is null || link.ProcessedAt is not null)
-        //     return;
+        // Gone, removed from the kickoff after this was queued, or already promoted: nothing left to do.
+        if (user is null || user.KickoffId != message.KickoffId || user.Role is not UserRole.Applicant)
+            return;
 
-        // var realm = client.Admin.Realms[realmName];
-        // var userId = link.UserId.ToString();
+        await student.EnableUserAsync(user.Id, ct);
+        await student.AddRoleAsync(user.Id, "student", ct);
+        await student.RemoveRoleAsync(user.Id, "applicant", ct);
 
-        // var kcUser = await realm.Users[userId].GetAsync(cancellationToken: ct)
-        //     ?? throw new InvalidOperationException($"Keycloak user {link.UserId} not found");
+        user.Role = UserRole.Student;
+        await context.SaveChangesAsync(ct);
 
-        // if (kcUser.Enabled is not true)
-        // {
-        //     kcUser.Enabled = true;
-        //     await realm.Users[userId].PutAsync(kcUser, cancellationToken: ct);
-        // }
-
-        // // Assign to student role
-        // var targetRole = await realm.Roles[RoleTo].GetAsync(cancellationToken: ct)
-        //     ?? throw new InvalidOperationException($"Role '{RoleTo}' not found");
-        // await realm.Users[userId].RoleMappings.Realm.PostAsync([targetRole], cancellationToken: ct);
-
-        // // Remove the applicant role.
-        // var role = await realm.Roles[RoleFrom].GetAsync(cancellationToken: ct);
-        // if (role is not null)
-        //     await realm.Users[userId].RoleMappings.Realm.DeleteAsync([role], cancellationToken: ct);
-
-        // link.ProcessedAt = time.GetUtcNow();
-        // await context.SaveChangesAsync(ct);
+        log.LogInformation("Promoted applicant {UserId} to student (kickoff {KickoffId})", user.Id, message.KickoffId);
     }
 }

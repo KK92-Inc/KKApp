@@ -111,7 +111,8 @@ public class UserService(
             Email = user.Email,
             FirstName = user.FirstName,
             LastName = user.LastName,
-            Enabled = true,
+            // Applicants need to go through a trial, if they pass they must select a kickoff.
+            Enabled = role is not UserRole.Applicant,
             EmailVerified = true, // required for "Forgot password" to send mail
             // TODO: Force 2FA from the get go ?
         }, token);

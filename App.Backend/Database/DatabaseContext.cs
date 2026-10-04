@@ -3,14 +3,12 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using App.Backend.Domain.Entities.Users;
 using App.Backend.Domain.Entities;
 using App.Backend.Domain.Entities.Reviews;
 using App.Backend.Domain.Relations;
 using App.Backend.Domain.Entities.Projects;
-using App.Backend.Domain;
 using App.Backend.Domain.Entities.Events;
 
 // ============================================================================
@@ -68,10 +66,5 @@ public class DatabaseContext(DbContextOptions<DatabaseContext> options) : DbCont
             .HasIndex(r => r.UserProjectId, "IX_tbl_review_round_user_project_id_open")
             .IsUnique()
             .HasFilter("\"state\" = 0");
-
-        // Round numbers are unique per user project.
-        modelBuilder.Entity<ReviewRound>()
-            .HasIndex(r => new { r.UserProjectId, r.Attempt })
-            .IsUnique();
     }
 }
