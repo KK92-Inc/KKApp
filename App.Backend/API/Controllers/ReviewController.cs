@@ -53,7 +53,9 @@ public class ReviewController(
         [FromQuery(Name = "filter[reviewee_id]"), Description("User receiving a review")] Guid? revieweeId,
         [FromQuery(Name = "filter[rubric_id]")] Guid? rubricId,
         [FromQuery(Name = "filter[kind]")] ReviewKinds? kind,
+        [FromQuery(Name = "filter[not[kind]]")] ReviewKinds? notKind,
         [FromQuery(Name = "filter[status]")] ReviewState? status,
+        [FromQuery(Name = "filter[not[status]]")] ReviewState? notStatus,
         [FromQuery] Pagination pagination,
         [FromQuery] Sorting sorting,
         CancellationToken token
@@ -64,7 +66,9 @@ public class ReviewController(
             r => !reviewerId.HasValue || r.ReviewerId == reviewerId.Value,
             r => !rubricId.HasValue || r.RubricId == rubricId.Value,
             r => !kind.HasValue || r.Kind == kind.Value,
+            r => !notKind.HasValue || r.Kind != notKind.Value,
             r => !status.HasValue || r.State == status.Value,
+            r => !notStatus.HasValue || r.State != notStatus.Value,
             // TODO: Delete this nasty escape hatch.
             revieweeId.HasValue ? r => ctx.Members.Any(m =>
                   m.EntityType == MemberEntityType.UserProject &&

@@ -5,7 +5,7 @@
 
 import * as v from 'valibot';
 import { query, command, getRequestEvent } from '$app/server';
-import { Filters, paginate, Problem, ReviewState } from '$lib/api';
+import { Filters, paginate, Problem, ReviewKind, ReviewState } from '$lib/api';
 import type { components } from '$lib/api/api';
 
 // ============================================================================
@@ -15,8 +15,10 @@ const PageSchema = v.object({
 	reviewerId: v.optional(Filters.id),
 	revieweeId: v.optional(Filters.id),
 	rubricId: v.optional(Filters.id),
-	kind: v.optional(v.number()),
+	kind: v.optional(ReviewKind),
+	notKind: v.optional(ReviewKind),
 	status: v.optional(ReviewState),
+	notStatus: v.optional(ReviewState),
 	...Filters.pagination,
 	...Filters.sort,
 });
@@ -43,7 +45,10 @@ export const getPage = query(PageSchema, async (params) => {
 				'filter[reviewer_id]': params.reviewerId,
 				'filter[reviewee_id]': params.revieweeId,
 				'filter[rubric_id]': params.rubricId,
+				'filter[kind]': params.kind,
+				'filter[not[kind]]': params.notKind,
 				'filter[status]': params.status,
+				'filter[not[status]]': params.notStatus,
 				'sort[by]': params.sortBy,
 				'sort[order]': params.sort,
 				'page[index]': params.page,

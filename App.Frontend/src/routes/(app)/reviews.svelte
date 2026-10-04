@@ -23,7 +23,7 @@
 			Recent Reviews
 		</p>
 		<Separator orientation="horizontal" class="flex-1" />
-		<Button size="sm" variant="outline" href="/users/{page.data.session.userId}/reviews">
+		<Button size="sm" variant="outline" href="/reviews/projects">
 			View More
 			<ArrowRight />
 		</Button>

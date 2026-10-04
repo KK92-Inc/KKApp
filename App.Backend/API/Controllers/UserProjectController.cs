@@ -5,21 +5,14 @@
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using App.Backend.Core.Query;
+
 using App.Backend.API.Params;
 using App.Backend.Core.Services.Interface;
-using App.Backend.Domain.Entities;
 using App.Backend.Domain.Enums;
-using App.Backend.Models;
 using App.Backend.Models.Responses.Entities.Projects;
-using Microsoft.EntityFrameworkCore;
 using App.Backend.API.Controllers.Interfaces;
-using Wolverine;
-using App.Backend.API.Notifications.Variants;
 using App.Backend.API.Utils;
-using App.Backend.Core;
 using App.Backend.Database;
-using ImTools;
 
 // ============================================================================
 

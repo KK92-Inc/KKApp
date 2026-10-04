@@ -3202,8 +3202,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Query all kickoffs
-         * @description Retrieve a paginated list of all kickoffs
+         * List kickoffs
+         * @description Returns a paginated list of kickoffs with how many users are in each. Use `filter[after]` / `filter[before]` to look at a window of start dates.
          */
         get: {
             parameters: {
@@ -3275,7 +3275,7 @@ export interface paths {
         put?: never;
         /**
          * Create a kickoff
-         * @description Create a new kickoff (cohort)
+         * @description Creates a kickoff, a launch date for a cohort. Once `startsAt` passes, its applicants are promoted to students. A date in the past starts it on the next run of the kickoff job.
          */
         post: {
             parameters: {
@@ -3362,8 +3362,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Query a kickoff
-         * @description Retrieve a specific kickoff by ID
+         * Get a kickoff
+         * @description Returns a single kickoff, including how many users are in it and whether it already started.
          */
         get: {
             parameters: {
@@ -3429,7 +3429,7 @@ export interface paths {
         post?: never;
         /**
          * Delete a kickoff
-         * @description Delete a kickoff. Fails with 409 if it still has members.
+         * @description Deletes a kickoff. Fails with 409 while it still has users, remove them first.
          */
         delete: {
             parameters: {
@@ -3502,7 +3502,7 @@ export interface paths {
         head?: never;
         /**
          * Update a kickoff
-         * @description Update kickoff information
+         * @description Updates the name, capacity or start date. Omitted fields are left alone. The capacity can't drop below the current member count, and the start date can't change once the kickoff has started (both 409).
          */
         patch: {
             parameters: {
@@ -3602,13 +3602,13 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Query all users of a kickoff
-         * @description Retrieve a paginated list of the users that belong to a kickoff
+         * List the users of a kickoff
+         * @description Returns a paginated list of the users in a kickoff. Use `filter[role]=Applicant` to see who still has to be promoted.
          */
         get: {
             parameters: {
                 query?: {
-                    "filter[processed]"?: boolean;
+                    "filter[role]"?: components["schemas"]["UserRole"];
                     /** @description The name of the property to use for sorting. */
                     "sort[by]"?: string;
                     /** @description The sort direction. */
@@ -3677,8 +3677,8 @@ export interface paths {
         };
         put?: never;
         /**
-         * Add multiple users to a kickoff
-         * @description Bulk add. Per-user problems are reported in the result; exceeding capacity rejects the whole batch with 409.
+         * Add users to a kickoff
+         * @description Bulk version of adding a user. All or nothing: if any user doesn't exist (404), is staff (422), is in another kickoff, or doesn't fit (409), nobody is added and the error names the offending users.
          */
         post: {
             parameters: {
@@ -3691,22 +3691,18 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": string[];
-                    "text/json": string[];
-                    "application/*+json": string[];
+                    "application/json": components["schemas"]["KickoffUsersRequestDTO"];
+                    "text/json": components["schemas"]["KickoffUsersRequestDTO"];
+                    "application/*+json": components["schemas"]["KickoffUsersRequestDTO"];
                 };
             };
             responses: {
-                /** @description OK */
-                200: {
+                /** @description No Content */
+                204: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content: {
-                        "text/plain": string[];
-                        "application/json": string[];
-                        "text/json": string[];
-                    };
+                    content?: never;
                 };
                 /** @description Bad Request */
                 400: {
@@ -3759,6 +3755,17 @@ export interface paths {
                         "text/json": components["schemas"]["ProblemDetails"];
                     };
                 };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
                 /** @description Too Many Requests */
                 429: {
                     headers: {
@@ -3784,7 +3791,7 @@ export interface paths {
         get?: never;
         /**
          * Add a user to a kickoff
-         * @description Idempotent. 409 if the kickoff is full or the user already belongs to another kickoff.
+         * @description Puts a user in a kickoff. Safe to repeat. Fails with 404 if the kickoff or user doesn't exist, 409 if the kickoff is full or the user already belongs to another kickoff, and 422 for staff. If the kickoff already started, an applicant is promoted right away.
          */
         put: {
             parameters: {
@@ -3798,16 +3805,12 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description OK */
-                200: {
+                /** @description No Content */
+                204: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content: {
-                        "text/plain": components["schemas"]["UserLightDO"];
-                        "application/json": components["schemas"]["UserLightDO"];
-                        "text/json": components["schemas"]["UserLightDO"];
-                    };
+                    content?: never;
                 };
                 /** @description Unauthorized */
                 401: {
@@ -3849,6 +3852,17 @@ export interface paths {
                         "text/json": components["schemas"]["ProblemDetails"];
                     };
                 };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
                 /** @description Too Many Requests */
                 429: {
                     headers: {
@@ -3859,7 +3873,10 @@ export interface paths {
             };
         };
         post?: never;
-        /** Remove a user from a kickoff */
+        /**
+         * Remove a user from a kickoff
+         * @description Takes a user out of a kickoff. 404 if they aren't in it. Their role is untouched: someone who was already promoted stays a student.
+         */
         delete: {
             parameters: {
                 query?: never;
@@ -3931,12 +3948,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post?: never;
         /**
-         * Remove multiple users from a kickoff
-         * @description Bulk remove. POST instead of DELETE because a request body on DELETE is unreliable through proxies and some clients.
+         * Remove users from a kickoff
+         * @description Bulk version of removing a user. This is a POST because a request body on DELETE is unreliable through proxies and some clients. All or nothing: if any user isn't in the kickoff, nobody is removed (404).
          */
-        delete: {
+        post: {
             parameters: {
                 query?: never;
                 header?: never;
@@ -3947,22 +3963,18 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": string[];
-                    "text/json": string[];
-                    "application/*+json": string[];
+                    "application/json": components["schemas"]["KickoffUsersRequestDTO"];
+                    "text/json": components["schemas"]["KickoffUsersRequestDTO"];
+                    "application/*+json": components["schemas"]["KickoffUsersRequestDTO"];
                 };
             };
             responses: {
-                /** @description OK */
-                200: {
+                /** @description No Content */
+                204: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content: {
-                        "text/plain": string[];
-                        "application/json": string[];
-                        "text/json": string[];
-                    };
+                    content?: never;
                 };
                 /** @description Bad Request */
                 400: {
@@ -4013,6 +4025,7 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -4026,8 +4039,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Query the kickoff of a user
-         * @description Retrieve the kickoff a user belongs to. 404 if the user has none (e.g: staff).
+         * Get the kickoff of a user
+         * @description Returns the kickoff a user belongs to. 404 if they have none (e.g: staff, or someone who started directly). Staff can look up anyone, everyone else only themselves.
          */
         get: {
             parameters: {
@@ -4596,7 +4609,9 @@ export interface paths {
                     "filter[reviewee_id]"?: string;
                     "filter[rubric_id]"?: string;
                     "filter[kind]"?: components["schemas"]["ReviewKinds"];
+                    "filter[not[kind]]"?: components["schemas"]["ReviewKinds"];
                     "filter[status]"?: components["schemas"]["ReviewState"];
+                    "filter[not[status]]"?: components["schemas"]["ReviewState"];
                     /** @description The 0-based page index */
                     "page[index]"?: number | string;
                     /** @description The amount of results per page */
@@ -4995,6 +5010,9 @@ export interface paths {
          *     created: feedback that never counts towards completing the project.
          *
          *     The reviewed commit is the current head of the project's default branch, recorded as the review's `sha`.
+         *
+         *     Claiming starts a clock: start the review within 2 days and finish it within 24 hours of starting, otherwise
+         *     it is released for someone else. Self reviews have no deadline while pending.
          *     Reviews as the requesting user unless a different reviewer is specified, which requires staff.
          */
         post: {
@@ -10367,19 +10385,33 @@ export interface components {
              * Format: uuid
              * @description The unique identifier of the kickoff.
              */
-            id?: string;
+            id: string;
             /** @description The name of the kickoff. */
-            name?: string;
+            name: string;
             /**
              * Format: int32
              * @description The max amount of users that can join this kickoff.
              */
-            capacity?: number | string;
+            capacity: number | string;
+            /**
+             * Format: int32
+             * @description How many users are in this kickoff right now.
+             */
+            members: number | string;
             /**
              * Format: date-time
              * @description The scheduled date on when this kickoff is invoked.
              */
-            startsAt?: string;
+            startsAt: string;
+            /**
+             * Format: date-time
+             * @description When the kickoff actually started and its applicants were promoted. Null while it is still upcoming.
+             */
+            startedAt?: null | string;
+        };
+        KickoffUsersRequestDTO: {
+            /** @description The ids of the users. Duplicates are ignored. */
+            userIds: string[];
         };
         MemberDO: {
             /** Format: uuid */
@@ -10703,13 +10735,8 @@ export interface components {
             commit: components["schemas"]["PostCommitDTO"];
         };
         PostPushReviewRequestDTO: {
-            /** @description The kind of review being given. Auto is currently not supported. */
+            /** @description The kind of review being given. Auto is currently not supported and Peer slots are claimed by assignment. */
             kind: components["schemas"]["ReviewKinds"];
-            /**
-             * Format: date-time
-             * @description When Kind is Peer, needs to be either today or tomorrow. Other kind of evaluations can leave this null.
-             */
-            scheduledAt: null | string;
             /**
              * Format: uuid
              * @description The user giving the review. Defaults to the caller; only staff may set this to another user.
@@ -10842,7 +10869,9 @@ export interface components {
             sha: null | string;
             passed: null | boolean;
             /** Format: date-time */
-            scheduledAt: null | string;
+            claimedAt: null | string;
+            /** Format: date-time */
+            startedAt: null | string;
             /** Format: date-time */
             finishedAt: null | string;
             userProject: components["schemas"]["ReviewProjectDO"];

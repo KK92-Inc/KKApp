@@ -1,9 +1,11 @@
 <script lang="ts">
+	import { page } from "$app/state";
 import * as Reviews from "$lib/remotes/review.remote"
 
+
 const reviews = await Reviews.getPage({
-	status: "Pending",
-	notKind: "Self"
+	reviewerId: page.data.session.userId,
+	notStatus: "Finished"
 });
 
 </script>
