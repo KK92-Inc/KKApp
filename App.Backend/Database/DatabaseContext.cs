@@ -47,6 +47,8 @@ public class DatabaseContext(DbContextOptions<DatabaseContext> options) : DbCont
     public DbSet<EventFeedback> EventFeedbacks { get; set; }
     public DbSet<Kickoff> Kickoffs { get; set; }
     public DbSet<Freeze> Freezes { get; set; }
+    public DbSet<Trial> Trials { get; set; }
+    public DbSet<UserTrial> UserTrials { get; set; }
 
     // Joins
     public DbSet<GoalProject> GoalProject { get; set; }
@@ -66,5 +68,19 @@ public class DatabaseContext(DbContextOptions<DatabaseContext> options) : DbCont
             .HasIndex(r => r.UserProjectId, "IX_tbl_review_round_user_project_id_open")
             .IsUnique()
             .HasFilter("\"state\" = 0");
+
+        // Deleting a cursus must never wipe the history of a trial that was built on it.
+        modelBuilder.Entity<Trial>()
+            .HasOne(t => t.Cursus)
+            .WithMany()
+            .HasForeignKey(t => t.CursusId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // A user can take part in many trials over time (retaking one), but only one open at once.
+        // 0 = Registered, 1 = Active, see UserTrialState. This is the backstop for the service's lock.
+        modelBuilder.Entity<UserTrial>()
+            .HasIndex(t => t.UserId, "IX_tbl_user_trial_user_id_open")
+            .IsUnique()
+            .HasFilter("\"state\" IN (0, 1)");
     }
 }

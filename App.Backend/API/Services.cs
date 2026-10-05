@@ -37,7 +37,6 @@ using App.Backend.Core.Engines.Evaluations.Rules;
 using App.Backend.API.Schemas.Schema;
 using App.Backend.API.Schemas.Document;
 using Duende.AccessTokenManagement;
-using Keycloak.AuthServices.Sdk.Kiota;
 using App.Backend.API.Utils;
 using Microsoft.AspNetCore.Authorization;
 using Keycloak.AuthServices.Sdk.Kiota.Admin;
@@ -48,6 +47,7 @@ using System.Text.Json.Serialization;
 using App.Backend.API.Jobs;
 using App.Backend.API.Jobs.Extensions;
 using App.Backend.API.Bus.Messages.Kickoff;
+using App.Backend.API.Bus.Messages.Trials;
 using Wolverine.ErrorHandling;
 using Microsoft.Kiota.Abstractions;
 using Humanizer;
@@ -282,8 +282,13 @@ public static class Services
                 opts.CodeGeneration.AlwaysUseServiceLocationFor<DatabaseContext>();
 
                 // Make kickoff a durable queue and process them in parallel.
-                opts.LocalQueue("promote-applicant").MaximumParallelMessages(8);
+                opts.LocalQueue("promote-applicant").MaximumParallelMessages(8).UseDurableInbox();
                 opts.Publish(p => p.Message<PromoteApplicant>().ToLocalQueue("promote-applicant"));
+
+                // Same for trials, one message per participant so one bad account doesn't hold up the rest.
+                opts.LocalQueue("trial-participants").MaximumParallelMessages(8).UseDurableInbox();
+                opts.Publish(p => p.Message<ActivateTrialParticipant>().ToLocalQueue("trial-participants"));
+                opts.Publish(p => p.Message<DeactivateTrialParticipant>().ToLocalQueue("trial-participants"));
 
                 opts.OnException<ApiException>()
                     .RetryWithCooldown(1.Seconds(), 5.Seconds(), 15.Seconds())
@@ -312,6 +317,7 @@ public static class Services
         builder.Services.AddScoped<IUserService, UserService>();
         builder.Services.AddScoped<IMemberService, MemberService>();
         builder.Services.AddScoped<IKickoffService, KickoffService>();
+        builder.Services.AddScoped<ITrialService, TrialService>();
         builder.Services.AddScoped<IUserCursusService, UserCursusService>();
         builder.Services.AddScoped<IUserGoalService, UserGoalService>();
         builder.Services.AddScoped<IUserProjectService, UserProjectService>();
@@ -353,6 +359,7 @@ public static class Services
             quartz.Register<EventStateJob>();
             quartz.Register<CleanupReviews>();
             quartz.Register<KickoffJob>();
+            quartz.Register<TrialJob>();
         });
 
         builder.Services.AddQuartzHostedService(o => o.WaitForJobsToComplete = true);
