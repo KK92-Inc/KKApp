@@ -12,7 +12,6 @@
 	import Paginate from '$lib/components/paginate.svelte';
 	import CardEvent from './card-event.svelte';
 
-
 	let index = $state(0);
 	let search = $state('');
 	let status = $state<'Pending' | 'Accepted' | 'Rejected' | 'Finished'>('Accepted');
@@ -23,7 +22,7 @@
 </script>
 
 <div class="container mx-auto my-2 px-4">
-	<div class="flex flex-col gap-3 py-2 md:flex-row">
+	<div class="grid grid-cols-[1fr_auto_auto] gap-2 pb-2 max-md:grid-cols-1 max-md:grid-rows-3">
 		<InputGroup.Root class="w-full flex-1">
 			<InputGroup.Input
 				placeholder="Search for {status.toLowerCase()} events..."
@@ -40,14 +39,14 @@
 			<Plus />
 		</Button>
 
-			<Tabs.Root bind:value={status} class="flex-1">
-				<Tabs.List class="w-full flex-1 max-lg:h-full max-[350px]:h-auto max-[350px]:flex-wrap">
-					<Tabs.Trigger value="Accepted">Upcoming</Tabs.Trigger>
-					<Tabs.Trigger value="Pending">Proposed</Tabs.Trigger>
-					<Tabs.Trigger value="Finished">Finished</Tabs.Trigger>
-					<Tabs.Trigger value="Rejected">Rejected</Tabs.Trigger>
-				</Tabs.List>
-			</Tabs.Root>
+		<Tabs.Root bind:value={status} class="flex-1">
+			<Tabs.List class="w-full flex-1 max-lg:h-full">
+				<Tabs.Trigger value="Accepted">Upcoming</Tabs.Trigger>
+				<Tabs.Trigger value="Pending">Proposed</Tabs.Trigger>
+				<Tabs.Trigger value="Finished">Finished</Tabs.Trigger>
+				<Tabs.Trigger value="Rejected">Rejected</Tabs.Trigger>
+			</Tabs.List>
+		</Tabs.Root>
 	</div>
 
 	<Separator class="mb-2" />
@@ -64,7 +63,7 @@
 						class="relative z-20 aspect-video w-full rounded-[inherit] rounded-b-none object-cover"
 					/>
 
-					<CardEvent {event} class="shadow-none border-0 py-0 pt-4 gap-y-4"/>
+					<CardEvent {event} class="gap-y-4 border-0 py-0 pt-4 shadow-none" />
 
 					<Card.Footer class="mt-auto pt-4">
 						<Button class="w-full" variant="outline" href="/events/{event.id}">View Event</Button>
@@ -77,7 +76,7 @@
 							<Calendar />
 						</Empty.Media>
 						<Empty.Title>No Events</Empty.Title>
-						<Empty.Description>There are currently no '{status}' events</Empty.Description>
+						<Empty.Description>There are currently no events</Empty.Description>
 					</Empty.Header>
 				</Empty.Root>
 			{/each}

@@ -19,7 +19,16 @@
 		year: 'numeric'
 	});
 
-	const project = await Projects.get(context.projectId());
+	const [project, session] = $derived(
+		await Promise.all([
+			Projects.get(context.projectId()),
+			UserProjects.getByUserAndProject({
+				projectId: context.projectId(),
+				userId: context.userId()
+			})
+		])
+	);
+
 	const createdAt = $derived(formatter.format(new Date(project.createdAt)));
 	const updatedAt = $derived(formatter.format(new Date(project.updatedAt)));
 </script>
@@ -58,24 +67,29 @@
 
 		<Separator />
 
-		{#if project.public}
-			<Badge variant="secondary">
-				<Globe class="size-3" /> Public
-			</Badge>
-		{:else}
-			<Badge variant="outline">
-				<Lock class="size-3" /> Private
-			</Badge>
-		{/if}
-		{#if project.deprecated}
-			<Badge variant="destructive">
-				<TriangleAlert class="size-3" /> Deprecated
-			</Badge>
-		{/if}
-		{#if !project.active}
-			<Badge variant="destructive">
-				<TriangleAlert class="size-3" /> Disabled
-			</Badge>
-		{/if}
+		<div class="flex items-center gap-1">
+			{#if project.public}
+				<Badge variant="secondary">
+					<Globe class="size-3" /> Public
+				</Badge>
+			{:else}
+				<Badge variant="outline">
+					<Lock class="size-3" /> Private
+				</Badge>
+			{/if}
+			{#if project.deprecated}
+				<Badge variant="destructive">
+					<TriangleAlert class="size-3" /> Deprecated
+				</Badge>
+			{/if}
+			{#if !project.active}
+				<Badge variant="destructive">
+					<TriangleAlert class="size-3" /> Disabled
+				</Badge>
+			{/if}
+			{#if session}
+				<Badge variant="outline">{session.state}</Badge>
+			{/if}
+		</div>
 	</Card.Content>
 </Card.Root>

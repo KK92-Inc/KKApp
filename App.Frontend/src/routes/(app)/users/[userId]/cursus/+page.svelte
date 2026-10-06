@@ -1,9 +1,4 @@
 <script lang="ts">
-	import { Adapter, type TrackNode } from '$lib/components/galaxy/adapters/cursus';
-	import {
-		Adapter as UCAdapter,
-		type TrackNode as UCNode
-	} from '$lib/components/galaxy/adapters/user-cursus';
 	import { GalaxyRenderer } from '$lib/components/galaxy/render';
 	import type { GalaxyNode, RenderMode } from '$lib/components/galaxy/types';
 	import type { Attachment } from 'svelte/attachments';
@@ -11,10 +6,7 @@
 	import * as UserCursus from '$lib/remotes/user-cursus.remote';
 	import type { PageProps } from './$types';
 	import Layout from '$lib/components/layout.svelte';
-	import * as Popover from '$lib/components/popover';
 	import useDebounce from '$lib/hooks/debounce.svelte';
-	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
-	import { tick } from 'svelte';
 	import { Button, buttonVariants } from '$lib/components/button';
 	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
 	import * as Tabs from '$lib/components/tabs';
@@ -23,17 +15,13 @@
 	import { BellIcon, CloudIcon, RefreshCcwIcon, Search } from '@lucide/svelte';
 	import Separator from '$lib/components/separator/separator.svelte';
 	import * as Empty from '$lib/components/empty';
-	import Loader from '$lib/components/loader.svelte';
-	import config from '$lib/components/galaxy/config';
 	import Subscribed from './subscribed.svelte';
 	import All from './all.svelte';
 	import Badge from '$lib/components/badge/badge.svelte';
 	const { params }: PageProps = $props();
 
 	let search = $state('');
-	let open = $state(false);
 	const debounced = useDebounce((query: string) => {
-		open = true;
 		if (query.length <= 0) search = '';
 		else search = query;
 	});
@@ -41,23 +29,11 @@
 	let cursusId = $state<string>();
 	let userCursusId = $state<string>();
 
-	const renderer = new GalaxyRenderer<TrackNode>();
-	const renderer2 = new GalaxyRenderer<UCNode>();
 	const belongs = $derived(page.data.session.userId === params.userId);
-
-	renderer.onSingleClick((node) => console.log('clicked', node.goalId));
-	const render = (tree: GalaxyNode<TrackNode>, mode: RenderMode): Attachment<SVGElement> => {
-		return (element) => renderer.mount(element, tree, mode);
-	};
-
-	const renderUC = (tree: GalaxyNode<UCNode>, mode: RenderMode): Attachment<SVGElement> => {
-		return (element) => renderer2.mount(element, tree, mode);
-	};
 </script>
 
 <Layout cover class="gap-0" classL="border-r p-4 space-y-2" classR="relative">
 	{#snippet left()}
-		<!-- 1. Single Top Filter & Tab Toggle -->
 		<div class="space-y-3 pb-2">
 			<InputGroup.Root>
 				<InputGroup.Addon>
@@ -68,22 +44,11 @@
 					oninput={(e) => debounced.fn(e.currentTarget.value)}
 				/>
 			</InputGroup.Root>
-
-			<!-- {#if belongs}
-      <Tabs.Root value="subscribed" class="w-full">
-        <Tabs.List class="grid w-full grid-cols-2">
-          <Tabs.Trigger value="subscribed">Subscribed</Tabs.Trigger>
-          <Tabs.Trigger value="all">Browse All</Tabs.Trigger>
-        </Tabs.List>
-      </Tabs.Root>
-    {/if} -->
 		</div>
 
 		<Separator />
 
-		<!-- 2. Scrollable Navigation Section -->
-		<div class="flex-1 space-y-6 overflow-y-auto pt-2">
-			<!-- Subscribed Section -->
+		<div class="flex-1 space-y-6 overflow-y-auto p-2">
 			<div class="space-y-1">
 				<div class="px-2 py-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
 					Subscribed Cursus

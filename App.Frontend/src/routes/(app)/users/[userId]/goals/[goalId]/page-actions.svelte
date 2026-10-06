@@ -8,7 +8,7 @@
 	import * as User from '$lib/remotes/user.remote';
 	import * as Page from './context.svelte';
 	import * as Alert from '$lib/components/alert';
-	import { TriangleAlert } from '@lucide/svelte';
+	import { PartyPopper, TriangleAlert } from '@lucide/svelte';
 	import { Problem } from '$lib/api';
 	import { DateFormatter } from '@internationalized/date';
 
@@ -60,8 +60,8 @@
 	{:else if session.state === 'Inactive'}
 		{@render subscribe()}
 	{:else if session.state === 'Completed'}
-		<Alert.Root variant="default">
-			<TriangleAlert />
+		<Alert.Root variant="success">
+			<PartyPopper />
 			<Alert.Title>Goal Completed</Alert.Title>
 			<Alert.Description>This goal is completed!</Alert.Description>
 		</Alert.Root>

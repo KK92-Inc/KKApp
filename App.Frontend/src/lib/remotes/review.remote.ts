@@ -26,7 +26,7 @@ const PageSchema = v.object({
 const AnnotationsSchema = v.object({
 	reviewId: Filters.id,
 	file: v.optional(v.string()),
-	type: v.optional(v.literal("Comment", "Conclusion")),
+	type: v.optional(v.picklist(["Comment", "Conclusion"])),
 })
 
 const AssignSchema = v.object({
@@ -75,7 +75,7 @@ export const get = query(Filters.id, async (id) => {
 // ============================================================================
 
 /** Gets annotations made on the review */
-export const getAnnotations = command(AnnotationsSchema, async (params) => {
+export const getAnnotations = query(AnnotationsSchema, async (params) => {
 	const { locals } = getRequestEvent();
 	const { error, data } = await locals.api.GET('/reviews/{reviewId}/annotations', {
 		params: {
@@ -139,6 +139,17 @@ export const getRounds = query(Filters.id, async (userProjectId) => {
 	const { locals } = getRequestEvent();
 	const { error, data } = await locals.api.GET("/user-project/{userProjectId}/reviews/rounds", {
 		params: { path: { userProjectId } }
+	});
+
+	if (error || !data) Problem.throw(error);
+	return data;
+});
+
+/** Get a specific review */
+export const getRound = query(Filters.id, async (id) => {
+	const { locals } = getRequestEvent();
+	const { error, data } = await locals.api.GET('/reviews/rounds/{roundId}', {
+		params: { path: { roundId: id } }
 	});
 
 	if (error || !data) Problem.throw(error);

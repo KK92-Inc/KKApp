@@ -227,6 +227,19 @@ Reviews as the requesting user unless a different reviewer is specified, which r
         return Ok(rounds.Select(r => new ReviewRoundDO(r)));
     }
 
+    [HttpGet("rounds/{roundId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("List evaluation rounds of a project session")]
+    [EndpointDescription("Returns every evaluation attempt of the session, oldest first. Each round includes the commit (`sha`) it evaluated and the state and verdict of its review slots.")]
+    public async Task<ActionResult<ReviewRoundDO>> GetRound(Guid roundId, CancellationToken token)
+    {
+        var round = await service.FindRoundByIdAsync(roundId, token);
+        if (round is null) return NotFound(new ProblemDetails { Title = "User project not found." });
+        return Ok(new ReviewRoundDO(round));
+    }
+
     [HttpDelete("rounds/{roundId:guid}")]
     [RequireScope("evaluation")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

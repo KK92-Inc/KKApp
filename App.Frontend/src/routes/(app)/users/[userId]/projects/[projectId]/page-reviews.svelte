@@ -1,7 +1,24 @@
 <script lang="ts">
 	import * as Item from '$lib/components/item/';
 	import Button, { buttonVariants } from '$lib/components/button/button.svelte';
-	import { HeartHandshake, Plus, SortAsc, SortDesc } from '@lucide/svelte';
+	import * as DropdownMenu from '$lib/components/dropdown-menu';
+	import {
+		BadgeCheckIcon,
+		Ban,
+		BookmarkIcon,
+		CheckCheck,
+		ChevronRightIcon,
+		Ellipsis,
+		HeartHandshake,
+		MessageSquarePlus,
+		MessagesSquareIcon,
+		Plus,
+		Search,
+		SortAsc,
+		SortDesc,
+		TextSearch,
+		X
+	} from '@lucide/svelte';
 	import { Skeleton } from '$lib/components/skeleton';
 	import { page } from '$app/state';
 	import * as Card from '$lib/components/card';
@@ -15,9 +32,13 @@
 	import * as Reviews from '$lib/remotes/review.remote';
 	import * as Git from '$lib/remotes/git.remote';
 	import { toast } from 'svelte-sonner';
+	import Toggle from '$lib/components/toggle/toggle.svelte';
+	import Separator from '$lib/components/separator/separator.svelte';
+	import Badge from '$lib/components/badge/badge.svelte';
+
+	let sort = $state<components['schemas']['Order']>('Descending');
 
 	const context = Page.getContext();
-	let sort = $state<components['schemas']['Order']>('Descending');
 	const session = $derived(
 		await UserProjects.getByUserAndProject({
 			userId: context.userId(),
@@ -26,19 +47,31 @@
 	);
 
 	const git = $derived(session?.gitInfo ? await Git.getBranches(session.gitInfo.id) : []);
-	async function requestReview() {
-		const head = git.find((b) => b.head);
-		if (!session) toast.error('Session in');
-		else if (!head) toast.error('You have not submitted anything yet.');
-		else {
-			await Problem.try(async () => {
-				await Reviews.create({ userProjectId: session.id, ref: head.name });
+
+	/** Request an evaluation round */
+	async function pull() {
+		if (!session) return;
+		await Problem.try(async () => {
+			await Reviews.pull(session.id);
+		});
+	}
+
+	/** Provide an evaluation to a potential round or just plain feedback. */
+	async function push() {
+		if (!session) return;
+
+		// ASK: Peer or Async ? Then try and it will otherwise fail.
+		await Problem.try(async () => {
+			await Reviews.push({
+				kind: 'Peer',
+				userProjectId: session.id,
+				reviewerId: page.data.session.userId
 			});
-		}
+		});
 	}
 </script>
 
-{#if session}
+<svelte:boundary>
 	<Card.Root class="gap-2 py-3">
 		<Card.Header class="flex items-center  justify-between px-4">
 			<Card.Title
@@ -47,99 +80,75 @@
 				<HeartHandshake size={16} />
 				Reviews
 			</Card.Title>
-		</Card.Header>
 
-		<!-- Show Review state -->
-		 <!-- Basically compare the  -->
-		<Card.Content>
+			{#if session}
+				{@const members = await UserProjects.getMembersPage({ id: session.id })}
+				{@const membership = members.data.find((v) => v.userId === page.data.session.userId && !v.leftAt)}
 
-		</Card.Content>
-
-		<!-- Show Recent Reviews -->
-		<Card.Content>
-
-		</Card.Content>
-	</Card.Root>
-{/if}
-
-<!-- {#if session}
-	<svelte:boundary>
-		{@const members = await UserProjects.getMembersPage({ id: session.id })}
-		{@const membership = members.data.find((v) => v.userId === page.data.session.userId && !v.leftAt)}
-		{@const reviews = await Reviews.getPage({
-			sort,
-			userProjectId: session.id,
-			sortBy: 'CreatedAt',
-			size: 4
-		})}
-
-		{#snippet failed(error, reset)}
-			<Failed {error} {reset} />
-		{/snippet}
-
-		{#snippet pending()}
-			<Skeleton class="h-16 w-full" />
-			<Skeleton class="h-16 w-full" />
-			<Skeleton class="h-16 w-full" />
-		{/snippet}
-
-		<Card.Root class="gap-2 py-3">
-			<Card.Header class="flex items-center  justify-between px-4">
-				<Card.Title
-					class="flex items-center gap-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase"
-				>
-					<HeartHandshake size={16} />
-					Reviews
-				</Card.Title>
-				<Card.Action>
+				<Card.Action class="flex items-center gap-1">
 					<ButtonGroup.Root>
-						{#if membership?.role === 'Leader' && session?.state !== 'Inactive'}
-							<Button size="sm" variant="outline" onclick={requestReview}>
-								Request <Plus />
+						{#if membership?.role === 'Leader'}
+							<Button size="sm" variant="outline" onclick={pull}>
+								<MessageSquarePlus />
+								Request
 							</Button>
 						{:else if !membership}
-							<Button size="sm" variant="outline" onclick={provideReview}>
-								Review <TextSearch />
+							<Button size="sm" variant="outline" onclick={push}>
+								<MessageSquarePlus />
+								Review
 							</Button>
 						{/if}
-						<Button
-							size="sm"
-							variant="outline"
-							href="/reviews/user/{context.userId()}/project/{context.projectId()}"
-						>
-							View All <HeartHandshake />
-						</Button>
-						<Select.Root type="single" bind:value={sort}>
-							<Select.Trigger
-								icon={sort === 'Ascending' ? SortAsc : SortDesc}
-								class={buttonVariants({ variant: 'outline', size: 'sm', class: 'h-6! py-0' })}
-							>
-								Sort
-							</Select.Trigger>
-							<Select.Content>
-								<Select.Group>
-									<Select.Label>Sort Order</Select.Label>
-									{#each Order.options as order (order)}
-										{@const label = order === 'Descending' ? 'Newest' : 'Oldest'}
-										<Select.Item value={order} {label}>
-											{label}
-										</Select.Item>
-									{/each}
-								</Select.Group>
-							</Select.Content>
-						</Select.Root>
 					</ButtonGroup.Root>
 				</Card.Action>
-			</Card.Header>
-			<Card.Content class="px-3">
-				<Item.Group class="gap-2">
-					{#each reviews.data as item (item.id)}
-						<Item.Review review={item} />
-					{:else}
-						<span class="text-xs text-muted-foreground">No Reviews yet.</span>
+			{/if}
+		</Card.Header>
+
+		<Separator />
+		<Card.Content class="px-4">
+			{#if session}
+				{@const rounds = await Reviews.getRounds(session.id)}
+				<Item.Group class="grid max-h-64 grid-flow-row gap-1 overflow-y-auto pe-1">
+					{#each rounds as r (r.number)}
+						{@const passed = r.slots.filter((s) => s.passed).length}
+						{@const finished = r.slots.filter((s) => s.state === 'Finished').length}
+						{@const kinds = [...new Set(r.slots.map((s) => s.kind))].join(' · ')}
+						<Item.Root variant="muted" size="sm" class="border hover:border-primary">
+							{#snippet child({ props })}
+								<a href="/reviews/round/{r.id}" {...props}>
+									<Item.Media variant="icon" class="size-8 rounded-md bg-muted/60">
+										{#if r.state === 'Cancelled'}
+											<Ban />
+										{:else if r.state === 'Open'}
+											<Search />
+										{:else if r.state === 'Passed'}
+											<CheckCheck />
+										{:else if r.state === 'Failed'}
+											<X />
+										{/if}
+									</Item.Media>
+									<Item.Content class="min-w-0 gap-0.5">
+										<Item.Title class="flex items-center gap-2 truncate text-sm font-medium">
+											<span class="truncate">Round {r.number}</span>
+											<Badge variant="outline" class="shrink-0 text-[10px]">{r.state}</Badge>
+										</Item.Title>
+										<Item.Description class="truncate text-xs">
+											{finished}/{r.slots.length} reviews finished · {passed} passed
+										</Item.Description>
+										<Item.Description class="truncate text-[11px]">
+											{r.ref} · {r.sha.slice(0, 7)} · {kinds}
+										</Item.Description>
+									</Item.Content>
+									<Item.Actions class="ml-auto shrink-0 gap-2">
+										<ChevronRightIcon class="size-4 text-muted-foreground" />
+									</Item.Actions>
+								</a>
+							{/snippet}
+						</Item.Root>
 					{/each}
 				</Item.Group>
-			</Card.Content>
-		</Card.Root>
-	</svelte:boundary>
-{/if} -->
+			{:else}
+				No Session
+			{/if}
+		</Card.Content>
+	</Card.Root>
+</svelte:boundary>
