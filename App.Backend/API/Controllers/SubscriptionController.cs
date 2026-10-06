@@ -10,6 +10,9 @@ using App.Backend.Models.Responses.Entities;
 using App.Backend.Models.Responses.Entities.Projects;
 using App.Backend.API.Utils;
 using App.Backend.Models.Responses.Entities.Cursi;
+using App.Backend.Domain.Enums;
+using Wolverine;
+using App.Backend.API.Bus.Messages;
 
 // ============================================================================
 
@@ -27,6 +30,7 @@ public class SubscriptionController(
     ICursusService cursusService,
     IAuthorizationService auth,
     IGoalService goalService,
+    IMessageBus bus,
     IProjectService projectService
 ) : Controller
 {
@@ -111,6 +115,8 @@ public class SubscriptionController(
         }
 
         var userGoal = await service.SubscribeToGoalAsync(userId, goalId, token);
+        if (userGoal.State is EntityObjectState.Completed) // Subscription may result in immeadiate completion.
+            await bus.PublishAsync(new GoalCompletionMessage(userGoal.UserId, userGoal.GoalId));
         return Ok(new UserGoalDO(userGoal));
     }
 
