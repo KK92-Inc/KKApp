@@ -55,6 +55,7 @@ export class GalaxyRenderer<TMeta = unknown> {
 		this.singleClickHandler = callback;
 	}
 
+	// DEPRECATED
 	public onGroupClick(callback: (metas: TMeta[]) => void) {
 		this.groupClickHandler = callback;
 	}

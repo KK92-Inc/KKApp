@@ -17,6 +17,9 @@ public class CursusTrackNodeDO
     public required string Name { get; init; }
 
     [Required]
+    public required string Description { get; init; }
+
+    [Required]
     public required string Slug { get; init; }
 
     [Required]

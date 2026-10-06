@@ -40,7 +40,4 @@ public interface ICursusService : IDomainService<Cursus>, ISlugQueryable<Cursus>
     /// Returns all track nodes for a cursus with Goal navigation properties loaded.
     /// </summary>
     Task<IReadOnlyList<CursusGoal>> GetTrackAsync(Guid cursusId, CancellationToken token = default);
-
-    /// <summary>Assembles the master-track DO from a cursus and its track nodes.</summary>
-    CursusTrackDO AssembleTrack(Cursus cursus, IReadOnlyList<CursusGoal> nodes);
 }

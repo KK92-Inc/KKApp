@@ -108,10 +108,8 @@ export function flattenTree<TMeta>(tree: GalaxyNode<TMeta>): TMeta[] {
 export function buildTree<TNode>(
 	nodes: readonly TNode[],
 	spec: TreeSpec<TNode>,
-	synthetic: SyntheticRoot
 ): GalaxyNode<TNode> {
-	const what = synthetic.label;
-	if (nodes.length === 0) throw new Error(`Track "${what}" has no nodes.`);
+	if (nodes.length === 0) throw new Error(`Track has no nodes.`);
 
 	const known = new Set(nodes.map(spec.id));
 	const groups = groupByParent(nodes, spec);
@@ -151,7 +149,7 @@ export function buildTree<TNode>(
 		return !parent || !known.has(parent);
 	});
 	if (roots.length === 0) {
-		throw new Error(`Track "${what}" has no root node (do the parent links form a cycle?).`);
+		throw new Error(`Track has no root node (do the parent links form a cycle?).`);
 	}
 
 	const tree: GalaxyNode<TNode> =
@@ -181,13 +179,11 @@ export function buildTree<TNode>(
  */
 export function createFlatAdapter<TTrack, TNode>(config: {
 	nodes(track: TTrack): readonly TNode[] | null | undefined;
-	synthetic(track: TTrack): SyntheticRoot;
 	spec: TreeSpec<TNode>;
 }): GalaxyAdapter<TTrack, TNode> {
 	return {
 		construct(track) {
-			const synthetic = config.synthetic(track);
-			return buildTree(config.nodes(track) ?? [], config.spec, synthetic);
+			return buildTree(config.nodes(track) ?? [], config.spec);
 		},
 		flatten: flattenTree
 	};

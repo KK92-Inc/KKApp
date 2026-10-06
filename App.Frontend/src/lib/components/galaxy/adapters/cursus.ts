@@ -22,7 +22,6 @@ export type TrackNode = components['schemas']['CursusTrackNodeDO'];
  */
 export const Adapter: GalaxyAdapter<Track, TrackNode> = createFlatAdapter<Track, TrackNode>({
 	nodes: (track) => track.nodes,
-	synthetic: (track) => ({ id: track.cursusId, label: track.name }),
 	spec: {
 		id: (n) => n.goalId,
 		label: (n) => n.name,

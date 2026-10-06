@@ -26,7 +26,6 @@ public class PutCursusTrackNodeDO
     /// The parent goal ID within this cursus track.
     /// Null for root-level goals.
     /// </summary>
-    [Required]
     [Description("The parent goal ID within this cursus track. Null for root-level goals.")]
     public Guid? ParentId { get; init; }
 }

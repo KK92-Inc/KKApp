@@ -10,18 +10,21 @@
 	import { page } from '$app/state';
 
 	interface Props {
-		state?: EntityState;
+		session?: {
+			state: EntityState;
+			userId: string;
+		},
 		cursus: components['schemas']['CursusDO'];
 		href?: string;
 		actions?: Snippet<[]>;
 	}
 
-	const { cursus, state, href, actions }: Props = $props();
+	const { cursus, session, href, actions }: Props = $props();
 
 	const initials = $derived(cursus.name.slice(0, 2).toUpperCase());
 	const src = $derived(cursus.thumbnail ?? `https://placehold.co/128x128?text=${initials}`);
-	const to = $derived(href ?? `/users/${page.data.session.userId}/cursus/${cursus.id}`);
-	const style = $derived(state ? colors[state] : undefined);
+	const to = $derived(href ?? `/users/${session?.userId ?? page.data.session.userId}/cursus/${cursus.id}`);
+	const style = $derived(session?.state ? colors[session.state] : undefined);
 </script>
 
 <Item.Root
@@ -66,9 +69,9 @@
 				{/if}
 
 				<div class="flex flex-wrap items-center gap-2 pt-0.5">
-					{#if state}
-						<Badge variant="outline" class={cn('text-[11px] font-medium', colors[state])}>
-							{state}
+					{#if session}
+						<Badge variant="outline" class={cn('text-[11px] font-medium', colors[session.state])}>
+							{session.state}
 						</Badge>
 					{/if}
 				</div>

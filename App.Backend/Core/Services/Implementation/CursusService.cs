@@ -59,18 +59,4 @@ public class CursusService(
             .Include(cg => cg.Goal)
             .ToListAsync(token);
     }
-
-    public CursusTrackDO AssembleTrack(Cursus cursus, IReadOnlyList<CursusGoal> nodes) => new()
-    {
-        CursusId = cursus.Id,
-        Name = cursus.Name,
-        CompletionMode = cursus.Mode,
-        Nodes = [.. nodes.Select(n => new CursusTrackNodeDO
-        {
-            GoalId = n.GoalId,
-            Name = n.Goal.Name,
-            Slug = n.Goal.Slug,
-            ParentGoalId = n.ParentGoalId,
-        })]
-    };
 }

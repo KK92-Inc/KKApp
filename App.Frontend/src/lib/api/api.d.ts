@@ -1059,7 +1059,8 @@ export interface paths {
         put?: never;
         /**
          * Replace cursus track
-         * @description Fully replaces the hierarchical goal track for a static cursus. Existing subscribers are not affected.
+         * @description Fully replaces the hierarchical goal track for a static cursus.
+         *     Existing subscribers are not affected.
          */
         post: {
             parameters: {
@@ -6337,6 +6338,1041 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/trials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List trials
+         * @description Returns a paginated list of trial periods with how many users are in each.
+         *     Use `filter[open]=true` to only get the trials that haven't ended yet,
+         *     i.e. the ones a user can still pick, and `filter[after]` / `filter[before]`
+         *     to look at a window of start dates.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    "filter[id]"?: string;
+                    "filter[name]"?: string;
+                    "filter[cursus]"?: string;
+                    "filter[open]"?: boolean;
+                    "filter[after]"?: string;
+                    "filter[before]"?: string;
+                    /** @description The name of the property to use for sorting. */
+                    "sort[by]"?: string;
+                    /** @description The sort direction. */
+                    "sort[order]"?: components["schemas"]["Order"];
+                    /** @description The 0-based page index */
+                    "page[index]"?: number | string;
+                    /** @description The amount of results per page */
+                    "page[size]"?: number | string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["TrialDO"][];
+                        "application/json": components["schemas"]["TrialDO"][];
+                        "text/json": components["schemas"]["TrialDO"][];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Create a trial
+         * @description Creates a trial period.
+         *
+         *     When `startsAt` passes, its registered users are activated: their account is enabled and they are subscribed to the cursus.
+         *     When `endsAt` passes they are wrapped up and their account is disabled again.
+         *
+         *     A start in the past begins it on the next run of the trial job.
+         *     422 if it ends before it starts or in the past, or if the cursus doesn't exist.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PostTrialRequestDTO"];
+                    "text/json": components["schemas"]["PostTrialRequestDTO"];
+                    "application/*+json": components["schemas"]["PostTrialRequestDTO"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["TrialDO"];
+                        "application/json": components["schemas"]["TrialDO"];
+                        "text/json": components["schemas"]["TrialDO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/trials/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a trial
+         * @description Returns a single trial, including how many users are in it and whether it already started or ended.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["TrialDO"];
+                        "application/json": components["schemas"]["TrialDO"];
+                        "text/json": components["schemas"]["TrialDO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        /**
+         * Delete a trial
+         * @description Deletes a trial. Fails with 409 while it has any participants, including the ones that finished or quit, since that is the record of who took part.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        /**
+         * Update a trial
+         * @description Updates the name, cursus, capacity or dates. Omitted fields are left alone.
+         *     The capacity can't drop below the current participant count (409),
+         *     the start date and cursus can't change once the trial has started (409),
+         *     and the end date can't change once it has ended (409).
+         *
+         *     Moving the end of a running trial is how you end it early.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PatchTrialRequestDTO"];
+                    "text/json": components["schemas"]["PatchTrialRequestDTO"];
+                    "application/*+json": components["schemas"]["PatchTrialRequestDTO"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["TrialDO"];
+                        "application/json": components["schemas"]["TrialDO"];
+                        "text/json": components["schemas"]["TrialDO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/trials/{id}/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the participants of a trial
+         * @description Returns a paginated list of the participations in a trial. Use `filter[outcome]=Pending` to see who still needs a verdict, and `filter[state]` to look at e.g. only the ones that quit.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    "filter[state]"?: components["schemas"]["UserTrialState"];
+                    "filter[outcome]"?: components["schemas"]["TrialOutcome"];
+                    /** @description The name of the property to use for sorting. */
+                    "sort[by]"?: string;
+                    /** @description The sort direction. */
+                    "sort[order]"?: components["schemas"]["Order"];
+                    /** @description The 0-based page index */
+                    "page[index]"?: number | string;
+                    /** @description The amount of results per page */
+                    "page[size]"?: number | string;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["UserTrialDO"][];
+                        "application/json": components["schemas"]["UserTrialDO"][];
+                        "text/json": components["schemas"]["UserTrialDO"][];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/trials/{id}/users/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the participation of a user
+         * @description Returns the participation of a user in a trial. 404 if they aren't in it. Staff can look up anyone, everyone else only themselves.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    userId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["UserTrialDO"];
+                        "application/json": components["schemas"]["UserTrialDO"];
+                        "text/json": components["schemas"]["UserTrialDO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        /**
+         * Sign a user up for a trial
+         * @description Signs an applicant up for a trial and returns their participation. Safe to repeat. Fails with 404 if the trial or user doesn't exist, 422 if the user isn't an applicant, and 409 if the trial is over or full, the user already quit it, or they are part of another trial that hasn't finished. If the trial is already running the user is activated right away.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    userId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["UserTrialDO"];
+                        "application/json": components["schemas"]["UserTrialDO"];
+                        "text/json": components["schemas"]["UserTrialDO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        post?: never;
+        /**
+         * Take a user out of a trial
+         * @description Takes a user out of a trial. If it hasn't started for them they are simply removed. If they are taking part they are marked as having quit, which is kept as a record, and their account is disabled again. 404 if they aren't in it, 409 if the trial is over for them already.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    userId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        /**
+         * Decide on a participant
+         * @description Records whether a user was selected to become a student, and returns their participation. This is what lets the admission platform know the user may move on to pick a kickoff. 404 if they aren't in the trial, 409 if the trial isn't over for them yet. Can be changed again later.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    userId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PatchUserTrialRequestDTO"];
+                    "text/json": components["schemas"]["PatchUserTrialRequestDTO"];
+                    "application/*+json": components["schemas"]["PatchUserTrialRequestDTO"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["UserTrialDO"];
+                        "application/json": components["schemas"]["UserTrialDO"];
+                        "text/json": components["schemas"]["UserTrialDO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/trials/{id}/users/outcome": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Decide on several participants
+         * @description Bulk version of deciding on a participant, so a whole cohort can be handled in one go. All or nothing: if any user isn't in the trial (404) or the trial isn't over for them yet (409), nobody is changed and the error names the offending users.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TrialOutcomesRequestDTO"];
+                    "text/json": components["schemas"]["TrialOutcomesRequestDTO"];
+                    "application/*+json": components["schemas"]["TrialOutcomesRequestDTO"];
+                };
+            };
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/{userId}/trials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the trials of a user
+         * @description Returns every trial a user has taken part in, newest first. Empty if they never did. This is how the admission platform finds out whether a user finished a trial and was selected. Staff can look up anyone, everyone else only themselves.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    userId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["UserTrialDO"][];
+                        "application/json": components["schemas"]["UserTrialDO"][];
+                        "text/json": components["schemas"]["UserTrialDO"][];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users": {
         parameters: {
             query?: never;
@@ -10275,16 +11311,14 @@ export interface components {
         /** @enum {unknown} */
         CursusMode: "Ring" | "FreeStyle";
         CursusTrackDO: {
-            /** Format: uuid */
-            cursusId: string;
-            name: string;
-            completionMode: components["schemas"]["CursusMode"];
+            mode: components["schemas"]["CursusMode"];
             nodes: components["schemas"]["CursusTrackNodeDO"][];
         };
         CursusTrackNodeDO: {
             /** Format: uuid */
             goalId: string;
             name: string;
+            description: string;
             slug: string;
             /** Format: uuid */
             parentGoalId: null | string;
@@ -10566,6 +11600,30 @@ export interface components {
             /** @description Indicates the variations of the rubric */
             variants?: components["schemas"]["RubricVariantDTO"][];
         };
+        PatchTrialRequestDTO: {
+            /** @description A new name for the trial. */
+            name?: null | string;
+            /**
+             * Format: uuid
+             * @description A new cursus for the trial. Only possible before it starts.
+             */
+            cursusId?: null | string;
+            /**
+             * Format: int32
+             * @description The new max amount of users that can take part in this trial.
+             */
+            capacity?: null | number | string;
+            /**
+             * Format: date-time
+             * @description The new start date. Only possible before it starts.
+             */
+            startsAt?: null | string;
+            /**
+             * Format: date-time
+             * @description The new end date. Moving it earlier than now ends a running trial on the next run of the trial job.
+             */
+            endsAt?: null | string;
+        };
         PatchUserDetailsRequestDTO: {
             /** @description Optional markdown biography or about text. */
             markdown?: null | string;
@@ -10604,6 +11662,10 @@ export interface components {
              */
             avatarUrl?: null | string;
             details?: null | components["schemas"]["PatchUserDetailsRequestDTO"];
+        };
+        PatchUserTrialRequestDTO: {
+            /** @description The verdict: Selected, Rejected, or Pending to clear an earlier one. */
+            outcome: components["schemas"]["TrialOutcome"];
         };
         PostApplicationRequestDTO: {
             /** @description The name of the application. */
@@ -10758,6 +11820,30 @@ export interface components {
             title: string;
             publicKey: string;
         };
+        PostTrialRequestDTO: {
+            /** @description A name for the trial, e.g: Piscine::2026::August */
+            name: string;
+            /**
+             * Format: uuid
+             * @description The cursus the participants work on during the trial.
+             */
+            cursusId: string;
+            /**
+             * Format: int32
+             * @description The max amount of users that can take part in this trial.
+             */
+            capacity: number | string;
+            /**
+             * Format: date-time
+             * @description When the trial begins. Participants are activated then.
+             */
+            startsAt: string;
+            /**
+             * Format: date-time
+             * @description When the trial ends. Participants are wrapped up then.
+             */
+            endsAt: string;
+        };
         PostUserFreezeRequestDTO: {
             /** @description The reason for the freeze. */
             reason: string;
@@ -10843,7 +11929,7 @@ export interface components {
              * Format: uuid
              * @description The parent goal ID within this cursus track. Null for root-level goals.
              */
-            parentId: null | string;
+            parentId?: null | string;
         };
         PutCursusTrackRequestDTO: {
             nodes: components["schemas"]["PutCursusTrackNodeDO"][];
@@ -11004,6 +12090,58 @@ export interface components {
             size: number | string;
             commit: components["schemas"]["CommitDTO"];
         };
+        TrialDO: {
+            /**
+             * Format: uuid
+             * @description The unique identifier of the trial.
+             */
+            id: string;
+            /** @description The name of the trial. */
+            name: string;
+            /**
+             * Format: uuid
+             * @description The cursus the participants work on during the trial.
+             */
+            cursusId: string;
+            /**
+             * Format: int32
+             * @description The max amount of users that can take part in this trial.
+             */
+            capacity: number | string;
+            /**
+             * Format: int32
+             * @description How many users are in this trial, including the ones that quit.
+             */
+            participants: number | string;
+            /**
+             * Format: date-time
+             * @description The scheduled date on when this trial begins.
+             */
+            startsAt: string;
+            /**
+             * Format: date-time
+             * @description The scheduled date on when this trial ends.
+             */
+            endsAt: string;
+            /**
+             * Format: date-time
+             * @description When the trial actually began. Null while it is still upcoming.
+             */
+            startedAt?: null | string;
+            /**
+             * Format: date-time
+             * @description When the trial actually ended. Null until then.
+             */
+            endedAt?: null | string;
+        };
+        /** @enum {unknown} */
+        TrialOutcome: "Pending" | "Selected" | "Rejected";
+        TrialOutcomesRequestDTO: {
+            /** @description The ids of the users. Duplicates are ignored. */
+            userIds: string[];
+            /** @description The verdict: Selected, Rejected, or Pending to clear an earlier one. */
+            outcome: components["schemas"]["TrialOutcome"];
+        };
         UserBriefDO: {
             /** Format: uuid */
             id: string;
@@ -11018,25 +12156,21 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
-            /** Format: uuid */
-            userId: string;
-            /** Format: uuid */
-            cursusId: string;
+            user: components["schemas"]["UserBriefDO"];
+            cursus: components["schemas"]["CursusDO"];
             state: components["schemas"]["EntityObjectState"];
             /** Format: date-time */
             unlocksAt: null | string;
         };
         UserCursusTrackDO: {
-            /** Format: uuid */
-            cursusId: string;
-            name: string;
-            completionMode: components["schemas"]["CursusMode"];
+            mode: components["schemas"]["CursusMode"];
             nodes: components["schemas"]["UserCursusTrackNodeDO"][];
         };
         UserCursusTrackNodeDO: {
             /** Format: uuid */
             goalId: string;
             name: string;
+            description: string;
             slug: string;
             /** Format: uuid */
             parentGoalId: null | string;
@@ -11140,6 +12274,36 @@ export interface components {
         UserProjectTransactionVariant: "Started" | "MemberJoined" | "MemberLeft" | "GitCommit" | "StateChangedToInActive" | "StateChangedToActive" | "StateChangedToCompleted" | "StateChangedToAwaiting" | "MemberInvited" | "MemberUninvited" | "MemberAccepted" | "MemberDeclined" | "MemberKicked" | "LeadershipTransferred";
         /** @enum {unknown} */
         UserRole: "Applicant" | "Student" | "Staff";
+        UserTrialDO: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /**
+             * Format: uuid
+             * @description The trial this is a participation in.
+             */
+            trialId: string;
+            /** @description Where the user is within the trial. */
+            state: components["schemas"]["UserTrialState"];
+            /** @description The verdict of staff. Only meaningful once the trial is over for the user. */
+            outcome: components["schemas"]["TrialOutcome"];
+            /**
+             * Format: date-time
+             * @description When the user became active in the trial. Null if they never did.
+             */
+            startedAt?: null | string;
+            /**
+             * Format: date-time
+             * @description When the trial ended for the user. Null while they are still in it.
+             */
+            endedAt?: null | string;
+            user: components["schemas"]["UserLightDO"];
+        };
+        /** @enum {unknown} */
+        UserTrialState: "Registered" | "Active" | "Completed" | "Quit";
         WorkspaceDO: {
             /** Format: uuid */
             id: string;

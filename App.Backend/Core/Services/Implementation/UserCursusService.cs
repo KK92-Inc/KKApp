@@ -58,14 +58,13 @@ public class UserCursusService(DatabaseContext ctx) : BaseService<UserCursus>(ct
 
         return new UserCursusTrackDO
         {
-            CursusId = cursus.Id,
-            Name = cursus.Name,
-            CompletionMode = cursus.Mode,
+            Mode = cursus.Mode,
             Nodes = [.. snapshot.Select(n => new UserCursusTrackNodeDO
             {
                 GoalId = n.GoalId,
                 Name = n.Goal.Name,
                 Slug = n.Goal.Slug,
+                Description = n.Goal.Description,
                 ParentGoalId = n.ParentGoalId,
                 State = states.TryGetValue(n.GoalId, out var s) ? s : null,
                 IsUnlocked = unlocked.Contains(n.GoalId)

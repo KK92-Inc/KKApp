@@ -1,223 +1,204 @@
 <script lang="ts">
-	import Layout from '$lib/components/layout.svelte';
-	import * as v from 'valibot';
-	import * as InputGroup from '$lib/components/input-group';
-	import * as Field from '$lib/components/field';
-	import * as Tabs from '$lib/components/tabs';
-	import * as Select from '$lib/components/select';
-	import * as Empty from '$lib/components/empty';
-	import * as Item from '$lib/components/item';
+	import { Adapter, type TrackNode } from '$lib/components/galaxy/adapters/cursus';
+	import {
+		Adapter as UCAdapter,
+		type TrackNode as UCNode
+	} from '$lib/components/galaxy/adapters/user-cursus';
+	import { GalaxyRenderer } from '$lib/components/galaxy/render';
+	import type { GalaxyNode, RenderMode } from '$lib/components/galaxy/types';
+	import type { Attachment } from 'svelte/attachments';
 	import * as Cursus from '$lib/remotes/cursus.remote';
-	import * as UserCursus from '$lib/remotes/user-cursus.remote'
-	import { Archive, FolderCode, Search } from '@lucide/svelte';
-	import useDebounce from '$lib/hooks/debounce.svelte';
-	import useSearchParams from '$lib/hooks/url.svelte';
-	import { page } from '$app/state';
+	import * as UserCursus from '$lib/remotes/user-cursus.remote';
 	import type { PageProps } from './$types';
-	import { EntityObjectState } from '$lib/api';
-	import { Separator } from '$lib/components/separator';
-	import Paginate from '$lib/components/paginate.svelte';
-	import teleport from '$lib/hooks/teleport.svelte';
+	import Layout from '$lib/components/layout.svelte';
+	import * as Popover from '$lib/components/popover';
+	import useDebounce from '$lib/hooks/debounce.svelte';
+	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
+	import { tick } from 'svelte';
+	import { Button, buttonVariants } from '$lib/components/button';
 	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
+	import * as Tabs from '$lib/components/tabs';
+	import { page } from '$app/state';
+	import * as InputGroup from '$lib/components/input-group';
+	import { BellIcon, CloudIcon, RefreshCcwIcon, Search } from '@lucide/svelte';
+	import Separator from '$lib/components/separator/separator.svelte';
+	import * as Empty from '$lib/components/empty';
+	import Loader from '$lib/components/loader.svelte';
+	import config from '$lib/components/galaxy/config';
+	import Subscribed from './subscribed.svelte';
+	import All from './all.svelte';
+	import Badge from '$lib/components/badge/badge.svelte';
+	const { params }: PageProps = $props();
 
-	const { params, data }: PageProps = $props();
-	const states = ['Any', ...EntityObjectState.options];
+	let search = $state('');
+	let open = $state(false);
+	const debounced = useDebounce((query: string) => {
+		open = true;
+		if (query.length <= 0) search = '';
+		else search = query;
+	});
+
+	let cursusId = $state<string>();
+	let userCursusId = $state<string>();
+
+	const renderer = new GalaxyRenderer<TrackNode>();
+	const renderer2 = new GalaxyRenderer<UCNode>();
 	const belongs = $derived(page.data.session.userId === params.userId);
 
-	const url = useSearchParams({
-		index: v.fallback(
-			v.pipe(
-				v.string(),
-				v.transform(Number),
-				v.check((n) => !isNaN(n) && n > 0)
-			),
-			0
-		),
-		search: v.fallback(v.string(), ''),
-		status: v.fallback(v.picklist(states), 'Any'),
-		tab: v.fallback(v.picklist(['subscribed', 'available']), 'subscribed')
-	});
+	renderer.onSingleClick((node) => console.log('clicked', node.goalId));
+	const render = (tree: GalaxyNode<TrackNode>, mode: RenderMode): Attachment<SVGElement> => {
+		return (element) => renderer.mount(element, tree, mode);
+	};
 
-	const tab = url.query('tab');
-	const search = url.query('search');
-	const status = url.query('status');
-	const index = url.query('index');
-
-	const debounced = useDebounce((query: string) => {
-		if (query.length <= 0) search.clear();
-		else search.value = query;
-	});
+	const renderUC = (tree: GalaxyNode<UCNode>, mode: RenderMode): Attachment<SVGElement> => {
+		return (element) => renderer2.mount(element, tree, mode);
+	};
 </script>
 
-{#snippet tile(name: string, description: string, id: string)}
-	<Item.Root variant="outline" class="min-h-40">
-		{#snippet child({ props })}
-			<a href="/users/{params.userId}/cursus/{id}" {...props}>
-				<Item.Header class="flex-col">
-					<Archive />
-				</Item.Header>
-				<Item.Content>
-					<Item.Title>{name}</Item.Title>
-					<Item.Description>{description}</Item.Description>
-				</Item.Content>
-			</a>
-		{/snippet}
-	</Item.Root>
-{/snippet}
-
-{#snippet loader()}
-	<div class="grid grid-cols-2 gap-4 p-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-		<Skeleton class="h-40" />
-		<Skeleton class="h-40" />
-		<Skeleton class="h-40" />
-		<Skeleton class="h-40" />
-		<Skeleton class="h-40" />
-	</div>
-{/snippet}
-
-{#snippet empty()}
-	<Empty.Root class="col-span-full">
-		<Empty.Header>
-			<Empty.Media variant="icon">
-				<FolderCode />
-			</Empty.Media>
-			<Empty.Title>Nothing here</Empty.Title>
-			<Empty.Description>
-				Nothing matched your criteria, thus we have nothing to show for you.
-			</Empty.Description>
-		</Empty.Header>
-	</Empty.Root>
-{/snippet}
-
-<Layout cover>
+<Layout cover class="gap-0" classL="border-r p-4 space-y-2" classR="relative">
 	{#snippet left()}
-		<Field.Set class="h-full border-r border-b bg-card p-4">
-			<Field.Group class="gap-2">
-				<Field.Field>
-					<InputGroup.Root>
-						<InputGroup.Input
-							placeholder="Search..."
-							value={search.value}
-							oninput={(e) => debounced.fn(e.currentTarget.value)}
-						/>
-						<InputGroup.Addon>
-							<Search />
-						</InputGroup.Addon>
-					</InputGroup.Root>
-				</Field.Field>
+		<!-- 1. Single Top Filter & Tab Toggle -->
+		<div class="space-y-3 pb-2">
+			<InputGroup.Root>
+				<InputGroup.Addon>
+					<Search class="size-4 text-muted-foreground" />
+				</InputGroup.Addon>
+				<InputGroup.Input
+					placeholder="Search cursuses..."
+					oninput={(e) => debounced.fn(e.currentTarget.value)}
+				/>
+			</InputGroup.Root>
 
-				<Field.Field>
+			<!-- {#if belongs}
+      <Tabs.Root value="subscribed" class="w-full">
+        <Tabs.List class="grid w-full grid-cols-2">
+          <Tabs.Trigger value="subscribed">Subscribed</Tabs.Trigger>
+          <Tabs.Trigger value="all">Browse All</Tabs.Trigger>
+        </Tabs.List>
+      </Tabs.Root>
+    {/if} -->
+		</div>
+
+		<Separator />
+
+		<!-- 2. Scrollable Navigation Section -->
+		<div class="flex-1 space-y-6 overflow-y-auto pt-2">
+			<!-- Subscribed Section -->
+			<div class="space-y-1">
+				<div class="px-2 py-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+					Subscribed Cursus
+				</div>
+				<Tabs.Root
+					value={userCursusId}
+					orientation="vertical"
+					onValueChange={(v) => {
+						cursusId = undefined;
+						userCursusId = v;
+					}}
+				>
+					<Tabs.List class="flex w-full flex-col gap-1 bg-transparent p-0">
+						<svelte:boundary>
+							{@const result = await UserCursus.getPageByUser({ userId: params.userId })}
+							{#each result.data as session (session.id)}
+								<Tabs.Trigger value={session.id} class={buttonVariants({ variant: 'ghost' })}>
+									<span class="truncate">{session.cursus.name}</span>
+									<Badge variant="secondary" class="rounded-sm ml-auto">{session.state}</Badge>
+								</Tabs.Trigger>
+							{:else}
+								<p class="px-3 py-4 text-center text-xs text-muted-foreground">No subscribed cursus yet</p>
+							{/each}
+
+							{#snippet pending()}
+								<div class="space-y-2 p-1">
+									<Skeleton class="h-9 w-full rounded-md" />
+									<Skeleton class="h-9 w-full rounded-md" />
+								</div>
+							{/snippet}
+						</svelte:boundary>
+					</Tabs.List>
+				</Tabs.Root>
+			</div>
+
+			<!-- All Cursus Section (Owner view) -->
+			{#if belongs}
+				<div class="space-y-1">
+					<div class="px-2 py-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+						All Cursuses
+					</div>
 					<Tabs.Root
-						bind:value={tab.value}
-						onValueChange={() => {
-							debounced.destroy();
-							search.clear();
-							status.clear();
-							index.clear();
+						value={cursusId}
+						orientation="vertical"
+						onValueChange={(v) => {
+							cursusId = v;
+							userCursusId = undefined;
 						}}
 					>
-						<Tabs.List class="w-full">
-							{#if belongs}
-								<Tabs.Trigger value="available" class="flex-1">Available</Tabs.Trigger>
-							{/if}
-							<Tabs.Trigger value="subscribed" class="flex-1">Subscribed</Tabs.Trigger>
+						<Tabs.List class="flex w-full flex-col gap-1 bg-transparent p-0">
+							{#key search}
+								<svelte:boundary>
+									{@const result = await Cursus.getPage({ name: search })}
+
+									{#snippet pending()}
+                  <div class="space-y-2 p-1">
+                    <Skeleton class="h-9 w-full rounded-md" />
+                    <Skeleton class="h-9 w-full rounded-md" />
+                    <Skeleton class="h-9 w-full rounded-md" />
+                  </div>
+									{/snippet}
+									{#each result.data as cursus (cursus.id)}
+										<Tabs.Trigger value={cursus.id} class={buttonVariants({ variant: 'ghost' })}>
+											<span class="truncate">{cursus.name}</span>
+										</Tabs.Trigger>
+									{:else}
+										<p class="px-3 py-4 text-center text-xs text-muted-foreground">No results found</p>
+									{/each}
+								</svelte:boundary>
+							{/key}
 						</Tabs.List>
 					</Tabs.Root>
-				</Field.Field>
-
-				{#if belongs && tab.value === 'subscribed'}
-					<Field.Separator />
-					<Field.Field>
-						<Field.Label for="cursus-state">Cursus State</Field.Label>
-						<Select.Root type="single" name="cursus-state" bind:value={status.value}>
-							<Select.Trigger>
-								{status.value}
-							</Select.Trigger>
-							<Select.Content>
-								<Select.Group>
-									<Select.Label>States</Select.Label>
-									{#each states as state (state)}
-										<Select.Item value={state} label={state}>
-											{state}
-										</Select.Item>
-									{/each}
-								</Select.Group>
-							</Select.Content>
-						</Select.Root>
-					</Field.Field>
-				{/if}
-			</Field.Group>
-		</Field.Set>
+				</div>
+			{/if}
+		</div>
 	{/snippet}
 
 	{#snippet right()}
-		<span class="flex items-center gap-3 py-2">
-			<p class="font-bold whitespace-nowrap">Cursus</p>
-			<Separator orientation="horizontal" class="flex-1" />
-			<span id="pagination"></span>
-		</span>
-
-		{#if belongs && tab.value === 'subscribed'}
-			<svelte:boundary>
-				{@const page = await UserCursus.getPageByUser({
-					page: index.value,
-					userId: params.userId,
-					name: search.value,
-					//@ts-expect-error Trust me bro
-					state: status.value === 'Any' ? undefined : status.value
-				})}
-
-				<span {@attach teleport('pagination')} class="pr-4">
-					<Paginate
-						page={index.value}
-						onPageChange={(p) => (index.value = p)}
-						perPage={page.perPage}
-						count={page.count}
-					/>
-				</span>
-
-				{#snippet pending()}
-					{@render loader()}
-				{/snippet}
-
-				<div class="grid grid-cols-2 gap-4 p-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-					{#each page.data as session (session.id)}
-						{@const cursus = session.cursus}
-						{@render tile(cursus.name, cursus.description, cursus.id)}
-					{:else}
-						{@render empty()}
-					{/each}
-				</div>
-			</svelte:boundary>
+		{#if cursusId}
+			<All userId={params.userId} cursusId={cursusId} />
+		{:else if userCursusId}
+			<Subscribed userId={params.userId} userProjectId={userCursusId} />
 		{:else}
-			<svelte:boundary>
-				{@const page = await Cursus.getPage({
-					workspaceId: data.workspace.id,
-					page: index.value,
-					name: search.value
-				})}
-
-				{#snippet pending()}
-					{@render loader()}
-				{/snippet}
-
-				<span {@attach teleport('pagination')} class="pr-4">
-					<Paginate
-						page={index.value}
-						onPageChange={(p) => (index.value = p)}
-						perPage={page.perPage}
-						count={page.count}
-					/>
-				</span>
-
-				<div class="grid grid-cols-2 gap-4 p-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-					{#each page.data as cursus (cursus.id)}
-						{@render tile(cursus.name, cursus.description, cursus.id)}
-					{:else}
-						{@render empty()}
-					{/each}
-				</div>
-			</svelte:boundary>
+			{#if belongs}
+				<Empty.Root class="h-full max-w-md bg-muted/30">
+					<Empty.Header>
+						<Empty.Media variant="icon">
+							<BellIcon />
+						</Empty.Media>
+						<Empty.Title>No Notifications</Empty.Title>
+						<Empty.Description class="max-w-xs text-pretty">
+							You're all caught up. New notifications will appear here.
+						</Empty.Description>
+					</Empty.Header>
+					<Empty.Content>
+						<Button variant="outline">
+							<RefreshCcwIcon data-icon="inline-start" />
+							Refresh
+						</Button>
+					</Empty.Content>
+				</Empty.Root>
+			{:else}
+				<Empty.Root class="border border-dashed">
+					<Empty.Header>
+						<Empty.Media variant="icon">
+							<CloudIcon />
+						</Empty.Media>
+						<Empty.Title>Cloud Storage Empty</Empty.Title>
+						<Empty.Description>Upload files to your cloud storage to access them anywhere.</Empty.Description>
+					</Empty.Header>
+					<Empty.Content>
+						<Button variant="outline" size="sm">Upload Files</Button>
+					</Empty.Content>
+				</Empty.Root>
+			{/if}
 		{/if}
 	{/snippet}
 </Layout>

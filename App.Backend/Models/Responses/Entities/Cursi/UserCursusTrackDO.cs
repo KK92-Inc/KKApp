@@ -14,16 +14,13 @@ namespace App.Backend.Models.Responses.Entities.Cursi;
 /// A user's frozen track snapshot, taken once at subscribe time - see
 /// <see cref="Core.Services.Implementation.SubscriptionService.SubscribeToCursusAsync"/>.
 /// Later edits to the cursus's master track never change this; it reflects the track
-/// exactly as it stood the moment the user enrolled. Built by
-/// <see cref="Core.Services.Interface.IUserCursusService.AssembleTrack"/>.
+/// exactly as it stood the moment the user enrolled.
 /// </summary>
 public class UserCursusTrackDO
 {
     [Required]
-    public required Guid CursusId { get; init; }
+    public required CursusMode Mode { get; init; }
+
     [Required]
-    public required string Name { get; init; }
-    [Required]
-    public required CursusMode CompletionMode { get; init; }
     public required IReadOnlyList<UserCursusTrackNodeDO> Nodes { get; init; }
 }

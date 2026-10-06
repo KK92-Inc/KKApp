@@ -4,6 +4,7 @@
 // ============================================================================
 
 using System.ComponentModel.DataAnnotations;
+using App.Backend.Domain.Entities;
 using App.Backend.Domain.Entities.Users;
 using App.Backend.Domain.Enums;
 
@@ -13,12 +14,11 @@ namespace App.Backend.Models.Responses.Entities.Cursi;
 
 public class UserCursusDO(UserCursus userCursus) : BaseEntityDO<UserCursus>(userCursus)
 {
+    [Required]
+    public UserBriefDO User { get; set; } = userCursus.User;
     
     [Required]
-    public Guid UserId { get; set; } = userCursus.UserId;
-    
-    [Required]
-    public Guid CursusId { get; set; } = userCursus.CursusId;
+    public CursusDO Cursus { get; set; } = userCursus.Cursus;
     
     [Required]
     public EntityObjectState State { get; set; } = userCursus.State;
