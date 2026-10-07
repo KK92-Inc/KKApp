@@ -3,62 +3,44 @@
 // See README in the root project for more information.
 // ============================================================================
 
-const STATE_COLORS: Record<string, string> = {
-  Completed: '#16a34a', // green-600
-  Active: '#2563eb',    // blue-600
-  Awaiting: '#d97706',  // amber-600
-  Inactive: 'var(--card)'
-};
-
-// ============================================================================
-
 export default {
-	link: {
-		"distance": 125,
-		"strength": 1.0,
-		"iterations": 1
+	/** Force-directed layout. */
+	freestyle: {
+		link: { distance: 125, strength: 1.0, iterations: 1 },
+		charge: { strength: -1000, distanceMax: 1000 },
+		collision: { padding: 6, strength: 0.7 },
+		simulation: { alphaMin: 0.001, alphaDecay: 0.0228, velocityDecay: 0.4 },
+		/** While a node is being dragged the simulation is kept this warm. */
+		drag: { alphaTarget: 0.3 }
 	},
-	charge: {
-		"strength": -1000,
-		"distanceMax": 1000
-	},
-	collision: {
-		"enabled": true,
-		"padding": 6,
-		"strength": 0.7
-	},
-	simulation: {
-		"alpha": 1,
-		"alphaTarget": 0,
-		"alphaMin": 0.001,
-		"alphaDecay": 0.0228,
-		"velocityDecay": 0.4
-	},
-	drag: {
-		"startAlphaTarget": 0.3,
-		"endAlphaTarget": 0,
-		"restartOnDrag": true
-	},
+
+	/** Concentric ring layout. */
 	ring: {
-		/** Radius of the depth-1 ring. */
-		"baseRadius": 190,
-		/** Radial distance added per extra depth level. */
-		"gap": 75,
-		/** How hard nodes are pulled onto their depth's ring (0-1). */
-		"strength": 0.85,
-		/** Kept weak on purpose: only used to nudge children near their parent's angle. */
-		"linkStrength": 0.15,
-		/** CSS color for the depth-ring guide circles. */
-		"guideColor": "var(--ring)",
-		"guideOpacity": 0.45,
-		"guideWidth": 2,
-		"guideDash": "0 0",
+		/** Minimum empty space between two neighbouring rings. */
+		ringGap: 40,
+		/** Minimum empty space between two neighbouring nodes on one ring. */
+		nodeGap: 16,
 		/**
-		 * Slower than `simulation.alphaDecay` (0.0228) on purpose: ring mode
-		 * seeds nodes close to their target radius but still needs extra ticks
-		 * to jostle them apart along the ring before the sim cools down.
+		 * How scattered goals are within a ring: 0 = evenly spaced, 1 = anywhere
+		 * inside their own slot. Higher looks more organic but needs wider rings.
 		 */
-		"alphaDecay": 0.01
+		jitter: 0.5
 	},
-	colors: STATE_COLORS
-}
+
+	/** The circles drawn behind a ring layout. */
+	guide: {
+		color: 'var(--ring)',
+		opacity: 0.45,
+		width: 2
+	},
+
+	zoom: {
+		min: 0.05,
+		max: 4,
+		/** Zoom level `focus()` flies to. */
+		focusScale: 1.8,
+		focusDuration: 750,
+		/** Empty border (px) kept around the graph when fitting it to the view. */
+		fitPadding: 48
+	}
+} as const;

@@ -2,448 +2,354 @@
 // W2Inc, 2025, All Rights Reserved.
 // See README in the root project for more information.
 // ============================================================================
-/* eslint-disable @typescript-eslint/no-this-alias */
+// Draws a `GalaxyGraph` into an <svg>.
+//
+//   const renderer = new GalaxyRenderer<MyNode>();
+//   renderer.onSelect((node) => ...);
+//   <svg {@attach renderer.attach(graph)}></svg>
+//   renderer.focus(id);
+//
+// Knows nothing about goals or progress: placement comes from `./layouts`,
+// looks come from `./theme`.
 // ============================================================================
 
 import * as d3 from 'd3';
+import type { Attachment } from 'svelte/attachments';
 import config from './config';
-import type { GalaxyNode, RenderMode, SimLink, SimNode } from './types';
+import { NODE_FONT, radiusOf, roleOf } from './geometry';
+import { LAYOUTS, type Hierarchy, type Placement } from './layouts';
+import { STATUS_STYLES } from './theme';
+import type { GalaxyGraph, GalaxyNode, SimLink, SimNode } from './types';
 
 // ============================================================================
-// Sizing
+// Public API
 // ============================================================================
 
-const RADII = {
-	root: { outer: 58, inner: 40 },
-	parent: { outer: 38, inner: 26 },
-	group: { outer: 50, inner: 26 },
-	lone: { outer: 32, inner: 22 },
-} as const;
-
-const CHOICE_DOT = 10;
-const CHOICE_ORBIT = 30;
-type SizeKey = keyof typeof RADII;
-
-function sizeKey<TMeta>(d: d3.HierarchyNode<GalaxyNode<TMeta>>): SizeKey {
-	if (d.depth === 0) return 'root';
-	if (d.children) return 'parent';
-	if (d.data.items.length > 1) return 'group';
-	return 'lone';
-}
-
-// ============================================================================
-
-/**
- * Owns the D3 force-graph rendering pipeline for a single `<svg>` element.
- * Knows nothing about goals, cursi, or state — it only understands
- * `GalaxyNode`/`GalaxyItem`. Any domain data gets adapted into that shape
- * before it reaches here (see `./adapters`).
- */
 export class GalaxyRenderer<TMeta = unknown> {
-	private element?: SVGElement;
-	private zoomBehavior?: d3.ZoomBehavior<SVGElement, unknown>;
-	private simNodes: SimNode<TMeta>[] = [];
-	private nodeG?: d3.Selection<SVGGElement, SimNode<TMeta>, SVGGElement, unknown>;
-	private width = 0;
-	private height = 0;
-	private mode: RenderMode = 'tree';
+	private selectHandler?: (meta: TMeta) => void;
+	private session?: Session;
 
-	private singleClickHandler?: (meta: TMeta) => void;
-	private groupClickHandler?: (metas: TMeta[]) => void;
-
-	public onSingleClick(callback: (meta: TMeta) => void) {
-		this.singleClickHandler = callback;
-	}
-
-	// DEPRECATED
-	public onGroupClick(callback: (metas: TMeta[]) => void) {
-		this.groupClickHandler = callback;
+	/** Called with the domain object of a node when it is clicked (or activated with the keyboard). */
+	onSelect(handler: (meta: TMeta) => void): void {
+		this.selectHandler = handler;
 	}
 
 	/**
-	 * Mounts the renderer onto an SVG element for the given tree.
-	 * Returns a cleanup function (for use inside a Svelte {@attach}).
-	 *
-	 * @param mode `'tree'` (default) for a free-form force layout, or
-	 * `'ring'` to group nodes of the same depth onto concentric rings.
+	 * For `<svg {@attach renderer.attach(graph)}>`. Svelte re-runs it when
+	 * `graph` changes, which tears the old drawing down first.
 	 */
-	mount(element: SVGElement, tree: GalaxyNode<TMeta>, mode: RenderMode = 'tree'): () => void {
-		const controller = new AbortController();
-		const style = getComputedStyle(document.documentElement);
-		const header = parseFloat(style.getPropertyValue('--header-height'));
+	attach(graph: GalaxyGraph<TMeta>): Attachment<SVGElement> {
+		return (element) => this.mount(element, graph);
+	}
 
-		this.mode = mode;
-		this.width = window.innerWidth;
-		this.height = window.innerHeight - 1 - header;
-		document.body.style.overflow = 'hidden';
-		this.render(element, tree);
-
-		window.addEventListener(
-			'resize',
-			() => {
-				this.width = window.innerWidth;
-				this.height = window.innerHeight;
-				this.render(element, tree);
-			},
-			{ signal: controller.signal }
-		);
+	/** Same as `attach`, for when you're not in a template. Returns the cleanup. */
+	mount(element: SVGElement, graph: GalaxyGraph<TMeta>): () => void {
+		this.session?.dispose();
+		const session = createSession(element, graph, (meta) => this.selectHandler?.(meta));
+		this.session = session;
 
 		return () => {
-			document.body.style.overflow = '';
-			controller.abort();
+			session.dispose();
+			if (this.session === session) this.session = undefined;
 		};
 	}
 
-	// =========================================================================
-	// Render pipeline
-	// =========================================================================
-
-	private render(element: SVGElement, tree: GalaxyNode<TMeta>): void {
-		this.element = element;
-		const svg = d3.select<SVGElement, unknown>(element);
-		svg.selectAll('*').remove();
-
-		svg
-			.attr('width', this.width)
-			.attr('height', this.height)
-			.attr('viewBox', `${-this.width / 2} ${-this.height / 2} ${this.width} ${this.height}`);
-
-		const canvas = svg.append('g');
-
-		this.zoomBehavior = d3.zoom<SVGElement, unknown>()
-			.scaleExtent([0.05, 4])
-			.on('zoom', ({ transform }) => canvas.attr('transform', transform.toString()));
-
-		svg.call(this.zoomBehavior);
-
-		const root = d3.hierarchy<GalaxyNode<TMeta>>(tree, (d) => d.children);
-		this.simNodes = root.descendants() as unknown as SimNode<TMeta>[];
-		const links = root.links() as unknown as SimLink<TMeta>[];
-		const maxDepth = d3.max(this.simNodes, (d) => d.depth) ?? 0;
-
-		if (this.mode === 'ring' && maxDepth > 0) {
-			this.appendRingGuides(canvas, maxDepth);
-			this.seedRingPositions(this.simNodes);
+	/** Flies the camera to a node and pulses it. `id` is `GalaxyNode.id`. */
+	focus(id: string): void {
+		if (!this.session?.focus(id)) {
+			console.warn(`Galaxy: can't focus "${id}" (nothing is mounted, or the graph has no such node).`);
 		}
-
-		// Ring mode positions communicate parent/child depth on their own; the
-		// straight lines are still built into the simulation (they gently pull
-		// a child toward its parent's angle) but skipped visually so they don't
-		// crisscross the rings.
-		const simulation = this.buildSimulation(this.simNodes, links, maxDepth);
-		const linkSel = this.renderLinks(canvas, this.mode === 'ring' ? [] : links);
-		this.nodeG = this.renderNodes(canvas, this.simNodes, simulation);
-
-		simulation.on('tick', () => {
-			linkSel
-				.attr('x1', (d) => (d.source as SimNode<TMeta>).x ?? 0)
-				.attr('y1', (d) => (d.source as SimNode<TMeta>).y ?? 0)
-				.attr('x2', (d) => (d.target as SimNode<TMeta>).x ?? 0)
-				.attr('y2', (d) => (d.target as SimNode<TMeta>).y ?? 0);
-
-			this.nodeG!.attr('transform', (d: SimNode<TMeta>) => `translate(${d.x ?? 0},${d.y ?? 0})`);
-		});
 	}
+}
 
-	/** Radius the given depth's ring sits at. Depth 0 (the root) is always 0. */
-	private ringRadius(depth: number): number {
-		if (depth <= 0) return 0;
-		return config.ring.baseRadius + (depth - 1) * config.ring.gap;
-	}
+// ============================================================================
+// Session: one graph drawn into one <svg>
+// ============================================================================
 
-	/** Gives nodes a sane starting position before the simulation takes over. */
-	private seedRingPositions(nodes: SimNode<TMeta>[]): void {
-		const byDepth = new Map<number, SimNode<TMeta>[]>();
-		for (const node of nodes) {
-			if (!byDepth.has(node.depth)) byDepth.set(node.depth, []);
-			byDepth.get(node.depth)!.push(node);
+interface Session {
+	/** @returns whether the node exists */
+	focus(id: string): boolean;
+	/** Safe to call more than once. */
+	dispose(): void;
+}
+
+type Layer = d3.Selection<SVGGElement, unknown, null, undefined>;
+type NodeSelection<TMeta> = d3.Selection<SVGGElement, SimNode<TMeta>, SVGGElement, unknown>;
+
+function createSession<TMeta>(
+	element: SVGElement,
+	graph: GalaxyGraph<TMeta>,
+	onSelect: (meta: TMeta) => void
+): Session {
+	const svg = d3.select<SVGElement, unknown>(element);
+	svg.selectAll('*').remove();
+	svg.append('style').text(STYLES);
+
+	// Back to front: guides, links, nodes.
+	const canvas = svg.append('g');
+	const guideLayer = canvas.append('g');
+	const linkLayer = canvas.append('g');
+	const nodeLayer = canvas.append('g');
+
+	const hierarchy = toHierarchy(graph.root);
+	const links = drawLinks(linkLayer, hierarchy.links);
+	const nodes = drawNodes(nodeLayer, hierarchy.nodes, onSelect);
+
+	const redraw = (): void => {
+		const path = placement.path;
+		if (path) links.attr('d', (link) => path(link));
+		nodes.attr('transform', (node) => `translate(${node.x ?? 0},${node.y ?? 0})`);
+	};
+
+	const placement: Placement<TMeta> = LAYOUTS[graph.layout](hierarchy, redraw);
+	if (!placement.path) linkLayer.remove();
+	drawGuides(guideLayer, placement.guides);
+	if (placement.drag) nodes.call(placement.drag);
+
+	const zoom = d3
+		.zoom<SVGElement, unknown>()
+		.scaleExtent([config.zoom.min, config.zoom.max])
+		.on('zoom', ({ transform }) => canvas.attr('transform', transform.toString()));
+	svg.call(zoom);
+
+	let width = 0;
+	let height = 0;
+	let fitted = false;
+
+	/** Frames the whole graph (including ring guides), never magnified past 1:1. */
+	const fit = (): void => {
+		let x0 = Infinity;
+		let y0 = Infinity;
+		let x1 = -Infinity;
+		let y1 = -Infinity;
+		for (const node of hierarchy.nodes) {
+			const r = radiusOf(node);
+			x0 = Math.min(x0, (node.x ?? 0) - r);
+			y0 = Math.min(y0, (node.y ?? 0) - r);
+			x1 = Math.max(x1, (node.x ?? 0) + r);
+			y1 = Math.max(y1, (node.y ?? 0) + r);
 		}
+		const outermost = placement.guides[placement.guides.length - 1] ?? 0;
+		x0 = Math.min(x0, -outermost);
+		y0 = Math.min(y0, -outermost);
+		x1 = Math.max(x1, outermost);
+		y1 = Math.max(y1, outermost);
 
-		for (const [depth, group] of byDepth) {
-			const radius = this.ringRadius(depth);
-			group.forEach((node, i) => {
-				const angle = (2 * Math.PI * i) / group.length - Math.PI / 2;
-				node.x = radius * Math.cos(angle);
-				node.y = radius * Math.sin(angle);
+		const pad = config.zoom.fitPadding * 2;
+		const scale = Math.max(config.zoom.min, Math.min(1, (width - pad) / (x1 - x0), (height - pad) / (y1 - y0)));
+		svg.call(zoom.transform, d3.zoomIdentity.scale(scale).translate(-(x0 + x1) / 2, -(y0 + y1) / 2));
+	};
+
+	// Sized by the element itself (CSS decides how big it is). Resizing only
+	// re-centers the view: it never re-runs the layout.
+	const resize = (): void => {
+		const rect = element.getBoundingClientRect();
+		if (rect.width === 0 || rect.height === 0) return; // hidden: wait for a real size
+		width = rect.width;
+		height = rect.height;
+		svg.attr('viewBox', `${-width / 2} ${-height / 2} ${width} ${height}`);
+		if (!fitted) {
+			fitted = true;
+			fit();
+		}
+	};
+
+	const observer = new ResizeObserver(resize);
+	observer.observe(element);
+
+	redraw();
+	resize();
+
+	let disposed = false;
+	return {
+		focus(id) {
+			const target = hierarchy.nodes.find((node) => node.data.id === id);
+			if (!target) return false;
+
+			const view = d3.zoomIdentity.scale(config.zoom.focusScale).translate(-(target.x ?? 0), -(target.y ?? 0));
+			svg.transition().duration(config.zoom.focusDuration).call(zoom.transform, view);
+			nodes.filter((node) => node === target).each(function () {
+				pulse(this);
 			});
+			return true;
+		},
+
+		dispose() {
+			if (disposed) return;
+			disposed = true;
+			observer.disconnect();
+			placement.stop();
+			svg.on('.zoom', null).interrupt();
+			svg.selectAll('*').remove();
 		}
-	}
+	};
+}
 
-	/** Dashed backdrop circles marking each depth's ring, drawn behind everything else. */
-	private appendRingGuides(canvas: d3.Selection<SVGGElement, unknown, null, undefined>, maxDepth: number): void {
-		const guides = canvas.append('g').attr('class', 'ring-guides');
-		const radii = Array.from({ length: maxDepth }, (_, i) => this.ringRadius(i + 1));
+function toHierarchy<TMeta>(root: GalaxyNode<TMeta>): Hierarchy<TMeta> {
+	const top = d3.hierarchy(root, (node) => node.children) as SimNode<TMeta>;
 
-		guides
-			.selectAll('circle')
-			.data(radii)
-			.join('circle')
-			.attr('r', (r) => r)
-			.attr('fill', 'none')
-			.attr('stroke', config.ring.guideColor)
-			.attr('stroke-width', config.ring.guideWidth)
-			.attr('stroke-dasharray', config.ring.guideDash)
-			.attr('stroke-opacity', config.ring.guideOpacity);
-	}
+	return {
+		root: top,
+		nodes: top.descendants() as SimNode<TMeta>[],
+		links: top.links() as unknown as SimLink<TMeta>[]
+	};
+}
 
-	private buildSimulation(nodes: SimNode<TMeta>[], links: SimLink<TMeta>[], maxDepth: number) {
-		const simulation = d3
-			.forceSimulation<SimNode<TMeta>>(nodes)
-			.force('charge', d3.forceManyBody<SimNode<TMeta>>().strength(config.charge.strength).distanceMax(config.charge.distanceMax))
-			.force('collide', d3.forceCollide<SimNode<TMeta>>((d) => RADII[sizeKey(d)].outer + config.collision.padding).strength(config.collision.strength))
-			.alphaMin(config.simulation.alphaMin)
-			.alphaDecay(config.simulation.alphaDecay)
-			.velocityDecay(config.simulation.velocityDecay);
+// ============================================================================
+// Drawing
+// ============================================================================
 
-		if (this.mode === 'ring' && maxDepth > 0) {
-			simulation
-				.force('radial', d3.forceRadial<SimNode<TMeta>>((d) => this.ringRadius(d.depth), 0, 0).strength(config.ring.strength))
-				.force(
-					'link',
-					d3
-						.forceLink<SimNode<TMeta>, SimLink<TMeta>>(links)
-						.distance(config.ring.gap)
-						.strength(config.ring.linkStrength)
-						.iterations(config.link.iterations)
-				)
-				.alphaDecay(config.ring.alphaDecay);
+/**
+ * Interaction styling lives in CSS (hover, focus, pulse) rather than in d3
+ * transitions; status styling (fill, dash, ...) is set per node from the theme.
+ */
+const STYLES = `
+.galaxy-node .core { stroke: var(--border); stroke-width: 1.5; transition: stroke .12s, stroke-width .12s; }
+.galaxy-node.is-goal { cursor: pointer; outline: none; }
+.galaxy-node.is-goal:hover .core,
+.galaxy-node.is-goal:focus-visible .core { stroke: var(--ring); stroke-width: 3; }
+.galaxy-node.is-pulsing .core { animation: galaxy-pulse .45s ease-out; }
+@keyframes galaxy-pulse { 35% { stroke: var(--ring); stroke-width: 6; } }
+`;
+
+function drawGuides(layer: Layer, radii: readonly number[]): void {
+	layer
+		.selectAll('circle')
+		.data(radii)
+		.join('circle')
+		.attr('r', (radius) => radius)
+		.attr('fill', 'none')
+		.attr('stroke', config.guide.color)
+		.attr('stroke-opacity', config.guide.opacity)
+		.attr('stroke-width', config.guide.width);
+}
+
+function drawLinks<TMeta>(layer: Layer, data: SimLink<TMeta>[]) {
+	return layer
+		.attr('fill', 'none')
+		.attr('stroke-opacity', 0.8)
+		.attr('stroke-width', 1.5)
+		.selectAll<SVGPathElement, SimLink<TMeta>>('path')
+		.data(data)
+		.join('path')
+		.attr('stroke', (link) => STATUS_STYLES[link.target.data.status].link);
+}
+
+function drawNodes<TMeta>(layer: Layer, data: SimNode<TMeta>[], onSelect: (meta: TMeta) => void): NodeSelection<TMeta> {
+	const isGoal = (node: SimNode<TMeta>): boolean => node.data.meta !== null;
+
+	const nodes = layer
+		.selectAll<SVGGElement, SimNode<TMeta>>('g')
+		.data(data)
+		.join('g')
+		.attr('class', (node) => (isGoal(node) ? 'galaxy-node is-goal' : 'galaxy-node'))
+		.attr('data-status', (node) => node.data.status);
+
+	nodes.append('title').text((node) => describe(node.data));
+
+	nodes
+		.append('circle')
+		.attr('class', 'core')
+		.attr('r', (node) => radiusOf(node))
+		.attr('fill', (node) => STATUS_STYLES[node.data.status].fill)
+		.attr('stroke-dasharray', (node) => STATUS_STYLES[node.data.status].dash);
+
+	nodes
+		.filter(isGoal)
+		.append('text')
+		.attr('text-anchor', 'middle')
+		.attr('dominant-baseline', 'central')
+		.attr('pointer-events', 'none')
+		.attr('fill', (node) => STATUS_STYLES[node.data.status].text)
+		.attr('font-weight', (node) => (roleOf(node) === 'leaf' ? 'normal' : 'bold'))
+		.each(function (node) {
+			layoutLabel(this, node.data.label, radiusOf(node), NODE_FONT[roleOf(node)]);
+		});
+
+	const choose = (element: SVGGElement, node: SimNode<TMeta>): void => {
+		pulse(element);
+		if (node.data.meta !== null) onSelect(node.data.meta);
+	};
+
+	nodes
+		.filter(isGoal)
+		.attr('role', 'button')
+		.attr('tabindex', 0)
+		.attr('aria-label', (node) => describe(node.data))
+		.on('click', function (_event, node) {
+			choose(this, node);
+		})
+		.on('keydown', function (event: KeyboardEvent, node) {
+			if (event.key !== 'Enter' && event.key !== ' ') return;
+			event.preventDefault();
+			choose(this, node);
+		});
+
+	return nodes;
+}
+
+/** Full label plus status, for tooltips and screen readers (the circle may have to truncate). */
+function describe(node: GalaxyNode): string {
+	return node.status === 'default' ? node.label : `${node.label} (${STATUS_STYLES[node.status].label})`;
+}
+
+/** Restarts the CSS pulse animation on a node. */
+function pulse(element: Element): void {
+	element.classList.remove('is-pulsing');
+	element.classList.add('is-pulsing');
+	element.addEventListener('animationend', () => {
+		element.classList.remove('is-pulsing')
+	}, { once: true });
+}
+
+// ============================================================================
+// Labels
+// ============================================================================
+
+const MIN_FONT = 5;
+
+/** Greedy word wrap into at most `maxLines`, ellipsizing what doesn't fit. */
+function wrap(label: string, maxChars: number, maxLines = 3): string[] {
+	const lines: string[] = [];
+	let line = '';
+	for (const word of label.split(/\s+/).filter(Boolean)) {
+		const next = line ? `${line} ${word}` : word;
+		if (!line || next.length <= maxChars) {
+			line = next;
 		} else {
-			simulation
-				.force('link', d3.forceLink<SimNode<TMeta>, SimLink<TMeta>>(links).distance(config.link.distance).strength(config.link.strength).iterations(config.link.iterations))
-				.force('center', d3.forceCenter<SimNode<TMeta>>(0, 0));
-		}
-
-		return simulation;
-	}
-
-	private renderLinks(canvas: d3.Selection<SVGGElement, unknown, null, undefined>, links: SimLink<TMeta>[]) {
-		return canvas
-			.append('g')
-			.attr('fill', 'none')
-			.attr('stroke', 'var(--border)')
-			.attr('stroke-opacity', 0.8)
-			.attr('stroke-width', 1.5)
-			.selectAll<SVGLineElement, SimLink<TMeta>>('line')
-			.data(links)
-			.join('line');
-	}
-
-	private renderNodes(
-		canvas: d3.Selection<SVGGElement, unknown, null, undefined>,
-		nodes: SimNode<TMeta>[],
-		simulation: d3.Simulation<SimNode<TMeta>, SimLink<TMeta>>
-	) {
-		const nodeG = canvas
-			.append('g')
-			.selectAll<SVGGElement, SimNode<TMeta>>('g')
-			.data(nodes)
-			.join('g')
-			.attr('cursor', 'pointer')
-			.call(this.buildDrag(simulation));
-
-		this.appendRings(nodeG);
-		this.appendCores(nodeG);
-		this.appendChoiceDots(nodeG);
-		this.appendLabels(nodeG);
-		this.attachNodeClick(nodeG);
-
-		return nodeG;
-	}
-
-	// =========================================================================
-	// Node visual layers — everything here reads pre-resolved data only
-	// =========================================================================
-
-	private appendRings(sel: d3.Selection<SVGGElement, SimNode<TMeta>, SVGGElement, unknown>) {
-		sel.append('circle')
-			.attr('r', (d) => RADII[sizeKey(d)].outer)
-			.attr('fill', 'none')
-			.attr('stroke', (d) => (sizeKey(d) === 'group' ? 'var(--border)' : 'none'))
-			.attr('stroke-width', (d) => (d.depth === 0 ? 2.5 : 1))
-			.attr('stroke-opacity', 0.8);
-	}
-
-	private appendCores(sel: d3.Selection<SVGGElement, SimNode<TMeta>, SVGGElement, unknown>) {
-		sel.append('circle')
-			.attr('class', 'core')
-			.attr('r', (d) => RADII[sizeKey(d)].inner)
-			.attr('fill', (d) => d.data.color)
-			.attr('stroke', 'var(--border)')
-			.attr('stroke-width', 1.5)
-			.on('mouseenter', function () {
-				d3.select(this)
-					.transition().duration(120)
-					.attr('stroke', 'var(--ring)')
-					.attr('stroke-width', 2.5);
-			})
-			.on('mouseleave', function () {
-				d3.select(this)
-					.transition().duration(150)
-					.attr('stroke', 'var(--border)')
-					.attr('stroke-width', 1.5);
-			});
-	}
-
-	private appendChoiceDots(sel: d3.Selection<SVGGElement, SimNode<TMeta>, SVGGElement, unknown>) {
-		const self = this;
-		sel.each(function (d) {
-			if (d.data.items.length <= 1) return;
-
-			const g = d3.select<SVGGElement, SimNode<TMeta>>(this).append('g').attr('class', 'items');
-			const n = d.data.items.length;
-
-			d.data.items.forEach((item, i) => {
-				const angle = (2 * Math.PI * i) / n - Math.PI / 2;
-				const cx = CHOICE_ORBIT * Math.cos(angle);
-				const cy = CHOICE_ORBIT * Math.sin(angle);
-
-				g.append('circle')
-					.attr('cx', cx).attr('cy', cy)
-					.attr('r', CHOICE_DOT)
-					.attr('fill', item.color)
-					.attr('stroke', 'var(--border)')
-					.attr('stroke-width', 1)
-					.attr('cursor', 'pointer')
-					.on('mouseenter', function () {
-						d3.select(this)
-							.transition().duration(120)
-							.attr('r', CHOICE_DOT * 1.15)
-							.attr('stroke', 'var(--ring)')
-							.attr('stroke-width', 1.5);
-					})
-					.on('mouseleave', function () {
-						d3.select(this)
-							.transition().duration(150)
-							.attr('r', CHOICE_DOT)
-							.attr('stroke', 'var(--border)')
-							.attr('stroke-width', 1);
-					})
-					.on('click', function (event) {
-						event.stopPropagation();
-						self.pulse(d3.select<SVGCircleElement, unknown>(this), 1);
-						self.singleClickHandler?.(item.meta);
-					});
-
-				g.append('text')
-					.attr('x', cx).attr('y', cy)
-					.attr('text-anchor', 'middle')
-					.attr('dominant-baseline', 'central')
-					.attr('fill', item.textColor)
-					.attr('font-size', '8px')
-					.attr('font-weight', 'bold')
-					.attr('pointer-events', 'none')
-					.text(i + 1);
-			});
-		});
-	}
-
-	private appendLabels(sel: d3.Selection<SVGGElement, SimNode<TMeta>, SVGGElement, unknown>) {
-		const self = this;
-
-		sel.append('text')
-			.attr('text-anchor', 'middle')
-			.attr('font-weight', (d) => (d.depth === 0 || d.children ? 'bold' : 'normal'))
-			.attr('pointer-events', 'none')
-			.attr('fill', (d) => d.data.textColor)
-			.each(function (d) {
-				const el = this as SVGTextElement;
-				const lines = d.data.label;
-				const inner = RADII[sizeKey(d)].inner;
-				const base = d.depth === 0 ? 13 : 10;
-
-				el.setAttribute('font-size', `${base}px`);
-				el.setAttribute('dominant-baseline', 'central');
-
-				if (lines.length === 1) {
-					el.textContent = lines[0];
-				} else {
-					el.textContent = "Multiple";
-				}
-
-				self.fitTextToCircle(el, inner);
-			});
-	}
-
-	private fitTextToCircle(el: SVGTextElement, innerRadius: number): void {
-		const max = innerRadius * 1.75;
-		let size = parseFloat(el.getAttribute('font-size') ?? '10');
-
-		for (let i = 0; i < 20 && size > 5; i++) {
-			const { width, height } = el.getBBox();
-			if (width <= max && height <= max) break;
-			size = Math.max(5, size * 0.88);
-			el.setAttribute('font-size', `${size.toFixed(1)}px`);
+			lines.push(line);
+			line = word;
 		}
 	}
+	if (line) lines.push(line);
 
-	// =========================================================================
-	// Interactivity / Focus
-	// =========================================================================
-
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	private pulse(circle: d3.Selection<SVGCircleElement, any, any, any>, restStrokeWidth = 1.5) {
-		circle
-			.transition().duration(80)
-			.attr('stroke', 'var(--ring)')
-			.attr('stroke-width', restStrokeWidth + 1.5)
-			.transition().duration(350)
-			.attr('stroke', 'var(--border)')
-			.attr('stroke-width', restStrokeWidth);
+	if (lines.length > maxLines) {
+		lines.length = maxLines;
+		lines[maxLines - 1] += '…';
 	}
+	return lines;
+}
 
-	private attachNodeClick(sel: d3.Selection<SVGGElement, SimNode<TMeta>, SVGGElement, unknown>) {
-		const self = this;
-		sel.on('click', function (event: PointerEvent, d: SimNode<TMeta>) {
-			self.pulse(d3.select<SVGGElement, SimNode<TMeta>>(this).select<SVGCircleElement>('circle.core'));
+/** Wraps the label over a few centered lines, then shrinks the font until the block fits the circle. */
+function layoutLabel(text: SVGTextElement, label: string, radius: number, fontSize: number): void {
+	const box = radius * 1.7; // the largest square that sits comfortably inside the circle
+	const lines = wrap(label, Math.max(4, Math.floor(box / (fontSize * 0.55))));
 
-			const items = d.data.items;
-			if (items.length > 1) {
-				self.groupClickHandler?.(items.map((i) => i.meta));
-			} else if (items.length === 1) {
-				self.singleClickHandler?.(items[0].meta);
-			}
-		});
-	}
+	d3.select(text)
+		.selectAll('tspan')
+		.data(lines)
+		.join('tspan')
+		.attr('x', 0)
+		// First line is lifted so the whole block is centered; `em` keeps working when the font shrinks.
+		.attr('dy', (_line, i) => (i === 0 ? `${-(lines.length - 1) * 0.55}em` : '1.1em'))
+		.text((line) => line);
 
-	/** Zooms to and pulses the node containing the item with the given id. */
-	focus(itemId: string): void {
-		if (!this.element || !this.zoomBehavior || !this.simNodes.length || !this.nodeG) {
-			console.warn('Galaxy is not fully rendered yet.');
-			return;
-		}
-
-		const targetNode = this.simNodes.find((n) => n.data.items.some((i) => i.id === itemId));
-		if (!targetNode) {
-			console.warn(`Item "${itemId}" not found in the current tree.`);
-			return;
-		}
-
-		const svg = d3.select(this.element);
-		const scale = 1.8;
-		const transform = d3.zoomIdentity.scale(scale).translate(-(targetNode.x ?? 0), -(targetNode.y ?? 0));
-		svg.transition().duration(750).call(this.zoomBehavior.transform, transform);
-
-		const nodeElement = this.nodeG.filter((d) => d === targetNode).node();
-		if (nodeElement) {
-			this.pulse(d3.select<SVGGElement, SimNode<TMeta>>(nodeElement).select<SVGCircleElement>('circle.core'));
-		}
-	}
-
-	private buildDrag(simulation: d3.Simulation<SimNode<TMeta>, SimLink<TMeta>>) {
-		return d3.drag<SVGGElement, SimNode<TMeta>>()
-			.on('start', (event, d) => {
-				if (!event.active) simulation.alphaTarget(config.drag.startAlphaTarget).restart();
-				d.fx = d.x;
-				d.fy = d.y;
-			})
-			.on('drag', (event, d) => {
-				d.fx = event.x;
-				d.fy = event.y;
-			})
-			.on('end', (event, d) => {
-				if (!event.active) simulation.alphaTarget(config.drag.endAlphaTarget);
-				d.fx = null;
-				d.fy = null;
-			});
+	let size = fontSize;
+	text.setAttribute('font-size', `${size}px`);
+	for (let i = 0; i < 20 && size > MIN_FONT; i++) {
+		const { width, height } = text.getBBox();
+		if (width <= box && height <= box) break;
+		size = Math.max(MIN_FONT, size * 0.9);
+		text.setAttribute('font-size', `${size.toFixed(1)}px`);
 	}
 }

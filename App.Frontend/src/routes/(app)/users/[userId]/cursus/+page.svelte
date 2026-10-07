@@ -1,7 +1,4 @@
 <script lang="ts">
-	import { GalaxyRenderer } from '$lib/components/galaxy/render';
-	import type { GalaxyNode, RenderMode } from '$lib/components/galaxy/types';
-	import type { Attachment } from 'svelte/attachments';
 	import * as Cursus from '$lib/remotes/cursus.remote';
 	import * as UserCursus from '$lib/remotes/user-cursus.remote';
 	import type { PageProps } from './$types';
@@ -67,7 +64,7 @@
 							{#each result.data as session (session.id)}
 								<Tabs.Trigger value={session.id} class={buttonVariants({ variant: 'ghost' })}>
 									<span class="truncate">{session.cursus.name}</span>
-									<Badge variant="secondary" class="rounded-sm ml-auto">{session.state}</Badge>
+									<Badge variant="secondary" class="ml-auto rounded-sm">{session.state}</Badge>
 								</Tabs.Trigger>
 							{:else}
 								<p class="px-3 py-4 text-center text-xs text-muted-foreground">No subscribed cursus yet</p>
@@ -104,11 +101,11 @@
 									{@const result = await Cursus.getPage({ name: search })}
 
 									{#snippet pending()}
-                  <div class="space-y-2 p-1">
-                    <Skeleton class="h-9 w-full rounded-md" />
-                    <Skeleton class="h-9 w-full rounded-md" />
-                    <Skeleton class="h-9 w-full rounded-md" />
-                  </div>
+										<div class="space-y-2 p-1">
+											<Skeleton class="h-9 w-full rounded-md" />
+											<Skeleton class="h-9 w-full rounded-md" />
+											<Skeleton class="h-9 w-full rounded-md" />
+										</div>
 									{/snippet}
 									{#each result.data as cursus (cursus.id)}
 										<Tabs.Trigger value={cursus.id} class={buttonVariants({ variant: 'ghost' })}>
@@ -128,9 +125,9 @@
 
 	{#snippet right()}
 		{#if cursusId}
-			<All userId={params.userId} cursusId={cursusId} />
+			<All {cursusId} />
 		{:else if userCursusId}
-			<Subscribed userId={params.userId} userProjectId={userCursusId} />
+			<Subscribed {userCursusId} />
 		{:else}
 			{#if belongs}
 				<Empty.Root class="h-full max-w-md bg-muted/30">

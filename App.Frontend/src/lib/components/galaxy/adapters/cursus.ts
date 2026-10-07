@@ -2,12 +2,12 @@
 // W2Inc, 2025, All Rights Reserved.
 // See README in the root project for more information.
 // ============================================================================
-// Adapter for rendering a cursus entity onto the Galaxy
+// Adapter for a cursus DEFINITION: structure only, no per-user progress.
 // ============================================================================
 
-import type { GalaxyAdapter } from './index';
 import type { components } from '$lib/api/api';
-import { NEUTRAL, createFlatAdapter } from './shared';
+import type { GalaxyAdapter } from './index';
+import { buildGraph, getLayout, type NodeAccessors } from './graph';
 
 // ============================================================================
 
@@ -16,17 +16,13 @@ export type TrackNode = components['schemas']['CursusTrackNodeDO'];
 
 // ============================================================================
 
-/**
- * Renders a cursus definition: structure only, no per-user progress, so every
- * node gets the neutral look.
- */
-export const Adapter: GalaxyAdapter<Track, TrackNode> = createFlatAdapter<Track, TrackNode>({
-	nodes: (track) => track.nodes,
-	synthetic: (track) => ({ id: "", label: "" }),
-	spec: {
-		id: (n) => n.goalId,
-		label: (n) => n.name,
-		parentId: (n) => n.parentGoalId,
-		style: () => NEUTRAL
-	}
-});
+const accessors: NodeAccessors<TrackNode> = {
+	id: (node) => node.goalId,
+	parentId: (node) => node.parentGoalId,
+	label: (node) => node.name,
+	status: () => 'default'
+};
+
+export const Adapter: GalaxyAdapter<Track, TrackNode> = {
+	build: (track) => buildGraph(track.nodes, accessors, { layout: getLayout(track.mode), legend: [] })
+};

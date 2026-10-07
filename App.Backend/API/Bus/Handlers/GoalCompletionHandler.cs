@@ -48,8 +48,6 @@ public class GoalCompletionHandler(
         await CheckCursusProgressionAsync(message.UserId, message.GoalId, ct);
     }
 
-    // -------------------------------------------------------------------------
-
     private async Task CheckCursusProgressionAsync(Guid userId, Guid goalId, CancellationToken ct)
     {
         var completedGoalIds = context.UserGoals

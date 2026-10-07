@@ -24,7 +24,7 @@
 <div class="container mx-auto grid grid-cols-1 gap-6 px-6 py-4 lg:grid-cols-[1fr_24rem]">
 	<div class="flex flex-col gap-6">
 		<Button
-			href="/users/{page.data.session.userId}/galaxy"
+			href="/users/{page.data.session.userId}/cursus"
 			variant="outline"
 			class="group h-80 bg-[url('/graph.png')] bg-cover p-0"
 		>

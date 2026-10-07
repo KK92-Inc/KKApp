@@ -5,26 +5,22 @@
 // The contract every Galaxy adapter implements
 // ============================================================================
 
-import type { GalaxyNode } from '../types';
+import type { GalaxyGraph } from '../types';
 
 /**
- * Turns a domain entity (`TTrack`) into the renderer's `GalaxyNode` tree, and
- * back into the domain nodes (`TMeta`) the tree was built from.
+ * Turns a domain track (`TTrack`) into something the renderer can draw.
  *
- * `TMeta` is whatever payload the renderer echoes back through its
- * click / focus handlers, so it should be the domain node type.
+ * `TNode` is the domain node type. It travels through the graph untouched and
+ * comes back out of `GalaxyRenderer.onSelect`, so the page never has to look
+ * anything up by id.
+ *
+ * Each adapter module exports the same three names:
+ * `Adapter`, `Track` and `TrackNode`.
  */
-export interface GalaxyAdapter<TTrack, TMeta> {
+export interface GalaxyAdapter<TTrack, TNode> {
 	/**
-	 * Builds a single-rooted tree from a track.
-	 * @throws if the track has no nodes, or no node can serve as a root.
+	 * @returns the graph, or `null` when the track has nothing to draw
+	 * (no nodes at all, or no node that can serve as a root).
 	 */
-	construct(track: TTrack): GalaxyNode<TMeta>;
-
-	/**
-	 * Flattens a tree produced by `construct` back into its domain nodes,
-	 * depth-first, parent before children. Synthetic nodes (e.g. the wrapper
-	 * root used for multi-root tracks) carry no items and are not included.
-	 */
-	flatten(tree: GalaxyNode<TMeta>): TMeta[];
+	build(track: TTrack): GalaxyGraph<TNode> | null;
 }

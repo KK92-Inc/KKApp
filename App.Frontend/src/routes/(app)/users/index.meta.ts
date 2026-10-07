@@ -3,7 +3,7 @@
 // See README in the root project for more information.
 // ============================================================================
 
-import { Archive, GraduationCap, Sparkles, Trophy, UserPlus } from "@lucide/svelte";
+import { Archive, GraduationCap, Trophy, UserPlus } from "@lucide/svelte";
 import type { MetaRecord } from "$lib/utils";
 
 // ============================================================================
@@ -18,11 +18,6 @@ export const Meta: MetaRecord = {
 		icon: Trophy,
 		label: 'Goals',
 		scopes: ['goals:read']
-	},
-	'/(app)/users/[userId]/galaxy': {
-		icon: Sparkles,
-		label: 'Galaxy',
-		scopes: ['cursus:read']
 	},
 	'/(app)/users/[userId]/cursus': {
 		icon: GraduationCap,

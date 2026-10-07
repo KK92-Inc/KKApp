@@ -129,7 +129,6 @@
 					'/(app)/users/[userId]/cursus',
 					'/(app)/users/[userId]/projects',
 					'/(app)/users/[userId]/goals',
-					'/(app)/users/[userId]/galaxy'
 				]}
 			/>
 		</Card.Root>

@@ -2,14 +2,13 @@
 // W2Inc, 2025, All Rights Reserved.
 // See README in the root project for more information.
 // ============================================================================
-// Adapter for rendering a user cursus entity onto the Galaxy
+// Adapter for a user's cursus: the same structure, plus their progress.
 // ============================================================================
 
 import type { components } from '$lib/api/api';
-import config from '../config';
-import type { GalaxyItem } from '../types';
+import type { GalaxyStatus } from '../types';
 import type { GalaxyAdapter } from './index';
-import { NEUTRAL, createFlatAdapter, type NodeStyle } from './shared';
+import { buildGraph, getLayout, type NodeAccessors } from './graph';
 
 // ============================================================================
 
@@ -18,46 +17,28 @@ export type TrackNode = components['schemas']['UserCursusTrackNodeDO'];
 
 // ============================================================================
 
-const ON_COLOR = '#fff';
-const STATE_PRIORITY: readonly NonNullable<TrackNode['state']>[] = ['Completed', 'Active', 'Awaiting'];
-
-function styleFor(node: TrackNode): NodeStyle {
-	const { state, isUnlocked } = node;
-
-	if (state && state !== 'Inactive') {
-		const color = config.colors[state];
-		if (color) return { color, textColor: ON_COLOR };
+function statusOf(node: TrackNode): GalaxyStatus {
+	switch (node.state) {
+		case 'Completed':
+			return 'completed';
+		case 'Active':
+			return 'active';
+		case 'Awaiting':
+			return 'awaiting';
+		default: // null (never started) or 'Inactive'
+			return node.isUnlocked ? 'unlocked' : 'locked';
 	}
-	if (isUnlocked) return { color: 'var(--chart-2)', textColor: ON_COLOR };
-	return NEUTRAL;
 }
 
-/** Look for a choice-group hub: the "best" state found among its members. */
-function aggregateStyle(items: GalaxyItem<TrackNode>[]): NodeStyle {
-	for (const state of STATE_PRIORITY) {
-		if (items.some((i) => i.meta.state === state)) {
-			return { color: config.colors[state], textColor: ON_COLOR };
-		}
-	}
-	if (items.some((i) => i.meta.isUnlocked)) return { color: 'var(--chart-2)', textColor: ON_COLOR };
-	return NEUTRAL;
-}
+const accessors: NodeAccessors<TrackNode> = {
+	id: (node) => node.goalId,
+	parentId: (node) => node.parentGoalId,
+	label: (node) => node.name,
+	status: statusOf
+};
 
-// ============================================================================
+const LEGEND: readonly GalaxyStatus[] = ['completed', 'active', 'awaiting', 'unlocked', 'locked'];
 
-export const Adapter: GalaxyAdapter<Track, TrackNode> = createFlatAdapter<Track, TrackNode>({
-	nodes: (track) => track.nodes,
-	synthetic: (track) => ({ id: "", label: "" }),
-	spec: {
-		id: (n) => n.goalId,
-		label: (n) => n.name,
-		parentId: (n) => n.parentGoalId,
-		style: styleFor,
-		cluster: (clusterId, items) => ({
-			id: clusterId,
-			label: items.map((i) => i.label),
-			...aggregateStyle(items),
-			items
-		})
-	}
-});
+export const Adapter: GalaxyAdapter<Track, TrackNode> = {
+	build: (track) => buildGraph(track.nodes, accessors, { layout: getLayout(track.mode), legend: LEGEND })
+};
