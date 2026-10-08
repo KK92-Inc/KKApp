@@ -154,14 +154,14 @@ branches.MapDelete("/{**branch}", (string owner, string name, string branch) =>
 // Trees & Blobs
 // ============================================================================
 
-repos.MapGet("/tree/{branch}/{**subpath}", (string owner, string name, string branch, string? subpath) =>
+repos.MapGet("/tree/{ref}/{**subpath}", (string owner, string name, string @ref, string? subpath) =>
 {
     var dir = Path.Combine(root, owner, name);
     if (!Repository.IsValid(dir))
         return Results.NotFound();
 
     using var repo = new Repository(dir);
-    var commit = repo.Lookup<Commit>(branch);
+    var commit = repo.Branches[@ref]?.Tip ?? repo.Lookup<Commit>(@ref);
     if (commit is null) return Results.NotFound();
 
     var tree = commit.Tree;
@@ -204,7 +204,7 @@ repos.MapGet("/tree/{branch}/{**subpath}", (string owner, string name, string br
     return Results.Ok(result);
 }).WithTags("Trees");
 
-repos.MapGet("/blob/{branch}/{**path}", (string owner, string name, string branch, string? path, ILogger<Program> logger) =>
+repos.MapGet("/blob/{ref}/{**path}", (string owner, string name, string @ref, string? path, ILogger<Program> logger) =>
 {
     var dir = Path.Combine(root, owner, name);
     if (!Repository.IsValid(dir))
@@ -215,10 +215,10 @@ repos.MapGet("/blob/{branch}/{**path}", (string owner, string name, string branc
 
     using var repo = new Repository(dir);
 
-    var commit = repo.Branches[branch]?.Tip ?? repo.Lookup<Commit>(branch);
+    var commit = repo.Branches[@ref]?.Tip ?? repo.Lookup<Commit>(@ref);
     if (commit is null)
     {
-        logger.LogWarning("Branch/Commit not found: Branch={Branch}, Owner={Owner}, Name={Name}", branch, owner, name);
+        logger.LogWarning("Ref/Commit not found: Ref={Ref}, Owner={Owner}, Name={Name}", @ref, owner, name);
         return Results.NotFound();
     }
 
@@ -234,7 +234,7 @@ repos.MapGet("/blob/{branch}/{**path}", (string owner, string name, string branc
     var entry = commit.Tree[relativePath];
     if (entry is null || entry.TargetType is not TreeEntryTargetType.Blob)
     {
-        logger.LogWarning("Blob entry not found in commit tree: RelativePath='{RelativePath}', TargetType={Type}", 
+        logger.LogWarning("Blob entry not found in commit tree: RelativePath='{RelativePath}', TargetType={Type}",
             relativePath, entry?.TargetType.ToString() ?? "Null");
         return Results.NotFound();
     }

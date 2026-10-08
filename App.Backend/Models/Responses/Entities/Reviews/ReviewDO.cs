@@ -30,6 +30,9 @@ public class ReviewProjectDO(UserProject userProject)
     public Guid ProjectId { get; init; } = userProject.ProjectId;
 
     [Required]
+    public Guid GitInfoId { get; init; } = userProject.GitInfoId;
+
+    [Required]
     public string Name { get; init; } = userProject.Project.Name;
 
     [Required]
@@ -42,7 +45,7 @@ public class ReviewProjectDO(UserProject userProject)
     /// True when the project is owned by an organization (staff curated) rather than a user.
     /// </summary>
     [Required]
-    public bool Official { get; init; } = userProject.Project.Workspace.Ownership is EntityOwnership.Organization;
+    public bool Official { get; init; } = userProject.Project.Workspace.OwnerId is null;
 }
 
 /// <summary>

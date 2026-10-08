@@ -17,13 +17,13 @@
 
 <svelte:boundary>
 	{#if context.view === 'submission' && session?.gitInfo?.id && context.branch}
-		{@const tree = await Git.getTree({ id: session.gitInfo.id, branch: context.branch })}
+		{@const tree = await Git.getTree({ id: session.gitInfo.id, ref: context.branch })}
 		<Explorer baseUrl={base} branch={context.branch} nodes={tree} />
 	{:else}
 		{@const git = await Git.getBranches(project.gitInfo.id)}
 		{@const head = git.find(v => v.head)}
 		{#if head && git.length > 0}
-			{@const tree = await Git.getTree({ id: project.gitInfo.id, branch: head.name })}
+			{@const tree = await Git.getTree({ id: project.gitInfo.id, ref: head.name })}
 			<Explorer baseUrl={base} branch={head.name} nodes={tree} />
 		{/if}
 	{/if}

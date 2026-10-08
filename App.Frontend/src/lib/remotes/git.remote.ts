@@ -9,10 +9,9 @@ import { Filters, Problem } from '$lib/api';
 import type { components } from '$lib/api/api';
 
 // ============================================================================
-// const Base = { id: Filters.id, branch: v.string() }
-const TreeSchema = v.object({ id: Filters.id, branch: v.string() });
-const TreePathSchema = v.object({ id: Filters.id, branch: v.string(), path: v.string() });
-const BlobSchema = v.object({ id: Filters.id, branch: v.string(), path: v.string() });
+const TreeSchema = v.object({ id: Filters.id, ref: v.string() });
+const TreePathSchema = v.object({ id: Filters.id, ref: v.string(), path: v.string() });
+const BlobSchema = v.object({ id: Filters.id, ref: v.string(), path: v.string() });
 
 // ============================================================================
 
@@ -66,34 +65,34 @@ export const commit = command("unchecked", async (body: CreateCommit) => {
 	if (error) Problem.throw(error);
 });
 
-/** Get the file tree at the root of a branch */
-export const getTree = query(TreeSchema, async ({ id, branch }) => {
+/** Get the file tree at the root of a ref (branch, tag, or SHA) */
+export const getTree = query(TreeSchema, async ({ id, ref }) => {
 	const { locals } = getRequestEvent();
-	const { error, data } = await locals.api.GET('/git/{id}/tree/{branch}', {
-		params: { path: { id, branch } }
+	const { error, data } = await locals.api.GET('/git/{id}/tree/{ref}', {
+		params: { path: { id, ref }, }
 	});
 
 	if (error) Problem.throw(error);
 	return data ? data : [];
 });
 
-/** Get the file tree at a given path within a branch */
-export const getTreePath = query(TreePathSchema, async ({ id, branch, path }) => {
+/** Get the file tree at a given path within a ref (branch, tag, or SHA) */
+export const getTreePath = query(TreePathSchema, async ({ id, ref, path }) => {
 	const { locals } = getRequestEvent();
-	const { error, data } = await locals.api.GET('/git/{id}/tree/{branch}/{path}', {
-		params: { path: { id, branch, path } }
+	const { error, data } = await locals.api.GET('/git/{id}/tree/{ref}/{path}', {
+		params: { path: { id, ref, path } }
 	});
 
 	if (error || !data) Problem.throw(error);
 	return data;
 });
 
-/** Get raw file content at a given path within a branch */
-export const getBlob = query(BlobSchema, async ({ id, branch, path }) => {
+/** Get raw file content at a given path within a ref (branch, tag, or SHA) */
+export const getBlob = query(BlobSchema, async ({ id, ref, path }) => {
 	const { locals } = getRequestEvent();
-	const { error, data, response } = await locals.api.GET('/git/{id}/blob/{branch}/{path}', {
+	const { error, data, response } = await locals.api.GET('/git/{id}/blob/{ref}/{path}', {
 		parseAs: "arrayBuffer",
-		params: { path: { id, branch, path } }
+		params: { path: { id, ref, path } }
 	});
 
 	// NOTE(W2): Just a literal empty file with no content.

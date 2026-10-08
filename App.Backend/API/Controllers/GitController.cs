@@ -38,39 +38,38 @@ public class GitController(IMemberService memberService, IGitService git, IUserS
         return Ok(branches);
     }
 
-    [HttpGet("{id:guid}/tree/{branch}")]
-    [HttpGet("{id:guid}/tree/{branch}/{*path}")]
+    [HttpGet("{id:guid}/tree/{ref}")]
+    [HttpGet("{id:guid}/tree/{ref}/{*path}")]
     [RequireScope("repository")]
     [ProtectedResource("repository", "repository:read")]
     [EndpointSummary("Get file tree from repository")]
     [EndpointDescription("Retrieves the file tree at the given branch and path in the git repository associated with this entity.")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<TreeDTO[]>> GetTree(Guid id, string branch, string? path, CancellationToken token)
+    public async Task<ActionResult<TreeDTO[]>> GetTree(Guid id, string @ref, string? path, CancellationToken token)
     {
         var entity = await git.FindByIdAsync(id, token);
         if (entity is null) return NotFound();
 
-        var tree = await git.GetTreeAsync(entity.Owner, entity.Name, branch, path ?? string.Empty, token);
+        var tree = await git.GetTreeAsync(entity.Owner, entity.Name, @ref, path ?? string.Empty, token);
         if (tree is null) return NotFound();
 
         return Ok(tree);
     }
 
-    [HttpGet("{id:guid}/blob/{branch}/{*path}")]
+    [HttpGet("{id:guid}/blob/{ref}/{*path}")]
     [RequireScope("repository")]
     [ProtectedResource("repository", "repository:read")]
     [EndpointSummary("Get file content from repository")]
     [EndpointDescription("Retrieves the content of a file in the git repository associated with this entity.")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult> GetBlob(
-        Guid id, string branch, string path, CancellationToken token)
+    public async Task<ActionResult> GetBlob(Guid id, string @ref, string path, CancellationToken token)
     {
         var entity = await git.FindByIdAsync(id, token);
         if (entity is null) return NotFound();
 
-        var blob = await git.GetBlobAsync(entity.Owner, entity.Name, branch, path, token);
+        var blob = await git.GetBlobAsync(entity.Owner, entity.Name, @ref, path, token);
         if (blob is null) return NotFound();
 
         return File(blob, "application/octet-stream");
@@ -83,8 +82,7 @@ public class GitController(IMemberService memberService, IGitService git, IUserS
     [EndpointDescription("Pushes a given commit to the remote repository")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult> Commit(
-        Guid id, string branch, PostCommitDTO commit, CancellationToken token)
+    public async Task<ActionResult> Commit(Guid id, string branch, PostCommitDTO commit, CancellationToken token)
     {
         var result = await auth.AuthorizeAsync(User, "staff");
         if (!result.Succeeded && !await Access(id, User.GetSID(), token))

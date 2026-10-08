@@ -64,7 +64,7 @@ export class Context {
 		if (master) { // There is a branch established...
 			const blob = await Git.getBlob({
 				id: project.gitInfo.id,
-				branch: master.name,
+				ref: master.name,
 				path: "readme.md"
 			});
 

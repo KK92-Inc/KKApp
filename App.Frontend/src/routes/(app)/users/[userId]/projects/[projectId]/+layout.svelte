@@ -126,7 +126,7 @@
 									<svelte:boundary>
 										{@const readme = await Git.getBlob({
 											id: project.gitInfo.id,
-											branch: head.name,
+											ref: head.name,
 											path: 'readme.md'
 										})}
 

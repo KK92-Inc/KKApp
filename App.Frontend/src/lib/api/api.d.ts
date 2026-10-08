@@ -1960,7 +1960,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/git/{id}/tree/{branch}": {
+    "/git/{id}/tree/{ref}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1969,7 +1969,7 @@ export interface paths {
         };
         /**
          * Get file tree from repository
-         * @description Retrieves the file tree at the given branch and path in the git repository associated with this entity.
+         * @description Retrieves the file tree at the given ref (branch, tag, or SHA) and path in the git repository associated with this entity.
          */
         get: {
             parameters: {
@@ -1977,7 +1977,7 @@ export interface paths {
                 header?: never;
                 path: {
                     id: string;
-                    branch: string;
+                    ref: string;
                 };
                 cookie?: never;
             };
@@ -2036,7 +2036,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/git/{id}/tree/{branch}/{path}": {
+    "/git/{id}/tree/{ref}/{path}": {
         parameters: {
             query?: never;
             header?: never;
@@ -2045,7 +2045,7 @@ export interface paths {
         };
         /**
          * Get file tree from repository
-         * @description Retrieves the file tree at the given branch and path in the git repository associated with this entity.
+         * @description Retrieves the file tree at the given ref (branch, tag, or SHA) and path in the git repository associated with this entity.
          */
         get: {
             parameters: {
@@ -2053,7 +2053,7 @@ export interface paths {
                 header?: never;
                 path: {
                     id: string;
-                    branch: string;
+                    ref: string;
                     path: string;
                 };
                 cookie?: never;
@@ -2113,7 +2113,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/git/{id}/blob/{branch}/{path}": {
+    "/git/{id}/blob/{ref}/{path}": {
         parameters: {
             query?: never;
             header?: never;
@@ -2122,7 +2122,7 @@ export interface paths {
         };
         /**
          * Get file content from repository
-         * @description Retrieves the content of a file in the git repository associated with this entity.
+         * @description Retrieves the content of a file at the given ref (branch, tag, or SHA) in the git repository associated with this entity.
          */
         get: {
             parameters: {
@@ -2130,7 +2130,7 @@ export interface paths {
                 header?: never;
                 path: {
                     id: string;
-                    branch: string;
+                    ref: string;
                     path: string;
                 };
                 cookie?: never;
@@ -12031,6 +12031,8 @@ export interface components {
             state: components["schemas"]["EntityObjectState"];
             /** Format: uuid */
             projectId: string;
+            /** Format: uuid */
+            gitInfoId: string;
             name: string;
             slug: string;
             thumbnail: null | string;

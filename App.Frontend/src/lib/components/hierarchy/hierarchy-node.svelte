@@ -1,5 +1,6 @@
 <script lang="ts" generics="T">
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
+	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import { cn } from '$lib/utils.js';
 	import { Button } from '$lib/components/button';
 	import type { HierarchyController } from './state.svelte.js';
@@ -22,9 +23,13 @@
 
 	const adapter = $derived(controller.adapter);
 	const id = $derived(adapter.getId(item));
-	const children = $derived(adapter.getChildren(item));
-	const hasChildren = $derived(!!children && children.length > 0);
+	const children = $derived(controller.getChildren(item));
+	const isLoading = $derived(controller.isLoading(id));
 	const canHaveChildren = $derived(controller.canHaveChildren(item));
+	const hasChildren = $derived(!!children && children.length > 0);
+	const showExpandButton = $derived(
+		isLoading || (children !== undefined ? hasChildren : canHaveChildren)
+	);
 	const isDraggable = $derived(adapter.isDraggable?.(item) ?? true);
 
 	const expanded = $derived(controller.expandedIds.has(id));
@@ -40,7 +45,6 @@
 		const rect = row.getBoundingClientRect();
 		const ratio = (clientY - rect.top) / rect.height;
 		if (!canHaveChildren) {
-			// Leaf items only ever accept before/after, split the row in half.
 			return ratio < 0.5 ? 'before' : 'after';
 		}
 		if (ratio < 0.25) return 'before';
@@ -60,7 +64,6 @@
 
 	function handleDragOver(e: DragEvent) {
 		if (controller.draggedId == null) return;
-		// preventDefault is required for the drop event to ever fire.
 		e.preventDefault();
 
 		if (isBlocked) {
@@ -91,11 +94,11 @@
 	}
 
 	function toggle() {
-		if (hasChildren) controller.toggleExpanded(id);
+		controller.toggleExpanded(item);
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
-		if ((e.key === 'Enter' || e.key === ' ') && hasChildren) {
+		if ((e.key === 'Enter' || e.key === ' ') && showExpandButton) {
 			e.preventDefault();
 			toggle();
 		}
@@ -117,7 +120,7 @@
 		role="treeitem"
 		tabindex="0"
 		aria-level={depth + 1}
-		aria-expanded={hasChildren ? expanded : undefined}
+		aria-expanded={showExpandButton ? expanded : undefined}
 		ondragstart={handleDragStart}
 		ondragover={handleDragOver}
 		ondragleave={handleDragLeave}
@@ -131,7 +134,11 @@
 			<div class="pointer-events-none absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-primary"></div>
 		{/if}
 
-		{#if hasChildren}
+		{#if isLoading}
+			<div class="flex size-5 shrink-0 items-center justify-center">
+				<Loader2Icon class="size-3.5 animate-spin text-muted-foreground" />
+			</div>
+		{:else if showExpandButton}
 			<Button
 				variant="ghost"
 				size="icon-sm"
@@ -147,7 +154,7 @@
 		{/if}
 
 		<div class="min-w-0 flex-1">
-			{@render itemSnippet({ item, depth, expanded, hasChildren, isDragging })}
+			{@render itemSnippet({ item, depth, expanded, hasChildren, isDragging, isLoading })}
 		</div>
 
 		{#if actionsSnippet}

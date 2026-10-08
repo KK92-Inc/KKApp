@@ -63,13 +63,13 @@ export class Context {
 		if (master) { // There is a branch established...
 			const blob = await Git.getBlob({
 				id: rubric.gitInfo.id,
-				branch: master.name,
+				ref: master.name,
 				path: "readme.md"
 			});
 
-			this.readme = blob;
+			this.readme = new TextDecoder('utf-8', { fatal: true }).decode(blob);
 			this.branch = master.name;
-			this.checksum = await this.compute(blob);
+			this.checksum = await this.compute(this.readme);
 		}
 
 		this.fields = { ...rubric };

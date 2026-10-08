@@ -114,7 +114,7 @@ public interface IGitService
 
     /// <summary>
     /// Resolves a ref (branch name, tag or sha) to the full commit SHA it points at right now.
-    /// Use this to pin what was actually evaluated, since a branch name moves on every push.
+    /// Use this to pin what was, since a branch name moves on every push.
     /// </summary>
     /// <param name="owner">The owner of the repository.</param>
     /// <param name="name">The name of the repository.</param>

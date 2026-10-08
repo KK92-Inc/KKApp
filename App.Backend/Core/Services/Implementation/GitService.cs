@@ -90,9 +90,9 @@ public class GitService : IGitService
     }
 
     /// <inheritdoc />
-    public async Task<TreeDTO[]?> GetTreeAsync(string owner, string name, string branch, string path = "", CancellationToken token = default)
+    public async Task<TreeDTO[]?> GetTreeAsync(string owner, string name, string @ref, string path = "", CancellationToken token = default)
     {
-        var response = await _http.GetAsync($"repo/{owner}/{name}/tree/{branch}/{path}", token);
+        var response = await _http.GetAsync($"repo/{owner}/{name}/tree/{@ref}/{path}", token);
         if (response.StatusCode is HttpStatusCode.NotFound)
             return null;
 
@@ -102,17 +102,15 @@ public class GitService : IGitService
     }
 
     /// <inheritdoc />
-    public async Task<byte[]?> GetBlobAsync(string owner, string name, string branch, string path, CancellationToken token = default)
+    public async Task<byte[]?> GetBlobAsync(string owner, string name, string @ref, string path, CancellationToken token = default)
     {
-        // Unescape %2F so HttpClient issues 'src/explorer-file.svelte' instead of 'src%2Fexplorer-file.svelte'
         var normalizedPath = Uri.UnescapeDataString(path).TrimStart('/');
+        _logger.LogInformation("Requesting blob from git-api: Repo={Owner}/{Name}, Branch={Branch}, Path={Path}", owner, name, @ref, normalizedPath);
 
-        _logger.LogInformation("Requesting blob from git-api: Repo={Owner}/{Name}, Branch={Branch}, Path={Path}", owner, name, branch, normalizedPath);
-
-        var response = await _http.GetAsync($"repo/{owner}/{name}/blob/{branch}/{normalizedPath}", token);
+        var response = await _http.GetAsync($"repo/{owner}/{name}/blob/{@ref}/{normalizedPath}", token);
         if (response.StatusCode is HttpStatusCode.NotFound)
         {
-            _logger.LogWarning("Blob not found (404) from git-api: Repo={Owner}/{Name}, Branch={Branch}, Path={Path}", owner, name, branch, normalizedPath);
+            _logger.LogWarning("Blob not found (404) from git-api: Repo={Owner}/{Name}, Branch={Branch}, Path={Path}", owner, name, @ref, normalizedPath);
             return null;
         }
 

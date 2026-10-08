@@ -47,8 +47,8 @@
 
 	{#if context.view === 'submission' && session?.gitInfo?.id && context.branch}
 		{@const tree = params.path
-			? await Git.getTreePath({ id: session.gitInfo.id, branch: params.branch, path: params.path })
-			: await Git.getTree({ id: session.gitInfo.id, branch: params.branch })}
+			? await Git.getTreePath({ id: session.gitInfo.id, ref: params.branch, path: params.path })
+			: await Git.getTree({ id: session.gitInfo.id, ref: params.branch })}
 		<Explorer
 			baseUrl={base}
 			branch={params.branch}
@@ -59,8 +59,8 @@
 		{@const git = await Git.getBranches(project.gitInfo.id)}
 		{#if git.length > 0}
 			{@const tree = params.path
-				? await Git.getTreePath({ id: project.gitInfo.id, branch: params.branch, path: params.path })
-				: await Git.getTree({ id: project.gitInfo.id, branch: params.branch })}
+				? await Git.getTreePath({ id: project.gitInfo.id, ref: params.branch, path: params.path })
+				: await Git.getTree({ id: project.gitInfo.id, ref: params.branch })}
 			<Explorer
 				baseUrl={base}
 				branch={params.branch}

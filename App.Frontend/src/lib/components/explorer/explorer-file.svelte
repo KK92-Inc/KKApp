@@ -7,7 +7,7 @@
 	interface Props {
 		content: ArrayBuffer;
 		name: string;
-		backHref: string;
+		backHref?: string;
 	}
 
 	const { name, content, backHref }: Props = $props();
@@ -66,9 +66,11 @@
 <div class="rounded border">
 	<div class="flex items-center justify-between gap-4 border-b bg-muted/50 px-2 py-2">
 		<div class="flex min-w-0 items-center gap-2">
-			<Button variant="ghost" size="icon" href={backHref} aria-label="Back to directory">
-				<ArrowLeft class="size-4" />
-			</Button>
+			{#if backHref}
+				<Button variant="ghost" size="icon" href={backHref} aria-label="Back to directory">
+					<ArrowLeft class="size-4" />
+				</Button>
+			{/if}
 			<File class="size-4 shrink-0 text-muted-foreground" />
 			<span class="truncate font-medium">{name}</span>
 			<span class="shrink-0 text-xs text-muted-foreground">({format(size)})</span>

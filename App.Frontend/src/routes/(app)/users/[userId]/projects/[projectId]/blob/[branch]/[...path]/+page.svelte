@@ -51,14 +51,14 @@
 	{/snippet}
 
 	{#if context.view === 'submission' && session?.gitInfo?.id && context.branch}
-		{@const content = await Git.getBlob({ id: session.gitInfo.id, branch: params.branch, path: params.path })}
+		{@const content = await Git.getBlob({ id: session.gitInfo.id, ref: params.branch, path: params.path })}
 		<ExplorerFile name={params.path.split('/').pop() ?? ''} {content} {backHref} />
 	{:else if project?.gitInfo?.id}
 		{@const git = await Git.getBranches(project.gitInfo.id)}
 		{#if git.length > 0}
 			{@const content = await Git.getBlob({
 				id: project.gitInfo.id,
-				branch: params.branch,
+				ref: params.branch,
 				path: params.path
 			})}
 
