@@ -35,6 +35,7 @@
 	import Toggle from '$lib/components/toggle/toggle.svelte';
 	import Separator from '$lib/components/separator/separator.svelte';
 	import Badge from '$lib/components/badge/badge.svelte';
+	import * as Empty from '$lib/components/empty';
 
 	let sort = $state<components['schemas']['Order']>('Descending');
 
@@ -144,6 +145,14 @@
 								</a>
 							{/snippet}
 						</Item.Root>
+					{:else}
+						<Empty.Root class="h-full max-w-md bg-muted/30">
+							<Empty.Header>
+								<Empty.Description class="max-w-xs text-pretty">
+									Currently no review rounds yet. New review rounds will appear here.
+								</Empty.Description>
+							</Empty.Header>
+						</Empty.Root>
 					{/each}
 				</Item.Group>
 			{:else}

@@ -351,7 +351,7 @@ public class ReviewService(
             .Include(r => r.Rubric)
             .ThenInclude(r => r.GitInfo)
             .Include(r => r.Reviews)
-            .OrderBy(r => r.Attempt)
+            .OrderByDescending(r => r.Attempt)
             .ToListAsync(token);
     }
 

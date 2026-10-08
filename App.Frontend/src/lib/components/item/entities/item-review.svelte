@@ -101,7 +101,7 @@
 			{#if review.passed === true}
 				<span class="text-muted-foreground/40 select-none">•</span>
 				<Badge variant="success" class="rounded-sm font-normal">Passed</Badge>
-			{:else if !review.passed && review.state !== "Cancelled"}
+			{:else if !!review.passed && !review.passed && review.state !== "Cancelled"}
 				<span class="text-muted-foreground/40 select-none">•</span>
 				<Badge variant="destructive" class="rounded-sm font-normal">Failed</Badge>
 			{/if}

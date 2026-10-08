@@ -93,7 +93,7 @@ public class ReviewController(
     {
         var review = await service.FindByIdAsync(reviewId, token);
         if (review is null)
-            return NotFound("Review not found");
+            return NotFound();
         return Ok(new ReviewDO(review));
     }
 
@@ -117,7 +117,7 @@ Use `filter[file]` to get the comments on one file and `filter[type]` to get onl
     )
     {
         var review = await service.FindByIdAsync(reviewId, token);
-        if (review is null) return NotFound("Review not found");
+        if (review is null) return NotFound();
 
         var query = ctx.Annotations.AsNoTracking().Where(a => a.ReviewId == reviewId);
         if (type.HasValue) query = query.Where(a => a.Kind == type.Value);
