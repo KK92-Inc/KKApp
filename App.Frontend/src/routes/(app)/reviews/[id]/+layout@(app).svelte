@@ -39,38 +39,33 @@
 	};
 </script>
 
-<Layout cover>
-	{#snippet left()}
-		<svelte:boundary>
-			{@const root = await Git.getTree({ id: data.review.userProject.gitInfoId, ref: data.review.sha! })}
-			{@const items = root.map((f) => {
-				return {
-					isDirectory: f.directory,
-					path: f.path
-				};
-			})}
-			<HierarchyEditor {items} {adapter} onMove={() => {}}>
-				{#snippet item({ item })}
-					<a
-						href="/reviews/{data.review.id}/blob/{data.review.sha}/{item.path}"
-						class="font-medium text-foreground"
-					>
-						{item.path.slice(item.path.lastIndexOf('/') + 1)}
-					</a>
-				{/snippet}
+<div class="container mx-auto mt-4">
+	Hell
+	<Layout classR="max-h-[unset]!">
+		{#snippet left()}
+			<svelte:boundary>
+				{@const root = await Git.getTree({ id: data.review.userProject.gitInfoId, ref: data.review.sha! })}
+				{@const items = root.map((f) => {
+					return {
+						isDirectory: f.directory,
+						path: f.path
+					};
+				})}
 
-				<!-- {#snippet actions({ item })}
-				<Button variant="ghost" size="icon-sm" onclick={() => openAddDialog(item.id)} title="Add sub-goal">
-					<Plus class="size-3.5" />
-				</Button>
-				<Button variant="ghost" size="icon-sm" onclick={() => deleteGoal(item.id)} title="Delete goal">
-					<Trash2 class="size-3.5 text-destructive" />
-				</Button>
-			{/snippet} -->
-			</HierarchyEditor>
-		</svelte:boundary>
-	{/snippet}
-	{#snippet right()}
-		{@render children()}
-	{/snippet}
-</Layout>
+				<HierarchyEditor {items} {adapter} onMove={() => {}} class="flex-1 rounded border">
+					{#snippet item({ item })}
+						<a
+							href="/reviews/{data.review.id}/blob/{data.review.sha}/{item.path}"
+							class="font-medium text-foreground"
+						>
+							{item.path.slice(item.path.lastIndexOf('/') + 1)}
+						</a>
+					{/snippet}
+				</HierarchyEditor>
+			</svelte:boundary>
+		{/snippet}
+		{#snippet right()}
+			{@render children()}
+		{/snippet}
+	</Layout>
+</div>
