@@ -24,6 +24,6 @@ app.UseResponseCompression();
 app.MapDefaultEndpoints();
 
 app.MapControllers().RequireAuthorization();
-app.MapMcp("/mcp").RequireAuthorization("staff");
+app.MapMcp("/mcp"); //.RequireAuthorization("staff");
 
 app.Run();
