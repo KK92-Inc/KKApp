@@ -1,8 +1,3 @@
-// ============================================================================
-// Copyright (c) 2026 - W2Inc, All Rights Reserved.
-// See README.md in the project root for license information.
-// ============================================================================
-
 import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkGfm from 'remark-gfm';
@@ -12,7 +7,7 @@ import rehypeKatex from 'rehype-katex';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import rehypeStringify from 'rehype-stringify';
 import rehypeShikiFromHighlighter from '@shikijs/rehype/core';
-import { createHighlighterCoreSync } from 'shiki/core';
+import { createHighlighterCoreSync, type ShikiTransformer } from 'shiki/core';
 import { createJavaScriptRegexEngine } from 'shiki/engine/javascript';
 import type { Schema } from 'hast-util-sanitize';
 
@@ -30,100 +25,32 @@ import sql from 'shiki/langs/sql.mjs';
 import csharp from 'shiki/langs/csharp.mjs';
 import dark from 'shiki/themes/github-dark.mjs';
 
-// ============================================================================
-// Sanitization schema
-// Extends the default safe schema with elements/attributes needed by
-// KaTeX (MathML) and Shiki (inline styles on <pre>/<code>/<span>).
-// ============================================================================
-
-const KATEX_MATHML_TAGS = [
-	'math',
-	'semantics',
-	'mrow',
-	'mi',
-	'mo',
-	'mn',
-	'ms',
-	'mtext',
-	'mfrac',
-	'msqrt',
-	'mroot',
-	'msup',
-	'msub',
-	'msubsup',
-	'munder',
-	'mover',
-	'munderover',
-	'mtable',
-	'mtr',
-	'mtd',
-	'mspace',
-	'annotation',
-	'menclose',
-	'mglyph',
-	'mpadded',
-	'mphantom',
-	'mstyle',
-	'merror',
-	'mlabeledtr',
-	'mmultiscripts',
-	'mprescripts'
-];
-
-const KATEX_MATHML_ATTRS = [
-	'mathvariant',
-	'encoding',
-	'xmlns',
-	'display',
-	'fence',
-	'stretchy',
-	'symmetric',
-	'lspace',
-	'rspace',
-	'movablelimits',
-	'accent',
-	'accentunder',
-	'columnalign',
-	'columnspacing',
-	'rowspacing',
-	'columnlines',
-	'rowlines',
-	'frame',
-	'framespacing',
-	'rowalign',
-	'width',
-	'height',
-	'depth',
-	'voffset',
-	'linethickness',
-	'scriptlevel',
-	'minsize',
-	'maxsize',
-	'separator'
-];
+const transformerLineNumbers: ShikiTransformer = {
+	name: 'line-numbers',
+	line(node, line) {
+		node.properties['data-line'] = String(line);
+		node.children.unshift({
+			type: 'element',
+			tagName: 'span',
+			properties: {
+				className: ['line-number'],
+				'data-line': String(line)
+			},
+			children: [{ type: 'text', value: String(line) }]
+		});
+	}
+};
 
 const sanitizeSchema: Schema = {
 	...defaultSchema,
-	tagNames: [...(defaultSchema.tagNames ?? []), ...KATEX_MATHML_TAGS],
 	attributes: {
 		...defaultSchema.attributes,
-		// Allow class everywhere (KaTeX .katex-*, Shiki .shiki etc.)
 		'*': [...(defaultSchema.attributes?.['*'] ?? []), 'className', 'class', 'ariaHidden', 'style'],
-		// KaTeX MathML attributes on all MathML elements
-		...Object.fromEntries(
-			KATEX_MATHML_TAGS.map((tag) => [
-				tag,
-				[...(defaultSchema.attributes?.[tag] ?? []), ...KATEX_MATHML_ATTRS]
-			])
-		),
-		// Shiki uses style & data-* on code/pre/span
 		code: [...(defaultSchema.attributes?.['code'] ?? []), 'style', 'data*'],
 		pre: [...(defaultSchema.attributes?.['pre'] ?? []), 'style', 'data*', 'tabindex'],
 		span: [...(defaultSchema.attributes?.['span'] ?? []), 'style', 'data*']
 	}
 };
-
-// ============================================================================
 
 const highlighter = createHighlighterCoreSync({
 	themes: [dark],
@@ -131,41 +58,38 @@ const highlighter = createHighlighterCoreSync({
 	engine: createJavaScriptRegexEngine()
 });
 
-const processor = unified()
-	.use(remarkParse)
-	.use(remarkGfm)
-	.use(remarkMath)
-	.use(remarkRehype, { allowDangerousHtml: false })
-	.use(rehypeKatex)
-	.use(rehypeShikiFromHighlighter, highlighter, {
-		theme: 'github-dark',
-		fallbackLanguage: 'text'
-	})
-	.use(rehypeSanitize, sanitizeSchema)
-	.use(rehypeStringify);
-
+// render.ts - update inside Markdown.highlightLines
 export const Markdown = {
-	/**
-	 * Render a markdown string to sanitized HTML. Fully SSR-safe.
-	 *
-	 * Supports GFM, LaTeX/KaTeX math, and syntax highlighted code blocks (shiki).
-	 * Output is sanitized via rehype-sanitize to prevent XSS.
-	 */
-	render: async (source: string) => String(await processor.process(source)),
-
-	/**
-	 * Highlights a section of source code
-	 * @param source
-	 * @param lang
-	 * @returns
-	 */
-	highlight: (source: string, lang: string) => {
+	highlightLines: (source: string, lang: string) => {
 		const normalized = lang.trim().toLowerCase();
 		const langs = highlighter.getLoadedLanguages();
+		const targetLang = langs.includes(normalized) ? normalized : 'text';
 
-		return highlighter.codeToHtml(source, {
-			lang: langs.includes(normalized) ? normalized : 'text',
-			theme: 'github-dark'
+		const html = highlighter.codeToHtml(source, {
+			lang: targetLang,
+			theme: 'github-dark',
+			transformers: [transformerLineNumbers]
 		});
+
+		const preMatch = html.match(/^<pre([^>]*)><code>([\s\S]*)<\/code><\/pre>$/);
+		if (!preMatch) {
+			return { preClass: '', preStyle: '', lines: [html] };
+		}
+
+		const [, preAttrs, innerCode] = preMatch;
+		const classMatch = preAttrs.match(/class="([^"]*)"/);
+		const styleMatch = preAttrs.match(/style="([^"]*)"/);
+
+		const lines = innerCode.split('\n');
+		// Remove empty trailing line from splitting ends with \n
+		if (lines.length > 0 && lines[lines.length - 1] === '') {
+			lines.pop();
+		}
+
+		return {
+			preClass: classMatch ? classMatch[1] : '',
+			preStyle: styleMatch ? styleMatch[1] : '',
+			lines
+		};
 	}
 };

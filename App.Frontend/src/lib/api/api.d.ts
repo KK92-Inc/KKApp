@@ -1969,7 +1969,7 @@ export interface paths {
         };
         /**
          * Get file tree from repository
-         * @description Retrieves the file tree at the given ref (branch, tag, or SHA) and path in the git repository associated with this entity.
+         * @description Retrieves the file tree at the given branch and path in the git repository associated with this entity.
          */
         get: {
             parameters: {
@@ -2045,7 +2045,7 @@ export interface paths {
         };
         /**
          * Get file tree from repository
-         * @description Retrieves the file tree at the given ref (branch, tag, or SHA) and path in the git repository associated with this entity.
+         * @description Retrieves the file tree at the given branch and path in the git repository associated with this entity.
          */
         get: {
             parameters: {
@@ -2122,7 +2122,7 @@ export interface paths {
         };
         /**
          * Get file content from repository
-         * @description Retrieves the content of a file at the given ref (branch, tag, or SHA) in the git repository associated with this entity.
+         * @description Retrieves the content of a file in the git repository associated with this entity.
          */
         get: {
             parameters: {
@@ -12073,8 +12073,7 @@ export interface components {
             reviewId: string;
             kind: components["schemas"]["ReviewKinds"];
             state: components["schemas"]["ReviewState"];
-            /** Format: uuid */
-            reviewerId?: null | string;
+            reviewer?: null | components["schemas"]["UserBriefDO"];
             passed?: null | boolean;
         };
         /** @enum {unknown} */

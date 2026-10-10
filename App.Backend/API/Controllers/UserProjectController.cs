@@ -148,8 +148,8 @@ public class UserProjectController(
             m => m.EntityId == id,
             active switch
             {
-                true => m => m.LeftAt == null,
-                false => m => m.LeftAt != null,
+                true => m => m.Role != MemberRole.Pending && m.LeftAt == null,
+                false => m => m.Role == MemberRole.Pending || m.LeftAt != null,
                 null => null
             }
         );

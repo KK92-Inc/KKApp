@@ -58,7 +58,11 @@ public class ReviewSlotDO(Review review)
     [Required]
     public ReviewState State { get; init; } = review.State;
 
-    public Guid? ReviewerId { get; init; } = review.ReviewerId;
+    public UserBriefDO? Reviewer { get; init; } = review.Reviewer;
+
+    public DateTimeOffset? StartedAt { get; init; } = review.StartedAt;
+    
+    public DateTimeOffset? FinishedAt { get; init; } = review.FinishedAt;
 
     public bool? Passed { get; init; } = review.Passed;
 }
