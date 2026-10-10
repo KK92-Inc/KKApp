@@ -4,7 +4,7 @@
 // ============================================================================
 
 import type { MetaRecord } from "$lib/utils";
-import { Bot, FlaskConical, Play, Snowflake, Waypoints, Users } from "@lucide/svelte";
+import { Bot, FlaskConical, Play, Snowflake, Waypoints, Users, WavesLadder, Sparkles } from "@lucide/svelte";
 
 // ============================================================================
 
@@ -15,7 +15,7 @@ export const Meta: MetaRecord = {
 		scopes: ['users:read']
 	},
 	'/(app)/admin/agent': {
-		icon: Bot,
+		icon: Sparkles,
 		label: 'Agent',
 		scopes: []
 	},
@@ -35,7 +35,7 @@ export const Meta: MetaRecord = {
 		scopes: []
 	},
 	'/(app)/admin/trial': {
-		icon: FlaskConical,
+		icon: WavesLadder,
 		label: 'Piscines',
 		scopes: []
 	},

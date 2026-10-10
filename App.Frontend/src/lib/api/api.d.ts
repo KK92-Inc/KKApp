@@ -12074,6 +12074,10 @@ export interface components {
             kind: components["schemas"]["ReviewKinds"];
             state: components["schemas"]["ReviewState"];
             reviewer?: null | components["schemas"]["UserBriefDO"];
+            /** Format: date-time */
+            startedAt?: null | string;
+            /** Format: date-time */
+            finishedAt?: null | string;
             passed?: null | boolean;
         };
         /** @enum {unknown} */

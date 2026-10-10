@@ -55,18 +55,6 @@
 								<Avatar.Image src={member.user.avatarUrl} alt="@{member.user.login}" />
 								<Avatar.Fallback>{member.user.login.slice(0, 2).toUpperCase()}</Avatar.Fallback>
 							</Avatar.Root>
-							<Avatar.Root class="inline-block rounded-full ring-2 ring-white dark:ring-gray-900">
-								<Avatar.Image src={member.user.avatarUrl} alt="@{member.user.login}" />
-								<Avatar.Fallback>{member.user.login.slice(0, 2).toUpperCase()}</Avatar.Fallback>
-							</Avatar.Root>
-							<Avatar.Root class="inline-block rounded-full ring-2 ring-white dark:ring-gray-900">
-								<Avatar.Image src={member.user.avatarUrl} alt="@{member.user.login}" />
-								<Avatar.Fallback>{member.user.login.slice(0, 2).toUpperCase()}</Avatar.Fallback>
-							</Avatar.Root>
-							<Avatar.Root class="inline-block rounded-full ring-2 ring-white dark:ring-gray-900">
-								<Avatar.Image src={member.user.avatarUrl} alt="@{member.user.login}" />
-								<Avatar.Fallback>{member.user.login.slice(0, 2).toUpperCase()}</Avatar.Fallback>
-							</Avatar.Root>
 						{/each}
 					</div>
 				</svelte:boundary>
@@ -155,9 +143,11 @@
 													class="mb-1 flex items-center justify-between text-xs font-medium text-muted-foreground"
 												>
 													<span>{name}'s Conclusion</span>
+													{#if slot.finishedAt}
 													<span class="font-normal text-muted-foreground/80">
-														{formatter.format(new Date(round.createdAt))}
+														{formatter.format(new Date(slot.finishedAt))}
 													</span>
+													{/if}
 												</div>
 												<p class="whitespace-pre-wrap text-foreground/90">{conclusion.body}</p>
 											</ScrollArea>
