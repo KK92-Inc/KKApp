@@ -38,6 +38,7 @@ using App.Backend.API.Schemas.Schema;
 using App.Backend.API.Schemas.Document;
 using Duende.AccessTokenManagement;
 using App.Backend.API.Utils;
+using App.Backend.API.Mcp;
 using Microsoft.AspNetCore.Authorization;
 using Keycloak.AuthServices.Sdk.Kiota.Admin;
 using Microsoft.Kiota.Http.HttpClientLibrary;
@@ -71,6 +72,7 @@ public static class Services
         RegisterDatabase(builder);
         RegisterMessageBus(builder);
         RegisterDomainServices(builder);
+        RegisterMcp(builder);
         RegisterScheduling(builder);
         RegisterRateLimiting(builder);
         RegisterLogging(builder);
@@ -343,6 +345,24 @@ public static class Services
         builder.Services.AddScoped<IRuleEvaluator, MinProjectsCompletedEvaluator>();
         builder.Services.AddScoped<IRuleEvaluator, MinReviewsCompletedEvaluator>();
         builder.Services.AddScoped<IRuleEvaluator, SameTimezoneEvaluator>();
+    }
+
+    // MCP (Model Context Protocol)
+    // ============================================================================
+
+    /// <summary>
+    /// Exposes staff tools to AI clients (VS Code, Claude, ...) on /mcp - see <see cref="UserTools"/>.
+    /// Stateless: every request carries its own bearer token, so tool calls always run as that caller.
+    /// </summary>
+    private static void RegisterMcp(WebApplicationBuilder builder)
+    {
+        builder.Services.Configure<McpToolOptions>(
+            builder.Configuration.GetSection(McpToolOptions.SectionName));
+
+        builder.Services
+            .AddMcpServer()
+            .WithHttpTransport(o => o.Stateless = true)
+            .WithToolsFromAssembly();
     }
 
     // Scheduling
