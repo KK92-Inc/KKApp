@@ -150,7 +150,7 @@
 				<ChevronRightIcon class={cn('size-3.5 transition-transform', expanded && 'rotate-90')} />
 			</Button>
 		{:else}
-			<span class="inline-block size-5 shrink-0" aria-hidden="true"></span>
+			<!-- <span class="inline-block size-5 shrink-0" aria-hidden="true"></span> -->
 		{/if}
 
 		<div class="min-w-0 flex-1">
