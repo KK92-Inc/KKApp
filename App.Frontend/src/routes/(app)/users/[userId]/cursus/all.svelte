@@ -6,7 +6,6 @@
 	import { Trophy } from '@lucide/svelte';
 
 	const { cursusId }: { cursusId: string } = $props();
-
 	const graph = $derived(Adapter.build(await Cursus.getTrack(cursusId)));
 </script>
 

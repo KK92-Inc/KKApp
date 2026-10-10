@@ -88,7 +88,7 @@
 			<span id="pagination"></span>
 		</span>
 
-		{#if belongs && tab === 'subscribed'}
+		{#if !belongs || tab === 'subscribed'}
 			{@const sanitized = status === 'Any' ? undefined : status}
 			<Subscribed {search} status={sanitized} userId={params.userId}/>
 		{:else}

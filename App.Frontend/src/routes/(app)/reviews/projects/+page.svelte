@@ -2,6 +2,7 @@
 	import { page } from '$app/state';
 	import * as Reviews from '$lib/remotes/review.remote';
 	import * as UserProjects from '$lib/remotes/user-project.remote';
+	import * as Empty from '$lib/components/empty';
 	import * as Card from '$lib/components/card';
 	import * as Item from '$lib/components/item';
 	import { Button } from '$lib/components/button';
@@ -67,9 +68,6 @@
 						<Item.Root variant="outline" size="sm">
 							{#snippet child({ props })}
 								<a href="/review/rounds/{latest.id}" {...props}>
-									<!-- <Item.Media>
-										<HeartHandshake class="size-5" />
-									</Item.Media> -->
 									<Item.Content>
 										<Item.Title>
 											<HeartHandshake />
@@ -89,6 +87,14 @@
 				</Item.Group>
 			</svelte:boundary>
 		</Item.Root>
+	{:else}
+			<Empty.Root class="h-full border border-dashed col-span-full">
+			<Empty.Header>
+				<Empty.Media variant="icon"><HeartHandshake /></Empty.Media>
+				<Empty.Title>None of your projects are pending</Empty.Title>
+				<Empty.Description>You have no project sessions that are pending for any evaluations at this time.</Empty.Description>
+			</Empty.Header>
+		</Empty.Root>
 	{/each}
 </Item.Group>
 

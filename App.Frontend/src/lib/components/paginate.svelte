@@ -6,10 +6,17 @@
 		variant?: 'default' | 'short';
 	};
 
-	let { page = $bindable(0), variant = 'default', ...rest }: Props = $props();
+	let { page = $bindable(0), onPageChange, variant = 'default', ...rest }: Props = $props();
 </script>
 
-<Pagination.Root bind:page {...rest}>
+<Pagination.Root
+	page={page + 1}
+	onPageChange={(newPage) => {
+		page = newPage - 1;
+		onPageChange?.(newPage - 1);
+	}}
+	{...rest}
+>
 	{#snippet children({ pages, currentPage })}
 		<Pagination.Content>
 			<Pagination.Item>

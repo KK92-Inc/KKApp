@@ -4,12 +4,12 @@
 	import type { PageProps } from './$types';
 	import Layout from '$lib/components/layout.svelte';
 	import useDebounce from '$lib/hooks/debounce.svelte';
-	import { Button, buttonVariants } from '$lib/components/button';
+	import { buttonVariants } from '$lib/components/button';
 	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
 	import * as Tabs from '$lib/components/tabs';
 	import { page } from '$app/state';
 	import * as InputGroup from '$lib/components/input-group';
-	import { BellIcon, CloudIcon, RefreshCcwIcon, Search } from '@lucide/svelte';
+	import { GraduationCap, Search } from '@lucide/svelte';
 	import Separator from '$lib/components/separator/separator.svelte';
 	import * as Empty from '$lib/components/empty';
 	import Subscribed from './subscribed.svelte';
@@ -25,8 +25,8 @@
 
 	let cursusId = $state<string>();
 	let userCursusId = $state<string>();
-
 	const belongs = $derived(page.data.session.userId === params.userId);
+
 </script>
 
 <Layout cover class="gap-0" classL="border-r p-4 space-y-2" classR="relative">
@@ -129,38 +129,17 @@
 		{:else if userCursusId}
 			<Subscribed {userCursusId} />
 		{:else}
-			{#if belongs}
-				<Empty.Root class="h-full max-w-md bg-muted/30">
-					<Empty.Header>
-						<Empty.Media variant="icon">
-							<BellIcon />
-						</Empty.Media>
-						<Empty.Title>No Notifications</Empty.Title>
-						<Empty.Description class="max-w-xs text-pretty">
-							You're all caught up. New notifications will appear here.
-						</Empty.Description>
-					</Empty.Header>
-					<Empty.Content>
-						<Button variant="outline">
-							<RefreshCcwIcon data-icon="inline-start" />
-							Refresh
-						</Button>
-					</Empty.Content>
-				</Empty.Root>
-			{:else}
-				<Empty.Root class="border border-dashed">
-					<Empty.Header>
-						<Empty.Media variant="icon">
-							<CloudIcon />
-						</Empty.Media>
-						<Empty.Title>Cloud Storage Empty</Empty.Title>
-						<Empty.Description>Upload files to your cloud storage to access them anywhere.</Empty.Description>
-					</Empty.Header>
-					<Empty.Content>
-						<Button variant="outline" size="sm">Upload Files</Button>
-					</Empty.Content>
-				</Empty.Root>
-			{/if}
+			<Empty.Root class="mx-auto mt-12 max-w-md border border-dashed">
+				<Empty.Header>
+					<Empty.Media variant="icon">
+						<GraduationCap />
+					</Empty.Media>
+					<Empty.Title>No Selected Cursus</Empty.Title>
+					<Empty.Description>
+						Select a cursus from the panel to the left to view your progress.
+					</Empty.Description>
+				</Empty.Header>
+			</Empty.Root>
 		{/if}
 	{/snippet}
 </Layout>
