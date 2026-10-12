@@ -4,13 +4,21 @@
 	import { RotateCcw, CircleAlert, HeartHandshake } from '@lucide/svelte';
 	import type { LayoutProps } from './$types';
 	import * as Alert from '$lib/components/alert';
+	import * as Agent from '$lib/contexts/agent.svelte';
+
 	let { children }: LayoutProps = $props();
+	const chat = Agent.init(new Agent.AgentChat());
 </script>
 
 <div class="flex items-center gap-2">
 	<h1 class="text-lg font-bold text-muted-foreground">Agent</h1>
 	<Separator class="flex-1" />
-	<Button size="sm" variant="outline">
+	<Button
+		size="sm"
+		variant="outline"
+		disabled={chat.loading || (chat.messages.length === 0 && !chat.error)}
+		onclick={() => chat.reset()}
+	>
 		Restart
 		<RotateCcw />
 	</Button>

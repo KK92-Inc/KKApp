@@ -1,3 +1,8 @@
+// ============================================================================
+// Copyright (c) 2026 - W2Inc, All Rights Reserved.
+// See README.md in the project root for license information.
+// ============================================================================
+
 import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkGfm from 'remark-gfm';
@@ -25,6 +30,67 @@ import sql from 'shiki/langs/sql.mjs';
 import csharp from 'shiki/langs/csharp.mjs';
 import dark from 'shiki/themes/github-dark.mjs';
 
+// ============================================================================
+// Sanitization schema
+// Extends the default safe schema with elements/attributes needed by
+// KaTeX (MathML) and Shiki (inline styles on <pre>/<code>/<span>).
+// ============================================================================
+
+const KATEX_MATHML_TAGS = [
+	'math', 'semantics', 'mrow', 'mi', 'mo', 'mn', 'ms', 'mtext', 'mfrac',
+	'msqrt', 'mroot', 'msup', 'msub', 'msubsup', 'munder', 'mover',
+	'munderover', 'mtable', 'mtr', 'mtd', 'mspace', 'annotation', 'menclose',
+	'mglyph', 'mpadded', 'mphantom', 'mstyle', 'merror', 'mlabeledtr',
+	'mmultiscripts', 'mprescripts'
+];
+
+const KATEX_MATHML_ATTRS = [
+	'mathvariant', 'encoding', 'xmlns', 'display', 'fence', 'stretchy',
+	'symmetric', 'lspace', 'rspace', 'movablelimits', 'accent', 'accentunder',
+	'columnalign', 'columnspacing', 'rowspacing', 'columnlines', 'rowlines',
+	'frame', 'framespacing', 'rowalign', 'width', 'height', 'depth',
+	'voffset', 'linethickness', 'scriptlevel', 'minsize', 'maxsize', 'separator'
+];
+
+const sanitizeSchema: Schema = {
+	...defaultSchema,
+	tagNames: [...(defaultSchema.tagNames ?? []), ...KATEX_MATHML_TAGS],
+	attributes: {
+		...defaultSchema.attributes,
+		// Allow class everywhere (KaTeX .katex-*, Shiki .shiki etc.)
+		'*': [...(defaultSchema.attributes?.['*'] ?? []), 'className', 'class', 'ariaHidden', 'style'],
+		// KaTeX MathML attributes on all MathML elements
+		...Object.fromEntries(
+			KATEX_MATHML_TAGS.map((tag) => [
+				tag,
+				[...(defaultSchema.attributes?.[tag] ?? []), ...KATEX_MATHML_ATTRS]
+			])
+		),
+		// Shiki uses style & data-* on code/pre/span
+		code: [...(defaultSchema.attributes?.['code'] ?? []), 'style', 'data*'],
+		pre: [...(defaultSchema.attributes?.['pre'] ?? []), 'style', 'data*', 'tabindex'],
+		span: [...(defaultSchema.attributes?.['span'] ?? []), 'style', 'data*']
+	}
+};
+
+// ============================================================================
+// Shiki
+// ============================================================================
+
+const THEME = 'github-dark';
+
+const highlighter = createHighlighterCoreSync({
+	themes: [dark],
+	langs: [c, cpp, ts, js, php, css, json, bash, python, markdown, sql, csharp],
+	engine: createJavaScriptRegexEngine()
+});
+
+/** Falls back to plain text for languages that aren't loaded. */
+function resolveLang(lang: string): string {
+	const normalized = lang.trim().toLowerCase();
+	return highlighter.getLoadedLanguages().includes(normalized) ? normalized : 'text';
+}
+
 const transformerLineNumbers: ShikiTransformer = {
 	name: 'line-numbers',
 	line(node, line) {
@@ -41,33 +107,57 @@ const transformerLineNumbers: ShikiTransformer = {
 	}
 };
 
-const sanitizeSchema: Schema = {
-	...defaultSchema,
-	attributes: {
-		...defaultSchema.attributes,
-		'*': [...(defaultSchema.attributes?.['*'] ?? []), 'className', 'class', 'ariaHidden', 'style'],
-		code: [...(defaultSchema.attributes?.['code'] ?? []), 'style', 'data*'],
-		pre: [...(defaultSchema.attributes?.['pre'] ?? []), 'style', 'data*', 'tabindex'],
-		span: [...(defaultSchema.attributes?.['span'] ?? []), 'style', 'data*']
-	}
-};
+// ============================================================================
+// Markdown pipeline (GFM + KaTeX + Shiki + sanitize)
+// ============================================================================
 
-const highlighter = createHighlighterCoreSync({
-	themes: [dark],
-	langs: [c, cpp, ts, js, php, css, json, bash, python, markdown, sql, csharp],
-	engine: createJavaScriptRegexEngine()
-});
+const processor = unified()
+	.use(remarkParse)
+	.use(remarkGfm)
+	.use(remarkMath)
+	.use(remarkRehype, { allowDangerousHtml: false })
+	.use(rehypeKatex)
+	.use(rehypeShikiFromHighlighter, highlighter, {
+		theme: THEME,
+		fallbackLanguage: 'text'
+	})
+	.use(rehypeSanitize, sanitizeSchema)
+	.use(rehypeStringify);
 
-// render.ts - update inside Markdown.highlightLines
+export interface HighlightedLines {
+	preClass: string;
+	preStyle: string;
+	lines: string[];
+}
+
 export const Markdown = {
-	highlightLines: (source: string, lang: string) => {
-		const normalized = lang.trim().toLowerCase();
-		const langs = highlighter.getLoadedLanguages();
-		const targetLang = langs.includes(normalized) ? normalized : 'text';
+	/**
+	 * Render a markdown string to sanitized HTML. Fully SSR-safe.
+	 *
+	 * Supports GFM, LaTeX/KaTeX math, and syntax highlighted code blocks (shiki).
+	 * Output is sanitized via rehype-sanitize to prevent XSS.
+	 */
+	render: async (source: string): Promise<string> => String(await processor.process(source)),
 
+	/**Highlights a section of source code and returns it as one HTML string. */
+	highlight: (source: string, lang: string): string =>
+		highlighter.codeToHtml(source, {
+			lang: resolveLang(lang),
+			theme: THEME
+		}),
+
+	/**
+	 * Highlights a section of source code and splits it into per-line HTML,
+	 * each line prefixed with a `.line-number` span. The <pre> class/style are
+	 * returned separately so you can render the wrapper yourself.
+	 *
+	 * Note: shiki escapes the code content itself, so this output does not
+	 * need to go through the sanitizer.
+	 */
+	highlightLines: (source: string, lang: string): HighlightedLines => {
 		const html = highlighter.codeToHtml(source, {
-			lang: targetLang,
-			theme: 'github-dark',
+			lang: resolveLang(lang),
+			theme: THEME,
 			transformers: [transformerLineNumbers]
 		});
 
@@ -81,7 +171,7 @@ export const Markdown = {
 		const styleMatch = preAttrs.match(/style="([^"]*)"/);
 
 		const lines = innerCode.split('\n');
-		// Remove empty trailing line from splitting ends with \n
+		// Drop the empty trailing entry if the output ended with \n
 		if (lines.length > 0 && lines[lines.length - 1] === '') {
 			lines.pop();
 		}

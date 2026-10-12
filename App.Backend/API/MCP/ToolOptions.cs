@@ -3,27 +3,36 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-namespace App.Backend.API.Mcp;
+namespace App.Backend.API.MCP;
 
 // ============================================================================
 
 /// <summary>
-/// How much damage the MCP tools are allowed to do. Ordered: each level includes the previous one.
+/// How much damage the tools are allowed to do. Ordered: each level includes the previous one.
 /// </summary>
 public enum McpMode
 {
-    /// <summary>Only tools that read data.</summary>
+    /// <summary>
+    /// Only tools that read data.
+    /// </summary>
     ReadOnly = 0,
 
-    /// <summary>Reversible changes (freeze / unfreeze).</summary>
+    /// <summary>
+    /// Reversible changes, e.g: freeze / unfreeze.
+    /// </summary>
     Write = 1,
 
-    /// <summary>Irreversible changes (anonymize).</summary>
+    /// <summary>
+    /// Irreversible changes, e.g: anonymize.
+    /// </summary>
     Destructive = 2,
 }
 
+// ============================================================================
+
 /// <summary>
 /// Bound from the "Mcp" configuration section. Defaults to <see cref="McpMode.ReadOnly"/>.
+/// Applies to every caller of the tools: external MCP clients AND the built-in agent.
 /// </summary>
 public class McpToolOptions
 {

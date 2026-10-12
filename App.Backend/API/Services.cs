@@ -38,7 +38,10 @@ using App.Backend.API.Schemas.Schema;
 using App.Backend.API.Schemas.Document;
 using Duende.AccessTokenManagement;
 using App.Backend.API.Utils;
-using App.Backend.API.Mcp;
+using App.Backend.API.MCP;
+using App.Backend.API.MCP.Agent;
+using App.Backend.API.MCP.Tools;
+using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Authorization;
 using Keycloak.AuthServices.Sdk.Kiota.Admin;
 using Microsoft.Kiota.Http.HttpClientLibrary;
@@ -53,6 +56,9 @@ using Wolverine.ErrorHandling;
 using Microsoft.Kiota.Abstractions;
 using Humanizer;
 using JasperFx.CodeGeneration.Model;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.Extensions.AI;
+using OllamaSharp;
 
 // ============================================================================
 
@@ -96,6 +102,8 @@ public static class Services
         {
             o.AddProtectedResources();
             o.Filters.Add<ServiceExceptionFilter>();
+            // Agent DTOs carry raw JSON (tool arguments), there is nothing to validate inside it.
+            o.ModelMetadataDetailsProviders.Add(new SuppressChildValidationMetadataProvider(typeof(JsonElement)));
         }).AddJsonOptions(o =>
         {
             o.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
@@ -249,7 +257,7 @@ public static class Services
             // jsonb doesn't preserve key order, so "kind" may not come first
             AllowOutOfOrderMetadataProperties = true,
         });
-        
+
         builder.Services.AddDbContextPool<DatabaseContext>(options =>
         {
             options.UseNpgsql(source.Build());
@@ -356,13 +364,31 @@ public static class Services
     /// </summary>
     private static void RegisterMcp(WebApplicationBuilder builder)
     {
-        builder.Services.Configure<McpToolOptions>(
-            builder.Configuration.GetSection(McpToolOptions.SectionName));
-
+        builder.Services.Configure<McpToolOptions>(builder.Configuration.GetSection(McpToolOptions.SectionName));
         builder.Services
             .AddMcpServer()
             .WithHttpTransport(o => o.Stateless = true)
             .WithToolsFromAssembly();
+
+        // Built-in agent (frontend -> /agent/chat -> Ollama), runs the same tools in-process.
+        builder.Services.Configure<AgentOptions>(
+            builder.Configuration.GetSection(AgentOptions.SectionName));
+        
+        #pragma warning disable EXTEXP0001
+        builder.Services.AddHttpClient("ollama", (sp, client) =>
+        {
+            var agent = sp.GetRequiredService<IOptions<AgentOptions>>().Value;
+            client.BaseAddress = new Uri(agent.BaseUrl.TrimEnd('/') + "/");
+            client.Timeout = TimeSpan.FromSeconds(3000);
+        }).RemoveAllResilienceHandlers();
+        #pragma warning restore EXTEXP0001
+        
+        // The only place that knows we talk to Ollama. Any IChatClient works here (Azure OpenAI, OpenAI, ...).
+        builder.Services.AddScoped<IChatClient>(sp => new OllamaApiClient(
+            sp.GetRequiredService<IHttpClientFactory>().CreateClient("ollama"),
+            sp.GetRequiredService<IOptions<AgentOptions>>().Value.Model)
+        );
+        builder.Services.AddScoped<AgentService>();
     }
 
     // Scheduling
