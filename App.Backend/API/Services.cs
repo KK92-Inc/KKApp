@@ -370,11 +370,10 @@ public static class Services
             .WithHttpTransport(o => o.Stateless = true)
             .WithToolsFromAssembly();
 
-        // Built-in agent (frontend -> /agent/chat -> Ollama), runs the same tools in-process.
         builder.Services.Configure<AgentOptions>(
             builder.Configuration.GetSection(AgentOptions.SectionName));
         
-        #pragma warning disable EXTEXP0001
+        #pragma warning disable EXTEXP0001 // TODO: For local testing we don't wanna limit (we can run at most 10t/s)
         builder.Services.AddHttpClient("ollama", (sp, client) =>
         {
             var agent = sp.GetRequiredService<IOptions<AgentOptions>>().Value;

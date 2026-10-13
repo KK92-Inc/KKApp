@@ -14,16 +14,25 @@ namespace App.Backend.Models.Responses.Entities;
 /// <summary>
 /// Data object representing git repository information.
 /// </summary>
-public class GitDO(GitInfo git) : BaseEntityDO<GitInfo>(git)
+public class GitDO : BaseEntityDO<GitInfo>
 {
-    [Required]
-    public string Name { get; set; } = git.Name;
+    public GitDO() { }
+
+    public GitDO(GitInfo git) : base(git)
+    {
+        Name = git.Name;
+        Owner = git.Owner;
+        Ownership = git.Ownership;
+    }
 
     [Required]
-    public string Owner { get; set; } = git.Owner;
+    public string Name { get; set; } = null!;
 
     [Required]
-    public EntityOwnership Ownership { get; set; } = git.Ownership;
+    public string Owner { get; set; } = null!;
+
+    [Required]
+    public EntityOwnership Ownership { get; set; }
 
     public static implicit operator GitDO?(GitInfo? git) => git is null ? null : new(git);
 }

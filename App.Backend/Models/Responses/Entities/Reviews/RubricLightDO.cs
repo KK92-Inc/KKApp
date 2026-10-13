@@ -13,21 +13,32 @@ namespace App.Backend.Models.Responses.Entities.Reviews;
 /// <summary>
 /// Data object representing a rubric for reviews.
 /// </summary>
-public class RubricLightDO(Rubric rubric) : BaseEntityDO<Rubric>(rubric)
+public class RubricLightDO : BaseEntityDO<Rubric>
 {
-    [Required]
-    public string Name { get; set; } = rubric.Name;
+    public RubricLightDO() { }
+
+    public RubricLightDO(Rubric rubric) : base(rubric)
+    {
+        Name = rubric.Name;
+        Slug = rubric.Slug;
+        Public = rubric.Public;
+        Enabled = rubric.Enabled;
+        Variants = rubric.Variants.Select(v => new RubricVariantDO(v));
+    }
 
     [Required]
-    public string Slug { get; set; } = rubric.Slug;
+    public string Name { get; set; } = null!;
 
     [Required]
-    public bool Public { get; set; } = rubric.Public;
+    public string Slug { get; set; } = null!;
 
     [Required]
-    public bool Enabled { get; set; } = rubric.Enabled;
+    public bool Public { get; set; }
 
-    public IEnumerable<RubricVariantDO> Variants { get; set; } = rubric.Variants.Select(v => new RubricVariantDO(v));
+    [Required]
+    public bool Enabled { get; set; }
+
+    public IEnumerable<RubricVariantDO> Variants { get; set; } = [];
 
     public static implicit operator RubricLightDO?(Rubric? rubric) =>
         rubric is null ? null : new(rubric);

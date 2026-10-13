@@ -23,7 +23,7 @@ app.UseSerilogRequestLogging();
 app.UseResponseCompression();
 app.MapDefaultEndpoints();
 
+app.MapMcp("/mcp");
 app.MapControllers().RequireAuthorization();
-app.MapMcp("/mcp").RequireAuthorization("staff");
 
 app.Run();

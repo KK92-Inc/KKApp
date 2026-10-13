@@ -14,31 +14,45 @@ namespace App.Backend.Models.Responses.Entities.Reviews;
 /// <summary>
 /// Data object representing a rubric for reviews.
 /// </summary>
-public class RubricDO(Rubric rubric) : BaseEntityDO<Rubric>(rubric)
+public class RubricDO : BaseEntityDO<Rubric>
 {
-    [Required]
-    public string Name { get; set; } = rubric.Name;
+    public RubricDO() { }
+
+    public RubricDO(Rubric rubric) : base(rubric)
+    {
+        Name = rubric.Name;
+        Slug = rubric.Slug;
+        Public = rubric.Public;
+        Enabled = rubric.Enabled;
+        Deprecated = rubric.Deprecated;
+        Variants = rubric.Variants.Select(v => new RubricVariantDO(v));
+        ProjectId = rubric.ProjectId;
+        GitInfo = rubric.GitInfo;
+    }
 
     [Required]
-    public string Slug { get; set; } = rubric.Slug;
+    public string Name { get; set; } = null!;
 
     [Required]
-    public bool Public { get; set; } = rubric.Public;
+    public string Slug { get; set; } = null!;
 
     [Required]
-    public bool Enabled { get; set; } = rubric.Enabled;
+    public bool Public { get; set; }
 
     [Required]
-    public bool Deprecated { get; set; } = rubric.Deprecated;
+    public bool Enabled { get; set; }
 
     [Required]
-    public IEnumerable<RubricVariantDO> Variants { get; set; } = rubric.Variants.Select(v => new RubricVariantDO(v));
+    public bool Deprecated { get; set; }
 
     [Required]
-    public Guid? ProjectId { get; set; } = rubric.ProjectId;
+    public IEnumerable<RubricVariantDO> Variants { get; set; } = [];
 
     [Required]
-    public GitDO GitInfo { get; set; } = rubric.GitInfo;
+    public Guid? ProjectId { get; set; }
+
+    [Required]
+    public GitDO GitInfo { get; set; } = null!;
 
     public static implicit operator RubricDO?(Rubric? rubric) =>
         rubric is null ? null : new(rubric);

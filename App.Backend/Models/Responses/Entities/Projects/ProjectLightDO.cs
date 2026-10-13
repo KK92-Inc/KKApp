@@ -11,34 +11,48 @@ using App.Backend.Domain.Entities;
 
 namespace App.Backend.Models.Responses.Entities.Projects;
 
-public class ProjectLightDO(Project project) : BaseEntityDO<Project>(project)
+public class ProjectLightDO : BaseEntityDO<Project>
 {
+    public ProjectLightDO() { }
+
+    public ProjectLightDO(Project project) : base(project)
+    {
+        Name = project.Name;
+        Description = project.Description;
+        Slug = project.Slug;
+        Thumbnail = project.AvatarUrl;
+        Active = project.Active;
+        Public = project.Public;
+        Deprecated = project.Deprecated;
+        MaxMembers = project.MaxMembers;
+    }
+
     [Required, Description("The display name of the project.")]
-    public string Name { get; set; } = project.Name;
+    public string Name { get; set; } = null!;
 
     [Required, Description("A detailed description of the project's purpose or contents.")]
-    public string Description { get; set; } = project.Description;
+    public string Description { get; set; } = null!;
 
     [Required, Description("The URL-friendly slug identifier for the project.")]
-    public string Slug { get; set; } = project.Slug;
+    public string Slug { get; set; } = null!;
 
     [Required, Description("The URL to the image containing the thumbnail of the project.")]
-    public string? Thumbnail { get; set; } = project.AvatarUrl;
+    public string? Thumbnail { get; set; }
 
     [Required, Description("Indicates whether the project is currently active.")]
-    public bool Active { get; set; } = project.Active;
+    public bool Active { get; set; }
 
     [Required, Description("Indicates whether the project is publicly visible.")]
-    public bool Public { get; set; } = project.Public;
+    public bool Public { get; set; }
 
     [Required, Description("Indicates whether the project has been deprecated.")]
-    public bool Deprecated { get; set; } = project.Deprecated;
+    public bool Deprecated { get; set; }
 
     /// <summary>
     /// Gets or sets a value indicating whether the project has been deprecated and should no longer be used.
     /// </summary>
     [Required, Description("Indicates whether the project has been deprecated.")]
-    public int MaxMembers { get; set; } = project.MaxMembers;
+    public int MaxMembers { get; set; }
 
     /// <summary>
     /// implicitly converts a <see cref="Project"/> entity to a <see cref="ProjectLightDO"/>.

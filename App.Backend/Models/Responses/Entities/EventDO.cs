@@ -13,41 +13,59 @@ using App.Backend.Domain.Enums;
 
 namespace App.Backend.Models.Responses.Entities;
 
-public class EventDO(Event @event, IEnumerable<User> users) : BaseEntityDO<Event>(@event)
+public class EventDO : BaseEntityDO<Event>
 {
-    [Required]
-    public string Name { get; set; } = @event.Name;
+    public EventDO() { }
+
+    public EventDO(Event @event, IEnumerable<User> users) : base(@event)
+    {
+        Name = @event.Name;
+        Description = @event.Description;
+        Thumbnail = @event.Thumbnail;
+        Markdown = @event.Markdown;
+        Capacity = @event.Capacity;
+        Threshold = @event.Threshold;
+        StartsAt = @event.StartsAt;
+        EndsAt = @event.EndsAt;
+        ClosesAt = @event.ClosesAt;
+        State = @event.State;
+        UserId = @event.UserId;
+        Participants = users.Select(u => new UserLightDO(u));
+    }
 
     [Required]
-    public string Description { get; set; } = @event.Description;
+    public string Name { get; set; } = null!;
 
     [Required]
-    public string? Thumbnail { get; set; } = @event.Thumbnail;
+    public string Description { get; set; } = null!;
 
     [Required]
-    public string Markdown { get; set; } = @event.Markdown;
+    public string? Thumbnail { get; set; }
 
     [Required]
-    public int Capacity { get; set; } = @event.Capacity;
+    public string Markdown { get; set; } = null!;
 
     [Required]
-    public int? Threshold { get; set; } = @event.Threshold;
+    public int Capacity { get; set; }
 
     [Required]
-    public DateTimeOffset StartsAt { get; set; } = @event.StartsAt;
+    public int? Threshold { get; set; }
 
     [Required]
-    public DateTimeOffset EndsAt { get; set; } = @event.EndsAt;
+    public DateTimeOffset StartsAt { get; set; }
 
     [Required]
-    public DateTimeOffset ClosesAt { get; set; } = @event.ClosesAt;
+    public DateTimeOffset EndsAt { get; set; }
 
     [Required]
-    public EventState State { get; set; } = @event.State;
+    public DateTimeOffset ClosesAt { get; set; }
 
     [Required]
-    public Guid UserId { get; set; } = @event.UserId;
+    public EventState State { get; set; }
 
     [Required]
-    public IEnumerable<UserLightDO> Participants { get; set; } = users.Select(u => new UserLightDO(u));
+    public Guid UserId { get; set; }
+
+    [Required]
+    public IEnumerable<UserLightDO> Participants { get; set; } = [];
 }

@@ -14,31 +14,43 @@ namespace App.Backend.Models.Responses.Entities;
 /// <summary>
 /// Data object representing a user's goal enrollment.
 /// </summary>
-public class UserGoalDO(UserGoal userGoal) : BaseEntityDO<UserGoal>(userGoal)
+public class UserGoalDO : BaseEntityDO<UserGoal>
 {
-    [Required]
-    public Guid UserId { get; set; } = userGoal.UserId;
+    public UserGoalDO() { }
+
+    public UserGoalDO(UserGoal userGoal) : base(userGoal)
+    {
+        UserId = userGoal.UserId;
+        GoalId = userGoal.GoalId;
+        State = userGoal.State;
+        UnlocksAt = userGoal.UnlocksAt;
+        Goal = userGoal.Goal;
+        User = userGoal.User;
+    }
 
     [Required]
-    public Guid GoalId { get; set; } = userGoal.GoalId;
+    public Guid UserId { get; set; }
 
     [Required]
-    public EntityObjectState State { get; set; } = userGoal.State;
+    public Guid GoalId { get; set; }
 
     [Required]
-    public DateTimeOffset? UnlocksAt { get; set; } = userGoal.UnlocksAt;
+    public EntityObjectState State { get; set; }
+
+    [Required]
+    public DateTimeOffset? UnlocksAt { get; set; }
 
     /// <summary>
     /// The goal the user is enrolled in.
     /// </summary>
     [Required]
-    public GoalDO Goal { get; set; } = userGoal.Goal;
+    public GoalDO Goal { get; set; } = null!;
 
     /// <summary>
     /// The user enrolled in this goal.
     /// </summary>
     [Required]
-    public UserLightDO User { get; set; } = userGoal.User;
+    public UserLightDO User { get; set; } = null!;
 
     public static implicit operator UserGoalDO?(UserGoal? userGoal) =>
         userGoal is null ? null : new(userGoal);

@@ -16,13 +16,21 @@ namespace App.Backend.Models.Responses.Entities;
 /// <summary>
 /// Data object representing a user's goal enrollment.
 /// </summary>
-public class WorkspaceDO(Workspace workspace) : BaseEntityDO<Workspace>(workspace)
+public class WorkspaceDO : BaseEntityDO<Workspace>
 {
-    [Required]
-    public UserLightDO? Owner { get; set; } = workspace.Owner;
+    public WorkspaceDO() { }
+
+    public WorkspaceDO(Workspace workspace) : base(workspace)
+    {
+        Owner = workspace.Owner;
+        Ownership = workspace.Ownership;
+    }
 
     [Required]
-    public EntityOwnership Ownership { get; set; } = workspace.Ownership;
+    public UserLightDO? Owner { get; set; }
+
+    [Required]
+    public EntityOwnership Ownership { get; set; }
 
     public static implicit operator WorkspaceDO?(Workspace? workspace) => workspace is null ? null : new(workspace);
 }

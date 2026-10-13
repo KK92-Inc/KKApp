@@ -16,28 +16,38 @@ namespace App.Backend.Models.Responses.Entities.Projects;
 /// <summary>
 /// Data object representing a user's project instance/session.
 /// </summary>
-public class UserProjectLightDO(UserProject userProject) : BaseEntityDO<UserProject>(userProject)
+public class UserProjectLightDO : BaseEntityDO<UserProject>
 {
+    public UserProjectLightDO() { }
+
+    public UserProjectLightDO(UserProject userProject) : base(userProject)
+    {
+        State = userProject.State;
+        Project = userProject.Project;
+        GitInfo = userProject.GitInfo;
+        UnlocksAt = userProject.UnlocksAt;
+    }
+
     /// <summary>
     /// The current state of the object.
     /// </summary>
     [Required, Description("The current state of the object.")]
-    public EntityObjectState State { get; set; } = userProject.State;
+    public EntityObjectState State { get; set; }
 
     /// <summary>
     /// The project template this instance is based on.
     /// </summary>
     [Required, Description("The project template this instance is based on.")]
-    public ProjectLightDO Project { get; set; } = userProject.Project;
+    public ProjectLightDO Project { get; set; } = null!;
 
     /// <summary>
     /// Git repository information for this project instance.
     /// </summary>
     [Required, Description("Git repository information for this project instance.")]
-    public GitDO? GitInfo { get; set; } = userProject.GitInfo;
+    public GitDO? GitInfo { get; set; }
 
     [Required, Description("Determines if and how long there is a cooldown on acting on this session again.")]
-    public DateTimeOffset? UnlocksAt { get; set; } = userProject.UnlocksAt;
+    public DateTimeOffset? UnlocksAt { get; set; }
 
     public static implicit operator UserProjectLightDO?(UserProject? userProject) =>
         userProject is null ? null : new(userProject);

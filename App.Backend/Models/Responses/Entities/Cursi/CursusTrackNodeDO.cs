@@ -11,17 +11,17 @@ namespace App.Backend.Models.Responses.Entities.Cursi;
 public class CursusTrackNodeDO
 {
     [Required]
-    public required Guid GoalId { get; init; }
+    public required Guid GoalId { get; set; }
     
     [Required]
-    public required string Name { get; init; }
+    public required string Name { get; set; }
 
     [Required]
-    public required string Description { get; init; }
+    public required string Description { get; set; }
 
     [Required]
-    public required string Slug { get; init; }
+    public required string Slug { get; set; }
 
     [Required]
-    public Guid? ParentGoalId { get; init; }
+    public Guid? ParentGoalId { get; set; }
 }

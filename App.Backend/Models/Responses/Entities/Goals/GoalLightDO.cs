@@ -14,22 +14,33 @@ namespace App.Backend.Models.Responses.Entities.Goals;
 /// A lightweight version of <see cref="Goal"/> containing only minimal information.
 /// Used in nested responses (e.g., track nodes) to avoid heavy payloads.
 /// </summary>
-public class GoalLightDO(Goal goal) : BaseEntityDO<Goal>(goal)
+public class GoalLightDO : BaseEntityDO<Goal>
 {
-    [Required]
-    public string Name { get; set; } = goal.Name;
+    public GoalLightDO() { }
+
+    public GoalLightDO(Goal goal) : base(goal)
+    {
+        Name = goal.Name;
+        Slug = goal.Slug;
+        Enabled = goal.Enabled;
+        Public = goal.Public;
+        Deprecated = goal.Deprecated;
+    }
 
     [Required]
-    public string Slug { get; set; } = goal.Slug;
+    public string Name { get; set; } = null!;
 
     [Required]
-    public bool Enabled { get; set; } = goal.Enabled;
+    public string Slug { get; set; } = null!;
 
     [Required]
-    public bool Public { get; set; } = goal.Public;
+    public bool Enabled { get; set; }
 
     [Required]
-    public bool Deprecated { get; set; } = goal.Deprecated;
+    public bool Public { get; set; }
+
+    [Required]
+    public bool Deprecated { get; set; }
 
     public static implicit operator GoalLightDO?(Goal? goal) =>
         goal is null ? null : new(goal);

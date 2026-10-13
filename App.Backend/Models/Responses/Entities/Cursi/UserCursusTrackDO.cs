@@ -19,8 +19,8 @@ namespace App.Backend.Models.Responses.Entities.Cursi;
 public class UserCursusTrackDO
 {
     [Required]
-    public required CursusMode Mode { get; init; }
+    public required CursusMode Mode { get; set; }
 
     [Required]
-    public required IReadOnlyList<UserCursusTrackNodeDO> Nodes { get; init; }
+    public required IReadOnlyList<UserCursusTrackNodeDO> Nodes { get; set; }
 }

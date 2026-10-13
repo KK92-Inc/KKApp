@@ -12,10 +12,16 @@ namespace App.Backend.Models.Responses.Entities;
 /// <summary>
 /// A detailed data object representing a user.
 /// </summary>
-/// <param name="user"></param>
-public class UserDO(User user) : UserLightDO(user)
+public class UserDO : UserLightDO
 {
-    public UserDetailsDO? Details { get; set; } = user.Details;
+    public UserDO() { }
+
+    public UserDO(User user) : base(user)
+    {
+        Details = user.Details;
+    }
+
+    public UserDetailsDO? Details { get; set; }
 
     public static implicit operator UserDO?(User? user) => user is null ? null : new(user);
 }

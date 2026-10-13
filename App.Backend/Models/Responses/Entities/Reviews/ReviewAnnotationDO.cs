@@ -13,14 +13,23 @@ using App.Backend.Domain.Enums;
 
 namespace App.Backend.Models.Responses.Entities.Reviews;
 
-public class ReviewAnnotationDO(Review review, IEnumerable<AnnotationData> annotations)
+public class ReviewAnnotationDO
 {
-    [Required]
-    public Guid ReviewId { get; set; } = review.Id;
+    public ReviewAnnotationDO() { }
+
+    public ReviewAnnotationDO(Review review, IEnumerable<AnnotationData> annotations)
+    {
+        ReviewId = review.Id;
+        Author = review.Reviewer;
+        Annotations = annotations;
+    }
 
     [Required]
-    public UserBriefDO? Author { get; set; } = review.Reviewer;
+    public Guid ReviewId { get; set; }
 
     [Required]
-    public IEnumerable<AnnotationData> Annotations { get; set; } = annotations;
+    public UserBriefDO? Author { get; set; }
+
+    [Required]
+    public IEnumerable<AnnotationData> Annotations { get; set; } = [];
 }

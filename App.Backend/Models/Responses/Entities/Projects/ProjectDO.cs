@@ -11,13 +11,21 @@ using App.Backend.Domain.Entities;
 
 namespace App.Backend.Models.Responses.Entities.Projects;
 
-public class ProjectDO(Project project) : ProjectLightDO(project)
+public class ProjectDO : ProjectLightDO
 {
+    public ProjectDO() { }
+
+    public ProjectDO(Project project) : base(project)
+    {
+        GitInfo = project.Git;
+        Workspace = project.Workspace;
+    }
+
     [Required, Description("The associated Git repository information for this project.")]
-    public GitDO GitInfo { get; set; } = project.Git;
+    public GitDO GitInfo { get; set; } = null!;
 
     [Required, Description("The workspace to which this project belongs.")]
-    public WorkspaceDO Workspace { get; set; } = project.Workspace;
+    public WorkspaceDO Workspace { get; set; } = null!;
 
     /// <summary>
     /// implicitly converts a <see cref="Project"/> entity to a <see cref="ProjectDO"/>.

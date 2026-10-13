@@ -12,11 +12,19 @@ using App.Backend.Domain.Enums;
 
 namespace App.Backend.Models.Responses.Entities.Reviews;
 
-public class RubricVariantDO(RubricVariant variant)
+public class RubricVariantDO
 {
+    public RubricVariantDO() { }
+
+    public RubricVariantDO(RubricVariant variant)
+    {
+        Kind = variant.Kind;
+        Required = variant.Count;
+    }
+
     [Required, Description("The kind of review this variant represents.")]
-    public ReviewKinds Kind { get; set; } = variant.Kind;
+    public ReviewKinds Kind { get; set; }
 
     [Required, Description("How many reviews of this kind are required.")]
-    public int Required { get; set; } = variant.Count;
+    public int Required { get; set; }
 }

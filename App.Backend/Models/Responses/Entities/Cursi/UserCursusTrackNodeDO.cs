@@ -14,24 +14,24 @@ namespace App.Backend.Models.Responses.Entities.Cursi;
 public class UserCursusTrackNodeDO
 {
     [Required]
-    public required Guid GoalId { get; init; }
+    public required Guid GoalId { get; set; }
 
     [Required]
-    public required string Name { get; init; }
+    public required string Name { get; set; }
 
     [Required]
-    public required string Description { get; init; }
+    public required string Description { get; set; }
 
     [Required]
-    public required string Slug { get; init; }
+    public required string Slug { get; set; }
 
     [Required]
-    public Guid? ParentGoalId { get; init; }
+    public Guid? ParentGoalId { get; set; }
 
     /// <summary>Null if the user has no UserGoal row for this goal yet (hasn't started it).</summary>
     [Required]
-    public EntityObjectState? State { get; init; }
+    public EntityObjectState? State { get; set; }
 
     /// <summary>Whether the cursus's completion mode currently allows starting this goal.</summary>
-    public required bool IsUnlocked { get; init; }
+    public required bool IsUnlocked { get; set; }
 }

@@ -17,8 +17,8 @@ namespace App.Backend.Models.Responses.Entities.Cursi;
 public class CursusTrackDO
 {
     [Required]
-    public required CursusMode Mode { get; init; }
+    public required CursusMode Mode { get; set; }
     
     [Required]
-    public required IEnumerable<CursusTrackNodeDO> Nodes { get; init; }
+    public required IEnumerable<CursusTrackNodeDO> Nodes { get; set; }
 }

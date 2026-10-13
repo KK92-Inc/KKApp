@@ -15,28 +15,41 @@ namespace App.Backend.Models.Responses.Entities.Applications;
 /// <summary>
 /// Data object representing application registration details.
 /// </summary>
-public class ApplicationDO(Application application) : BaseEntityDO<Application>(application)
+public class ApplicationDO : BaseEntityDO<Application>
 {
-    [Required]
-    public string Name { get; set; } = application.Name;
+    public ApplicationDO() { }
+
+    public ApplicationDO(Application application) : base(application)
+    {
+        Name = application.Name;
+        ClientId = application.ClientId;
+        Description = application.Description;
+        Enabled = application.Enabled;
+        Scopes = application.Scopes;
+        RedirectUris = application.RedirectUris;
+        WorkspaceId = application.WorkspaceId;
+    }
 
     [Required]
-    public string ClientId { get; set; } = application.ClientId;
+    public string Name { get; set; } = null!;
 
     [Required]
-    public string Description { get; set; } = application.Description;
+    public string ClientId { get; set; } = null!;
 
     [Required]
-    public bool Enabled { get; set; } = application.Enabled;
+    public string Description { get; set; } = null!;
 
     [Required]
-    public ICollection<string> Scopes { get; set; } = application.Scopes;
+    public bool Enabled { get; set; }
 
     [Required]
-    public ICollection<string> RedirectUris { get; set; } = application.RedirectUris;
+    public ICollection<string> Scopes { get; set; } = [];
 
     [Required]
-    public Guid WorkspaceId { get; set; } = application.WorkspaceId;
+    public ICollection<string> RedirectUris { get; set; } = [];
+
+    [Required]
+    public Guid WorkspaceId { get; set; }
 
     public static implicit operator ApplicationDO?(Application? application) => 
         application is null ? null : new(application);

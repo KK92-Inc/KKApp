@@ -14,17 +14,27 @@ namespace App.Backend.Models.Responses.Entities;
 /// The bare minimum needed to render "who is this": name and avatar.
 /// Use this when a user is only referenced by another object. No email, role or timestamps.
 /// </summary>
-public class UserBriefDO(User user)
+public class UserBriefDO
 {
-    [Required]
-    public Guid Id { get; init; } = user.Id;
+    public UserBriefDO() { }
+
+    public UserBriefDO(User user)
+    {
+        Id = user.Id;
+        Login = user.Login;
+        DisplayName = user.Display;
+        AvatarUrl = user.AvatarUrl;
+    }
 
     [Required]
-    public string Login { get; init; } = user.Login;
+    public Guid Id { get; set; }
 
-    public string? DisplayName { get; init; } = user.Display;
+    [Required]
+    public string Login { get; set; } = null!;
 
-    public string? AvatarUrl { get; init; } = user.AvatarUrl;
+    public string? DisplayName { get; set; }
+
+    public string? AvatarUrl { get; set; }
 
     public static implicit operator UserBriefDO?(User? user) => user is null ? null : new(user);
 }

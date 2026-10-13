@@ -14,29 +14,41 @@ namespace App.Backend.Models.Responses.Entities;
 /// <summary>
 /// A lightweight version of <see cref="User"/> containing only minimal user information.
 /// </summary>
-/// <param name="user"></param>
-public class UserLightDO(User user) : BaseEntityDO<User>(user)
+public class UserLightDO : BaseEntityDO<User>
 {
-    [Required]
-    public string Login { get; set; } = user.Login;
+    public UserLightDO() { }
+
+    public UserLightDO(User user) : base(user)
+    {
+        Login = user.Login;
+        Email = user.Email;
+        Role = user.Role;
+        FirstName = user.FirstName;
+        LastName = user.LastName;
+        DisplayName = user.Display;
+        AvatarUrl = user.AvatarUrl;
+    }
 
     [Required]
-    public string Email { get; set; } = user.Email; 
+    public string Login { get; set; } = null!;
 
     [Required]
-    public UserRole Role { get; set; } = user.Role; 
+    public string Email { get; set; } = null!;
+
+    [Required]
+    public UserRole Role { get; set; }
     
     [Required]
-    public string FirstName { get; set; } = user.FirstName;
+    public string FirstName { get; set; } = null!;
 
     [Required]
-    public string LastName { get; set; } = user.LastName;
+    public string LastName { get; set; } = null!;
 
     [Required]
-    public string? DisplayName { get; set; } = user.Display;
+    public string? DisplayName { get; set; }
 
     [Required]
-    public string? AvatarUrl { get; set; } = user.AvatarUrl;
+    public string? AvatarUrl { get; set; }
 
     /// <summary>
     /// Utility operator to let us just pass the user entity into the constructor

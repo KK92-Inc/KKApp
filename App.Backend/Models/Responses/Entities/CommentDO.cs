@@ -13,21 +13,31 @@ namespace App.Backend.Models.Responses.Entities;
 /// <summary>
 /// Data object representing a comment on any entity.
 /// </summary>
-public class CommentDO(Comment comment) : BaseEntityDO<Comment>(comment)
+public class CommentDO : BaseEntityDO<Comment>
 {
-    [Required]
-    public string EntityType { get; set; } = comment.EntityType;
+    public CommentDO() { }
+
+    public CommentDO(Comment comment) : base(comment)
+    {
+        EntityType = comment.EntityType;
+        EntityId = comment.EntityId;
+        Body = comment.Body;
+        User = comment.User;
+    }
 
     [Required]
-    public Guid EntityId { get; set; } = comment.EntityId;
+    public string EntityType { get; set; } = null!;
 
     [Required]
-    public string Body { get; set; } = comment.Body;
+    public Guid EntityId { get; set; }
+
+    [Required]
+    public string Body { get; set; } = null!;
 
     /// <summary>
     /// The user who authored this comment.
     /// </summary>
-    public UserLightDO User { get; set; } = comment.User;
+    public UserLightDO User { get; set; } = null!;
 
     public static implicit operator CommentDO?(Comment? comment) =>
         comment is null ? null : new(comment);

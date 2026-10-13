@@ -13,19 +13,29 @@ using App.Backend.Domain.Enums;
 
 namespace App.Backend.Models.Responses.Entities;
 
-public class FreezeDO(Freeze freeze) : BaseEntityDO<Freeze>(freeze)
+public class FreezeDO : BaseEntityDO<Freeze>
 {
-    [Required]
-    public string Reason { get; set; } = freeze.Reason;
+    public FreezeDO() { }
+
+    public FreezeDO(Freeze freeze) : base(freeze)
+    {
+        Reason = freeze.Reason;
+        StartsAt = freeze.StartsAt;
+        EndsAt = freeze.EndsAt;
+        User = freeze.User;
+    }
 
     [Required]
-    public DateTimeOffset StartsAt { get; set; } = freeze.StartsAt;
+    public string Reason { get; set; } = null!;
 
     [Required]
-    public DateTimeOffset EndsAt { get; set; } = freeze.EndsAt;
+    public DateTimeOffset StartsAt { get; set; }
 
     [Required]
-    public UserLightDO User { get; set; } = freeze.User;
+    public DateTimeOffset EndsAt { get; set; }
+
+    [Required]
+    public UserLightDO User { get; set; } = null!;
 
     public static implicit operator FreezeDO?(Freeze? freeze) => freeze is null ? null : new(freeze);
 }

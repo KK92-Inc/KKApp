@@ -14,31 +14,45 @@ namespace App.Backend.Models.Responses.Entities;
 /// <summary>
 /// Data object representing a goal/learning objective.
 /// </summary>
-public class GoalDO(Goal goal) : BaseEntityDO<Goal>(goal)
+public class GoalDO : BaseEntityDO<Goal>
 {
-    [Required]
-    public string Name { get; set; } = goal.Name;
+    public GoalDO() { }
+
+    public GoalDO(Goal goal) : base(goal)
+    {
+        Name = goal.Name;
+        Description = goal.Description;
+        Slug = goal.Slug;
+        Thumbnail = goal.Thumbnail;
+        Enabled = goal.Enabled;
+        Public = goal.Public;
+        Deprecated = goal.Deprecated;
+        Workspace = goal.Workspace;
+    }
 
     [Required]
-    public string Description { get; set; } = goal.Description;
+    public string Name { get; set; } = null!;
 
     [Required]
-    public string Slug { get; set; } = goal.Slug;
+    public string Description { get; set; } = null!;
+
+    [Required]
+    public string Slug { get; set; } = null!;
 
     [Required, Description("The URL to the image containing the thumbnail of the goal.")]
-    public string? Thumbnail { get; set; } = goal.Thumbnail;
+    public string? Thumbnail { get; set; }
 
     [Required]
-    public bool Enabled { get; set; } = goal.Enabled;
+    public bool Enabled { get; set; }
 
     [Required]
-    public bool Public { get; set; } = goal.Public;
+    public bool Public { get; set; }
 
     [Required]
-    public bool Deprecated { get; set; } = goal.Deprecated;
+    public bool Deprecated { get; set; }
 
     [Required]
-    public WorkspaceDO Workspace { get; set; } = goal.Workspace;
+    public WorkspaceDO Workspace { get; set; } = null!;
 
     public static implicit operator GoalDO?(Goal? goal) => goal is null ? null : new(goal);
 }

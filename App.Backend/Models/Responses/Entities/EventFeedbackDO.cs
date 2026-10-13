@@ -12,23 +12,32 @@ using App.Backend.Domain.Enums;
 
 namespace App.Backend.Models.Responses.Entities;
 
-public class EventFeedbackDO(EventFeedback feedback, Comment comment) : BaseEntityDO<EventFeedback>(feedback)
+public class EventFeedbackDO : BaseEntityDO<EventFeedback>
 {
+    public EventFeedbackDO() { }
+
+    public EventFeedbackDO(EventFeedback feedback, Comment comment) : base(feedback)
+    {
+        EventId = feedback.EventId;
+        Rating = feedback.Rating;
+        Comment = new(comment);
+    }
+
     /// <summary>
     /// The event this feedback relates to.
     /// </summary>
     [Required]
-    public Guid EventId { get; set; } = feedback.EventId;
+    public Guid EventId { get; set; }
 
     /// <summary>
     /// A rating from 0-10 on how to the event was.
     /// </summary>
     [Required]
-    public int Rating { get; set; } = feedback.Rating;
+    public int Rating { get; set; }
 
     /// <summary>
     /// The comment the user left.
     /// </summary>
     [Required]
-    public CommentDO Comment { get; set; } = new(comment);
+    public CommentDO Comment { get; set; } = null!;
 }

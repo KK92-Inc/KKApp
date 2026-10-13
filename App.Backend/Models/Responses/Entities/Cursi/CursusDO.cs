@@ -11,37 +11,53 @@ using App.Backend.Domain.Enums;
 
 namespace App.Backend.Models.Responses.Entities.Cursi;
 
-public class CursusDO(Cursus cursus) : BaseEntityDO<Cursus>(cursus)
+public class CursusDO : BaseEntityDO<Cursus>
 {
-    [Required]
-    public string Name { get; set; } = cursus.Name;
+    public CursusDO() { }
+
+    public CursusDO(Cursus cursus) : base(cursus)
+    {
+        Name = cursus.Name;
+        Description = cursus.Description;
+        Slug = cursus.Slug;
+        Thumbnail = cursus.Thumbnail;
+        Enabled = cursus.Enabled;
+        Public = cursus.Public;
+        Deprecated = cursus.Deprecated;
+        Variant = cursus.Variant;
+        Mode = cursus.Mode;
+        Workspace = cursus.Workspace;
+    }
 
     [Required]
-    public string Description { get; set; } = cursus.Description;
+    public string Name { get; set; } = null!;
 
     [Required]
-    public string Slug { get; set; } = cursus.Slug;
+    public string Description { get; set; } = null!;
 
     [Required]
-    public string? Thumbnail { get; set; } = cursus.Thumbnail;
+    public string Slug { get; set; } = null!;
 
     [Required]
-    public bool Enabled { get; set; } = cursus.Enabled;
+    public string? Thumbnail { get; set; }
 
     [Required]
-    public bool Public { get; set; } = cursus.Public;
+    public bool Enabled { get; set; }
 
     [Required]
-    public bool Deprecated { get; set; } = cursus.Deprecated;
+    public bool Public { get; set; }
 
     [Required]
-    public CursusVariant Variant { get; set; } = cursus.Variant;
+    public bool Deprecated { get; set; }
 
     [Required]
-    public CursusMode Mode { get; set; } = cursus.Mode;
+    public CursusVariant Variant { get; set; }
+
+    [Required]
+    public CursusMode Mode { get; set; }
     
     [Required]
-    public WorkspaceDO Workspace { get; set; } = cursus.Workspace;
+    public WorkspaceDO Workspace { get; set; } = null!;
 
     public static implicit operator CursusDO?(Cursus? cursus) => cursus is null ? null : new(cursus);
 }

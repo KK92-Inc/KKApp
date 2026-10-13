@@ -13,8 +13,15 @@ namespace App.Backend.Models.Responses.Entities.Applications;
 /// <summary>
 /// Data object returned strictly on initialization containing the plain text OIDC credential secret.
 /// </summary>
-public class ApplicationWithSecretDO(Application application, string clientSecret) : ApplicationDO(application)
+public class ApplicationWithSecretDO : ApplicationDO
 {
+    public ApplicationWithSecretDO() { }
+
+    public ApplicationWithSecretDO(Application application, string clientSecret) : base(application)
+    {
+        ClientSecret = clientSecret;
+    }
+
     [Required]
-    public string ClientSecret { get; set; } = clientSecret;
+    public string ClientSecret { get; set; } = null!;
 }

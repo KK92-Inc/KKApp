@@ -18,6 +18,8 @@ namespace App.Backend.Models.Responses.Entities.Notifications;
 /// </summary>
 public class NotificationDO : BaseEntityDO<Notification>
 {
+    public NotificationDO() { }
+
     public NotificationDO(Notification notification) : base(notification)
     {
         Descriptor = notification.Descriptor;
@@ -30,7 +32,7 @@ public class NotificationDO : BaseEntityDO<Notification>
     /// Polymorphic data.
     /// </summary>
     [Required]
-    public NotificationData Data { get; set; }
+    public NotificationData Data { get; set; } = null!;
 
     /// <summary>
     /// The notification descriptor outlining what the notification basically is
