@@ -2,49 +2,52 @@
 // W2Inc, 2025, All Rights Reserved.
 // See README in the root project for more information.
 // ============================================================================
-// Keycloak OAuth integration for SvelteKit.
-// ============================================================================
 
 import * as jose from 'jose';
 import { dev } from '$app/environment';
-import { KC_ORIGIN, KC_REALM, KC_COOKIE, KC_ID, KC_CALLBACK, KC_SECRET } from '$lib/config';
-import { JWSInvalid, JWTClaimValidationFailed, JWTExpired, JWTInvalid } from 'jose/errors';
-import { ensure } from './utils';
-import { isRedirect, redirect, type Handle, type RequestEvent, type RequestHandler } from '@sveltejs/kit';
-import { Log } from './log';
-import { redis } from './redis';
 import { getRequestEvent } from '$app/server';
 import { randomBytes, createHash } from 'crypto';
+import { isRedirect, redirect, type Cookies, type Handle, type RequestEvent, type RequestHandler } from '@sveltejs/kit';
+import { KC_ORIGIN, KC_REALM, KC_COOKIE, KC_ID, KC_CALLBACK, KC_SECRET } from '$lib/config';
 import { isPublic } from '../routes/index.svelte';
+import { ensure } from './utils';
+import { redis } from './redis';
+import { Log } from './log';
 
 // ============================================================================
-// URLs
-// ============================================================================
 
-const KC_BASE = () => `${KC_ORIGIN}/realms/${KC_REALM}/protocol/openid-connect`;
-const AUTH_URL = () => `${KC_BASE()}/auth`;
-const CERTS_URL = () => `${KC_BASE()}/certs`;
-const TOKEN_URL = () => `${KC_BASE()}/token`;
-const REVOKE_URL = () => `${KC_BASE()}/logout`;
-
-const JWKS = jose.createRemoteJWKSet(new URL(CERTS_URL()));
+const OIDC = `${KC_ORIGIN}/realms/${KC_REALM}/protocol/openid-connect`;
+const JWKS = jose.createRemoteJWKSet(new URL(`${OIDC}/certs`));
 
 const COOKIE_ACCESS = `${KC_COOKIE}-A`;
 const COOKIE_REFRESH = `${KC_COOKIE}-R`;
 const COOKIE_STATE = `${KC_COOKIE}-S`;
 const COOKIE_VERIFIER = `${KC_COOKIE}-V`;
-const COOKIE_FROM = `${KC_COOKIE}-F`; // post-login destination
+/** Where to send the user after logging in. */
+const COOKIE_FROM = `${KC_COOKIE}-F`;
 
-const UMA_TTL = 60; // seconds
+/**
+ * An access token with less than this many seconds left counts as expired and
+ * is refreshed up front, so a request never goes out with a token that dies
+ * halfway through it.
+ */
+const REFRESH_AHEAD = 15;
+/** UMA Time To Live inside redis, in seconds.*/
+const UMA_TTL = 60;
+/** Functiont to get the key name for the uma token. */
 const umaKey = (sub: string) => `uma:${sub}`;
 
-// A resolve() function has the same shape wherever it shows up (handle,
-// callback, etc.) — alias it once so the flow helpers below don't need to
-// repeat SvelteKit's inline type.
-type Resolve = Parameters<Handle>[0]['resolve'];
+// Verification failures that mean "try the refresh token"
+const UNUSABLE = [
+	jose.errors.JWTExpired,
+	jose.errors.JWTInvalid,
+	jose.errors.JWTClaimValidationFailed,
+	jose.errors.JWSInvalid,
+	// Signed by a key the realm no longer has (Keycloak recreated / keys rotated).
+	jose.errors.JWSSignatureVerificationFailed,
+	jose.errors.JWKSNoMatchingKey
+];
 
-// ============================================================================
-// Types
 // ============================================================================
 
 export interface Session {
@@ -67,12 +70,7 @@ interface TokenClaims extends jose.JWTPayload {
 }
 
 interface UMAClaims extends TokenClaims {
-	authorization: {
-		permissions: {
-			scopes?: string[];
-			rsname: string;
-		}[];
-	};
+	authorization: { permissions: { scopes?: string[]; rsname: string }[] };
 }
 
 interface TokenResponse {
@@ -83,8 +81,6 @@ interface TokenResponse {
 }
 
 // ============================================================================
-// Cookie helper
-// ============================================================================
 
 const cookieOpts = (maxAge?: number) => ({
 	path: '/',
@@ -94,310 +90,266 @@ const cookieOpts = (maxAge?: number) => ({
 	...(maxAge && { maxAge })
 });
 
-// ============================================================================
-// Keycloak API client (raw HTTP calls, no session/cookie concerns)
+function apply(cookies: Cookies, tokens: TokenResponse) {
+	cookies.set(COOKIE_ACCESS, tokens.access_token, cookieOpts(tokens.expires_in));
+	cookies.set(COOKIE_REFRESH, tokens.refresh_token, cookieOpts());
+}
+
+function drop(cookies: Cookies) {
+	cookies.delete(COOKIE_ACCESS, { path: '/' });
+	cookies.delete(COOKIE_REFRESH, { path: '/' });
+}
+
 // ============================================================================
 
-async function post(url: string, body: URLSearchParams, bearer?: string): Promise<Response> {
+function post(url: string, params: Record<string, string>, bearer?: string) {
 	return fetch(url, {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/x-www-form-urlencoded',
 			...(bearer && { Authorization: `Bearer ${bearer}` })
 		},
-		body
+		body: new URLSearchParams({
+			client_id: KC_ID!,
+			client_secret: KC_SECRET!,
+			...params
+		})
 	});
 }
 
-async function exchange(code: string, verifier: string): Promise<TokenResponse> {
-	const res = await post(TOKEN_URL(), new URLSearchParams({
-		grant_type: 'authorization_code',
-		client_id: KC_ID!,
-		client_secret: KC_SECRET!,
-		redirect_uri: KC_CALLBACK!,
-		code,
-		code_verifier: verifier
-	}));
-	if (!res.ok) throw new Error(`Code exchange failed (${res.status}): ${await res.text()}`);
+async function grant(params: Record<string, string>): Promise<TokenResponse> {
+	const res = await post(`${OIDC}/token`, params);
+	if (!res.ok) throw new Error(`Token request failed (${res.status}): ${await res.text()}`);
 	return res.json();
 }
 
-async function renew(token: string): Promise<TokenResponse> {
-	const res = await post(TOKEN_URL(), new URLSearchParams({
-		grant_type: 'refresh_token',
-		refresh_token: token,
-		client_id: KC_ID!,
-		client_secret: KC_SECRET!
-	}));
-	if (!res.ok) throw new Error(`Token refresh failed (${res.status}): ${await res.text()}`);
-	return res.json();
-}
+const exchange = (code: string, verifier: string) => grant({
+	grant_type: 'authorization_code',
+	redirect_uri: KC_CALLBACK!,
+	code,
+	code_verifier: verifier
+});
 
-async function uma(accessToken: string): Promise<string> {
-	const res = await post(TOKEN_URL(), new URLSearchParams({
-		grant_type: 'urn:ietf:params:oauth:grant-type:uma-ticket',
-		audience: KC_ID!,
-		client_id: KC_ID!,
-		client_secret: KC_SECRET!
-	}), accessToken);
+const renew = (refresh_token: string) => grant({
+	grant_type: 'refresh_token',
+	refresh_token
+});
 
-	const data = await res.json() as { access_token?: string };
-	if (!res.ok || !data.access_token) {
-		throw new Error(`UMA ticket failed (${res.status}): ${res.statusText}`);
-	}
-	return data.access_token;
-}
+// ============================================================================
 
-async function revoke(token: string, hint: 'access_token' | 'refresh_token'): Promise<void> {
-	const res = await post(REVOKE_URL(), new URLSearchParams({
-		token,
-		client_id: KC_ID!,
-		client_secret: KC_SECRET!,
-		token_type_hint: hint
-	}));
+async function revoke(token: string, hint: 'access_token' | 'refresh_token') {
+	const res = await post(`${OIDC}/logout`, { token, token_type_hint: hint });
 	if (!res.ok && res.status !== 400) {
 		throw new Error(`Revocation failed (${res.status})${dev ? `: ${await res.text()}` : ''}`);
 	}
 }
 
-// ============================================================================
-// Session building
-// ============================================================================
+/** Exchanges the access token for an RPT, whose `authorization` claim lists what the user may do. */
+async function uma(accessToken: string) {
+	const res = await post(`${OIDC}/token`, {
+		grant_type: 'urn:ietf:params:oauth:grant-type:uma-ticket',
+		audience: KC_ID!
+	}, accessToken);
 
-// Redis-cached UMA permission lookup for a user. Cache miss → fetch a fresh
-// RPT from Keycloak and cache the flattened scope/resource list.
+	const data = (await res.json()) as { access_token?: string };
+	if (!res.ok || !data.access_token)
+		throw new Error(`UMA ticket failed (${res.status}): ${res.statusText}`);
+	return data.access_token;
+}
+
+/** The user's permissions, cached in Redis for UMA_TTL seconds. */
 async function permissions(sub: string, accessToken: string): Promise<string[]> {
-	const key = umaKey(sub);
-	const cached = await redis.get(key).catch(() => null);
+	const cached = await redis.get(umaKey(sub)).catch(() => null);
 	if (cached) return cached.split(',');
 
-	Log.dbg(`UMA cache miss for ${sub}`);
 	const [rpt, err] = await ensure(uma(accessToken));
 	if (err) {
 		Log.wrn('UMA ticket fetch failed, permissions will be empty:', err);
 		return [];
 	}
 
-	const ticket = jose.decodeJwt(rpt) as UMAClaims;
-	const scopes = ticket.authorization.permissions.flatMap((p) =>
-		p.scopes?.length ? p.scopes : [p.rsname]
-	);
-
+	const { authorization } = jose.decodeJwt(rpt) as UMAClaims;
+	const scopes = authorization.permissions.flatMap((p) => (p.scopes?.length ? p.scopes : [p.rsname]));
 	if (scopes.length > 0) {
-		await redis.set(key, scopes.join(','), 'EX', UMA_TTL).catch((e) =>
+		await redis.set(umaKey(sub), scopes.join(','), 'EX', UMA_TTL).catch((e) =>
 			Log.wrn('Redis SET failed (permissions uncached):', e)
 		);
 	}
 	return scopes;
 }
 
-// Maps a verified JWT payload + its permissions into our Session shape.
-async function build(accessToken: string, payload: jose.JWTPayload): Promise<Session> {
-	const claims = payload as TokenClaims;
-	const resRoles = Object.values(claims.resource_access ?? {}).flatMap((r) => r.roles);
-
+async function session(accessToken: string, claims: TokenClaims): Promise<Session> {
+	const resourceRoles = Object.values(claims.resource_access ?? {}).flatMap((r) => r.roles);
 	return {
 		userId: claims.admin_user_id ?? claims.sub,
 		username: claims.preferred_username,
 		email: claims.email,
 		verified: claims.email_verified,
-		roles: [...claims.realm_access.roles, ...resRoles],
-		permissions: await permissions(claims.sub, accessToken)
+		roles: [...claims.realm_access.roles, ...resourceRoles],
+		permissions: await permissions(claims.sub, accessToken) as Scopes[] // Technically fine...
 	};
 }
 
-// ============================================================================
-// Remote-function "unauthenticated" envelope
-// ============================================================================
+/**
+ * The token's claims if it is valid and has more than REFRESH_AHEAD seconds
+ * left, undefined if it is unusable. Anything else (Keycloak unreachable, ...)
+ * is a real failure and is thrown.
+ */
+async function verify(token: string) {
+	const [jwt, err] = await ensure(jose.jwtVerify<TokenClaims>(token, JWKS));
+	if (err) {
+		if (UNUSABLE.some((E) => err instanceof E)) {
+			Log.dbg('Access token unusable:', err.message);
+			return;
+		}
+		throw err;
+	}
+
+	const left = (jwt.payload.exp ?? 0) - Date.now() / 1000;
+	return left > REFRESH_AHEAD ? jwt.payload : undefined;
+}
 
 /**
- * Shape SvelteKit's remote-function client already knows how to unwrap as
- * an error, tagged so app code can tell "not logged in" apart from any
- * other failure and react (e.g. `goto('/auth')`) instead of just showing
- * an error state.
- *
- * The outer HTTP status is 200 on purpose — the remote-function runtime
- * reads the envelope's own `status` field, not the transport status.
+ * Resolves the request's session, refreshing the tokens first when the access
+ * token is missing, expired or about to be. Undefined means logged out.
  */
-function denied(): Response {
-	return new Response(
-		JSON.stringify({ type: 'error', error: { message: 'unauthenticated' }, status: 401 }),
-		{ status: 200, headers: { 'content-type': 'application/json' } }
+async function authenticate({ cookies }: RequestEvent): Promise<Session | undefined> {
+	let access = cookies.get(COOKIE_ACCESS);
+	let claims = access ? await verify(access) : undefined;
+
+	if (!claims) {
+		const refresh = cookies.get(COOKIE_REFRESH);
+		if (!refresh) return;
+
+		const [tokens, err] = await ensure(renew(refresh));
+		if (err) {
+			Log.dbg('Refresh failed:', err);
+			return;
+		}
+
+		apply(cookies, tokens);
+		access = tokens.access_token;
+		claims = await verify(access);
+		if (!claims) return;
+
+		// Roles may have changed, don't serve permissions cached for the old token.
+		await redis.del(umaKey(claims.sub)).catch(() => { });
+	}
+
+	return session(access!, claims);
+}
+
+/**
+ * The response for a request that has no (or no longer a) session.
+ *
+ * Remote functions can't be redirected, a `command` in particular, so they get
+ * a 401 the client turns into an HttpError. The cookies are dropped with raw
+ * Set-Cookie headers because `event.cookies` is only flushed onto responses
+ * produced by `resolve()` or a thrown redirect, never one returned from here.
+ *
+ * Everything else is sent to /auth, remembering where it was headed.
+ */
+function unauthenticated(event: RequestEvent, body?: BodyInit | null, headers?: HeadersInit): Response {
+	if (!event.isRemoteRequest) {
+		drop(event.cookies);
+		event.cookies.set(COOKIE_FROM, event.url.pathname, cookieOpts(60 * 10));
+		redirect(303, '/auth');
+	}
+
+	const response = new Response(
+		body ?? JSON.stringify({ type: 'error', error: { message: 'unauthenticated' }, status: 401 }),
+		{ status: 401, statusText: 'Unauthorized', headers: headers ?? { 'content-type': 'application/json' } }
 	);
+	for (const name of [COOKIE_ACCESS, COOKIE_REFRESH]) {
+		response.headers.append('set-cookie', `${name}=; Path=/; Max-Age=0`);
+	}
+	return response;
 }
 
-// ============================================================================
-
-// Single "you're not logged in (anymore)" exit point.
-function bounce(event: RequestEvent, userId?: string): Response {
-	event.cookies.delete(COOKIE_ACCESS, { path: '/' });
-	event.cookies.delete(COOKIE_REFRESH, { path: '/' });
-	if (userId) redis.del(umaKey(userId)).catch(() => { });
-
-	if (event.isRemoteRequest) return denied();
-
-	event.cookies.set(COOKIE_FROM, event.url.pathname, cookieOpts(60 * 10));
-	redirect(303, '/auth'); // throws; SvelteKit performs the actual redirect
-}
-
-function apply(event: RequestEvent, tokens: TokenResponse): void {
-	event.cookies.set(COOKIE_ACCESS, tokens.access_token, cookieOpts(tokens.expires_in));
-	event.cookies.set(COOKIE_REFRESH, tokens.refresh_token, cookieOpts());
-}
-
-// A remote function can smuggle its own 401 back out through its error
-// envelope (e.g. an authorization check further down in app code) after
-// we've already handed it a session. We can't throw a redirect from out
-// here to react to that, so once one goes by we scrub the now-stale
-// cookies on the way out instead.
-async function guard(event: RequestEvent, resolve: Resolve): Promise<Response> {
+/**
+ * Resolves the request, and if a remote function inside it ended in a 401 of
+ * its own (the backend turned the token down despite us trusting it), ends the
+ * session the same way as if we had caught it ourselves.
+ */
+async function resolveGuarded(event: RequestEvent, resolve: Parameters<Handle>[0]['resolve']) {
 	const response = await resolve(event);
 	if (!event.isRemoteRequest) return response;
 
 	const [body] = await ensure(response.clone().json());
 	if ((body as { status?: number } | null)?.status !== 401) return response;
 
-	Log.dbg('Remote function reported 401, clearing stale auth cookies');
-	const cleared = new Response(response.body, response);
-	cleared.headers.append('set-cookie', `${COOKIE_ACCESS}=; Path=/; Max-Age=0`);
-	cleared.headers.append('set-cookie', `${COOKIE_REFRESH}=; Path=/; Max-Age=0`);
-	return cleared;
+	Log.dbg('Remote function reported 401, ending the session');
+	return unauthenticated(event, response.body, response.headers);
 }
 
-// Validates the access token and either resolves the request with a session
-// attached, or falls through to a refresh (if we have one) / bounce.
-async function verify(event: RequestEvent, resolve: Resolve, access: string, fallback?: string): Promise<Response> {
-	const [jwt, err] = await ensure(jose.jwtVerify(access, JWKS));
-
-	if (err instanceof JWTClaimValidationFailed) {
-		Log.dbg('JWT claim validation failed:', err.message);
-		return bounce(event);
-	}
-
-	if (err instanceof JWTExpired || err instanceof JWTInvalid || err instanceof JWSInvalid) {
-		Log.dbg('Access token expired/invalid:', err.message);
-		return fallback ? rotate(event, resolve, fallback) : bounce(event);
-	}
-
-	if (err) {
-		Log.err('Unexpected JWT error:', err);
-		return new Response('Authentication error', { status: 500 });
-	}
-
-	const [session, sessionErr] = await ensure(build(access, jwt!.payload));
-	if (sessionErr) {
-		Log.err('Session create failed:', sessionErr);
-		await redis.del(umaKey(jwt!.payload.sub ?? '')).catch(() => { });
-		return new Response('Failed to create session', { status: 502 });
-	}
-
-	event.locals.session = session;
-	return guard(event, resolve);
-}
-
-// Exchanges the refresh token for a new pair and re-verifies with the new
-// access token. Falls through to bounce() if the refresh token is dead.
-async function rotate(event: RequestEvent, resolve: Resolve, token: string): Promise<Response> {
-	const [tokens, err] = await ensure(renew(token));
-	if (err) {
-		Log.dbg('Refresh failed:', err);
-		return bounce(event);
-	}
-
-	apply(event, tokens);
-	await redis.del(umaKey(jose.decodeJwt(tokens.access_token).sub ?? '')).catch(() => { });
-	return verify(event, resolve, tokens.access_token);
-}
-
-// ============================================================================
-// SvelteKit handle
 // ============================================================================
 
 const handle: Handle = async ({ event, resolve }) => {
 	if (isPublic(event.url.pathname)) return resolve(event);
 
-	const access = event.cookies.get(COOKIE_ACCESS);
-	const refreshToken = event.cookies.get(COOKIE_REFRESH);
-	if (!access && !refreshToken) {
-		return bounce(event);
+	try {
+		const current = await authenticate(event);
+		if (!current) return unauthenticated(event);
+
+		event.locals.session = current;
+		return await resolveGuarded(event, resolve);
+	} catch (err) {
+		if (isRedirect(err)) throw err; // SvelteKit performs the actual redirect
+		Log.err('Authentication failed:', err);
+		return new Response('Authentication error', { status: 500 });
 	}
-
-	const [response, err] = await ensure(
-		access ? verify(event, resolve, access, refreshToken) : rotate(event, resolve, refreshToken!)
-	);
-
-	if (err) {
-		// TODO: does this make any sense still ?
-		if (isRedirect(err)) {
-			throw err; // re-throw so SvelteKit handles standard or RPC redirects natively
-		}
-		Log.err('Unhandled error in auth handle:', err);
-		return new Response(null, { status: 500 });
-	}
-
-	return response;
 };
 
-// ============================================================================
-// Server-side actions
-// ============================================================================
-
+/** Sign the user in */
 function signIn(): never {
 	const { cookies } = getRequestEvent();
 
 	const state = randomBytes(32).toString('hex');
 	const verifier = randomBytes(32).toString('base64url');
-
 	cookies.set(COOKIE_STATE, state, cookieOpts(60 * 10));
 	cookies.set(COOKIE_VERIFIER, verifier, cookieOpts(60 * 10));
 
-	const challenge = createHash('sha256').update(verifier).digest('base64url');
 	const params = new URLSearchParams({
 		client_id: KC_ID!,
 		redirect_uri: KC_CALLBACK!,
 		response_type: 'code',
 		scope: 'openid profile email roles',
 		state,
-		code_challenge: challenge,
+		code_challenge: createHash('sha256').update(verifier).digest('base64url'),
 		code_challenge_method: 'S256'
 	});
 
-	Log.dbg(`${KC_ORIGIN}/realms/${KC_REALM}/protocol/openid-connect`)
-	redirect(303, `${AUTH_URL()}?${params}`);
+	redirect(303, `${OIDC}/auth?${params}`);
 }
 
+/** Signs out the user and revokes the tokens. */
 async function signOut(): Promise<never> {
 	const { cookies, locals } = getRequestEvent();
-
-	const accessToken = cookies.get(COOKIE_ACCESS);
-	const refreshToken = cookies.get(COOKIE_REFRESH);
+	const access = cookies.get(COOKIE_ACCESS);
+	const refresh = cookies.get(COOKIE_REFRESH);
 
 	await Promise.allSettled([
-		accessToken && revoke(accessToken, 'access_token'),
-		refreshToken && revoke(refreshToken, 'refresh_token'),
+		access && revoke(access, 'access_token'),
+		refresh && revoke(refresh, 'refresh_token'),
 		locals.session?.userId && redis.del(umaKey(locals.session.userId))
 	]);
 
-	cookies.delete(COOKIE_ACCESS, { path: '/' });
-	cookies.delete(COOKIE_REFRESH, { path: '/' });
+	drop(cookies);
 	redirect(303, '/');
 }
 
-// ============================================================================
-// Callback
-// ============================================================================
-
+/** OAuth Callback */
 const callback: RequestHandler = async ({ url, cookies }) => {
 	const code = url.searchParams.get('code');
 	const state = url.searchParams.get('state');
-	const original = cookies.get(COOKIE_STATE);
+	const expected = cookies.get(COOKIE_STATE);
 	const verifier = cookies.get(COOKIE_VERIFIER);
 
 	cookies.delete(COOKIE_STATE, { path: '/' });
 	cookies.delete(COOKIE_VERIFIER, { path: '/' });
 
-	if (!code || !state || !original || state !== original || !verifier) {
-		Log.wrn('Callback: invalid state/verifier', { code: !!code, state, original, verifier: !!verifier });
+	if (!code || !state || !expected || state !== expected || !verifier) {
+		Log.wrn('Callback: invalid state/verifier', { code: !!code, state, expected, verifier: !!verifier });
 		return new Response('Bad request', { status: 400 });
 	}
 
@@ -407,8 +359,7 @@ const callback: RequestHandler = async ({ url, cookies }) => {
 		return new Response('Token exchange failed', { status: 502 });
 	}
 
-	cookies.set(COOKIE_ACCESS, tokens!.access_token, cookieOpts(tokens!.expires_in));
-	cookies.set(COOKIE_REFRESH, tokens!.refresh_token, cookieOpts());
+	apply(cookies, tokens);
 	const destination = cookies.get(COOKIE_FROM) ?? '/';
 	cookies.delete(COOKIE_FROM, { path: '/' });
 

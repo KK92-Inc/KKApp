@@ -7,17 +7,19 @@ import { command, getRequestEvent } from '$app/server';
 import { Problem } from '$lib/api';
 import { BACKEND_URI } from '$lib/config';
 import type { components } from '$lib/api/api';
+import { Keycloak } from '$lib/auth';
 
 // ============================================================================
 // Commands
 // ============================================================================
 
 export const chat = command("unchecked", async (input: components['schemas']['PostAgentChatRequestDTO']) => {
-	const { fetch } = getRequestEvent();
+	const { fetch, cookies } = getRequestEvent();
 	const response = await fetch(`${BACKEND_URI}/agent/chat`, {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
+			'Authorization': `Bearer ${cookies.get(Keycloak.COOKIE_ACCESS)}`
 		},
 		body: JSON.stringify(input),
 		signal: AbortSignal.timeout(330_000)
