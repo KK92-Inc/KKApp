@@ -20,7 +20,7 @@ public class SystemController(ISystemService service, IMessageBus bus) : Control
 {
     [HttpGet]
     [AllowAnonymous]
-    [ExcludeFromDescription]
+    [ApiExplorerSettings(IgnoreApi = true)]
     public async Task<IActionResult> Query(CancellationToken token)
     {
         var entry = await service.CheckAsync(token);
@@ -29,7 +29,7 @@ public class SystemController(ISystemService service, IMessageBus bus) : Control
 
     [HttpPost]
     [AllowAnonymous]
-    [ExcludeFromDescription]
+    [ApiExplorerSettings(IgnoreApi = true)]
     public async Task<IActionResult> Bootstrap([FromBody] SystemInitDTO body, CancellationToken token)
     {
         var account = await service.InitializeAsync(body.Login, body.Firstname, body.Lastname, body.Email, token);

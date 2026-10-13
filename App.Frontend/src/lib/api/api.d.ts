@@ -99,9 +99,9 @@ export interface paths {
                     /** @description The sort direction. */
                     "sort[order]"?: components["schemas"]["Order"];
                     /** @description The 0-based page index */
-                    "page[index]"?: number | string;
+                    "page[index]"?: number;
                     /** @description The amount of results per page */
-                    "page[size]"?: number | string;
+                    "page[size]"?: number;
                 };
                 header?: never;
                 path?: never;
@@ -329,9 +329,9 @@ export interface paths {
                     /** @description The sort direction. */
                     "sort[order]"?: components["schemas"]["Order"];
                     /** @description The 0-based page index */
-                    "page[index]"?: number | string;
+                    "page[index]"?: number;
                     /** @description The amount of results per page */
-                    "page[size]"?: number | string;
+                    "page[size]"?: number;
                 };
                 header?: never;
                 path?: never;
@@ -677,110 +677,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/agent/chat": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Chat with the administrative agent
-         * @description Runs one turn of the staff agent. Stateless: send the full history, get back the new messages. Changes require approval: when 'pending' is set, repeat the call with 'decision'.
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["PostAgentChatRequestDTO"];
-                    "text/json": components["schemas"]["PostAgentChatRequestDTO"];
-                    "application/*+json": components["schemas"]["PostAgentChatRequestDTO"];
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["AgentReplyDO"];
-                        "application/json": components["schemas"]["AgentReplyDO"];
-                        "text/json": components["schemas"]["AgentReplyDO"];
-                    };
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ProblemDetails"];
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "text/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ProblemDetails"];
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "text/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Gateway */
-                502: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Service Unavailable */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/cursus": {
         parameters: {
             query?: never;
@@ -804,9 +700,9 @@ export interface paths {
                     /** @description The sort direction. */
                     "sort[order]"?: components["schemas"]["Order"];
                     /** @description The 0-based page index */
-                    "page[index]"?: number | string;
+                    "page[index]"?: number;
                     /** @description The amount of results per page */
-                    "page[size]"?: number | string;
+                    "page[size]"?: number;
                 };
                 header?: never;
                 path?: never;
@@ -1263,16 +1159,16 @@ export interface paths {
                     "filter[name]"?: string;
                     "filter[state]"?: components["schemas"]["EventState"];
                     "filter[not[state]]"?: components["schemas"]["EventState"];
-                    "filter[year]"?: number | string;
-                    "filter[month]"?: number | string;
+                    "filter[year]"?: number;
+                    "filter[month]"?: number;
                     /** @description The name of the property to use for sorting. */
                     "sort[by]"?: string;
                     /** @description The sort direction. */
                     "sort[order]"?: components["schemas"]["Order"];
                     /** @description The 0-based page index */
-                    "page[index]"?: number | string;
+                    "page[index]"?: number;
                     /** @description The amount of results per page */
-                    "page[size]"?: number | string;
+                    "page[size]"?: number;
                 };
                 header?: never;
                 path?: never;
@@ -1662,9 +1558,9 @@ export interface paths {
                     /** @description The sort direction. */
                     "sort[order]"?: components["schemas"]["Order"];
                     /** @description The 0-based page index */
-                    "page[index]"?: number | string;
+                    "page[index]"?: number;
                     /** @description The amount of results per page */
-                    "page[size]"?: number | string;
+                    "page[size]"?: number;
                 };
                 header?: never;
                 path: {
@@ -2678,9 +2574,9 @@ export interface paths {
                     /** @description The sort direction. */
                     "sort[order]"?: components["schemas"]["Order"];
                     /** @description The 0-based page index */
-                    "page[index]"?: number | string;
+                    "page[index]"?: number;
                     /** @description The amount of results per page */
-                    "page[size]"?: number | string;
+                    "page[size]"?: number;
                 };
                 header?: never;
                 path?: never;
@@ -3187,118 +3083,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/system": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        put?: never;
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["SystemInitDTO"];
-                    "text/json": components["schemas"]["SystemInitDTO"];
-                    "application/*+json": components["schemas"]["SystemInitDTO"];
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/kickoffs": {
         parameters: {
             query?: never;
@@ -3322,9 +3106,9 @@ export interface paths {
                     /** @description The sort direction. */
                     "sort[order]"?: components["schemas"]["Order"];
                     /** @description The 0-based page index */
-                    "page[index]"?: number | string;
+                    "page[index]"?: number;
                     /** @description The amount of results per page */
-                    "page[size]"?: number | string;
+                    "page[size]"?: number;
                 };
                 header?: never;
                 path?: never;
@@ -3719,9 +3503,9 @@ export interface paths {
                     /** @description The sort direction. */
                     "sort[order]"?: components["schemas"]["Order"];
                     /** @description The 0-based page index */
-                    "page[index]"?: number | string;
+                    "page[index]"?: number;
                     /** @description The amount of results per page */
-                    "page[size]"?: number | string;
+                    "page[size]"?: number;
                 };
                 header?: never;
                 path: {
@@ -4239,9 +4023,9 @@ export interface paths {
                     /** @description The sort direction. */
                     "sort[order]"?: components["schemas"]["Order"];
                     /** @description The 0-based page index */
-                    "page[index]"?: number | string;
+                    "page[index]"?: number;
                     /** @description The amount of results per page */
-                    "page[size]"?: number | string;
+                    "page[size]"?: number;
                 };
                 header?: never;
                 path?: never;
@@ -4718,9 +4502,9 @@ export interface paths {
                     "filter[status]"?: components["schemas"]["ReviewState"];
                     "filter[not[status]]"?: components["schemas"]["ReviewState"];
                     /** @description The 0-based page index */
-                    "page[index]"?: number | string;
+                    "page[index]"?: number;
                     /** @description The amount of results per page */
-                    "page[size]"?: number | string;
+                    "page[size]"?: number;
                     /** @description The name of the property to use for sorting. */
                     "sort[by]"?: string;
                     /** @description The sort direction. */
@@ -5724,9 +5508,9 @@ export interface paths {
                     /** @description The sort direction. */
                     "sort[order]"?: components["schemas"]["Order"];
                     /** @description The 0-based page index */
-                    "page[index]"?: number | string;
+                    "page[index]"?: number;
                     /** @description The amount of results per page */
-                    "page[size]"?: number | string;
+                    "page[size]"?: number;
                 };
                 header?: never;
                 path?: never;
@@ -6529,9 +6313,9 @@ export interface paths {
                     /** @description The sort direction. */
                     "sort[order]"?: components["schemas"]["Order"];
                     /** @description The 0-based page index */
-                    "page[index]"?: number | string;
+                    "page[index]"?: number;
                     /** @description The amount of results per page */
-                    "page[size]"?: number | string;
+                    "page[size]"?: number;
                 };
                 header?: never;
                 path?: never;
@@ -6960,9 +6744,9 @@ export interface paths {
                     /** @description The sort direction. */
                     "sort[order]"?: components["schemas"]["Order"];
                     /** @description The 0-based page index */
-                    "page[index]"?: number | string;
+                    "page[index]"?: number;
                     /** @description The amount of results per page */
-                    "page[size]"?: number | string;
+                    "page[size]"?: number;
                 };
                 header?: never;
                 path: {
@@ -7553,9 +7337,9 @@ export interface paths {
                     "filter[login]"?: string;
                     "filter[display]"?: string;
                     /** @description The 0-based page index */
-                    "page[index]"?: number | string;
+                    "page[index]"?: number;
                     /** @description The amount of results per page */
-                    "page[size]"?: number | string;
+                    "page[size]"?: number;
                     /** @description The name of the property to use for sorting. */
                     "sort[by]"?: string;
                     /** @description The sort direction. */
@@ -7731,9 +7515,9 @@ export interface paths {
                     /** @description Defaults to Project */
                     "type[entity]": components["schemas"]["EntityType"];
                     /** @description The 0-based page index */
-                    "page[index]"?: number | string;
+                    "page[index]"?: number;
                     /** @description The amount of results per page */
-                    "page[size]"?: number | string;
+                    "page[size]"?: number;
                     /** @description The name of the property to use for sorting. */
                     "sort[by]"?: string;
                     /** @description The sort direction. */
@@ -7961,9 +7745,9 @@ export interface paths {
             parameters: {
                 query?: {
                     /** @description The 0-based page index */
-                    "page[index]"?: number | string;
+                    "page[index]"?: number;
                     /** @description The amount of results per page */
-                    "page[size]"?: number | string;
+                    "page[size]"?: number;
                     /** @description The name of the property to use for sorting. */
                     "sort[by]"?: string;
                     /** @description The sort direction. */
@@ -8360,9 +8144,9 @@ export interface paths {
                     "filter[name]"?: string;
                     "filter[state]"?: components["schemas"]["EntityObjectState"];
                     /** @description The 0-based page index */
-                    "page[index]"?: number | string;
+                    "page[index]"?: number;
                     /** @description The amount of results per page */
-                    "page[size]"?: number | string;
+                    "page[size]"?: number;
                     /** @description The name of the property to use for sorting. */
                     "sort[by]"?: string;
                     /** @description The sort direction. */
@@ -8688,9 +8472,9 @@ export interface paths {
                     "filter[name]"?: string;
                     "filter[state]"?: components["schemas"]["EntityObjectState"];
                     /** @description The 0-based page index */
-                    "page[index]"?: number | string;
+                    "page[index]"?: number;
                     /** @description The amount of results per page */
-                    "page[size]"?: number | string;
+                    "page[size]"?: number;
                     /** @description The name of the property to use for sorting. */
                     "sort[by]"?: string;
                     /** @description The sort direction. */
@@ -8938,9 +8722,9 @@ export interface paths {
                     "filter[slug]"?: string;
                     "filter[state]"?: components["schemas"]["EntityObjectState"];
                     /** @description The 0-based page index */
-                    "page[index]"?: number | string;
+                    "page[index]"?: number;
                     /** @description The amount of results per page */
-                    "page[size]"?: number | string;
+                    "page[size]"?: number;
                     /** @description The name of the property to use for sorting. */
                     "sort[by]"?: string;
                     /** @description The sort direction. */
@@ -9185,9 +8969,9 @@ export interface paths {
             parameters: {
                 query?: {
                     /** @description The 0-based page index */
-                    "page[index]"?: number | string;
+                    "page[index]"?: number;
                     /** @description The amount of results per page */
-                    "page[size]"?: number | string;
+                    "page[size]"?: number;
                     /** @description The name of the property to use for sorting. */
                     "sort[by]"?: string;
                     /** @description The sort direction. */
@@ -9273,9 +9057,9 @@ export interface paths {
             parameters: {
                 query?: {
                     /** @description The 0-based page index */
-                    "page[index]"?: number | string;
+                    "page[index]"?: number;
                     /** @description The amount of results per page */
-                    "page[size]"?: number | string;
+                    "page[size]"?: number;
                     /** @description The name of the property to use for sorting. */
                     "sort[by]"?: string;
                     /** @description The sort direction. */
@@ -10645,9 +10429,9 @@ export interface paths {
                     /** @description The sort direction. */
                     "sort[order]"?: components["schemas"]["Order"];
                     /** @description The 0-based page index */
-                    "page[index]"?: number | string;
+                    "page[index]"?: number;
                     /** @description The amount of results per page */
-                    "page[size]"?: number | string;
+                    "page[size]"?: number;
                 };
                 header?: never;
                 path: {
@@ -11389,37 +11173,6 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** @enum {unknown} */
-        AgentDecision: "Approve" | "Deny" | null;
-        AgentMessageDTO: {
-            /** @description Who wrote the message: user, assistant or tool (a tool result). */
-            role: string;
-            /** @description The text of the message (Markdown for the assistant). */
-            content?: string;
-            /** @description Tool calls the assistant made in this message, if any. */
-            toolCalls?: null | components["schemas"]["AgentToolCallDTO"][];
-            /** @description For role=tool: the name of the tool that produced this result. */
-            toolName?: null | string;
-        };
-        AgentPendingCallDO: {
-            name: string;
-            description: string;
-            arguments?: components["schemas"]["JsonElement"];
-            requiresApproval?: boolean;
-        };
-        AgentPendingDO: {
-            calls: components["schemas"]["AgentPendingCallDO"][];
-        };
-        AgentReplyDO: {
-            messages: components["schemas"]["AgentMessageDTO"][];
-            pending?: null | components["schemas"]["AgentPendingDO"];
-        };
-        AgentToolCallDTO: {
-            /** @description Name of the tool. */
-            name: string;
-            /** @description The arguments as a JSON object. */
-            arguments?: components["schemas"]["JsonElement"];
-        };
         AnnotationData: components["schemas"]["AnnotationDataCommentAnnotationData"] | components["schemas"]["AnnotationDataConclusionAnnotationData"];
         AnnotationDataCommentAnnotationData: {
             /** @enum {string} */
@@ -11427,9 +11180,9 @@ export interface components {
             filepath: string;
             body: string;
             /** Format: int32 */
-            rowStart: number | string;
+            rowStart: number;
             /** Format: int32 */
-            rowEnd: number | string;
+            rowEnd: number;
         };
         AnnotationDataConclusionAnnotationData: {
             /** @enum {string} */
@@ -11537,9 +11290,9 @@ export interface components {
             thumbnail: null | string;
             markdown: string;
             /** Format: int32 */
-            capacity: number | string;
+            capacity: number;
             /** Format: int32 */
-            threshold: null | number | string;
+            threshold: null | number;
             /** Format: date-time */
             startsAt: string;
             /** Format: date-time */
@@ -11561,7 +11314,7 @@ export interface components {
             /** Format: uuid */
             eventId: string;
             /** Format: int32 */
-            rating: number | string;
+            rating: number;
             comment: components["schemas"]["CommentDO"];
         };
         /** @enum {unknown} */
@@ -11608,7 +11361,6 @@ export interface components {
             deprecated: boolean;
             workspace: components["schemas"]["WorkspaceDO"];
         };
-        JsonElement: unknown;
         KickoffDO: {
             /**
              * Format: uuid
@@ -11621,12 +11373,12 @@ export interface components {
              * Format: int32
              * @description The max amount of users that can join this kickoff.
              */
-            capacity: number | string;
+            capacity: number;
             /**
              * Format: int32
              * @description How many users are in this kickoff right now.
              */
-            members: number | string;
+            members: number;
             /**
              * Format: date-time
              * @description The scheduled date on when this kickoff is invoked.
@@ -11722,12 +11474,12 @@ export interface components {
              * Format: int32
              * @description The maximum number of participants allowed.
              */
-            capacity?: null | number | string;
+            capacity?: null | number;
             /**
              * Format: int32
              * @description Minimum required occupancy for the event to switch state. Only staff can set it to null.
              */
-            threshold?: null | number | string;
+            threshold?: null | number;
             /**
              * Format: date-time
              * @description When the event will start.
@@ -11763,7 +11515,7 @@ export interface components {
              * Format: int32
              * @description The new max amount of users that can join this kickoff.
              */
-            capacity?: null | number | string;
+            capacity?: null | number;
             /**
              * Format: date-time
              * @description The new scheduled date on when to invoke this kickoff.
@@ -11783,7 +11535,7 @@ export interface components {
              * Format: int32
              * @description The maximum number of members allowed in the project.
              */
-            maxMembers?: null | number | string;
+            maxMembers?: null | number;
         };
         PatchRubricRequestDTO: {
             name: string;
@@ -11807,7 +11559,7 @@ export interface components {
              * Format: int32
              * @description The new max amount of users that can take part in this trial.
              */
-            capacity?: null | number | string;
+            capacity?: null | number;
             /**
              * Format: date-time
              * @description The new start date. Only possible before it starts.
@@ -11862,11 +11614,6 @@ export interface components {
             /** @description The verdict: Selected, Rejected, or Pending to clear an earlier one. */
             outcome: components["schemas"]["TrialOutcome"];
         };
-        PostAgentChatRequestDTO: {
-            /** @description The conversation so far. Must end with a user message, or with an assistant message that is waiting for a decision. */
-            messages: components["schemas"]["AgentMessageDTO"][];
-            decision?: null | components["schemas"]["AgentDecision"];
-        };
         PostApplicationRequestDTO: {
             /** @description The name of the application. */
             name: string;
@@ -11912,7 +11659,7 @@ export interface components {
              * Format: int32
              * @description A rating from 0 to 10 on how the event was.
              */
-            rating: number | string;
+            rating: number;
             /** @description The comment left by the user. */
             comment: string;
         };
@@ -11932,12 +11679,12 @@ export interface components {
              * Format: int32
              * @description The maximum number of participants allowed.
              */
-            capacity: number | string;
+            capacity: number;
             /**
              * Format: int32
              * @description Minimum required occupancy for the event to switch state. Only staff can set it to null.
              */
-            threshold?: null | number | string;
+            threshold?: null | number;
             /**
              * Format: date-time
              * @description When the event will start.
@@ -11972,7 +11719,7 @@ export interface components {
              * Format: int32
              * @description The max amount of users that can join this kickoff.
              */
-            capacity: number | string;
+            capacity: number;
             /**
              * Format: date-time
              * @description The scheduled date on when to invoke this kickoff.
@@ -11992,7 +11739,7 @@ export interface components {
              * Format: int32
              * @description The maximum number of members allowed in the project.
              */
-            maxMembers: number | string;
+            maxMembers: number;
             /** @description The initial projet commit. */
             commit: components["schemas"]["PostCommitDTO"];
         };
@@ -12032,7 +11779,7 @@ export interface components {
              * Format: int32
              * @description The max amount of users that can take part in this trial.
              */
-            capacity: number | string;
+            capacity: number;
             /**
              * Format: date-time
              * @description When the trial begins. Participants are activated then.
@@ -12084,7 +11831,7 @@ export interface components {
             type?: null | string;
             title?: null | string;
             /** Format: int32 */
-            status?: null | number | string;
+            status?: null | number;
             detail?: null | string;
             instance?: null | string;
         };
@@ -12117,7 +11864,7 @@ export interface components {
              * Format: int32
              * @description Indicates whether the project has been deprecated.
              */
-            maxMembers: number | string;
+            maxMembers: number;
         };
         PutCursusTrackNodeDO: {
             /**
@@ -12189,7 +11936,7 @@ export interface components {
             /** Format: uuid */
             userProjectId: string;
             /** Format: int32 */
-            number: number | string;
+            number: number;
             state: components["schemas"]["ReviewRoundState"];
             /** Format: uuid */
             rubricId: string;
@@ -12247,7 +11994,7 @@ export interface components {
              * Format: int32
              * @description How many reviews of this kind are required.
              */
-            required: number | string;
+            required: number;
         };
         RubricVariantDTO: {
             /** @description The review kind this variant applies to. */
@@ -12256,7 +12003,7 @@ export interface components {
              * Format: int32
              * @description The number of reviews of this kind required (0-100).
              */
-            required: number | string;
+            required: number;
         };
         SpotlightNotificationDO: {
             /** Format: uuid */
@@ -12282,17 +12029,11 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
         };
-        SystemInitDTO: {
-            login: string;
-            firstname: string;
-            lastname: string;
-            email: string;
-        };
         TreeDTO: {
             path: string;
             directory: boolean;
             /** Format: int64 */
-            size: number | string;
+            size: number;
             commit: components["schemas"]["CommitDTO"];
         };
         TrialDO: {
@@ -12312,12 +12053,12 @@ export interface components {
              * Format: int32
              * @description The max amount of users that can take part in this trial.
              */
-            capacity: number | string;
+            capacity: number;
             /**
              * Format: int32
              * @description How many users are in this trial, including the ones that quit.
              */
-            participants: number | string;
+            participants: number;
             /**
              * Format: date-time
              * @description The scheduled date on when this trial begins.

@@ -104,13 +104,12 @@ public static class Services
             o.Filters.Add<ServiceExceptionFilter>();
             // Agent DTOs carry raw JSON (tool arguments), there is nothing to validate inside it.
             o.ModelMetadataDetailsProviders.Add(new SuppressChildValidationMetadataProvider(typeof(JsonElement)));
-        }).AddJsonOptions(o =>
-        {
-            o.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-            o.JsonSerializerOptions.NumberHandling = JsonNumberHandling.Strict;
-        });
+        }).AddJsonOptions(o => ConfigureJson(o.JsonSerializerOptions));
 
-
+        // The line above only covers MVC. Microsoft.AspNetCore.OpenApi builds its schemas from the
+        // *HTTP* JsonOptions instead, whose Web defaults accept numbers written as strings, which
+        // the document then spells as `"type": ["integer", "string"]` with a regex pattern.
+        builder.Services.ConfigureHttpJsonOptions(o => ConfigureJson(o.SerializerOptions));
 
         builder.Services.AddHttpClient<GitService>();
         builder.Services.Configure<GitServiceOptions>(
@@ -121,6 +120,15 @@ public static class Services
             builder.Configuration.GetSection(WebhookOptions.SectionName));
         builder.Services.Configure<OnsiteNetworkOptions>(
             builder.Configuration.GetSection(OnsiteNetworkOptions.SectionName));
+    }
+
+    /// <summary>
+    /// The one JSON policy for the API, applied to both MVC and the HTTP JsonOptions (see RegisterCore).
+    /// </summary>
+    private static void ConfigureJson(JsonSerializerOptions options)
+    {
+        options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        options.NumberHandling = JsonNumberHandling.Strict;
     }
 
     // Authentication & Authorization

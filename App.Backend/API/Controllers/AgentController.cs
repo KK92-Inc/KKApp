@@ -13,7 +13,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace App.Backend.API.Controllers;
 
-[Route("agent"), ExcludeFromDescription]
+[Route("agent"), ApiExplorerSettings(IgnoreApi = true)]
 [ApiController, Authorize(Policy = "staff")]
 public class AgentController(AgentService agent) : Controller
 {
