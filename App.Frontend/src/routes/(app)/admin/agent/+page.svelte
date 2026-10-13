@@ -26,7 +26,7 @@
 	const busy = $derived(chat.loading || chat.pending !== null);
 	const suggestions = ['Who am I?', 'List the users', 'Who is currently frozen?', 'What can you do?'];
 	const quotes = [
-		'Scrapping for nuclear launch codes...',
+		'Scraping for nuclear launch codes...',
 		'Finding solid investment advise...',
 		'Figuring out the meaning of life...',
 		'Bribing the database...',

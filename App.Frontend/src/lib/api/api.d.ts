@@ -11920,6 +11920,8 @@ export interface components {
             /** Format: uuid */
             projectId: string;
             /** Format: uuid */
+            projectGitInfoId: string;
+            /** Format: uuid */
             gitInfoId: string;
             name: string;
             slug: string;
@@ -11953,6 +11955,8 @@ export interface components {
         ReviewRubricDO: {
             /** Format: uuid */
             id: string;
+            /** Format: uuid */
+            gitInfoId: string;
             name: string;
             slug: string;
         };

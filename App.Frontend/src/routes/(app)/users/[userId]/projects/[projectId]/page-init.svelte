@@ -74,7 +74,7 @@
 		<InputGroup.Root>
 			<InputGroup.Input id="id" autocomplete="off" autocorrect="off" readonly value={`git clone ${repoUrl}`} />
 			<InputGroup.Addon align="inline-end">
-				<InputGroup.Copy value={repoUrl} />
+				<InputGroup.Copy value={`git clone ${repoUrl}`} />
 			</InputGroup.Addon>
 		</InputGroup.Root>
 		<p class="text-xs text-muted-foreground">

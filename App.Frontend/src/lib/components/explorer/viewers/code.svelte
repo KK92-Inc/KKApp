@@ -55,7 +55,7 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="code-viewer max-h-150 overflow-auto" onclick={handleCodeClick}>
+<div class="code-viewer overflow-auto" onclick={handleCodeClick}>
 	<!-- {@const { preClass, preStyle, lines } = Markdown.highlightLines(text, language)} -->
 	<pre class={preClass} style={preStyle}><code>
 		{#each lines as lineHtml, index (index)}

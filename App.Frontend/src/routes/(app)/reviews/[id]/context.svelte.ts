@@ -3,8 +3,8 @@
 // See README in the root project for more information.
 // ============================================================================
 
+import { driver } from "driver.js";
 import { createContext } from "svelte";
-import * as Page from "./page.remote";
 
 // ============================================================================
 
@@ -14,8 +14,76 @@ export class Context {
 	// public round = $state<components['schemas']['ReviewRoundDO']>();
 	// public view = $state<"submission" | "assignment">("assignment");
 
-	constructor(public readonly reviewId: () => string) {}
+	constructor(public readonly reviewId: () => string) { }
 }
+
+export const startTour = () => {
+	const driverObj = driver({
+		showProgress: true,
+		animate: true,
+		doneBtnText: 'Got it!',
+		nextBtnText: 'Next',
+		prevBtnText: 'Back',
+		steps: [
+			{
+				popover: {
+					title: 'Welcome to the Review Portal!',
+					description: 'Take a quick walkthrough to help you comfortably evaluate this submission.',
+					side: 'top',
+					align: 'center'
+				}
+			},
+			{
+				element: '#file-explorer-sidebar',
+				popover: {
+					title: '1. Project Files Explorer',
+					description: 'Browse the submission repository tree here. Click any file to view its code content.',
+					side: 'right',
+					align: 'start'
+				}
+			},
+			{
+				element: '#view-rubric-btn',
+				popover: {
+					title: '2. Subject & Grading Rubric',
+					description: 'Open this drawer anytime to check assignment instructions and grading criteria side-by-side.',
+					side: 'bottom',
+					align: 'start'
+				}
+			},
+			{
+				element: '#action-finish',
+				popover: {
+					title: '3. Submit Your Review',
+					description: 'When you are satisfied with your feedback, click Finish to submit your review and finalize the evaluation.',
+					side: 'bottom',
+					align: 'end'
+				}
+			},
+			{
+				element: '#action-cancel',
+				popover: {
+					title: 'Exit Without Saving',
+					description: 'In the rare case you need to cancel, you can do so by clicking here. Please use this sparingly and be considered of the other parties time.',
+					side: 'bottom',
+					align: 'end'
+				}
+			},
+			{
+				element: '#help-button',
+				popover: {
+					title: 'Need a refresher?',
+					description: 'You can click this Help button whenever you need to restart this walkthrough guide.',
+					side: 'bottom',
+					align: 'end'
+				}
+			}
+		]
+	});
+
+	driverObj.drive();
+};
+
 
 // ============================================================================
 

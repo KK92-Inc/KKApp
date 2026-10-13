@@ -3,19 +3,31 @@
 	import type { LayoutProps } from './$types';
 	import * as Page from './context.svelte';
 	import * as Remote from './page.remote';
-	import * as Review from '$lib/remotes/review.remote';
 	import * as Git from '$lib/remotes/git.remote';
-	import * as Alert from '$lib/components/alert';
-	import * as Dialog from '$lib/components/dialog';
 	import * as ButtonGroup from '$lib/components/button-group';
-
-	import * as Avatar from '$lib/components/avatar';
-	import * as Empty from '$lib/components/empty';
+	import * as Drawer from '$lib/components/drawer';
+	import * as Tabs from '$lib/components/tabs';
 	import Layout from '$lib/components/layout.svelte';
-	import Button from '$lib/components/button/button.svelte';
-	import { HeartHandshake, File, Folder, Ban, Check, BadgeQuestionMark, HeartCrack } from '@lucide/svelte';
+	import Button, { buttonVariants } from '$lib/components/button/button.svelte';
+	import {
+		HeartHandshake,
+		File,
+		Folder,
+		Ban,
+		Check,
+		BadgeQuestionMark,
+		Ruler,
+		Archive,
+		MessageSquareCode,
+
+		Files
+
+	} from '@lucide/svelte';
 	import Separator from '$lib/components/separator/separator.svelte';
-	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
+	import ViewRubric from './view-rubric.svelte';
+	import ViewProject from './view-project.svelte';
+	import Badge from '$lib/components/badge/badge.svelte';
+	import { startTour } from './context.svelte';
 
 	const { params, children }: LayoutProps = $props();
 	Page.setContext(new Page.Context(() => params.id));
@@ -38,284 +50,134 @@
 				path: node.path
 			});
 
-			return content.map((f) => {
-				return {
-					isDirectory: f.directory,
-					path: f.path
-				};
-			});
+			return content.map((f) => ({
+				isDirectory: f.directory,
+				path: f.path
+			}));
 		},
 		isDraggable: () => false,
 		canDrop: () => false
 	};
 </script>
 
-{#if data.review.state !== 'Finished'}
-	<Layout cover classL="p-4" classR="py-4 pr-4">
-		{#snippet left()}
-			<Skeleton class="max-h-[calc(100svh-(--header-height))] flex-1 animate-none" />
-		{/snippet}
-		{#snippet right()}
-			{#if data.review.state === 'Cancelled'}
-				<Empty.Root>
-					<Empty.Header>
-						<Empty.Media variant="default">
-							<HeartCrack />
-						</Empty.Media>
-						<Empty.Title>This review has been cancelled.</Empty.Title>
-						<Empty.Description>
-							The evaluator or evaluatee have cancelled this review and thus there is nothing to show.
-						</Empty.Description>
-					</Empty.Header>
-				</Empty.Root>
-			{:else}
-				<Empty.Root class="border">
-					<Empty.Header>
-						<Empty.Media variant="default">
-							{#if data.review.reviewer}
-								<Avatar.Root class="size-12">
-									<Avatar.Image src={data.review.reviewer.avatarUrl} />
-									<Avatar.Fallback>LR</Avatar.Fallback>
-								</Avatar.Root>
-							{:else}
-								<HeartHandshake />
-							{/if}
-						</Empty.Media>
-						<Empty.Title>
-							{#if data.review.reviewer}
-								{data.review.reviewer.displayName ?? data.review.reviewer.login}
-								{#if data.review.state === 'Pending'}
-									is going to evaluate this project.
-								{:else if data.review.state === 'InProgress'}
-									is currently evaluating this project.
-								{/if}
-							{:else if data.review.kind !== 'Auto'}
-								There is no one evaluating this review.
-							{:else}
-								This is a automatic evaluation.
-							{/if}
-						</Empty.Title>
-						<!-- <Empty.Description>
-						There is currently no user reviweing this project
-					</Empty.Description> -->
-					</Empty.Header>
-					<Empty.Content>
-						<Button size="sm">Leave Message</Button>
-					</Empty.Content>
-				</Empty.Root>
-			{/if}
-		{/snippet}
-	</Layout>
-{:else}
-	<Layout cover class="gap-1" classL="p-4" classR="py-4 pr-4">
-		{#snippet left()}
+<Layout cover class="gap-0" classR="px-0!">
+	<!-- Left Sidebar with ID for Driver.js -->
+	{#snippet left()}
+		<div id="file-explorer-sidebar" class="flex h-full flex-col border-r bg-sidebar text-sidebar-foreground">
+			<span class="bg-muted/20 px-4 py-3 text-xs border-b font-semibold tracking-wider text-muted-foreground uppercase">
+				Evaluation
+			</span>
+
+			<div class="flex items-center justify-between border-b bg-muted/40 px-4 py-2">
+				<div class="flex min-w-0 items-center gap-2">
+					<Archive class="size-4 shrink-0" />
+					<span class="truncate text-xs font-medium text-foreground">
+						{data.review.userProject.name}
+					</span>
+				</div>
+				<Badge variant="outline" class="rounded font-mono">
+					Submitted Files
+					<Files />
+				</Badge>
+			</div>
+
 			<svelte:boundary>
 				{@const root = await Git.getTree({ id: data.review.userProject.gitInfoId, ref: data.review.sha! })}
-				{@const items = root.map((f) => {
-					return {
-						isDirectory: f.directory,
-						path: f.path
-					};
-				})}
+				{@const items = root.map((f) => ({
+					isDirectory: f.directory,
+					path: f.path
+				}))}
 
-				<div
-					class="flex h-full max-h-[calc(100svh-(--header-height))] flex-col overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm"
-				>
-					<div class="flex items-center gap-2 border-b bg-muted/40 px-4 py-3">
-						<HeartHandshake size={16} class="text-muted-foreground" />
-						<Separator class="ml-2 flex-1" />
-						<ButtonGroup.Root>
-							<ButtonGroup.Root>
-								<Button size="sm" variant="secondary">Help <BadgeQuestionMark /></Button>
-							</ButtonGroup.Root>
-
-							<ButtonGroup.Root>
-								<Button size="sm" variant="destructive" class="border">Cancel <Ban /></Button>
-								<Button size="sm" variant="outline">Finish <Check /></Button>
-							</ButtonGroup.Root>
-						</ButtonGroup.Root>
-					</div>
-
-					<div class="flex-1 overflow-y-auto p-2">
-						<HierarchyEditor {items} {adapter} onMove={() => {}} class="space-y-1">
-							{#snippet item({ item })}
-								<a
-									href={item.isDirectory
-										? '#'
-										: `/reviews/${data.review.id}/blob/${data.review.sha}/${item.path}`}
-									class="group flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
-								>
-									{#if item.isDirectory}
-										<Folder size={16} class="shrink-0" />
-									{:else}
-										<File
-											size={16}
-											class="shrink-0 text-muted-foreground transition-colors group-hover:text-foreground"
-										/>
-									{/if}
-									<span class="truncate">{item.path.slice(item.path.lastIndexOf('/') + 1)}</span>
-								</a>
-							{/snippet}
-						</HierarchyEditor>
-					</div>
-				</div>
+				<HierarchyEditor {items} {adapter} onMove={() => {}} class="space-y-1 p-2">
+					{#snippet item({ item })}
+						{@const name = item.path.slice(item.path.lastIndexOf('/') + 1)}
+						{@const href = `/reviews/${data.review.id}/blob/${data.review.sha}/${item.path}`}
+						<Button
+							href={item.isDirectory ? null : href}
+							class="w-full justify-start bg-transparent! px-0 shadow-none p-1! h-6!"
+							inert={item.isDirectory}
+						>
+							{#if item.isDirectory}
+								<Folder class="shrink-0 text-muted-foreground group-hover:text-foreground" />
+							{:else}
+								<File size={16} class="shrink-0 text-muted-foreground group-hover:text-foreground" />
+							{/if}
+							<span class="truncate text-foreground">{name}</span>
+						</Button>
+					{/snippet}
+				</HierarchyEditor>
 			</svelte:boundary>
-		{/snippet}
-		{#snippet right()}
-			<div
-				class="flex h-full max-h-[calc(100svh-(--header-height))] flex-col overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm"
-			>
-				<div class="flex-1 overflow-y-auto">
-					{@render children()}
-
-					<svelte:boundary>
-						{@const root = await Git.getBlob({
-							id: '01a0f7fa-afb8-7ef8-9087-c8f7e0ce0478',
-							ref: data.review.ref,
-							path: 'README.md'
-						})}
-						{@const content = new TextDecoder('utf-8', { fatal: true }).decode(root)}
-
-						<div class="border-t bg-card p-6">
-							<article class="prose prose-invert max-w-none space-y-4">
-								{content}
-							</article>
-						</div>
-					</svelte:boundary>
-				</div>
-			</div>
-		{/snippet}
-	</Layout>
-{/if}
-
-<!-- {#if data.review.reviewer || data.review.state === 'Pending'}
-	<Dialog.Root open>
-		<Dialog.Content
-			onCloseAutoFocus={(e) => e.preventDefault()}
-			onEscapeKeydown={(e) => e.preventDefault()}
-			onInteractOutside={(e) => e.preventDefault()}
-			showCloseButton={false}
-			class="max-w-lg"
-		>
-			<Dialog.Header>
-				<Dialog.Title class="flex items-center gap-2 text-xl font-semibold">
-					<HeartHandshake class="h-5 w-5 text-primary" />
-					About this review
-				</Dialog.Title>
-				<Dialog.Description class="space-y-4 pt-2">
-					{#if data.review.kind !== 'Auto'}
-						<Alert.Root variant="warning">
-							<InfoIcon class="h-4 w-4" />
-							<Alert.Title>About starting and finishing reviews</Alert.Title>
-							<Alert.Description class="mt-1 text-sm">
-								{#if data.review.kind === 'Self'}
-									You can start and determine when to finish this review at any point in time.
-								{:else if data.review.kind === 'Async' || data.review.kind === 'Peer'}
-									Upon claiming this review slot, you have 2 days to start the review and 1 when starting the
-									review to finish the evaluation. Failing to complete the review in the allotted time will
-									result in you being removed from the review.
-								{/if}
-							</Alert.Description>
-						</Alert.Root>
-					{/if}
-
-					<div class="space-y-3 text-sm text-muted-foreground">
-						{#if data.review.kind === 'Peer'}
-							<p>
-								This review has not started yet, so there is nothing to review quite yet. A peer review is a
-								review of someone else's work, and it becomes available once it is claimed. Once claimed, you
-								will be expected to begin the evaluation within the start window and complete it within the
-								review window.
-							</p>
-							<div class="flex flex-col gap-2 pt-2 sm:flex-row">
-								<Button class="flex-1 gap-2">
-									Start Review <ArrowRight class="h-4 w-4" />
-								</Button>
-								<Button variant="outline" class="flex-1 gap-2">
-									<Home class="h-4 w-4" /> Go Home
-								</Button>
-							</div>
-						{:else if data.review.kind === 'Async'}
-							<p>
-								This asynchronous review is waiting for a reviewer. It has a start window, which is the time
-								you are expected to take ownership of it, and a separate conduct window in which you complete
-								the evaluation.
-							</p>
-							<div class="flex flex-col gap-2 pt-2 sm:flex-row">
-								<Button class="flex-1 gap-2">
-									Start Review <ArrowRight class="h-4 w-4" />
-								</Button>
-								<Button variant="outline" class="flex-1 gap-2">
-									<Home class="h-4 w-4" /> Go Home
-								</Button>
-							</div>
-						{:else if data.review.kind === 'Self'}
-							<p>
-								A self review is a personal reflection of either you and/or the team. The aim is to make you
-								go over your own work and reflect the quality. You are reviewing your own contribution, so
-								there is no other person involved in the evaluation.
-							</p>
-							<Button class="mt-2 w-full gap-2">
-								Start my Review <ArrowRight class="h-4 w-4" />
-							</Button>
-						{:else if data.review.kind === 'Auto'}
-							<p>
-								This review is handled by the platform automatically. The system evaluates the work on your
-								behalf, and once the assessment is complete, the result will be made available here. Please
-								hold tight and return once the evaluation is finished.
-							</p>
-						{/if}
-					</div>
-				</Dialog.Description>
-			</Dialog.Header>
-		</Dialog.Content>
-	</Dialog.Root>
-
-	<div class="container mx-auto mt-4 blur">
-		<div class="mb-2 flex items-center gap-2">
-			<Skeleton class="h-12 w-full animate-none bg-accent/25" />
-			<Skeleton class="h-12 w-full animate-none bg-accent/25" />
-			<Skeleton class="h-12 w-full animate-none bg-accent/25" />
-			<Skeleton class="h-12 w-full animate-none bg-accent/25" />
 		</div>
-		<Layout classR="max-h-[unset]! space-y-2">
-			{#snippet left()}
-				<Skeleton class="h-[400px] w-full animate-none bg-accent/25" />
-			{/snippet}
-			{#snippet right()}
-				<Skeleton class="h-12 w-full animate-none bg-accent/25" />
-				<Skeleton class="h-[400px] w-full animate-none bg-accent/25" />
-			{/snippet}
-		</Layout>
-	</div>
-{:else}
-	<div class="container mx-auto mt-4 blur-2xl">
-		<Layout classR="max-h-[unset]!">
-			{#snippet left()}
-				<svelte:boundary>
-					{@const root = await Git.getTree({ id: data.review.userProject.gitInfoId, ref: data.review.sha! })}
-					{@const items = root.map((f) => {
-						return {
-							isDirectory: f.directory,
-							path: f.path
-						};
-					})}
+	{/snippet}
 
-					<HierarchyEditor {items} {adapter} onMove={() => {}} class="flex-1 rounded border p-2">
-						{#snippet item({ item })}
-							<a
-								href="/reviews/{data.review.id}/blob/{data.review.sha}/{item.path}"
-								class="font-medium text-foreground hover:underline"
-							>
-								{item.path.slice(item.path.lastIndexOf('/') + 1)}
-							</a>
-						{/snippet}
-					</HierarchyEditor>
-				</svelte:boundary>
-			{/snippet}
-			{#snippet right()}
-				{@render children()}
-			{/snippet}
-		</Layout>
-	</div>
-{/if} -->
+	{#snippet right()}
+		<div class="flex items-center gap-2 border-b bg-muted/40 px-4 py-3">
+			<ButtonGroup.Root class="flex-wrap items-center">
+				<ButtonGroup.Root>
+					<Button variant="outline" href="/reviews/{data.review.id}">
+						Start Page
+						<HeartHandshake />
+					</Button>
+					<!-- Help Button with ID and Click Handler -->
+					<Button id="help-button" variant="outline" onclick={startTour}>
+						Help
+						<BadgeQuestionMark />
+					</Button>
+				</ButtonGroup.Root>
+
+				<Separator orientation="vertical" class="h-4!" />
+
+				<ButtonGroup.Root>
+					<Drawer.Root modal={false} nested direction="right">
+						<!-- View Rubric Trigger with ID -->
+						<Drawer.Trigger
+							id="view-rubric-btn"
+							class={buttonVariants({
+								variant: 'outline'
+							})}
+						>
+							View Rubric
+							<Ruler size={16} />
+						</Drawer.Trigger>
+						<Drawer.Content class="data-[vaul-drawer-direction=right]:sm:max-w-xl">
+							<Drawer.Header class="border-b">
+								<Drawer.Title class="flex items-center gap-2">
+									<Ruler />
+									Rubric
+								</Drawer.Title>
+							</Drawer.Header>
+							<div class="flex-1 overflow-auto p-4">
+								<Tabs.Root value="account">
+									<Tabs.List class="w-full">
+										<Tabs.Trigger value="account">Subject <Archive /></Tabs.Trigger>
+										<Tabs.Trigger value="password">Rubric <MessageSquareCode /></Tabs.Trigger>
+									</Tabs.List>
+									<Tabs.Content value="account">
+										<ViewProject />
+									</Tabs.Content>
+									<Tabs.Content value="password">
+										<ViewRubric />
+									</Tabs.Content>
+								</Tabs.Root>
+							</div>
+							<Drawer.Footer>
+								<Drawer.Close class={buttonVariants()}>Close</Drawer.Close>
+							</Drawer.Footer>
+						</Drawer.Content>
+					</Drawer.Root>
+				</ButtonGroup.Root>
+			</ButtonGroup.Root>
+
+			<Separator class="flex-1" />
+			<ButtonGroup.Root>
+				<Button id="action-cancel" variant="destructive" class="border">
+					Cancel <Ban />
+				</Button>
+				<Button id="action-finish" variant="outline">
+					Finish <Check />
+				</Button>
+			</ButtonGroup.Root>
+		</div>
+		{@render children()}
+	{/snippet}
+</Layout>

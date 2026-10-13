@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { LayoutProps } from './$types';
+	import "driver.js/dist/driver.css";
 	import { afterNavigate, goto } from '$app/navigation';
 	import * as Header from '$lib/components/header';
 	import Button from '$lib/components/button/button.svelte';
@@ -28,7 +29,7 @@
 	}}
 />
 
-<div class="relative z-10 flex min-h-svh flex-col bg-background">
+<!-- <div class="z-10 flex min-h-svh flex-col bg-background"> -->
 	<header class="sticky top-0 z-50 w-full border-b bg-background px-5">
 		<nav class="container mx-auto flex h-(--header-height) items-center **:data-[slot=separator]:h-6!">
 			<div class="flex items-center gap-3">
@@ -56,4 +57,4 @@
 	<main class="flex flex-1 flex-col">
 		{@render children?.()}
 	</main>
-</div>
+<!-- </div> -->
