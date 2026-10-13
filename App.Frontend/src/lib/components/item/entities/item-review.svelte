@@ -7,7 +7,7 @@
 	import Badge from '$lib/components/badge/badge.svelte';
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/state';
-	import { ArrowRight, Bot, CalendarDaysIcon, CalendarIcon, Globe, User, Users } from '@lucide/svelte';
+	import { ArrowRight, Bot, CalendarIcon, Globe, User, Users } from '@lucide/svelte';
 	import { DateFormatter } from '@internationalized/date';
 
 	interface Props {

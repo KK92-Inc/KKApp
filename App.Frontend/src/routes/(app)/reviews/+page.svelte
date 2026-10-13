@@ -3,10 +3,12 @@
 	import * as Item from '$lib/components/item';
 	import * as Reviews from '$lib/remotes/review.remote';
 	import * as Empty from '$lib/components/empty';
-	import { HeartHandshake } from '@lucide/svelte';
+	import { ArrowRight, HeartHandshake } from '@lucide/svelte';
 	import Paginate from '$lib/components/paginate.svelte';
 	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
 	import Separator from '$lib/components/separator/separator.svelte';
+	import * as ButtonGroup from '$lib/components/button-group';
+	import { Button } from '$lib/components/button';
 
 	let index = $state(0);
 </script>
@@ -22,7 +24,21 @@
 	{/snippet}
 	<Item.Group>
 		{#each reviews.data as review (review.id)}
-			<Item.Review {review} />
+			<Item.Review {review}>
+				{#snippet actions()}
+					<ButtonGroup.Root>
+						{#if review.roundId}
+							<Button variant="outline" size="sm" href="/reviews/round/{review.roundId}">
+								View Round
+								<HeartHandshake />
+							</Button>
+						{/if}
+						<Button variant="outline" size="icon-sm">
+							<ArrowRight />
+						</Button>
+					</ButtonGroup.Root>
+				{/snippet}
+			</Item.Review>
 		{:else}
 			<Empty.Root class="h-full border border-dashed">
 				<Empty.Header>
