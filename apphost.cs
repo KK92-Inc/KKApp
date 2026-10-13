@@ -4,13 +4,13 @@
 // ============================================================================
 
 #pragma warning disable ASPIREJAVASCRIPT001
-#:sdk Aspire.AppHost.Sdk@13.5.3
+#:sdk Aspire.AppHost.Sdk@13.6.1
 #:package Scalar.Aspire@0.8.45
-#:package Aspire.Npgsql@13.5.3
-#:package Aspire.Hosting.Docker@13.5.3
-#:package Aspire.Hosting.Valkey@13.5.3
-#:package Aspire.Hosting.PostgreSQL@13.5.3
-#:package Aspire.Hosting.JavaScript@13.5.3
+#:package Aspire.Npgsql@13.6.1
+#:package Aspire.Hosting.Docker@13.6.1
+#:package Aspire.Hosting.Valkey@13.6.1
+#:package Aspire.Hosting.PostgreSQL@13.6.1
+#:package Aspire.Hosting.JavaScript@13.6.1
 #:project App.Migrations/Migrations.csproj
 #:project App.Git/App.Git.Http/App.Git.Http.csproj
 #:project App.Backend/API/App.Backend.API.csproj
