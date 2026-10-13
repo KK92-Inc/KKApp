@@ -256,10 +256,18 @@ function unauthenticated(event: RequestEvent, body?: BodyInit | null, headers?: 
 		redirect(303, '/auth');
 	}
 
-	const response = new Response(
-		body ?? JSON.stringify({ type: 'error', error: { message: 'unauthenticated' }, status: 401 }),
-		{ status: 401, statusText: 'Unauthorized', headers: headers ?? { 'content-type': 'application/json' } }
+	const response = new Response(body ?? JSON.stringify({
+		type: 'error',
+		error: {
+			message: 'Unauthorized, please login again.'
+		}, status: 401 }),
+		{
+			status: 401,
+			statusText: 'Unauthorized',
+			headers: headers ?? { 'content-type': 'application/json' }
+		}
 	);
+
 	for (const name of [COOKIE_ACCESS, COOKIE_REFRESH]) {
 		response.headers.append('set-cookie', `${name}=; Path=/; Max-Age=0`);
 	}

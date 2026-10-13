@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { tick } from 'svelte';
+	import { slide } from 'svelte/transition';
 	import { page } from '$app/state';
 	import * as Agent from '$lib/contexts/agent.svelte';
 	import * as Avatar from '$lib/components/avatar';
@@ -10,32 +11,56 @@
 	import * as InputGroup from '$lib/components/input-group/index.js';
 	import Button from '$lib/components/button/button.svelte';
 	import Markdown from '$lib/components/markdown/markdown.svelte';
+	import Loader from '$lib/components/loader.svelte';
 
-	import ArrowUpIcon from '@lucide/svelte/icons/arrow-up';
-	import SparklesIcon from '@lucide/svelte/icons/sparkles';
-	import WrenchIcon from '@lucide/svelte/icons/wrench';
-	import LoaderCircleIcon from '@lucide/svelte/icons/loader-circle';
-	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
+	import { ShieldAlert, TriangleAlert, ArrowUp, Sparkles, Wrench } from '@lucide/svelte';
+	import * as Alert from '$lib/components/alert';
+	import * as ButtonGroup from '$lib/components/button-group';
+	import Separator from '$lib/components/separator/separator.svelte';
 
 	const chat = Agent.get();
 
-	let input = $state('');
+	let query = $state('');
 	let bottom = $state<HTMLElement>();
 
-	const initials = $derived(page.data.session.username.slice(0, 2).toUpperCase());
-	const suggestions = ['Who am I?', 'List the users', 'Who is currently frozen?'];
 	const busy = $derived(chat.loading || chat.pending !== null);
+	const suggestions = ['Who am I?', 'List the users', 'Who is currently frozen?', 'What can you do?'];
+	const quotes = [
+		'Scrapping for nuclear launch codes...',
+		'Finding solid investment advise...',
+		'Figuring out the meaning of life...',
+		'Bribing the database...',
+		'Assembling skynet...',
+		'Rethinking life choices...',
+		'Asking the rubber duck...',
+		'Searching for cheap ram...',
+		'Unshredding old logs...',
+		'Sending tech support tickets...',
+	];
+
+	let index = $state(0);
+	let qoute = $derived(quotes[index]);
+	$effect(() => {
+		let interval = setInterval(() => {
+			index = Math.floor(Math.random() * quotes.length);
+		}, 4000);
+
+		return () => {
+			clearInterval(interval);
+		};
+	});
 
 	function submit(event: SubmitEvent) {
 		event.preventDefault();
-		const text = input;
-		if (!text.trim() || busy) return;
-		input = '';
-		chat.send(text);
+		const text = query;
+
+		if (text.trim() && !busy) {
+			query = '';
+			chat.send(text);
+		}
 	}
 
-	/** Tool results are JSON, show them readable. */
-	function pretty(raw: string) {
+	function stringify(raw: string) {
 		try {
 			return JSON.stringify(JSON.parse(raw), null, 2);
 		} catch {
@@ -43,14 +68,6 @@
 		}
 	}
 
-	/** Short one-liner of a call's arguments for the trace, e.g. login: "jd". */
-	function summary(args: Record<string, unknown>) {
-		const entries = Object.entries(args);
-		if (entries.length === 0) return '';
-		return entries.map(([key, value]) => `${key}: ${JSON.stringify(value)}`).join(', ');
-	}
-
-	// Keep the newest thing in view.
 	$effect(() => {
 		void [chat.messages.length, chat.loading, chat.pending, chat.error];
 		tick().then(() => bottom?.scrollIntoView({ behavior: 'smooth', block: 'end' }));
@@ -60,7 +77,7 @@
 {#snippet assistant()}
 	<Message.Avatar>
 		<Avatar.Root>
-			<Avatar.Fallback><SparklesIcon class="size-4" /></Avatar.Fallback>
+			<Avatar.Fallback><Sparkles class="size-4" /></Avatar.Fallback>
 		</Avatar.Root>
 	</Message.Avatar>
 {/snippet}
@@ -69,7 +86,7 @@
 	{#if chat.messages.length === 0}
 		<Empty.Root>
 			<Empty.Header>
-				<Empty.Media variant="icon"><SparklesIcon /></Empty.Media>
+				<Empty.Media variant="icon"><Sparkles /></Empty.Media>
 				<Empty.Title>What can I help with?</Empty.Title>
 				<Empty.Description>
 					Ask about users and freezes. Anything that changes data asks for your approval first.
@@ -92,7 +109,9 @@
 			<Message.Root align="end">
 				<Message.Avatar>
 					<Avatar.Root>
-						<Avatar.Fallback>{initials}</Avatar.Fallback>
+						<Avatar.Fallback class="uppercase">
+							{page.data.session.username.slice(0, 2)}
+						</Avatar.Fallback>
 					</Avatar.Root>
 				</Message.Avatar>
 				<Message.Content>
@@ -117,17 +136,16 @@
 
 			{#each message.toolCalls ?? [] as call, c (c)}
 				<Marker.Root>
-					<Marker.Icon><WrenchIcon /></Marker.Icon>
+					<Marker.Icon><Wrench /></Marker.Icon>
 					<Marker.Content>
 						Called <code class="font-mono text-foreground">{call.name}</code>
-						<span class="font-mono text-xs">{summary(call.arguments)}</span>
 					</Marker.Content>
 				</Marker.Root>
 			{/each}
-		{:else}
+		{:else if message.content}
 			<details class="text-xs text-muted-foreground">
 				<summary class="cursor-pointer select-none">Result of {message.toolName}</summary>
-				<pre class="mt-1 max-h-64 overflow-auto rounded-md bg-muted p-2">{pretty(message.content)}</pre>
+				<pre class="mt-1 max-h-64 overflow-auto rounded-md bg-muted p-2">{stringify(message.content)}</pre>
 			</details>
 		{/if}
 	{/each}
@@ -136,29 +154,52 @@
 		<Message.Root>
 			{@render assistant()}
 			<Message.Content>
-				<Bubble.Root variant="outline">
-					<Bubble.Content class="space-y-3">
-						<p class="font-medium">The assistant wants to make a change. Approve it?</p>
-
-						{#each chat.pending.calls as call, c (c)}
-							<div class="rounded-md border p-2 text-xs">
-								<div class="flex items-center gap-2">
-									<code class="font-mono font-semibold">{call.name}</code>
-									{#if !call.requiresApproval}
-										<span class="text-muted-foreground">(read only)</span>
-									{/if}
-								</div>
-								<p class="text-muted-foreground">{call.description}</p>
-								<pre class="mt-1 overflow-auto rounded bg-muted p-2">{JSON.stringify(call.arguments, null, 2)}</pre>
-							</div>
-						{/each}
-
-						<div class="flex gap-2">
-							<Button size="sm" disabled={chat.loading} onclick={() => chat.decide('Approve')}>Approve</Button>
-							<Button size="sm" variant="outline" disabled={chat.loading} onclick={() => chat.decide('Deny')}>
-								Deny
-							</Button>
-						</div>
+				<Bubble.Root variant="ghost">
+					<Bubble.Content class="space-y-3 p-0">
+						<Alert.Root variant="destructive">
+							<ShieldAlert size={18} />
+							<Alert.Title>The assistant wants to make a changes.</Alert.Title>
+							<Alert.Description>
+								<span class="text-xs">
+									If you feel unsure on what to do, deny these changes and ask for help.
+								</span>
+								<Separator />
+								{#each chat.pending.calls as call, c (c)}
+									<div class="rounded-md border p-2 text-xs text-muted-foreground">
+										<div class="flex items-center gap-2">
+											<code class="font-mono font-semibold">{call.name}</code>
+											{#if !call.requiresApproval}
+												<span class="text-muted-foreground">(read only)</span>
+											{/if}
+										</div>
+										<p class="text-muted-foreground">{call.description}</p>
+										<pre class="mt-1 overflow-auto rounded bg-muted p-2">{JSON.stringify(
+												call.arguments,
+												null,
+												2
+											)}
+											</pre>
+									</div>
+								{/each}
+								<ButtonGroup.Root class="text-muted-foreground">
+									<Button
+										size="sm"
+										variant="destructive"
+										class="border"
+										disabled={chat.loading}
+										onclick={() => chat.decide('Approve')}>Approve</Button
+									>
+									<Button
+										size="sm"
+										variant="outline"
+										disabled={chat.loading}
+										onclick={() => chat.decide('Deny')}
+									>
+										Deny
+									</Button>
+								</ButtonGroup.Root>
+							</Alert.Description>
+						</Alert.Root>
 					</Bubble.Content>
 				</Bubble.Root>
 			</Message.Content>
@@ -167,16 +208,22 @@
 
 	{#if chat.loading}
 		<Marker.Root role="status">
-			<Marker.Icon><LoaderCircleIcon class="animate-spin" /></Marker.Icon>
-			<Marker.Content class="animate-pulse">Thinking...</Marker.Content>
+			<Marker.Icon><Loader /></Marker.Icon>
+			<Marker.Content>
+				{#key index}
+					<p class="text-xs" transition:slide>
+						{qoute}
+					</p>
+				{/key}
+			</Marker.Content>
 		</Marker.Root>
 	{/if}
 
 	{#if chat.error}
 		<Bubble.Root variant="destructive" class="max-w-full">
 			<Bubble.Content class="flex flex-wrap items-center gap-2" role="alert">
-				<TriangleAlertIcon class="size-4 shrink-0" />
-				<span>{chat.error}</span>
+				<TriangleAlert class="size-4 shrink-0" />
+				<p>{chat.error}</p>
 				{#if !chat.pending}
 					<Button size="sm" variant="outline" disabled={chat.loading} onclick={() => chat.retry()}>
 						Try again
@@ -189,27 +236,30 @@
 	<div bind:this={bottom} class="scroll-mb-28"></div>
 </div>
 
-<form class="sticky bottom-0 w-full bg-background pt-2 pb-2" onsubmit={submit}>
+<form class="sticky bottom-0 w-full space-y-2 bg-background pb-2" onsubmit={submit}>
 	<InputGroup.Root>
-		<div class="h-14 w-full py-2.5">
-			<InputGroup.Input
-				bind:value={input}
-				disabled={busy}
-				autocomplete="off"
-				placeholder={chat.pending ? 'Approve or deny the change above first' : 'Ask the agent...'}
-			/>
-		</div>
+		<InputGroup.Input
+			bind:value={query}
+			disabled={busy}
+			autocomplete="off"
+			placeholder={chat.pending ? 'Approve or deny the change above first' : 'Ask the agent...'}
+		/>
 		<InputGroup.Addon align="block-end" class="pt-1">
 			<InputGroup.Button
 				type="submit"
 				variant="default"
 				size="icon-sm"
 				class="ml-auto"
-				disabled={busy || !input.trim()}
+				disabled={busy || !query.trim()}
 			>
-				<ArrowUpIcon />
+				<ArrowUp />
 				<span class="sr-only">Send</span>
 			</InputGroup.Button>
 		</InputGroup.Addon>
 	</InputGroup.Root>
+
+	<p class="flex items-center gap-1 text-xs text-muted-foreground">
+		<TriangleAlert size={14} />
+		Agentic Administration is AI and can make mistakes. Please double-check responses.
+	</p>
 </form>

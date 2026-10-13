@@ -8,6 +8,8 @@ import { Problem } from '$lib/api';
 import { chat } from '$lib/remotes/agent.remote';
 import type { components } from '$lib/api/api';
 
+// ============================================================================
+
 type AgentDecision = components['schemas']['AgentDecision'];
 type AgentMessage = components['schemas']['AgentMessageDTO'];
 type AgentPending = components['schemas']['AgentPendingDO'];
