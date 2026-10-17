@@ -7,7 +7,7 @@
 	import { CircleAlert } from '@lucide/svelte';
 	import * as Alert from '$lib/components/alert';
 	const context = Page.getContext();
-	const { review } = $derived(await Remote.getData(context.reviewId()));
+	const { review } = $derived(await Remote.load(context.reviewId()));
 </script>
 
 <svelte:boundary>

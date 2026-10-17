@@ -7,6 +7,9 @@ import type { components } from "$lib/api/api";
 import { driver } from "driver.js";
 import { createContext } from "svelte";
 import { SvelteMap } from "svelte/reactivity";
+import * as Reviews from "$lib/remotes/review.remote";
+import { useDialog } from "$lib/components/dialog";
+import { Problem } from "$lib/api";
 
 // ============================================================================
 
@@ -14,6 +17,8 @@ export type Annotation = Extract<components['schemas']['AnnotationData'], { $typ
 
 export class Context {
 	constructor(public readonly reviewId: () => string) { }
+
+	private dialog = useDialog();
 
 	/** Final Conclusion made for the review if it is passable. */
 	public pass = $state(false);
@@ -41,7 +46,27 @@ export class Context {
 			this.annotations.set(path, updated);
 		}
 	}
+
+	public async cancel(review: components['schemas']['ReviewDO']) {
+		const confirm = this.dialog.confirm(
+			"Are you sure you want to cancel this review ?",
+			"If this review is a part of round it will be available to someone else. Otherwise you can safely cancel this review."
+		)
+
+		if (!await confirm) return;
+		await Problem.try(() => Reviews.stop(review.id));
+	}
+
+	public finish() {
+
+	}
+
+	public start() {
+
+	}
 }
+
+// ============================================================================
 
 export const startTour = () => {
 	const driverObj = driver({

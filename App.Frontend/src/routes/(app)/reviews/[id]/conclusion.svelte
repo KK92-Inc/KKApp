@@ -21,7 +21,7 @@
 	import Textarea from '$lib/components/textarea/textarea.svelte';
 
 	const context = Page.getContext();
-	const { review } = $derived(await Remote.getData(context.reviewId()));
+	const { review } = $derived(await Remote.load(context.reviewId()));
 
 	const fileCount = $derived(context.annotations.size);
 	const totalAnnotations = $derived.by(() => {

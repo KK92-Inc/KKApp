@@ -30,7 +30,7 @@
 	const { params, children }: LayoutProps = $props();
 	const context = Page.setContext(new Page.Context(() => params.id));
 
-	const data = $derived(await Remote.getData(params.id));
+	const data = $derived(await Remote.load(params.id));
 
 	interface FileNode {
 		path: string;
@@ -60,7 +60,7 @@
 
 {#snippet count(length: number)}
 	{#if length > 0}
-		<Badge class="absolute -top-1.5 -right-2 size-4 p-1 border text-xs">
+		<Badge class="absolute -top-1.5 -right-2 size-4 border p-1 text-xs">
 			{length}
 		</Badge>
 	{/if}
@@ -181,10 +181,15 @@
 
 			<Separator class="flex-1" />
 			<ButtonGroup.Root>
-				<Button id="action-cancel" variant="destructive" class="border">
+				<Button
+					id="action-cancel"
+					variant="destructive"
+					class="border"
+					onclick={async () => await context.cancel(data.review)}
+				>
 					Cancel <Ban />
 				</Button>
-				<!-- <Conclusion /> -->
+				<Conclusion />
 			</ButtonGroup.Root>
 		</div>
 		{@render children()}

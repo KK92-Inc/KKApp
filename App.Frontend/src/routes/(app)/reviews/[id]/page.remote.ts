@@ -9,7 +9,7 @@ import * as Reviews from "$lib/remotes/review.remote";
 
 // ============================================================================
 
-export const getData = query(Filters.id, async (reviewId) => {
+export const load = query(Filters.id, async (reviewId) => {
 	const review = await Reviews.get(reviewId);
 	// A review *might* be attached to a round, otherwise it its advisory.
 	return {
@@ -18,5 +18,4 @@ export const getData = query(Filters.id, async (reviewId) => {
 	}
 });
 
-
-
+// ============================================================================

@@ -9,7 +9,7 @@
 	import Separator from '$lib/components/separator/separator.svelte';
 
   const context = Page.getContext();
-  const { review } = $derived(await Remote.getData(context.reviewId()));
+  const { review } = $derived(await Remote.load(context.reviewId()));
   const repoUrl = $derived(`${env.PUBLIC_GIT_URL}/${review.userProject.projectId}/${review.userProject.id}`);
   const mirror = $derived(`git checkout ${review.sha}`);
 </script>

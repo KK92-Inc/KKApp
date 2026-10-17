@@ -5,8 +5,7 @@
 	import Separator from '$lib/components/separator/separator.svelte';
 	import { goto } from '$app/navigation';
 
-	import { Clock, FolderCode, UserCheck, UserPlus } from '@lucide/svelte';
-	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
+	import { Clock, FolderCode, Globe, UserCheck, UserPlus } from '@lucide/svelte';
 	import { page } from '$app/state';
 
 	const { children }: LayoutProps = $props();
@@ -21,19 +20,24 @@
 
 	<Separator class="my-2" />
 
-	<Tabs.Root bind:value={tab} class="gap-1 mb-2">
-		<Tabs.List variant="line" class="p-1 [*]:font-normal gap-0">
+	<Tabs.Root bind:value={tab} class="mb-2 gap-1">
+		<Tabs.List variant="line" class="gap-1 p-1 [*]:font-normal">
 			<Tabs.Trigger onclick={() => goto('/reviews')} value="reviews">
 				<UserPlus />
 				Seeking Evaluations
+			</Tabs.Trigger>
+			<Tabs.Trigger onclick={() => goto('/reviews/global')} value="global">
+				<Globe />
+				All Evaluations
 			</Tabs.Trigger>
 			<Tabs.Trigger onclick={() => goto('/reviews/evaluate')} value="evaluate">
 				<UserCheck />
 				Active Evaluations
 			</Tabs.Trigger>
+			<Separator orientation="vertical" class="h-6!"/>
 			<Tabs.Trigger onclick={() => goto('/reviews/recent')} value="recent">
 				<Clock />
-				Recent Evaluations
+				My Recent Evaluations
 			</Tabs.Trigger>
 			<Tabs.Trigger onclick={() => goto('/reviews/projects')} value="projects">
 				<FolderCode />

@@ -63,7 +63,7 @@
 		`content` below leaves it stuck: the URL changes but the remote is never called again.
 		Awaiting inside the boundary keeps everything in one reactive scope.
 	-->
-		{@const { review } = await Remote.getData(context.reviewId())}
+		{@const { review } = await Remote.load(context.reviewId())}
 		{@const isReviewer = review.reviewer?.id === page.data.session.userId}
 		{@const onLineClick = isReviewer && review.state !== 'InProgress' ? toggleFocus : undefined}
 		{@const content = await Git.getBlob({
