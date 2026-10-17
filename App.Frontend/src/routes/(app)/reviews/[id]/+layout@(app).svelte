@@ -14,23 +14,21 @@
 		File,
 		Folder,
 		Ban,
-		Check,
 		BadgeQuestionMark,
 		Ruler,
 		Archive,
 		MessageSquareCode,
-
 		Files
-
 	} from '@lucide/svelte';
 	import Separator from '$lib/components/separator/separator.svelte';
 	import ViewRubric from './view-rubric.svelte';
 	import ViewProject from './view-project.svelte';
 	import Badge from '$lib/components/badge/badge.svelte';
 	import { startTour } from './context.svelte';
+	import Conclusion from './conclusion.svelte';
 
 	const { params, children }: LayoutProps = $props();
-	Page.setContext(new Page.Context(() => params.id));
+	const context = Page.setContext(new Page.Context(() => params.id));
 
 	const data = $derived(await Remote.getData(params.id));
 
@@ -60,11 +58,20 @@
 	};
 </script>
 
+{#snippet count(length: number)}
+	{#if length > 0}
+		<Badge class="absolute -top-1.5 -right-2 size-4 p-1 border text-xs">
+			{length}
+		</Badge>
+	{/if}
+{/snippet}
+
 <Layout cover class="gap-0" classR="px-0!">
-	<!-- Left Sidebar with ID for Driver.js -->
 	{#snippet left()}
 		<div id="file-explorer-sidebar" class="flex h-full flex-col border-r bg-sidebar text-sidebar-foreground">
-			<span class="bg-muted/20 px-4 py-3 text-xs border-b font-semibold tracking-wider text-muted-foreground uppercase">
+			<span
+				class="border-b bg-muted/20 px-4 py-3 text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+			>
 				Evaluation
 			</span>
 
@@ -93,16 +100,22 @@
 						{@const name = item.path.slice(item.path.lastIndexOf('/') + 1)}
 						{@const href = `/reviews/${data.review.id}/blob/${data.review.sha}/${item.path}`}
 						<Button
+							data-sveltekit-preload-data="off"
 							href={item.isDirectory ? null : href}
-							class="w-full justify-start bg-transparent! px-0 shadow-none p-1! h-6!"
+							class="h-6! w-full justify-start bg-transparent! p-1! px-0 shadow-none"
 							inert={item.isDirectory}
 						>
 							{#if item.isDirectory}
 								<Folder class="shrink-0 text-muted-foreground group-hover:text-foreground" />
 							{:else}
-								<File size={16} class="shrink-0 text-muted-foreground group-hover:text-foreground" />
+								{@const annotationCount = context.annotations.get(item.path)?.length ?? 0}
+								<div class="relative shrink-0">
+									<File size={16} class="text-muted-foreground group-hover:text-foreground" />
+									{@render count(annotationCount)}
+								</div>
 							{/if}
-							<span class="truncate text-foreground">{name}</span>
+
+							<span class="ml-1.5 truncate text-foreground">{name}</span>
 						</Button>
 					{/snippet}
 				</HierarchyEditor>
@@ -118,7 +131,6 @@
 						Start Page
 						<HeartHandshake />
 					</Button>
-					<!-- Help Button with ID and Click Handler -->
 					<Button id="help-button" variant="outline" onclick={startTour}>
 						Help
 						<BadgeQuestionMark />
@@ -129,7 +141,6 @@
 
 				<ButtonGroup.Root>
 					<Drawer.Root modal={false} nested direction="right">
-						<!-- View Rubric Trigger with ID -->
 						<Drawer.Trigger
 							id="view-rubric-btn"
 							class={buttonVariants({
@@ -173,9 +184,7 @@
 				<Button id="action-cancel" variant="destructive" class="border">
 					Cancel <Ban />
 				</Button>
-				<Button id="action-finish" variant="outline">
-					Finish <Check />
-				</Button>
+				<!-- <Conclusion /> -->
 			</ButtonGroup.Root>
 		</div>
 		{@render children()}

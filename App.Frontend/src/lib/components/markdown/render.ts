@@ -91,22 +91,6 @@ function resolveLang(lang: string): string {
 	return highlighter.getLoadedLanguages().includes(normalized) ? normalized : 'text';
 }
 
-const transformerLineNumbers: ShikiTransformer = {
-	name: 'line-numbers',
-	line(node, line) {
-		node.properties['data-line'] = String(line);
-		node.children.unshift({
-			type: 'element',
-			tagName: 'span',
-			properties: {
-				className: ['line-number'],
-				'data-line': String(line)
-			},
-			children: [{ type: 'text', value: String(line) }]
-		});
-	}
-};
-
 // ============================================================================
 // Markdown pipeline (GFM + KaTeX + Shiki + sanitize)
 // ============================================================================
@@ -158,7 +142,6 @@ export const Markdown = {
 		const html = highlighter.codeToHtml(source, {
 			lang: resolveLang(lang),
 			theme: THEME,
-			transformers: [transformerLineNumbers]
 		});
 
 		const preMatch = html.match(/^<pre([^>]*)><code>([\s\S]*)<\/code><\/pre>$/);

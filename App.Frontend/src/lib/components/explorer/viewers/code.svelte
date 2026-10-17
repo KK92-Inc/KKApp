@@ -1,97 +1,52 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { Markdown } from '$lib/components/markdown/render';
-	import { SvelteMap } from 'svelte/reactivity';
-
-	export interface CodeAnnotation {
-		id: string;
-		line: number;
-		[key: string]: unknown;
-	}
+	import { cn } from '$lib/utils';
+	import { Plus } from '@lucide/svelte';
 
 	interface Props {
 		text: string;
+		class?: string;
 		language: string;
-		annotations?: CodeAnnotation[];
-		onAddAnnotation?: (line: number) => void;
-		onRemoveAnnotation?: (id: string) => void;
-		annotation?: Snippet<[{ annotation: CodeAnnotation; line: number; remove: () => void }]>;
-		annotationInput?: Snippet<[{ line: number; close: () => void }]>;
+		/** When set, line numbers become buttons. The viewer keeps no selection state. */
+		onLineClick?: (line: number) => void;
+		/**
+		 * Rendered directly beneath a line e.g: (annotations, composer, diagnostics, ...).
+		 * Content can align with the code using `ml-(--code-gutter)`.
+		 */
+		extra?: Snippet<[{ line: number }]>;
 	}
 
-	const {
-		text,
-		language,
-		annotations = [],
-		onAddAnnotation,
-		onRemoveAnnotation,
-		annotation,
-		annotationInput
-	}: Props = $props();
-
-	let activeAddLine = $state<number | null>(null);
+	const { text, language, class: klass, onLineClick, extra }: Props = $props();
 	const { preClass, preStyle, lines } = $derived(Markdown.highlightLines(text, language));
-	const annotationsByLine = $derived.by(() => {
-		const map = new SvelteMap<number, CodeAnnotation[]>();
-		for (const item of annotations) {
-			const list = map.get(item.line) ?? [];
-			list.push(item);
-			map.set(item.line, list);
-		}
-		return map;
-	});
-
-	function handleCodeClick(event: MouseEvent) {
-		if (!annotation) return;
-		const target = event.target as HTMLElement | null;
-		const lineEl = target?.closest('.line-number');
-		if (lineEl) {
-			const lineNum = Number(lineEl.getAttribute('data-line'));
-			activeAddLine = activeAddLine === lineNum ? null : lineNum;
-			onAddAnnotation?.(lineNum);
-		}
-	}
+	const gutter = 'w-(--code-gutter) shrink-0 select-none pr-4 text-right text-muted-foreground';
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="code-viewer overflow-auto" onclick={handleCodeClick}>
-	<!-- {@const { preClass, preStyle, lines } = Markdown.highlightLines(text, language)} -->
-	<pre class={preClass} style={preStyle}><code>
-		{#each lines as lineHtml, index (index)}
-			{@const lineNum = index + 1}
-			{@const lineAnnotations = annotationsByLine.get(lineNum)}
-			{@const isAdding = activeAddLine === lineNum}
+<div class={cn("flex-1 min-h-0 overflow-auto font-mono text-sm leading-6", klass)} style="--code-gutter: 3.5rem">
+	<div class={['w-max min-w-full py-2', preClass]} style={preStyle}>
+		{#each lines as html, index (index)}
+			{@const line = index + 1}
+				<div class="flex">
+					{#if onLineClick}
+						<button class={cn(gutter, "hover:text-primary cursor-pointer")} onclick={() => onLineClick(line)}>
+							{line}
+						</button>
 
-			<div class="code-line-row">
-				<div class="code-line">
+						<!-- <button
+							type="button"
+							class="{gutter} cursor-pointer opacity-60 transition-opacity hover:text-primary hover:opacity-100 focus-visible:opacity-100"
+							aria-label="Annotate line {line}"
+							onclick={() => onLineClick(line)}
+						>
+							{line}
+						</button> -->
+					{:else}
+						<span class="{gutter} opacity-60">{line}</span>
+					{/if}
 					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-					{@html lineHtml}
+					<span class="pr-4 whitespace-pre">{@html html}</span>
 				</div>
-
-				{#if lineAnnotations?.length || isAdding}
-					<div class="annotation-container">
-						{#if lineAnnotations}
-							{#each lineAnnotations as item (item.id)}
-								{#if annotation}
-									{@render annotation({
-										annotation: item,
-										line: lineNum,
-										remove: () => onRemoveAnnotation?.(item.id)
-									})}
-								{/if}
-							{/each}
-						{/if}
-
-						{#if isAdding && annotationInput}
-							{@render annotationInput({
-								line: lineNum,
-								close: () => (activeAddLine = null)
-							})}
-						{/if}
-					</div>
-				{/if}
-			</div>
+				{@render extra?.({ line })}
 		{/each}
-	</code></pre>
+	</div>
 </div>

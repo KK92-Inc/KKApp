@@ -1,7 +1,7 @@
 <script lang="ts">
+	import { Download, FileExclamationPoint } from '@lucide/svelte';
 	import { Button } from '$lib/components/button';
 	import * as Empty from '$lib/components/empty';
-	import { Download, FileExclamationPoint } from '@lucide/svelte';
 
 	const { download }: { download: () => void } = $props();
 </script>
@@ -11,15 +11,13 @@
 		<Empty.Media variant="icon">
 			<FileExclamationPoint />
 		</Empty.Media>
-		<Empty.Title>Binary File</Empty.Title>
-		<Empty.Description>
-			This is a binary file and thus it is not possible at this time to view it.
-		</Empty.Description>
+		<Empty.Title>Binary file</Empty.Title>
+		<Empty.Description>This file can't be previewed. Download it to open it.</Empty.Description>
 	</Empty.Header>
 	<Empty.Content>
-		<Button variant="outline" aria-label="Download" onclick={download}>
+		<Button variant="outline" onclick={download}>
 			<Download class="size-4" />
-			Download File
+			Download file
 		</Button>
 	</Empty.Content>
 </Empty.Root>

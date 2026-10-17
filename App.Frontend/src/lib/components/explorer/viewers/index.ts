@@ -3,17 +3,11 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-import Code, { type CodeAnnotation } from './code.svelte';
+import Code from './code.svelte';
 import Image from './image.svelte';
-import Empty from './empty.svelte';
 import Binary from './binary.svelte';
+import Empty from './empty.svelte';
 
 // ============================================================================
 
-export {
-	Code,
-	Image,
-	Empty,
-	Binary,
-	type CodeAnnotation
-};
+export { Code, Image, Binary, Empty };

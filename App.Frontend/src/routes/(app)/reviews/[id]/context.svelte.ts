@@ -3,18 +3,44 @@
 // See README in the root project for more information.
 // ============================================================================
 
+import type { components } from "$lib/api/api";
 import { driver } from "driver.js";
 import { createContext } from "svelte";
+import { SvelteMap } from "svelte/reactivity";
 
 // ============================================================================
 
+export type Annotation = Extract<components['schemas']['AnnotationData'], { $type: "Comment" }>
+
 export class Context {
-
-	// public review = $state<components['schemas']['ReviewDO']>(null!);
-	// public round = $state<components['schemas']['ReviewRoundDO']>();
-	// public view = $state<"submission" | "assignment">("assignment");
-
 	constructor(public readonly reviewId: () => string) { }
+
+	/** Final Conclusion made for the review if it is passable. */
+	public pass = $state(false);
+	/** Final Conclusion made for the review. */
+	public conclusion = $state("");
+	/** Key: File Path; Value: Annotations on that file. */
+	public annotations = new SvelteMap<string, Annotation[]>([]);
+
+	public addAnnotation(path: string, comment: Annotation) {
+		const existing = this.annotations.get(path) ?? [];
+		// Optional: filter out any existing comment on the exact same row before adding a new one
+		const filtered = existing.filter((a) => a.rowStart !== comment.rowStart);
+		this.annotations.set(path, [...filtered, comment]);
+	}
+
+	/** Remove an annotation by its starting row */
+	public removeAnnotation(path: string, rowStart: number) {
+		const existing = this.annotations.get(path);
+		if (!existing) return;
+
+		const updated = existing.filter((a) => a.rowStart !== rowStart);
+		if (updated.length === 0) {
+			this.annotations.delete(path); // Clean up map entry if empty
+		} else {
+			this.annotations.set(path, updated);
+		}
+	}
 }
 
 export const startTour = () => {

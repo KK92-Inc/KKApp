@@ -33,7 +33,7 @@
 								<HeartHandshake />
 							</Button>
 						{/if}
-						<Button variant="outline" size="icon-sm">
+						<Button variant="outline" size="icon-sm" href="/reviews/{review.id}">
 							<ArrowRight />
 						</Button>
 					</ButtonGroup.Root>
