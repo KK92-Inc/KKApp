@@ -7978,7 +7978,7 @@ export interface paths {
         };
         /**
          * Unfreeze a user
-         * @description Remove a user's freeze and re-enable their account
+         * @description Cancel a user's freeze, in effect or still to come, and re-enable their account if it was locked
          */
         delete: {
             parameters: {
@@ -11331,6 +11331,8 @@ export interface components {
             startsAt: string;
             /** Format: date-time */
             endsAt: string;
+            /** Format: date-time */
+            invalidatedAt: null | string;
             user: components["schemas"]["UserLightDO"];
         };
         GitDO: {
@@ -11388,7 +11390,7 @@ export interface components {
              * Format: date-time
              * @description When the kickoff actually started and its applicants were promoted. Null while it is still upcoming.
              */
-            startedAt?: null | string;
+            startedAt: null | string;
         };
         KickoffUsersRequestDTO: {
             /** @description The ids of the users. Duplicates are ignored. */

@@ -27,7 +27,7 @@ public class FreezeUserHandler(
     {
         var now = time.GetUtcNow();
         var freeze = await context.Freezes
-            .Where(f => f.UserId == message.UserId && f.StartsAt <= now && f.EndsAt > now)
+            .Where(f => f.UserId == message.UserId && f.InvalidatedAt == null && f.StartsAt <= now && f.EndsAt > now)
             .FirstOrDefaultAsync(token);
 
         // No active freeze found (cancelled, expired, or never started).

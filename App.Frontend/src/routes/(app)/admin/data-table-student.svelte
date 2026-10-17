@@ -3,7 +3,8 @@
 	import type { components } from '$lib/api/api';
 
 	interface Props {
-		user: components['schemas']['UserDO'];
+		/** Both the full and the light user fit, the cell only needs this much. */
+		user: Pick<components['schemas']['UserLightDO'], 'id' | 'login' | 'firstName' | 'lastName' | 'avatarUrl'>;
 	}
 
 	let { user }: Props = $props();

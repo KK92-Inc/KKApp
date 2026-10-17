@@ -256,7 +256,12 @@ public class UserService(
     {
         var now = time.GetUtcNow();
         return await context.Freezes
-            .Where(f => f.UserId == id && f.StartsAt <= now && f.EndsAt > now)
+            .Where(
+                f => f.UserId == id &&
+                f.InvalidatedAt == null &&
+                f.StartsAt <= now &&
+                f.EndsAt > now
+            )
             .FirstOrDefaultAsync(token);
     }
 
@@ -270,13 +275,21 @@ public class UserService(
         return result.Entity;
     }
 
-    public async Task UnFreezeAsync(Guid id, CancellationToken token = default)
+    public async Task<Freeze> UnFreezeAsync(Guid id, CancellationToken token = default)
     {
-        var freeze = await GetFreezeAsync(id, token);
-        ServiceException.ThrowIf(freeze is null, "User has no active freeze.");
+        // The one in effect, or else the next one to come. Not just the one in effect
+        // like GetFreezeAsync, an upcoming freeze has to be cancellable too.
+        var now = time.GetUtcNow();
+        var freeze = await context.Freezes
+            .Where(f => f.UserId == id && f.InvalidatedAt == null && f.EndsAt > now)
+            .OrderBy(f => f.StartsAt)
+            .FirstOrDefaultAsync(token);
+            
+        ServiceException.ThrowIf(freeze is null, "User has no active or upcoming freeze.");
 
-        freeze.InvalidatedAt = time.GetUtcNow();
+        freeze.InvalidatedAt = now;
         await context.SaveChangesAsync(token);
+        return freeze;
     }
 
     public async Task<PaginatedList<Freeze>> GetFrozenUsersAsync(ISorting sorting, IPagination pagination, CancellationToken token = default)

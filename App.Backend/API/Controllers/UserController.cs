@@ -210,7 +210,7 @@ In regards to rubrics it will evaluate if user is elligible to conduct a review 
 	[ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
 	[ProducesErrorResponseType(typeof(ProblemDetails))]
 	[EndpointSummary("Unfreeze a user")]
-	[EndpointDescription("Remove a user's freeze and re-enable their account")]
+	[EndpointDescription("Cancel a user's freeze, in effect or still to come, and re-enable their account if it was locked")]
 	public async Task<IActionResult> Unfreeze(Guid userId, CancellationToken token)
 	{
 		if (userId == User.GetSID())
@@ -219,8 +219,11 @@ In regards to rubrics it will evaluate if user is elligible to conduct a review 
 		var user = await users.FindByIdAsync(userId, token);
 		if (user is null) return NotFound();
 
-		await users.UnFreezeAsync(user.Id, token);
-		await bus.PublishAsync(new UnFreezeUserMessage(user.Id));
+		var freeze = await users.UnFreezeAsync(user.Id, token);
+
+		// A freeze that hadn't started never locked the account, so there is nothing to undo.
+		if (freeze.StartsAt <= time.GetUtcNow())
+			await bus.PublishAsync(new UnFreezeUserMessage(user.Id, true));
 		return NoContent();
 	}
 

@@ -76,7 +76,8 @@ public interface IUserService : IDomainService<User>
     );
 
     /// <summary>
-    /// Gets a active freeze for a user if they have one.
+    /// Gets the freeze that is in effect right now for a user, if they have one.
+    /// A cancelled freeze is no longer in effect.
     /// </summary>
     /// <param name="id"></param>
     /// <param name="token">Cancellation token.</param>
@@ -92,13 +93,15 @@ public interface IUserService : IDomainService<User>
     public Task<Freeze> FreezeAsync(Guid id, Freeze entity, CancellationToken token = default);
 
     /// <summary>
-    /// Unfreezes a user, internally it deletes the freeze row and re-enables the
-    /// account. The scheduled unfreeze will just not do anything.
+    /// Cancels the freeze of a user that is in effect or still to come by marking it
+    /// as invalidated, the row is kept as a record. This only touches the freeze:
+    /// when it was already in effect the caller has to re-enable the account.
+    /// The scheduled start and end of a cancelled freeze do nothing.
     /// </summary>
-    /// <param name="id"></param>
+    /// <param name="id">The user.</param>
     /// <param name="token">Cancellation token.</param>
-    /// <returns></returns>
-    public Task UnFreezeAsync(Guid id, CancellationToken token = default);
+    /// <returns>The freeze that was cancelled.</returns>
+    public Task<Freeze> UnFreezeAsync(Guid id, CancellationToken token = default);
 
     #endregion
 

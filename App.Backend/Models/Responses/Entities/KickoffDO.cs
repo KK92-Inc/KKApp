@@ -43,6 +43,6 @@ public class KickoffDO
     [Required, Description("The scheduled date on when this kickoff is invoked.")]
     public DateTimeOffset StartsAt { get; set; }
 
-    [Description("When the kickoff actually started and its applicants were promoted. Null while it is still upcoming.")]
+    [Required, Description("When the kickoff actually started and its applicants were promoted. Null while it is still upcoming.")]
     public DateTimeOffset? StartedAt { get; set; }
 }

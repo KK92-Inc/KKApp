@@ -25,6 +25,24 @@ public class UnFreezeUserHandler(
     public async Task Handle(UnFreezeUserMessage message, CancellationToken token)
     {
         var now = time.GetUtcNow();
+
+        if (message.Cancelled)
+        {
+            // Cancelled while in effect: the freeze is already marked invalidated, so only
+            // keep the account locked if some other freeze is still in effect for this user.
+            var frozen = await context.Freezes.AnyAsync(
+                f => f.UserId == message.UserId &&
+                f.InvalidatedAt == null &&
+                f.StartsAt <= now &&
+                f.EndsAt > now,
+                token
+            );
+
+            if (!frozen)
+                await keycloak.EnableUserAsync(message.UserId, token);
+            return;
+        }
+
         var freeze = await context.Freezes
             .Where(f => f.UserId == message.UserId && f.StartsAt <= now && f.EndsAt <= now)
             .FirstOrDefaultAsync(token);

@@ -156,7 +156,7 @@ public sealed class UserTools(
     });
 
     [McpServerTool(Name = "unfreeze_user", Destructive = false, Idempotent = true)]
-    [Description("Remove a user's freeze and re-enable their account.")]
+    [Description("Cancel a user's freeze, in effect or upcoming, and re-enable their account if it was locked.")]
     public Task<string> UnfreezeUser([Description("The user's UUID")] Guid userId, CancellationToken ct = default) => Safe(async () =>
     {
         Require(McpMode.Write);
@@ -165,8 +165,10 @@ public sealed class UserTools(
         if (userId == Caller.GetSID()) throw new McpException("Can't unfreeze yourself.");
         var user = await users.FindByIdAsync(userId, ct) ?? throw new McpException("User not found.");
 
-        await users.UnFreezeAsync(user.Id, ct);
-        await bus.PublishAsync(new UnFreezeUserMessage(user.Id));
+        var freeze = await users.UnFreezeAsync(user.Id, ct);
+        if (freeze.StartsAt > time.GetUtcNow()) return $"Cancelled the upcoming freeze of {user.Login}.";
+
+        await bus.PublishAsync(new UnFreezeUserMessage(user.Id, Cancelled: true));
         return $"Unfroze {user.Login}.";
     });
 

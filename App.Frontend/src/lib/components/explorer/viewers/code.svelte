@@ -31,15 +31,6 @@
 						<button class={cn(gutter, "hover:text-primary cursor-pointer")} onclick={() => onLineClick(line)}>
 							{line}
 						</button>
-
-						<!-- <button
-							type="button"
-							class="{gutter} cursor-pointer opacity-60 transition-opacity hover:text-primary hover:opacity-100 focus-visible:opacity-100"
-							aria-label="Annotate line {line}"
-							onclick={() => onLineClick(line)}
-						>
-							{line}
-						</button> -->
 					{:else}
 						<span class="{gutter} opacity-60">{line}</span>
 					{/if}

@@ -22,6 +22,7 @@ public class FreezeDO : BaseEntityDO<Freeze>
         Reason = freeze.Reason;
         StartsAt = freeze.StartsAt;
         EndsAt = freeze.EndsAt;
+        InvalidatedAt = freeze.InvalidatedAt;
         User = freeze.User;
     }
 
@@ -33,6 +34,12 @@ public class FreezeDO : BaseEntityDO<Freeze>
 
     [Required]
     public DateTimeOffset EndsAt { get; set; }
+
+    /// <summary>
+    /// When the freeze was cancelled, null while it hasn't been.
+    /// </summary>
+    [Required]
+    public DateTimeOffset? InvalidatedAt { get; set; }
 
     [Required]
     public UserLightDO User { get; set; } = null!;
