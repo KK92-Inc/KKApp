@@ -75,5 +75,5 @@ public enum NotificationMeta
     /// I.e: Show up on the homepage feed
 	/// </summary>
 	[JsonPropertyName(nameof(Completed))]
-	Completed = 1 << 11,
+	Completed = 1 << 12,
 }

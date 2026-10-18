@@ -10,19 +10,11 @@
 	import Reviews from './reviews.svelte';
 	import { page } from '$app/state';
 	import Events from './events.svelte';
-
-	function feed(page: number) {
-		return Account.getNotificationPage({
-			page,
-			sort: 'Descending',
-			size: 20,
-			variant: 1024
-		});
-	}
+	import { Separator } from '$lib/components/separator';
 </script>
 
-<div class="container mx-auto grid grid-cols-1 gap-6 px-6 py-4 lg:grid-cols-[1fr_24rem]">
-	<div class="flex flex-col gap-6">
+<div class="container mx-auto grid grid-cols-1 gap-2 px-6 py-4 lg:grid-cols-[1fr_24rem]">
+	<div class="flex flex-col gap-3">
 		<Button
 			href="/users/{page.data.session.userId}/cursus"
 			variant="outline"
@@ -39,12 +31,20 @@
 			</section>
 		</Button>
 
-		<!-- <span class="flex items-center gap-3">
-			<p class="font-bold whitespace-nowrap">My Feed</p>
+		<span class="flex items-center gap-3">
+			<p class="font-bold whitespace-nowrap">Your Feed</p>
 			<Separator orientation="horizontal" class="flex-1" />
-		</span> -->
+		</span>
 
-		<Scroller load={async (page) => feed(page)}>
+		<Scroller
+			load={async (page) =>
+				Account.getNotificationPage({
+					page,
+					sort: 'Descending',
+					size: 20,
+					variant: 1 << 10
+				})}
+		>
 			{#snippet item(item)}
 				<Feed notification={item} />
 			{/snippet}

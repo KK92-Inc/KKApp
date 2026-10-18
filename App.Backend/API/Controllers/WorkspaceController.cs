@@ -318,6 +318,7 @@ such as official cursi, projects or rubrics.
     [HttpPost("{id:guid}/application")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProtectedResource("applications", "applications:write")]
     [EndpointSummary("Create a new application")]
     [EndpointDescription("Create a new application client linked to this workspace and fetch its initial credential secret.")]
@@ -325,6 +326,16 @@ such as official cursi, projects or rubrics.
     {
         var space = await service.FindByIdAsync(id, token);
         if (space is null) return NotFound();
+
+        var staff = await auth.AuthorizeAsync(User, "staff");
+        if (!staff.Succeeded)
+        {
+            if (space.Owner is null) // Non-staff trying to edit the root workspace
+                return Forbid();
+
+            if (space.OwnerId != User.GetSID())
+                return Forbid();
+        }
 
         var app = await applicationService.CreateAsync(new Application
         {
@@ -344,6 +355,7 @@ such as official cursi, projects or rubrics.
     [HttpPatch("/application/{appId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProtectedResource("applications", "applications:write")]
     [EndpointSummary("Update an existing application")]
     [EndpointDescription("Update an existing application metadata configuration and synchronize changes out to Keycloak.")]
@@ -351,6 +363,16 @@ such as official cursi, projects or rubrics.
     {
         var app = await applicationService.FindByIdAsync(appId, token);
         if (app is null) return NotFound();
+
+        var staff = await auth.AuthorizeAsync(User, "staff");
+        if (!staff.Succeeded)
+        {
+            // Non-staff trying to edit the root workspace
+            if (app.Workspace.Owner is null)
+                return Forbid();
+            if (app.Workspace.OwnerId != User.GetSID())
+                return Forbid();
+        }
 
         app.Name = dto.Name ?? app.Name;
         app.Enabled = dto.Enabled ?? app.Enabled;
@@ -367,6 +389,7 @@ such as official cursi, projects or rubrics.
     [ProtectedResource("applications", "applications:delete")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [EndpointSummary("Delete an existing application")]
     [EndpointDescription("Permanently delete an application registration and dismantle its linked client in Keycloak.")]
     public async Task<IActionResult> DeleteApplication(Guid appId, CancellationToken token)
@@ -374,8 +397,15 @@ such as official cursi, projects or rubrics.
         var app = await applicationService.FindByIdAsync(appId, token);
         if (app is null) return NotFound();
 
-        if (app.Workspace.OwnerId != User.GetSID())
-            return Forbid();
+        var staff = await auth.AuthorizeAsync(User, "staff");
+        if (!staff.Succeeded)
+        {
+            // Non-staff trying to edit the root workspace
+            if (app.Workspace.Owner is null)
+                return Forbid();
+            if (app.Workspace.OwnerId != User.GetSID())
+                return Forbid();
+        }
 
         await applicationService.DeleteAsync(app, token);
         return NoContent();
@@ -386,6 +416,7 @@ such as official cursi, projects or rubrics.
     [ProtectedResource("applications", "applications:write")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [EndpointSummary("Rotate client secret")]
     [EndpointDescription("Rotate / request a new secret")]
     public async Task<IActionResult> RotateApplicationSecret(Guid appId, CancellationToken token)
@@ -393,8 +424,16 @@ such as official cursi, projects or rubrics.
         var app = await applicationService.FindByIdAsync(appId, token);
         if (app is null) return NotFound();
 
-        if (app.Workspace.OwnerId != User.GetSID())
-            return Forbid();
+        var staff = await auth.AuthorizeAsync(User, "staff");
+        if (!staff.Succeeded)
+        {
+            // Non-staff trying to edit the root workspace
+            if (app.Workspace.Owner is null)
+                return Forbid();
+
+            if (app.Workspace.OwnerId != User.GetSID())
+                return Forbid();
+        }
 
         var secret = await applicationService.RotateClientSecretAsync(app, token);
         Response.Headers.TryAdd("X-Client-Secret", secret);

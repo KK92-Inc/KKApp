@@ -59,7 +59,6 @@
 				});
 
 				payload.avatar = data.avatarUrl;
-
 				toast.success('Profile updated!');
 			},
 			{ onValidation: (fields) => (errors = fields) }

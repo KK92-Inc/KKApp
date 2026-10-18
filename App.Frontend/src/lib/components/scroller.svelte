@@ -18,7 +18,7 @@
 	const { load, item, class: klass, threshold = 300, end }: Props = $props();
 
 	let items = $state.raw<T[]>([]);
-	let page = $state(1);
+	let page = $state(0);
 	let loading = $state(false);
 	let finished = $state(false);
 	let error = $state<unknown>(null);
@@ -79,7 +79,7 @@
 			{#if end}
 				{@render end()}
 			{:else}
-				<Empty.Root class="h-64 bg-linear-to-b from-muted/80 from-10% to-background">
+				<Empty.Root class="mt-2 h-64 bg-linear-to-b from-muted/80 from-10% to-background">
 					<Empty.Header>
 						<Empty.Media style="image-rendering: pixelated" variant="icon" class="bg-transparent">
 							<img alt="mona" src="/nyan.gif" />
@@ -105,6 +105,13 @@
 				{/if}
 			</div>
 		{/if}
+
+		{#snippet pending()}
+			<div class="flex w-full flex-col items-center justify-center gap-2 py-6 text-muted-foreground">
+				<Loader />
+				<span class="text-sm">Loading...</span>
+			</div>
+		{/snippet}
 
 		{#snippet failed(_error, reset)}
 			<div class="flex w-full flex-col items-center justify-center gap-2 py-8 text-destructive">

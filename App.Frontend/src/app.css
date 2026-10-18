@@ -145,50 +145,12 @@
 	.h-page {
 		@apply h-[calc(100svh-var(--header-height))]!;
 	}
-
-		  .pierre-theme-wrapper .pierre-file-tree,
-  .pierre-theme-wrapper .file-tree {
-    background-color: transparent !important;
-    color: hsl(var(--foreground)) !important;
-    font-family: inherit !important;
-  }
-
-  .pierre-theme-wrapper .tree-node,
-  .pierre-theme-wrapper .tree-item {
-    border-radius: var(--radius) !important;
-    padding: 0.25rem 0.5rem !important;
-    cursor: pointer;
-    transition: background-color 0.15s ease;
-  }
-
-  .pierre-theme-wrapper .tree-node:hover,
-  .pierre-theme-wrapper .tree-item:hover {
-    background-color: hsl(var(--muted)) !important;
-  }
-
-  .pierre-theme-wrapper .tree-node.selected,
-  .pierre-theme-wrapper .tree-item.selected {
-    background-color: hsl(var(--accent)) !important;
-    color: hsl(var(--accent-foreground)) !important;
-  }
-
-  .pierre-theme-wrapper svg {
-    stroke: hsl(var(--muted-foreground)) !important;
-  }
-
-  /* Overrides for their search input if search: true is enabled */
-  .pierre-theme-wrapper input[type="text"] {
-    background-color: hsl(var(--background)) !important;
-    color: hsl(var(--foreground)) !important;
-    border: 1px solid hsl(var(--border)) !important;
-    border-radius: var(--radius) !important;
-  }
 }
 
 .markdown {
 	@apply text-foreground text-sm leading-relaxed;
 
-	& h1 { @apply text-2xl font-bold mt-6 mb-3; }
+	& h1 { @apply text-2xl font-bold mt-0 mb-3; }
 	& h2 { @apply text-xl font-semibold mt-5 mb-2; }
 	& h3 { @apply text-lg font-semibold mt-4 mb-2; }
 	& h4 { @apply text-base font-semibold mt-3 mb-1; }
