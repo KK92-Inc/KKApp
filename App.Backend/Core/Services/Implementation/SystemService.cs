@@ -70,6 +70,7 @@ public class SystemService(
                     Login = Login,
                     Display = Login,
                     Email = Email,
+                    Role = UserRole.Staff,
                     FirstName = First,
                     LastName = Last,
                 }, ct);

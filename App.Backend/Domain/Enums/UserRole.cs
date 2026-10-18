@@ -12,14 +12,13 @@ namespace App.Backend.Domain.Enums;
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum UserRole
 {
-
     [JsonPropertyName(nameof(Applicant))]
-    Applicant = 1,
+    Applicant = 0,
 
     [JsonPropertyName(nameof(Student))]
-    Student = 2,
+    Student = 1,
 
     [JsonPropertyName(nameof(Staff))]
-    Staff = 3,
+    Staff = 2,
 }
 
