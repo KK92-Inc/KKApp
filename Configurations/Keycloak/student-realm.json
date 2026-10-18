@@ -1183,17 +1183,6 @@
             }
           },
           {
-            "name": "Role: Staff",
-            "description": "",
-            "type": "role",
-            "logic": "POSITIVE",
-            "decisionStrategy": "UNANIMOUS",
-            "config": {
-              "fetchRoles": "true",
-              "roles": "[{\"id\":\"staff\",\"required\":true}]"
-            }
-          },
-          {
             "name": "Role: Applicant",
             "type": "role",
             "logic": "POSITIVE",
@@ -1204,13 +1193,14 @@
             }
           },
           {
-            "name": "Access: Student",
-            "description": "Manages the access level for students",
-            "type": "aggregate",
+            "name": "Role: Staff",
+            "description": "",
+            "type": "role",
             "logic": "POSITIVE",
-            "decisionStrategy": "AFFIRMATIVE",
+            "decisionStrategy": "UNANIMOUS",
             "config": {
-              "applyPolicies": "[\"Access: Staff\",\"Role: Student\"]"
+              "fetchRoles": "true",
+              "roles": "[{\"id\":\"staff\",\"required\":true}]"
             }
           },
           {
@@ -1224,13 +1214,23 @@
             }
           },
           {
+            "name": "Access: Student",
+            "description": "Manages the access level for students",
+            "type": "aggregate",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "applyPolicies": "[\"Access: Staff\",\"Role: Student\"]"
+            }
+          },
+          {
             "name": "Access: Applicant",
             "description": "Manages the access level for applicants.",
             "type": "aggregate",
             "logic": "POSITIVE",
             "decisionStrategy": "AFFIRMATIVE",
             "config": {
-              "applyPolicies": "[\"Role: Staff\",\"Role: Applicant\",\"Role: Student\"]"
+              "applyPolicies": "[\"Role: Applicant\",\"Role: Student\",\"Role: Staff\"]"
             }
           },
           {
@@ -1241,7 +1241,7 @@
             "decisionStrategy": "AFFIRMATIVE",
             "config": {
               "resources": "[\"cursus\"]",
-              "scopes": "[\"cursus:write\",\"cursus:delete\"]",
+              "scopes": "[\"cursus:delete\",\"cursus:write\"]",
               "applyPolicies": "[\"Access: Staff\"]"
             }
           },
@@ -1266,7 +1266,7 @@
             "config": {
               "resources": "[\"users\"]",
               "scopes": "[\"user:profile:read\",\"user:profile:write\"]",
-              "applyPolicies": "[\"Access: Staff\",\"Access: Student\",\"Access: Applicant\"]"
+              "applyPolicies": "[\"Access: Applicant\",\"Access: Staff\",\"Access: Student\"]"
             }
           },
           {
@@ -1277,7 +1277,7 @@
             "decisionStrategy": "AFFIRMATIVE",
             "config": {
               "resources": "[\"projects\"]",
-              "scopes": "[\"projects:write\",\"projects:delete\"]",
+              "scopes": "[\"projects:delete\",\"projects:write\"]",
               "applyPolicies": "[\"Access: Staff\"]"
             }
           },
@@ -1302,7 +1302,7 @@
             "config": {
               "resources": "[\"reviews\"]",
               "scopes": "[\"reviews:delete\",\"reviews:write\"]",
-              "applyPolicies": "[\"Access: Staff\",\"Access: Student\",\"Access: Applicant\"]"
+              "applyPolicies": "[\"Access: Applicant\",\"Access: Staff\",\"Access: Student\"]"
             }
           },
           {
@@ -1363,7 +1363,7 @@
             "config": {
               "resources": "[\"cursus\"]",
               "scopes": "[\"cursus:read\"]",
-              "applyPolicies": "[\"Access: Staff\",\"Access: Student\",\"Access: Applicant\"]"
+              "applyPolicies": "[\"Access: Applicant\",\"Access: Staff\",\"Access: Student\"]"
             }
           },
           {
@@ -1375,7 +1375,7 @@
             "config": {
               "resources": "[\"goals\"]",
               "scopes": "[\"goals:read\"]",
-              "applyPolicies": "[\"Access: Staff\",\"Access: Student\",\"Access: Applicant\"]"
+              "applyPolicies": "[\"Access: Applicant\",\"Access: Staff\",\"Access: Student\"]"
             }
           },
           {
@@ -1387,7 +1387,7 @@
             "config": {
               "resources": "[\"projects\"]",
               "scopes": "[\"projects:read\"]",
-              "applyPolicies": "[\"Access: Staff\",\"Access: Student\",\"Access: Applicant\"]"
+              "applyPolicies": "[\"Access: Applicant\",\"Access: Staff\",\"Access: Student\"]"
             }
           },
           {
@@ -1399,7 +1399,7 @@
             "config": {
               "resources": "[\"repository\"]",
               "scopes": "[\"repository:read\"]",
-              "applyPolicies": "[\"Access: Staff\",\"Access: Student\",\"Access: Applicant\"]"
+              "applyPolicies": "[\"Access: Applicant\",\"Access: Staff\",\"Access: Student\"]"
             }
           },
           {
@@ -1411,7 +1411,7 @@
             "config": {
               "resources": "[\"reviews\"]",
               "scopes": "[\"reviews:read\"]",
-              "applyPolicies": "[\"Access: Staff\",\"Access: Student\",\"Access: Applicant\"]"
+              "applyPolicies": "[\"Access: Applicant\",\"Access: Staff\",\"Access: Student\"]"
             }
           },
           {
@@ -1422,8 +1422,8 @@
             "decisionStrategy": "AFFIRMATIVE",
             "config": {
               "resources": "[\"comments\"]",
-              "scopes": "[\"comments:read\",\"comments:write\",\"comments:delete\"]",
-              "applyPolicies": "[\"Access: Staff\",\"Access: Student\",\"Access: Applicant\"]"
+              "scopes": "[\"comments:write\",\"comments:read\",\"comments:delete\"]",
+              "applyPolicies": "[\"Access: Applicant\",\"Access: Staff\",\"Access: Student\"]"
             }
           },
           {
@@ -1447,7 +1447,7 @@
             "config": {
               "resources": "[\"rubrics\"]",
               "scopes": "[\"rubrics:read\"]",
-              "applyPolicies": "[\"Access: Staff\",\"Access: Student\",\"Access: Applicant\"]"
+              "applyPolicies": "[\"Access: Applicant\",\"Access: Staff\",\"Access: Student\"]"
             }
           },
           {
@@ -1459,7 +1459,7 @@
             "config": {
               "resources": "[\"users\"]",
               "scopes": "[\"users:read\"]",
-              "applyPolicies": "[\"Access: Staff\",\"Access: Student\",\"Access: Applicant\"]"
+              "applyPolicies": "[\"Access: Applicant\",\"Access: Staff\",\"Access: Student\"]"
             }
           },
           {
@@ -1471,7 +1471,7 @@
             "config": {
               "resources": "[\"workspaces\"]",
               "scopes": "[\"workspaces:read\"]",
-              "applyPolicies": "[\"Access: Staff\"]"
+              "applyPolicies": "[\"Access: Applicant\",\"Access: Staff\",\"Access: Student\"]"
             }
           }
         ],
@@ -1567,11 +1567,11 @@
             "displayName": "Delete Cursi"
           },
           {
-            "name": "goals:delete",
-            "displayName": "Delete Goals"
+            "name": "rubrics:delete"
           },
           {
-            "name": "rubrics:delete"
+            "name": "goals:delete",
+            "displayName": "Delete Goals"
           },
           {
             "name": "reviews:delete",
@@ -2559,17 +2559,20 @@
     "strictTransportSecurity": "max-age=31536000; includeSubDomains"
   },
   "smtpServer": {
-    "password": "**********",
+    "allowutf8": "",
     "replyToDisplayName": "",
+    "debug": "false",
     "starttls": "false",
     "auth": "true",
+    "envelopeFrom": "",
+    "ssl": "false",
+    "password": "**********",
     "port": "465",
     "host": "smtp.resend.com",
     "replyTo": "",
-    "from": "business@w2wizard.dev",
-    "fromDisplayName": "Hamette",
-    "envelopeFrom": "",
-    "ssl": "false",
+    "from": "no-reply@kk92.net",
+    "fromDisplayName": "",
+    "authType": "basic",
     "user": "resend"
   },
   "loginTheme": "keycloak.v2",
@@ -2687,14 +2690,14 @@
         "subComponents": {},
         "config": {
           "allowed-protocol-mapper-types": [
-            "oidc-usermodel-attribute-mapper",
-            "saml-user-property-mapper",
-            "oidc-address-mapper",
-            "oidc-full-name-mapper",
-            "oidc-sha256-pairwise-sub-mapper",
-            "saml-role-list-mapper",
             "oidc-usermodel-property-mapper",
-            "saml-user-attribute-mapper"
+            "oidc-usermodel-attribute-mapper",
+            "oidc-address-mapper",
+            "oidc-sha256-pairwise-sub-mapper",
+            "oidc-full-name-mapper",
+            "saml-user-property-mapper",
+            "saml-user-attribute-mapper",
+            "saml-role-list-mapper"
           ]
         }
       },
@@ -2721,14 +2724,14 @@
         "subComponents": {},
         "config": {
           "allowed-protocol-mapper-types": [
-            "oidc-address-mapper",
-            "oidc-usermodel-attribute-mapper",
-            "oidc-sha256-pairwise-sub-mapper",
-            "saml-user-property-mapper",
             "oidc-usermodel-property-mapper",
+            "saml-user-property-mapper",
+            "saml-user-attribute-mapper",
+            "oidc-sha256-pairwise-sub-mapper",
+            "oidc-usermodel-attribute-mapper",
             "oidc-full-name-mapper",
-            "saml-role-list-mapper",
-            "saml-user-attribute-mapper"
+            "oidc-address-mapper",
+            "saml-role-list-mapper"
           ]
         }
       },
