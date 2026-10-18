@@ -26,7 +26,7 @@
 	const updatedAt = $derived(formatDate(project.updatedAt, 'date'));
 </script>
 
-<Card.Root class="gap-1 overflow-hidden p-0">
+<Card.Root class="gap-1 p-0">
 	<div
 		class="relative border-b bg-muted/30 px-6 pt-8 pb-6 text-center"
 		style="background-image: radial-gradient(color-mix(in oklab, var(--foreground) 12%, transparent) 1px, transparent 1px); background-size: 14px 14px;"

@@ -17,12 +17,11 @@
 		CircleCheck
 	} from '@lucide/svelte';
 	import type { components } from '$lib/api/api';
-	import { page } from '$app/state';
 	import * as Page from './context.svelte';
 	import { Button } from '$lib/components/button';
 	import { formatDate } from '$lib/datetime';
 
-	let index = $state(1);
+	let index = $state(0);
 	const context = Page.getContext();
 	const session = $derived(
 		await UserProjects.getByUserAndProject({

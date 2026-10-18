@@ -56,7 +56,7 @@
 		</Layout>.
 	{/snippet}
 
-	<Layout classR="pt-4 flex flex-col gap-2 px-0!" classL="pt-4 flex flex-col gap-2 overflow-hidden!">
+	<Layout classR="pt-4 flex flex-col gap-2 px-0!" classL="py-4 flex flex-col gap-2 scrollbar-none">
 		{#snippet left()}
 			<Components.Info />
 			<Components.Members />

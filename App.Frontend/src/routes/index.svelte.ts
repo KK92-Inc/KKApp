@@ -14,8 +14,6 @@ export const isPublic = (pathname: string) => UNAUTHED.some((r) => pathname.star
 // ============================================================================
 
 // Collect every `index.meta.ts` under src/routes.
-//  - `eager: true`    -> bundled up-front, which is what you want for nav / sidebar data
-//  - `import: 'Meta'` -> only pull the named `Meta` export out of each file
 const modules = import.meta.glob<MetaRecord>('/src/routes/**/index.meta.ts', {
 	eager: true,
 	import: 'Meta'
@@ -42,11 +40,32 @@ function merge(sources: Record<string, MetaRecord>): MetaRecord {
 
 const meta = merge(modules);
 
+/**
+ * Get the meta entry for either a specific route or a child route.
+ * E.g: /(app)/(entities)/projects defines the scope for it's children
+ * Unless a specific one is defined for that route.
+ * @param key The route key to look the meta entry for.
+ * @returns The meta entry.
+ */
+function getForRoute(key: RouteId): MetaEntry | undefined {
+	let match: MetaEntry | undefined;
+	let matchLength = -1;
+
+	for (const [route, entry] of Object.entries(meta)) {
+		if ((key === route || key.startsWith(`${route}/`)) && route.length > matchLength) {
+			match = entry;
+			matchLength = route.length;
+		}
+	}
+
+	return match;
+}
+
 // ============================================================================
 
 export type Meta = typeof meta;
 export type MetaForRoute<R extends keyof Meta> = Meta[R];
 export const MetaData = {
-	get: (key: RouteId) => meta[key],
+	get: getForRoute,
 	meta
 };

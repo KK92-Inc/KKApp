@@ -86,7 +86,7 @@ const authorize: Handle = async ({ event, resolve }) => {
 		return resolve(event);
 	}
 
-	return new Response(null, { status: 404 });
+	return Response.redirect("/");
 };
 
 // ============================================================================
