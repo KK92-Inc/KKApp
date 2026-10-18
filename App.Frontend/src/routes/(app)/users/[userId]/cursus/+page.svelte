@@ -26,7 +26,6 @@
 	let cursusId = $state<string>();
 	let userCursusId = $state<string>();
 	const belongs = $derived(page.data.session.userId === params.userId);
-
 </script>
 
 <Layout cover class="gap-0" classL="border-r p-4 space-y-2" classR="relative">
@@ -110,6 +109,9 @@
 									{#each result.data as cursus (cursus.id)}
 										<Tabs.Trigger value={cursus.id} class={buttonVariants({ variant: 'ghost' })}>
 											<span class="truncate">{cursus.name}</span>
+											{#if cursus.deprecated}
+												<Badge variant="destructive" class="ml-auto rounded-sm">Deprecated</Badge>
+											{/if}
 										</Tabs.Trigger>
 									{:else}
 										<p class="px-3 py-4 text-center text-xs text-muted-foreground">No results found</p>

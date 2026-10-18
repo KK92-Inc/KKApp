@@ -75,15 +75,3 @@ export const getTrack = query(Filters.id, async (id) => {
 	return data;
 });
 
-
-/** Replace the track (goal hierarchy) for a cursus */
-export const setTrack = command(SetTrackSchema, async ({ id, nodes }) => {
-	const { locals } = getRequestEvent();
-	const { error, data } = await locals.api.POST('/cursus/{id}/track', {
-		params: { path: { id } },
-		body: { nodes }
-	});
-
-	if (error || !data) Problem.throw(error);
-	return data;
-});

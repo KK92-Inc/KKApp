@@ -184,42 +184,46 @@ public class CursusController(
         });
     }
 
-    [HttpPost("{id:guid}/track")]
+    [HttpPatch("{id:guid}")]
+    [RequireScope("workspace")]
     [ProtectedResource("cursus", "cursus:write")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
-    [EndpointSummary("Replace cursus track")]
-    [EndpointDescription(@"
-Fully replaces the hierarchical goal track for a static cursus.
-Existing subscribers are not affected.
-    ")]
-    public async Task<ActionResult<CursusTrackDO>> SetTrack(Guid id, [FromBody] PutCursusTrackRequestDTO body, CancellationToken token)
+    [EndpointSummary("Update a cursus")]
+    [EndpointDescription("Update cursus information")]
+    public async Task<ActionResult<CursusDO>> Update(Guid id, [FromBody] PatchCursusRequestDTO body, CancellationToken token)
     {
         var cursus = await service.FindByIdAsync(id, token);
         if (cursus is null) return NotFound();
 
-        await service.ValidateTrackAsync([.. body.Nodes.Select(n => (n.GoalId, n.ParentId))], token);
-        var nodes = body.Nodes.Select(n => new CursusGoal
+        var isStaff = await auth.AuthorizeAsync(User, "staff");
+        if (!isStaff.Succeeded)
         {
-            CursusId = id,
-            GoalId = n.GoalId,
-            ParentGoalId = n.ParentId,
-        });
+            var member = await members.FindByEntityAndUserId(cursus.WorkspaceId, User.GetSID(), token);
+            if (member is null) return Forbid();
+        }
 
-        var track = await service.SetTrackAsync(id, nodes, token);
-        return Ok(new CursusTrackDO()
+        if (body.Track is not null)
         {
-            Mode = cursus.Mode,
-            Nodes = track.Select(n => new CursusTrackNodeDO
+            await service.ValidateTrackAsync([.. body.Track.Nodes.Select(n => (n.GoalId, n.ParentId))], token);
+            var nodes = body.Track.Nodes.Select(n => new CursusGoal
             {
+                CursusId = id,
                 GoalId = n.GoalId,
-                Description = n.Goal.Description,
-                Name = n.Goal.Name,
-                Slug = n.Goal.Slug,
-                ParentGoalId = n.ParentGoalId,
-            })
-        });
+                ParentGoalId = n.ParentId,
+            });
+
+            var track = await service.SetTrackAsync(id, nodes, token);
+        }
+
+        cursus.Name = body.Name ?? cursus.Name;
+        cursus.Description = body.Description ?? cursus.Description;
+        cursus.Enabled = body.Enabled ?? cursus.Enabled;
+        cursus.Public = body.Public ?? cursus.Public;
+        await service.UpdateAsync(cursus, token);
+        return Ok(new CursusDO(cursus));
     }
 }

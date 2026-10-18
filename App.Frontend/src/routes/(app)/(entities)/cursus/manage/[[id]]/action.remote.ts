@@ -30,7 +30,7 @@ type UpdateCursus = { id: string; } & components['schemas']['PostCursusRequestDT
 export const update = command('unchecked', async (body: UpdateCursus) => {
 	const { locals } = getRequestEvent();
 	const { id, ...rest } = body;
-	const { error, data } = await locals.api.PATCH("/projects/{id}", {
+	const { error, data } = await locals.api.PATCH("/cursus/{id}", {
 		params: { path: { id } },
 		body: rest
 	});
@@ -46,7 +46,7 @@ export const update = command('unchecked', async (body: UpdateCursus) => {
 
 export const deprecate = command(Filters.id, async (id) => {
 	const { locals } = getRequestEvent();
-	const { error } = await locals.api.POST("/projects/{id}/deprecate", {
+	const { error } = await locals.api.POST("/cursus/{id}/deprecate", {
 		params: { path: { id } },
 	});
 
@@ -59,7 +59,7 @@ export const deprecate = command(Filters.id, async (id) => {
 
 export const undeprecate = command(Filters.id, async (id) => {
 	const { locals } = getRequestEvent();
-	const { error } = await locals.api.POST("/projects/{id}/undeprecate", {
+	const { error } = await locals.api.POST("/cursus/{id}/undeprecate", {
 		params: { path: { id } },
 	});
 

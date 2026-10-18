@@ -5,7 +5,7 @@
 
 import { createContext } from "svelte";
 import * as Workspace from "$lib/remotes/workspace.remote";
-import * as Goal from "$lib/remotes/goals.remote";
+import * as Cursus from "$lib/remotes/cursus.remote";
 import * as Action from "./action.remote"
 
 import type { components } from "$lib/api/api";
@@ -43,11 +43,59 @@ export class Context {
 
 	public async hydrate() {
 		const id = this.cursusId();
-		if (id) {
+		if (!id) {
 			this.track = [];
 			this.fields = this.original;
 			return;
 		}
+
+		const [cursus, track] = await Promise.all([
+			Cursus.get(id),
+			Cursus.getTrack(id)
+		]);
+
+		this.track = track.nodes;
+		this.fields = { ...cursus };
+	}
+
+	public async submit() {
+		const id = this.cursusId();
+
+		if (id && !await this.dialog.confirm("Update cursus?")) return;
+		if (!id && !await this.dialog.confirm("Create cursus?")) return;
+
+		await Problem.try(async () => {
+			if (id) {
+				const cursus = await Action.update({
+					id,
+					...this.fields,
+					track: {
+						nodes: this.track.map((v) => {
+							return { goalId: v.goalId, parentId: v.parentGoalId }
+						})
+					}
+				});
+
+
+				this.fields = { ...cursus };
+				toast.success(`Project '${cursus.name}' updated`);
+				return;
+			}
+
+			const space = await this.target;
+			const cursus = await Action.create({
+				...this.fields,
+				workspace: space.id,
+				track: {
+					nodes: this.track.map((v) => {
+						return { goalId: v.goalId, parentId: v.parentGoalId }
+					})
+				}
+			})
+
+			toast.success("Project created");
+			await goto(`/cursus/manage/${cursus.id}`);
+		}, { onValidation: (fields) => this.errors = fields });
 	}
 
 	/** Submit a deprecation request */
@@ -76,6 +124,12 @@ export class Context {
 
 		if (await confirmation)
 			await Action.undeprecate(id);
+	}
+
+	private get target() {
+		return this.workspace === "root"
+			? Workspace.root()
+			: Workspace.current();
 	}
 }
 

@@ -986,7 +986,87 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update a cursus
+         * @description Update cursus information
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PatchCursusRequestDTO"];
+                    "text/json": components["schemas"]["PatchCursusRequestDTO"];
+                    "application/*+json": components["schemas"]["PatchCursusRequestDTO"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["CursusDO"];
+                        "application/json": components["schemas"]["CursusDO"];
+                        "text/json": components["schemas"]["CursusDO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         trace?: never;
     };
     "/cursus/{id}/track": {
@@ -1057,84 +1137,7 @@ export interface paths {
             };
         };
         put?: never;
-        /**
-         * Replace cursus track
-         * @description Fully replaces the hierarchical goal track for a static cursus.
-         *     Existing subscribers are not affected.
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["PutCursusTrackRequestDTO"];
-                    "text/json": components["schemas"]["PutCursusTrackRequestDTO"];
-                    "application/*+json": components["schemas"]["PutCursusTrackRequestDTO"];
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["CursusTrackDO"];
-                        "application/json": components["schemas"]["CursusTrackDO"];
-                        "text/json": components["schemas"]["CursusTrackDO"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ProblemDetails"];
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "text/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unprocessable Entity */
-                422: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ProblemDetails"];
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "text/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -11459,6 +11462,17 @@ export interface components {
             scopes?: null | string[];
             /** @description List of allowed redirect URIs after authentication. */
             redirectUris?: null | string[];
+        };
+        PatchCursusRequestDTO: {
+            /** @description The name of cursus */
+            name?: null | string;
+            /** @description Description of the cursus. */
+            description?: null | string;
+            /** @description Indicates whether the cursus can be subscribed to. */
+            enabled?: null | boolean;
+            /** @description Indicates whether the cursus is publicly visible. */
+            public?: null | boolean;
+            track?: null | components["schemas"]["PutCursusTrackRequestDTO"];
         };
         PatchEventRequestDTO: {
             /** @description Name of the event. */

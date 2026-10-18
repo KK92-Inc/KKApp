@@ -8,7 +8,6 @@
 	import * as Field from '$lib/components/field';
 	import * as Card from '$lib/components/card';
 	import * as Tabs from '$lib/components/tabs';
-	import * as Alert from '$lib/components/alert';
 	import * as ButtonGroup from '$lib/components/button-group';
 	import * as Item from '$lib/components/item';
 	import * as Page from './context.svelte';
@@ -20,26 +19,21 @@
 		Blend,
 		CircleDot,
 		CirclePlay,
-		Database,
 		Download,
-		FileText,
-		FlaskConical,
-		GitBranch,
 		Heart,
 		HeartCrack,
-		Info,
 		Link,
 		ListTree,
 		LocateFixed,
 		Network,
 		TrendingUpDown,
-		Unlink,
 		Upload,
 		VectorSquare
 	} from '@lucide/svelte';
 	import CurusRender from './cursus-render.svelte';
 	import CursusSchematic from './cursus-schematic.svelte';
 	import { useDialog } from '$lib/components/dialog';
+	import { Switch } from '$lib/components/switch';
 
 	const dialog = useDialog();
 	const { params }: PageProps = $props();
@@ -50,7 +44,7 @@
 		context.hydrate();
 	});
 
-	function exportTrack() {
+	function download() {
 		const json = JSON.stringify(context.track);
 		const blob = new Blob([json], { type: 'application/json' });
 		const url = URL.createObjectURL(blob);
@@ -65,7 +59,7 @@
 		URL.revokeObjectURL(url);
 	}
 
-	function importTrack(event: Event) {
+	function upload(event: Event) {
 		const target = event.target as HTMLInputElement;
 		const file = target.files?.[0];
 		if (!file) return;
@@ -106,11 +100,11 @@
 		</Layout>
 	{/snippet}
 
-	<input type="file" accept=".json" bind:this={fileInput} onchange={importTrack} class="hidden" />
+	<input type="file" accept=".json" bind:this={fileInput} onchange={upload} class="hidden" />
 
 	<Layout class="px-4" classL="space-y-4" classR="px-0!">
 		{#snippet left()}
-			<Card.Root class="mt-4 gap-1 overflow-hidden p-0">
+			<Card.Root class="mt-4 gap-1 scrollbar-none overflow-auto! p-0">
 				<div
 					class="relative border-b bg-muted/30 px-6 pt-8 pb-6 text-center"
 					style="background-image: radial-gradient(color-mix(in oklab, var(--foreground) 12%, transparent) 1px, transparent 1px); background-size: 14px 14px;"
@@ -176,6 +170,7 @@
 							</Field.Field>
 						{/if}
 
+						{#if !params.id}
 						<Separator class="my-2" />
 
 						<Field.Field>
@@ -198,7 +193,6 @@
 							<Field.Error errors={context.errors.mode} />
 						</Field.Field>
 
-						{#if !params.id}
 							<Separator class="my-2" />
 							<Field.Field>
 								<Field.Label for="variant">Cursus Variant</Field.Label>
@@ -230,6 +224,33 @@
 				</Card.Content>
 			</Card.Root>
 
+<Card.Root class="gap-2 py-4">
+	<Card.Content class="px-4">
+		<Field.Set class="items-center!">
+			<Field.Group class="items-center!">
+				<Field.Field orientation="horizontal" class="items-center!">
+					<Field.Content>
+						<Field.Label for="cursus-enabled" class="flex items-center gap-2">
+							<!-- <Zap size={16} class={cn(enabled ? 'text-amber-500' : 'text-muted-foreground')} /> -->
+							Synchronization
+						</Field.Label>
+						<Field.Description>
+							Forces to set the cursus of all subscribed users to the currently defined one.
+							<!-- {#if enabled}
+								Other users can subscribe to this entity.
+							{:else}
+								Subscriptions to this entity are disabled
+							{/if} -->
+						</Field.Description>
+					</Field.Content>
+					<Switch id="cursus-enabled" />
+				</Field.Field>
+			</Field.Group>
+		</Field.Set>
+	</Card.Content>
+</Card.Root>
+
+
 			<Access
 				bind:visible={context.fields.public}
 				bind:enabled={context.fields.enabled}
@@ -249,7 +270,7 @@
 						</Button>
 					{/if}
 
-					<Button onclick={() => { /* context.submit() */ }} disabled={context.fields.deprecated}>
+					<Button onclick={() => context.submit()} disabled={context.fields.deprecated}>
 						{params.id ? 'Save Changes' : 'Create Cursus'}
 						<CirclePlay />
 					</Button>
@@ -310,7 +331,7 @@
 							<Button variant="outline" onclick={() => fileInput?.click()}>
 								Import <Upload />
 							</Button>
-							<Button variant="outline" onclick={exportTrack}>
+							<Button variant="outline" onclick={download}>
 								Export <Download />
 							</Button>
 						</ButtonGroup.Root>
