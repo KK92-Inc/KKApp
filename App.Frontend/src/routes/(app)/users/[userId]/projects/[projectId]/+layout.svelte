@@ -160,7 +160,7 @@
 							</Accordion.Item>
 						{/if}
 
-						{#if context.view === 'submission'}
+						{#if session && context.view === 'submission'}
 							<Accordion.Item>
 								<Accordion.Trigger class="px-4">
 									<span class="flex items-center gap-2">

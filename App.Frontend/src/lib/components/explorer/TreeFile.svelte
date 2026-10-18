@@ -10,6 +10,7 @@
 		name: string;
 		content: ArrayBuffer;
 		backHref?: string;
+		class?: string;
 		/** Force a viewer instead of auto-detecting (e.g. `kind="text"` for a .json). */
 		kind?: FileKind;
 
@@ -23,7 +24,7 @@
 		empty?: Snippet<[FileContext]>;
 	}
 
-	const { name, content, backHref, kind, actions, text, image, binary, empty }: Props = $props();
+	const { name, content, backHref, kind, class: klass, actions, text, image, binary, empty }: Props = $props();
 
 	const size = $derived(content.byteLength);
 	const detected = $derived(detect(name, content, kind));
@@ -44,7 +45,7 @@
 	<Empty />
 {/snippet}
 
-<div class="">
+<div class="border rounded">
 	<div class="flex items-center justify-between gap-4 border-b bg-muted/50 px-2 py-2">
 		<div class="flex min-w-0 items-center gap-2">
 			{#if backHref}
@@ -71,13 +72,15 @@
 		</div>
 	</div>
 
-	{#if detected.kind === 'text'}
+	<div class={klass}>
+		{#if detected.kind === 'text'}
 		{@render (text ?? defaultText)({ ...base, text: detected.text, language: detected.language })}
-	{:else if detected.kind === 'image'}
+		{:else if detected.kind === 'image'}
 		{@render (image ?? defaultImage)({ ...base, mime: detected.mime })}
-	{:else if detected.kind === 'empty'}
+		{:else if detected.kind === 'empty'}
 		{@render (empty ?? defaultEmpty)(base)}
-	{:else}
+		{:else}
 		{@render (binary ?? defaultBinary)(base)}
-	{/if}
+		{/if}
+	</div>
 </div>
