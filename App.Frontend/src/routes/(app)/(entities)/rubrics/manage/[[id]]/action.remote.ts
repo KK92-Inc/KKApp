@@ -39,6 +39,7 @@ export const update = command('unchecked', async (body: UpdateRubric) => {
 		Problem.throw(error);
 	}
 
+	Rubric.get(id).refresh();
 	return data;
 });
 

@@ -115,9 +115,10 @@ public class RubricController(
     [RequireScope("workspace")]
     [ProtectedResource("rubrics", "rubrics:write")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProducesErrorResponseType(typeof(ProblemDetails))]
     [EndpointSummary("Update a rubric")]
     [EndpointDescription("Update rubric information")]
@@ -136,6 +137,14 @@ public class RubricController(
         rubric.Name = body.Name;
         rubric.Public = body.Public;
         rubric.Enabled = body.Enabled;
+        if (body.ProjectId.HasValue && body.ProjectId.Value != rubric.ProjectId)
+        {
+            // There can / should only ever be 1 rubric targeting 1 project.
+            // Otherwise we can have a bug where you can end up with dual wildcards...
+            if (await service.FindByProjectId(body.ProjectId.Value, token) is not null)
+                return Problem("Project already has a designated rubric", statusCode: 409);
+            rubric.ProjectId = body.ProjectId;
+        }
 
         var variants = body.Variants?.Where(v => v.Required > 0).Select(v => (v.Kind, v.Required)).ToList();
         await service.UpdateRubricAsync(rubric, variants, token);

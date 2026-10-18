@@ -21,17 +21,14 @@ public class PatchRubricRequestDTO
     [Required, StringLength(256, MinimumLength = 1)]
     public string Name { get; init; }
 
-    [Required, StringLength(2048, MinimumLength = 1)]
-    public string Description { get; init; }
-
     [Required]
     public bool Public { get; init; }
 
     [Required]
     public bool Enabled { get; init; }
     
-    [Required]
-    public Guid? ProjectId { get; init; }
+    [Required, Description("The project this rubric targets. Null makes it a wildcard rubric for every project.")]
+    public required Guid? ProjectId { get; init; }
 
     [Description("Indicates the variations of the rubric")]
     public IEnumerable<RubricVariantDTO> Variants { get; init; }

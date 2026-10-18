@@ -67,7 +67,7 @@
 					class="relative border-b bg-muted/30 px-6 pt-8 pb-6 text-center"
 					style="background-image: radial-gradient(color-mix(in oklab, var(--foreground) 12%, transparent) 1px, transparent 1px); background-size: 14px 14px;"
 				>
-					<Thumbnail value="https://placehold.co/128x128?text=Project" class="rounded-lg border" />
+					<Thumbnail value="https://placehold.co/128x128?text=Rubric" class="rounded-lg border" />
 				</div>
 
 				<Card.Content class="p-4">
@@ -80,9 +80,9 @@
 								maxlength={255}
 								bind:value={context.fields.name}
 								disabled={context.fields.deprecated}
-								placeholder="Entry into..."
+								placeholder="Libft evaluation"
 							/>
-							<Field.Description>The name of the project.</Field.Description>
+							<Field.Description>The name of the rubric.</Field.Description>
 							<Field.Error errors={context.errors.name} />
 						</Field.Field>
 
@@ -97,15 +97,17 @@
 										<Tabs.Trigger value="root">App Workspace</Tabs.Trigger>
 									</Tabs.List>
 								</Tabs.Root>
-								<Field.Description>Which workspace this project belongs to.</Field.Description>
+								<Field.Description>Which workspace this rubric belongs to.</Field.Description>
 								<Field.Error errors={context.errors.workspace} />
 							</Field.Field>
 						{/if}
 
 						<Field.Field>
-							<Field.Label for="workspace">Target Project</Field.Label>
+							<Field.Label for="rubric-target">Target Project</Field.Label>
 							<PageProjectSelect />
-							<Field.Description>Specify what project this rubric is for.</Field.Description>
+							<Field.Description>
+								The project this rubric is for, or a wildcard for every project without a rubric of its own.
+							</Field.Description>
 							<Field.Error errors={context.errors.projectId} />
 						</Field.Field>
 					</Field.Set>
@@ -132,7 +134,7 @@
 					{/if}
 
 					<Button onclick={() => context.submit()} disabled={context.fields.deprecated}>
-						{params.id ? 'Save Changes' : 'Create Project'}
+						{params.id ? 'Save Changes' : 'Create Rubric'}
 						<CirclePlay />
 					</Button>
 				</ButtonGroup.Root>
@@ -156,7 +158,7 @@
 							<Item.Content>
 								<Item.Title class="text-sm">Built-in Instructions</Item.Title>
 								<Item.Description class="text-xs">
-									Write project guidelines using the Markdown editor below.
+									Write the rubric's instructions using the Markdown editor below.
 								</Item.Description>
 							</Item.Content>
 						</Item.Root>
@@ -171,11 +173,11 @@
 						</Item.Root>
 					</Item.Group>
 				{:else}
-					{@const value = `git clone ${env.PUBLIC_GIT_URL}/project/${params.id}`}
+					{@const value = `git clone ${env.PUBLIC_GIT_URL}/rubric/${params.id}`}
 					{#if context.fields.deprecated}
 						<Alert.Root variant="destructive">
 							<CircleAlert />
-							<Alert.Title>Project is Archived</Alert.Title>
+							<Alert.Title>Rubric is Deprecated</Alert.Title>
 							<Alert.Description>
 								<p>
 									Settings and instructions are currently read-only. Click <strong>Undeprecate</strong> to make
@@ -255,11 +257,13 @@
 						</Card.Root>
 					</div>
 				{:else}
-					<MarkdownTextarea
-						placeholder="### My Project is about..."
-						bind:value={context.readme}
-						class="pb-4"
-					/>
+					<div class="pb-4">
+						<MarkdownTextarea
+							placeholder="### What reviewers should check..."
+							bind:value={context.readme}
+						/>
+						<Field.Error errors={context.errors.readme} />
+					</div>
 				{/if}
 			</div>
 		{/snippet}

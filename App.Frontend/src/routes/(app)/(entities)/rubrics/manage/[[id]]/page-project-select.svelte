@@ -1,142 +1,153 @@
 <script lang="ts">
-	import * as Popover from '$lib/components/popover';
+	import * as Dialog from '$lib/components/dialog';
 	import * as InputGroup from '$lib/components/input-group';
-	import * as Item from '$lib/components/item';
 	import * as Page from './context.svelte';
 	import * as Projects from '$lib/remotes/projects.remote';
 
-	import { Button, buttonVariants } from '$lib/components/button';
-	import { Check, ChevronsUpDown, ExternalLink, SearchIcon } from '@lucide/svelte';
+	import { Button } from '$lib/components/button';
+	import { Check, ChevronsUpDown, FolderGit2, Globe, SearchIcon } from '@lucide/svelte';
 	import { cn } from '$lib/utils';
 	import useDebounce from '$lib/hooks/debounce.svelte';
-	import Loader from '$lib/components/loader.svelte';
-	import { tick } from 'svelte';
-	import { Separator } from '$lib/components/separator';
-	import { page } from '$app/state';
+	import Badge from '$lib/components/badge/badge.svelte';
+	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
+	import type { components } from '$lib/api/api';
+
+	type Project = components['schemas']['ProjectDO'];
 
 	const context = Page.getContext();
 
-	const target = $derived(context.fields.projectId ? await Projects.get(context.fields.projectId) : null);
-
 	let open = $state(false);
-	let label = $derived<string | undefined>(target?.name);
-	let trigger = $state<HTMLButtonElement>(null!);
-
-	let value = $state('');
+	let search = $state('');
 	let query = $state<string>();
-	const update = useDebounce((v: string) => (query = v), 250);
+	const update = useDebounce((v: string) => (query = v.trim() || undefined), 250);
 
-	function select(id: string | null, name?: string) {
+	function select(id: string | null) {
 		context.fields.projectId = id;
-		label = name;
-		closeAndFocusTrigger();
+		open = false;
 	}
 
-	function closeAndFocusTrigger() {
-		open = false;
-		tick().then(() => {
-			trigger.focus();
-		});
-	}
+	$effect(() => {
+		if (open) return;
+		search = '';
+		query = undefined;
+	});
 </script>
 
-<Popover.Root>
-	<Popover.Trigger class={buttonVariants({ variant: 'outline' })} disabled={context.fields.deprecated}>
-		{#if context.fields.projectId === null}
-			Wildcard Rubric
+{#snippet option(project: Project | null)}
+	{@const selected = context.fields.projectId === (project?.id ?? null)}
+	<Button
+		type="button"
+		onclick={() => select(project?.id ?? null)}
+		aria-pressed={selected}
+		class={cn(selected ? 'border-primary/50 bg-primary/5 ring-1 ring-primary/20' : 'border-border/60')}
+	>
+		{#if project}
+			<FolderGit2 class="size-4 shrink-0 text-muted-foreground" />
+			<div class="flex min-w-0 flex-1 flex-col">
+				<span class="truncate text-sm font-medium">{project.name}</span>
+				<span class="truncate text-xs text-muted-foreground">{project.slug}</span>
+			</div>
+			{#if project.deprecated}
+				<Badge variant="outline" class="text-muted-foreground">Deprecated</Badge>
+			{/if}
 		{:else}
-			{label ?? 'Unknown Project'}
-		{/if}
-	</Popover.Trigger>
-
-	<!-- <Popover.Trigger bind:ref={trigger} disabled={context.fields.deprecated}>
-		{#snippet child({ props })}
-			<Button {...props} variant="outline" class="justify-between">
-				<span>
-					{#if context.fields.projectId === null}
-						Wildcard Rubric
-					{:else}
-						{label ?? 'Unknown Project'}
-					{/if}
+			<Globe class="size-4 shrink-0 text-muted-foreground" />
+			<div class="flex flex-1 flex-col">
+				<span class="text-sm font-medium">Wildcard rubric</span>
+				<span class="text-xs text-muted-foreground">
+					Used for every project that has no rubric of its own.
 				</span>
-				<ChevronsUpDown />
-			</Button>
-		{/snippet}
-	</Popover.Trigger> -->
-	<Popover.Content class="w-80 p-2" align="start">
+			</div>
+		{/if}
+		<Check class={cn('size-4 shrink-0', !selected && 'text-transparent')} />
+	</Button>
+{/snippet}
+
+<svelte:boundary>
+	{@const target = context.fields.projectId ? await Projects.get(context.fields.projectId) : null}
+
+	{#snippet pending()}
+		<Skeleton class="h-9 w-full" />
+	{/snippet}
+
+	{#snippet failed()}
+		<Button id="rubric-target" variant="outline" class="w-full justify-between" onclick={() => (open = true)}>
+			Unknown project
+			<ChevronsUpDown class="opacity-50" />
+		</Button>
+	{/snippet}
+
+	<Button
+		id="rubric-target"
+		variant="outline"
+		class="w-full justify-between"
+		disabled={context.fields.deprecated}
+		onclick={() => (open = true)}
+	>
+		<span class="flex items-center gap-2 truncate">
+			{#if target}
+				<FolderGit2 class="size-4 shrink-0" />
+				{target.name}
+			{:else}
+				<Globe class="size-4 shrink-0" />
+				Wildcard rubric
+			{/if}
+		</span>
+		<ChevronsUpDown class="opacity-50" />
+	</Button>
+</svelte:boundary>
+
+<Dialog.Root bind:open>
+	<Dialog.Content class="sm:max-w-md">
+		<Dialog.Header>
+			<Dialog.Title>Rubric target</Dialog.Title>
+			<Dialog.Description>
+				Choose which project this rubric reviews. A rubric made for one project is used over a wildcard one.
+			</Dialog.Description>
+		</Dialog.Header>
+
+		{@render option(null)}
+
+		<div class="flex items-center gap-2 text-xs text-muted-foreground">
+			<span class="h-px flex-1 bg-border"></span>
+			or a specific project
+			<span class="h-px flex-1 bg-border"></span>
+		</div>
+
 		<InputGroup.Root>
 			<InputGroup.Addon>
 				<SearchIcon class="size-4 opacity-50" />
 			</InputGroup.Addon>
 			<InputGroup.Input
-				bind:value
+				bind:value={search}
+				autocomplete="off"
 				placeholder="Search project..."
 				oninput={(e) => update.fn(e.currentTarget.value)}
 			/>
 		</InputGroup.Root>
 
-		<!-- <div class="flex max-h-60 flex-col gap-1 overflow-y-auto pt-2">
+		<div class="flex max-h-64 flex-col gap-2 overflow-y-auto">
 			<svelte:boundary>
-				{@const workspace = await context.target}
-				{@const projects = await Projects.getPage({ name: query, workspaceId: workspace.id })}
-				{@const entries = projects.data.map((v) => ({ value: v.id, label: v.name }))}
-
-				{#snippet failed()}
-					<span class="p-4 text-center text-xs text-destructive"> Failed to search </span>
-				{/snippet}
+				{@const projects = await Projects.getPage({ name: query, page: 0, size: 20 })}
 
 				{#snippet pending()}
-					<div class="p-4 text-center text-xs text-muted-foreground">
-						<Loader /> Loading projects...
+					<Skeleton class="h-14 w-full" />
+					<Skeleton class="h-14 w-full" />
+				{/snippet}
+
+				{#snippet failed(_, reset)}
+					<div class="flex flex-col items-center gap-2 p-4 text-center text-xs text-destructive">
+						Failed to search projects.
+						<Button variant="outline" size="sm" onclick={reset}>Try again</Button>
 					</div>
 				{/snippet}
 
-				{#if !query}
-					<Item.Root
-						onclick={() => select(null)}
-						class="flex cursor-pointer items-center justify-between rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
-					>
-						<div class="flex flex-1 flex-col items-start">
-							<span>Wildcard Rubric</span>
-							<span class="text-xs text-muted-foreground"> Apply to all projects as rubric. </span>
-						</div>
-						<div class="flex items-center gap-2">
-							<Check size={16} class={cn(context.fields.projectId !== null && 'text-transparent')} />
-						</div>
-					</Item.Root>
-					{#if entries.length > 0}
-						<Separator class="my-1" />
-					{/if}
-				{/if}
-
-				{#each entries as project (project.value)}
-					<Item.Root
-						onclick={() => select(project.value, project.label)}
-						class="group flex cursor-pointer items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
-					>
-						<div class="flex items-center gap-2">
-							<span class="flex-1 truncate">{project.label}</span>
-
-							<Button
-								href="/users/{page.data.session.userId}/projects/{project.value}"
-								target="_blank"
-								rel="noopener noreferrer"
-								size="sm"
-								variant="outline"
-								class="invisible opacity-0 transition-opacity group-hover:visible group-hover:opacity-100"
-								onclick={(e) => e.stopPropagation()}
-							>
-								View
-								<ExternalLink size={14} />
-							</Button>
-						</div>
-
-						<Check size={16} class={cn(context.fields.projectId !== project.value && 'text-transparent')} />
-					</Item.Root>
+				{#each projects.data as project (project.id)}
+					{@render option(project)}
 				{:else}
-					<span class="p-4 text-center text-xs text-muted-foreground"> No projects match your search. </span>
+					<span class="p-4 text-center text-xs text-muted-foreground">No projects match your search.</span>
 				{/each}
 			</svelte:boundary>
-		</div> -->
-	</Popover.Content>
-</Popover.Root>
+		</div>
+	</Dialog.Content>
+</Dialog.Root>
