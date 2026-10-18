@@ -35,15 +35,15 @@
 					<Badge variant="secondary" class="text-xs">Notification</Badge>
 					<Tooltip.Root>
 						<Tooltip.Trigger class="text-xs text-muted-foreground">
-							<!-- {relativeTime(data.createdAt)} -->
+							<!-- {formatRelative(data.createdAt)} -->
 						</Tooltip.Trigger>
 						<Tooltip.Content>
-							<!-- <p>{new Date(data.createdAt).toLocaleDateString()}</p> -->
+							<!-- <p>{formatDate(data.createdAt)}</p> -->
 						</Tooltip.Content>
 					</Tooltip.Root>
 				</div>
 				<p class="mt-2 text-sm text-card-foreground">
-					{notification.data.markdown}
+					<!-- {notification.data.markdown} -->
 				</p>
 			</div>
 		</div>

@@ -8,7 +8,7 @@
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/state';
 	import { ArrowRight, Bot, CalendarIcon, Globe, User, Users } from '@lucide/svelte';
-	import { DateFormatter } from '@internationalized/date';
+	import { formatDate } from '$lib/datetime';
 
 	interface Props {
 		review: components['schemas']['ReviewDO'];
@@ -25,14 +25,6 @@
 
 	const icons = { Self: User, Peer: Users, Async: Globe, Auto: Bot } as const;
 	const Icon = $derived(icons[review.kind] ?? User);
-	const formatter = new DateFormatter(page.data.locale, {
-		month: 'short',
-		year: 'numeric',
-		day: 'numeric',
-		hour: 'numeric',
-		minute: 'numeric',
-		hour12: true
-	});
 </script>
 
 <Item.Root variant="outline" class="items-center gap-3 p-3">
@@ -108,7 +100,7 @@
 			<span class="text-muted-foreground/40 select-none">•</span>
 			<span class="shrink-0 flex items-center gap-1">
 				<CalendarIcon size={12}/>
-				{formatter.format(new Date(review.createdAt))}
+				{formatDate(review.createdAt, 'datetime')}
 			</span>
 		</Item.Description>
 	</Item.Content>

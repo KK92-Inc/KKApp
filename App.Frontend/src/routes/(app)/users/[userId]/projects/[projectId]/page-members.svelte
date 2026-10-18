@@ -10,18 +10,13 @@
 	import { page } from '$app/state';
 	import { Badge } from '$lib/components/badge';
 	import * as HoverCard from '$lib/components/hover-card';
-	import { DateFormatter } from '@internationalized/date';
+	import { formatDate } from '$lib/datetime';
 	import Separator from '$lib/components/separator/separator.svelte';
 	import Failed from '$lib/components/empty/failed.svelte';
 	import * as ButtonGroup from '$lib/components/button-group';
 	import * as Components from './index.svelte';
 
 	const context = Page.getContext();
-	const formatter = new DateFormatter(page.data.locale, {
-		day: 'numeric',
-		month: 'long',
-		year: 'numeric'
-	});
 
 	const project = await Project.get(context.projectId());
 	const session = $derived(
@@ -60,7 +55,7 @@
 						<ClockFading />
 						<Alert.Title>Project is currently Inactive</Alert.Title>
 						<Alert.Description>
-							You left this project on {formatter.format(new Date(abandoned.leftAt!))}.
+							You left this project on {formatDate(abandoned.leftAt!, 'dateLong')}.
 						</Alert.Description>
 					</Alert.Root>
 				{/if}
@@ -122,11 +117,11 @@
 										<Separator />
 										<div class="flex items-center text-xs text-muted-foreground">
 											<CalendarDaysIcon class="me-1.5 size-3.5 opacity-70" />
-											<span>Joined {formatter.format(new Date(member.user.createdAt))}</span>
+											<span>Joined {formatDate(member.user.createdAt, 'dateLong')}</span>
 										</div>
 										<div class="flex items-center text-xs text-muted-foreground">
 											<CalendarDaysIcon class="me-1.5 size-3.5 opacity-70" />
-											<span>Member since {formatter.format(new Date(member.createdAt))}</span>
+											<span>Member since {formatDate(member.createdAt, 'dateLong')}</span>
 										</div>
 									</div>
 								</div>

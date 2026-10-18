@@ -34,6 +34,6 @@ public class SampleJob(ILogger<SampleJob> logger, IMessageBus bus, IUserService 
         if (usr is null) return;
 
         await bus.PublishAsync(new WelcomeUserNotification(usr));
-        logger.LogInformation("Sample Job is running at {time}", DateTimeOffset.Now);
+        logger.LogInformation("Sample Job is running at {time}", DateTimeOffset.UtcNow);
     }
 }

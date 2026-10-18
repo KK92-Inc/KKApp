@@ -13,14 +13,9 @@
 	import type { PageProps } from './$types';
 	import Markdown from '$lib/components/markdown/markdown.svelte';
 	import { env } from '$env/dynamic/public';
-	import { DateFormatter } from '@internationalized/date';
+	import { formatDate } from '$lib/datetime';
 
 	const { params }: PageProps = $props();
-	const formatter = new DateFormatter(page.data.locale, {
-		day: 'numeric',
-		month: 'long',
-		year: 'numeric'
-	});
 
 	const user = $derived(await User.get(params.userId));
 	const socials = $derived(
@@ -31,24 +26,7 @@
 			{ label: 'GitHub', url: user.details?.githubUrl, icon: Globe }
 		].filter((s) => s.url)
 	);
-
-	// const roleStyles: Record<string, string> = {
-	// 	developer: "bg-[url('/dev.gif')] bg-cover",
-	// 	staff: 'bg-red-700'
-	// };
 </script>
-
-<!-- {#snippet roleBadge(role: string)}
-	{#if roleStyles[role]}
-		<Badge
-			variant="outline"
-			class={cn('flex items-center gap-1.5 border-black px-2.5 py-1 text-white', roleStyles[role])}
-		>
-			<Code class="size-3.5" fill="transparent" />
-			<span class="text-xs capitalize">{role}</span>
-		</Badge>
-	{/if}
-{/snippet} -->
 
 <div
 	class="container mx-auto grid max-w-5xl grid-cols-1 items-start gap-6 px-4 py-8 lg:grid-cols-[280px_1fr]"
@@ -72,14 +50,6 @@
 				<p class="font-mono text-sm text-muted-foreground">
 					@{user.login}
 				</p>
-
-				<!-- {#if page.data.session?.roles?.length}
-						<div class="mt-3 flex flex-wrap justify-center gap-1.5">
-							{#each page.data.session.roles as role (role)}
-								{@render roleBadge(role)}
-							{/each}
-						</div>
-					{/if} -->
 			</div>
 
 			<div class="p-2">
@@ -115,12 +85,11 @@
 
 				<div class="flex items-center gap-1.5 px-3 py-2 text-xs text-muted-foreground">
 					<Calendar class="size-3.5" />
-					Joined {formatter.format(new Date(user.createdAt))}
+					Joined {formatDate(user.createdAt, 'dateLong')}
 				</div>
 			</div>
 		</Card.Root>
 
-		<!-- Navigation sits right under identity, still inside the sidebar -->
 		<Card.Root class="p-2 shadow-sm">
 			<Navgroup
 				title="Navigation"
@@ -128,7 +97,7 @@
 				routes={[
 					'/(app)/users/[userId]/cursus',
 					'/(app)/users/[userId]/projects',
-					'/(app)/users/[userId]/goals',
+					'/(app)/users/[userId]/goals'
 				]}
 			/>
 		</Card.Root>

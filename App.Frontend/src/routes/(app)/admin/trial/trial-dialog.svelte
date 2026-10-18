@@ -13,7 +13,7 @@
 	import type { components } from '$lib/api/api';
 	import * as Cursus from '$lib/remotes/cursus.remote';
 	import * as Trials from '$lib/remotes/trial.remote';
-	import { sameMoment } from '../format';
+	import { equal } from '$lib/datetime';
 
 	interface Props {
 		open: boolean;
@@ -49,12 +49,6 @@
 
 	async function submit() {
 		errors = {};
-		if (!fields.cursusId) errors.cursusId = [{ message: 'Pick a cursus.' }];
-		if (fields.capacity === null) errors.capacity = [{ message: 'Enter a capacity.' }];
-		if (!fields.startsAt) errors.startsAt = [{ message: 'Pick a start date.' }];
-		if (!fields.endsAt) errors.endsAt = [{ message: 'Pick an end date.' }];
-		if (Object.keys(errors).length > 0) return;
-
 		const saved = await Problem.try(
 			() => {
 				if (!trial) {
@@ -73,8 +67,8 @@
 					name: fields.name !== trial.name ? fields.name : undefined,
 					cursusId: fields.cursusId !== trial.cursusId ? fields.cursusId : undefined,
 					capacity: fields.capacity !== trial.capacity ? fields.capacity! : undefined,
-					startsAt: !sameMoment(fields.startsAt, trial.startsAt) ? fields.startsAt : undefined,
-					endsAt: !sameMoment(fields.endsAt, trial.endsAt) ? fields.endsAt : undefined
+					startsAt: !equal(fields.startsAt, trial.startsAt) ? fields.startsAt : undefined,
+					endsAt: !equal(fields.endsAt, trial.endsAt) ? fields.endsAt : undefined
 				});
 			},
 			{ onValidation: (found) => (errors = found) }

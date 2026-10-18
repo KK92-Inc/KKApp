@@ -2,21 +2,19 @@
 	import { File, Folder } from '@lucide/svelte';
 	import * as Table from '$lib/components/table';
 	import { Button } from '$lib/components/button';
+	import { formatDate } from '$lib/datetime';
 	import type { TreeEntry } from './types';
 
 	interface Props {
 		entry: TreeEntry;
 		href: string;
-		formatDate: (date: Date) => string;
 	}
 
-	const { entry, href, formatDate }: Props = $props();
+	const { entry, href }: Props = $props();
 
 	const name = $derived(entry.path.split('/').pop() || entry.path);
 	const message = $derived(entry.commit?.message ?? 'N/A');
-	const updated = $derived(
-		entry.commit?.updatedAt ? formatDate(new Date(entry.commit.updatedAt)) : 'N/A'
-	);
+	const updated = $derived(formatDate(entry.commit?.updatedAt, 'datetime', 'N/A'));
 </script>
 
 <Table.Row class="border-t text-left">

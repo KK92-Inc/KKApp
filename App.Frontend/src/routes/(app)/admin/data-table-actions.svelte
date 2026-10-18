@@ -6,7 +6,7 @@
 	import { CloudLightning, Hammer, HatGlasses, IdCard, Snowflake, User, UserPen, Zap } from '@lucide/svelte';
 	import { useDialog } from '$lib/components/dialog';
 	import * as Dialog from '$lib/components/dialog';
-	import { Input } from '$lib/components/input';
+	import InputDate from '$lib/components/input-date.svelte';
 	import * as Field from '$lib/components/field';
 	import { Textarea } from '$lib/components/textarea';
 	import Separator from '$lib/components/separator/separator.svelte';
@@ -18,6 +18,9 @@
 	const dialog = useDialog();
 
 	let freezeOpen = $state(false);
+	// UTC ISO strings, `<InputDate>` shows and reads them in the instance's timezone.
+	let freezeStartsAt = $state<string>();
+	let freezeEndsAt = $state<string>();
 	let { user }: Props = $props();
 
 	async function anonymize() {
@@ -113,12 +116,12 @@
 				<div class="grid grid-cols-2 gap-2">
 					<Field.Field>
 						<Field.Label for="start">From</Field.Label>
-						<Input id="start" type="datetime-local" />
+						<InputDate id="start" bind:value={freezeStartsAt} />
 						<Field.Description>When to freeze the account.</Field.Description>
 					</Field.Field>
 					<Field.Field>
 						<Field.Label for="end">Until</Field.Label>
-						<Input id="end" type="datetime-local" />
+						<InputDate id="end" bind:value={freezeEndsAt} min={freezeStartsAt} />
 						<Field.Description>When to allow access again.</Field.Description>
 					</Field.Field>
 				</div>

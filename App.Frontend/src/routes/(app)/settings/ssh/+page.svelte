@@ -9,8 +9,7 @@
 	import SshHelp from './ssh-help.svelte';
 	import SshAdd from './ssh-add.svelte';
 	import * as Item from '$lib/components/item';
-	import { DateFormatter } from '@internationalized/date';
-	import { page } from '$app/state';
+	import { formatDate } from '$lib/datetime';
 	import * as Empty from '$lib/components/empty';
 	import Badge from '$lib/components/badge/badge.svelte';
 	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
@@ -20,10 +19,6 @@
 		'Are you sure you want to delete this SSH key?',
 		'This action CANNOT be undone. This will permanently delete the SSH key and if you`d like to use it in the future, you will need to upload it again.'
 	);
-	const formatter = new DateFormatter(page.data.locale, {
-		dateStyle: 'medium',
-		timeStyle: 'short'
-	});
 </script>
 
 <div class="flex items-center justify-between gap-4 pb-2">
@@ -66,7 +61,7 @@
 						</span>
 						<Badge variant="outline" class="rounded-sm">{key.keyType}</Badge>
 						<span>•</span>
-						<span>Created {formatter.format(new Date(key.createdAt))}</span>
+						<span>Created {formatDate(key.createdAt, 'datetime')}</span>
 					</Item.Description>
 				</Item.Content>
 				<Item.Actions>

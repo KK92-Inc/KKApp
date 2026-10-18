@@ -4,7 +4,7 @@
 // ============================================================================
 
 import * as v from 'valibot';
-import * as Date from '@internationalized/date';
+import { now } from '@internationalized/date';
 import { query, command, getRequestEvent } from '$app/server';
 import { Filters, paginate, Problem } from '$lib/api';
 import type { components } from '$lib/api/api';
@@ -32,14 +32,14 @@ const PageSchema = v.object({
 export const getPage = query(PageSchema, async (params) => {
 	const { locals } = getRequestEvent();
 	const upcoming = params.when === 'present';
-	const now = Date.now('UTC').toAbsoluteString();
+	const n = now(locals.tz).toAbsoluteString();
 
 	const { response, data, error } = await locals.api.GET('/kickoffs', {
 		params: {
 			query: {
-				'filter[name]': params.name || undefined,
-				'filter[after]': upcoming ? now : undefined,
-				'filter[before]': upcoming ? undefined : now,
+				'filter[name]': params.name,
+				'filter[after]': upcoming ? n : undefined,
+				'filter[before]': upcoming ? undefined : n,
 				// Soonest first for what is coming, most recent first for what is behind us.
 				'sort[by]': 'StartsAt',
 				'sort[order]': upcoming ? 'Ascending' : 'Descending',

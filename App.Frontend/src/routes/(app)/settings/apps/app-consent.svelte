@@ -1,6 +1,5 @@
 <script lang="ts">
 	// Svelte & Core
-	import { page } from '$app/state';
 	import { toast } from 'svelte-sonner';
 
 	// API & Remotes
@@ -27,13 +26,9 @@
 	import { Blocks, Calendar, Link, Pencil, Plus, RefreshCw, Settings, Trash2Icon, X } from '@lucide/svelte';
 
 	// Local Components
-	import { DateFormatter } from '@internationalized/date';
+	import { formatDate } from '$lib/datetime';
 
 	const dialog = Dialog.useDialog();
-	const formatter = new DateFormatter(page.data.locale, {
-		dateStyle: 'medium',
-		timeStyle: 'short'
-	});
 
 	async function revoke(appId: string) {
 		if (
@@ -97,12 +92,12 @@
 						<div class="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
 							<span class="flex items-center gap-1" title="Created At">
 								<Calendar size={14} />
-								{formatter.format(new Date(app.createdAt))}
+								{formatDate(app.createdAt, 'datetime')}
 							</span>
 							<Separator orientation="vertical" class="h-3" />
 							<span class="flex items-center gap-1" title="Last Updated">
 								<RefreshCw size={14} />
-								{formatter.format(new Date(app.updatedAt))}
+								{formatDate(app.updatedAt, 'datetime')}
 							</span>
 						</div>
 						<span class="line-clamp-2 block text-sm">

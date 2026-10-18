@@ -281,7 +281,7 @@ repos.MapPut("/commit/{branch}", (string owner, string name, string branch, Post
     }
 
     var tree = repo.ObjectDatabase.CreateTree(definition);
-    var signature = new Signature(payload.Author, payload.Email, DateTimeOffset.Now);
+    var signature = new Signature(payload.Author, payload.Email, DateTimeOffset.UtcNow);
     var commit = repo.ObjectDatabase.CreateCommit(signature, signature, payload.Message, tree, parents, false);
     string refName = $"refs/heads/{branch}";
 

@@ -81,9 +81,10 @@ public record PatchEventRequestDTO : IValidatableObject
     /// </summary>
     public IEnumerable<ValidationResult> Validate(ValidationContext context)
     {
-        var today = DateTimeOffset.UtcNow.Date;
+        var time = context.GetService<TimeProvider>() ?? TimeProvider.System;
+        var today = time.GetUtcNow().UtcDateTime.Date;
 
-        if (StartsAt?.Date <= today)
+        if (StartsAt?.UtcDateTime.Date <= today)
         {
             yield return new ValidationResult(
                 "Event start time must be at least one day after today.",
@@ -91,7 +92,7 @@ public record PatchEventRequestDTO : IValidatableObject
             );
         }
 
-        if (EndsAt?.Date <= today)
+        if (EndsAt?.UtcDateTime.Date <= today)
         {
             yield return new ValidationResult(
                 "Event end time must be after today.",
@@ -99,7 +100,7 @@ public record PatchEventRequestDTO : IValidatableObject
             );
         }
 
-        if (ClosesAt.HasValue && ClosesAt.Value.Date <= today)
+        if (ClosesAt.HasValue && ClosesAt.Value.UtcDateTime.Date <= today)
         {
             yield return new ValidationResult(
                 "Registration close time must be after today.",

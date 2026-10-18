@@ -5,8 +5,7 @@
 	import * as Avatar from '$lib/components/avatar';
 	import * as Tooltip from '$lib/components/tooltip';
 	import { CalendarDays } from '@lucide/svelte';
-	import { DateFormatter } from '@internationalized/date';
-	import { page } from '$app/state';
+	import { formatDate } from '$lib/datetime';
 	import Badge from '$lib/components/badge/badge.svelte';
 	import Separator from '$lib/components/separator/separator.svelte';
 
@@ -16,11 +15,6 @@
 	}
 
 	let { user, actions }: Props = $props();
-	const formatter = new DateFormatter(page.data.locale, {
-		day: 'numeric',
-		month: 'long',
-		year: 'numeric'
-	});
 </script>
 
 <Item.Root variant="outline">
@@ -48,10 +42,10 @@
 					<Tooltip.Root delayDuration={100}>
 						<Tooltip.Trigger class="flex items-center text-xs text-muted-foreground">
 							<CalendarDays size={14} class="me-1.5 opacity-70" />
-							<span class="text-xs">{formatter.format(new Date(user.createdAt))}</span>
+							<span class="text-xs">{formatDate(user.createdAt, 'dateLong')}</span>
 						</Tooltip.Trigger>
 						<Tooltip.Content>
-							<p>User joined {formatter.format(new Date(user.createdAt))}</p>
+							<p>User joined {formatDate(user.createdAt, 'dateLong')}</p>
 						</Tooltip.Content>
 					</Tooltip.Root>
 				</Item.Description>

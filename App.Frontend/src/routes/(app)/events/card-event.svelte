@@ -4,8 +4,7 @@
 	import { Badge } from '$lib/components/badge';
 	import { Progress } from '$lib/components/progress';
 	import Separator from '$lib/components/separator/separator.svelte';
-	import { page } from '$app/state';
-	import { DateFormatter, parseAbsolute } from '@internationalized/date';
+	import { formatDate } from '$lib/datetime';
 	import { Calendar, Clock, Users, Target, BadgeInfo, X, Megaphone, Check } from '@lucide/svelte';
 	import type { components } from '$lib/api/api';
 	import { cn } from '$lib/utils';
@@ -18,12 +17,6 @@
 
 	let { event, class: klass }: Props = $props();
 
-	const endsAt = $derived(parseAbsolute(event.endsAt, page.data.tz));
-	const startsAt = $derived(parseAbsolute(event.startsAt, page.data.tz));
-	const formatter = new DateFormatter(page.data.locale, {
-		dateStyle: 'medium',
-		timeStyle: 'short'
-	});
 </script>
 
 <Card.Root class={cn(klass)}>
@@ -47,13 +40,13 @@
 		<p class="flex min-w-0 items-center gap-1.5">
 			<Calendar class="size-4 shrink-0 text-muted-foreground/80" />
 			<span class="shrink-0 font-medium text-foreground">Starts:</span>
-			<span class="truncate">{formatter.format(startsAt.toDate())}</span>
+			<span class="truncate">{formatDate(event.startsAt)}</span>
 		</p>
 
 		<p class="flex min-w-0 items-center gap-1.5">
 			<Calendar class="size-4 shrink-0 text-muted-foreground/80" />
 			<span class="shrink-0 font-medium text-foreground">Ends:</span>
-			<span class="truncate">{formatter.format(endsAt.toDate())}</span>
+			<span class="truncate">{formatDate(event.endsAt)}</span>
 		</p>
 
 		<p class="flex min-w-0 items-center gap-1.5">

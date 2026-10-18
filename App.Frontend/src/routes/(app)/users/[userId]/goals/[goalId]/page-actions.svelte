@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { page } from '$app/state';
 	import Button from '$lib/components/button/button.svelte';
 	import * as Card from '$lib/components/card';
 	import * as UserGoal from '$lib/remotes/user-goal.remote';
@@ -10,7 +9,7 @@
 	import * as Alert from '$lib/components/alert';
 	import { PartyPopper, TriangleAlert } from '@lucide/svelte';
 	import { Problem } from '$lib/api';
-	import { DateFormatter } from '@internationalized/date';
+	import { formatDate } from '$lib/datetime';
 
 	const context = Page.getContext();
 	const session = $derived(
@@ -19,15 +18,6 @@
 			userId: context.userId()
 		})
 	);
-
-	const formatter = new DateFormatter(page.data.locale, {
-		timeZone: page.data.tz,
-		day: 'numeric',
-		month: 'long',
-		year: 'numeric',
-		hour: '2-digit',
-		minute: '2-digit'
-	});
 </script>
 
 {#snippet subscribe()}
@@ -53,7 +43,9 @@
 			<Alert.Description>
 				<p>
 					You recently unsubscribed. You can resubscribe after
-					<span class="inline font-semibold">{formatter.format(new Date(session.unlocksAt))}</span>.
+					<span class="inline font-semibold">
+						{formatDate(session.unlocksAt, 'datetimeLong')}
+					</span>.
 				</p>
 			</Alert.Description>
 		</Alert.Root>

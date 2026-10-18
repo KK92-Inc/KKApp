@@ -5,7 +5,7 @@
 
 import { createColumnHelper, renderComponent } from '@tanstack/svelte-table';
 import type { DataTableFeatures } from '../features';
-import { formatDate } from '../format';
+import { formatDate } from '$lib/datetime';
 import DataTableStudent from '../data-table-student.svelte';
 import DataTableActions from './data-table-actions.svelte';
 import FreezeStatus from './freeze-status.svelte';

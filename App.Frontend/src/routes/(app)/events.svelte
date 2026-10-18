@@ -7,18 +7,8 @@
 	import Separator from '$lib/components/separator/separator.svelte';
 	import { ArrowRight, Bot, Calendar, CalendarDaysIcon, Globe, HeartHandshake, User, Users } from '@lucide/svelte';
 	import { Skeleton } from '$lib/components/skeleton';
-	import { DateFormatter } from '@internationalized/date';
-	import { page } from '$app/state';
 	import * as HoverCard from '$lib/components/hover-card/';
 	import Badge from '$lib/components/badge/badge.svelte';
-
-	const formatter = new DateFormatter(page.data.locale, {
-		month: 'short',
-		day: 'numeric',
-		hour: 'numeric',
-		minute: 'numeric',
-		hour12: true
-	});
 
 	const events = await Events.getPage({
 		sort: 'Descending',

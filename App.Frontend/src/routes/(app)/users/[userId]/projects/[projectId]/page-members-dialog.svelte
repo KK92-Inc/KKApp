@@ -1,11 +1,8 @@
 <script lang="ts">
-	import type { components } from '$lib/api/api';
 	import * as Item from '$lib/components/item';
 	import { Button } from '$lib/components/button';
 	import * as Dialog from '$lib/components/dialog';
-	import { Archive, CalendarDays, Plus, Search, Settings, Users, UserSearch } from '@lucide/svelte';
-	import * as Avatar from '$lib/components/avatar';
-	import { DateFormatter } from '@internationalized/date';
+	import { Plus, Search, Settings, Users, UserSearch } from '@lucide/svelte';
 	import { page } from '$app/state';
 	import * as InputGroup from '$lib/components/input-group';
 	import * as Tooltip from '$lib/components/tooltip';
@@ -20,7 +17,7 @@
 	import * as Page from './context.svelte';
 	import { Problem } from '$lib/api';
 	import Badge from '$lib/components/badge/badge.svelte';
-	import * as Project from '$lib/remotes/projects.remote';
+	// import * as Project from '$lib/remotes/projects.remote';
 	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
 
 	let index = $state(0);
@@ -29,7 +26,7 @@
 	let tab = $state<'search' | 'manage'>('manage');
 
 	const context = Page.getContext();
-	const project = await Project.get(context.projectId());
+	// const project = await Project.get(context.projectId());
 	const session = $derived(
 		await UserProject.getByUserAndProject({
 			userId: context.userId(),

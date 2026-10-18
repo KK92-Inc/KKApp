@@ -122,13 +122,12 @@ public static class Services
             builder.Configuration.GetSection(OnsiteNetworkOptions.SectionName));
     }
 
-    /// <summary>
-    /// The one JSON policy for the API, applied to both MVC and the HTTP JsonOptions (see RegisterCore).
-    /// </summary>
     private static void ConfigureJson(JsonSerializerOptions options)
     {
-        options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        // This is annoying for the API -> TS conversion, so we strictly make numbers, numbers.
         options.NumberHandling = JsonNumberHandling.Strict;
+        options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        options.Converters.Add(new UtcDateTimeOffsetConverter());
     }
 
     // Authentication & Authorization

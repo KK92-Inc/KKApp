@@ -1,7 +1,5 @@
 <script lang="ts">
 	import { Folder } from '@lucide/svelte';
-	import { DateFormatter } from '@internationalized/date';
-	import { page } from '$app/state';
 	import * as Table from '$lib/components/table';
 	import { Button } from '$lib/components/button';
 	import TreeRow from './TreeRow.svelte';
@@ -16,11 +14,6 @@
 	}
 
 	const { entries, href, parentHref }: Props = $props();
-
-	const formatter = $derived(
-		new DateFormatter(page.data.locale, { dateStyle: 'medium', timeStyle: 'short' })
-	);
-	const formatDate = (date: Date) => formatter.format(date);
 </script>
 
 <div class="rounded border">
@@ -47,7 +40,7 @@
 			{/if}
 
 			{#each entries as entry (entry.path)}
-				<TreeRow {entry} href={href(entry)} {formatDate} />
+				<TreeRow {entry} href={href(entry)} />
 			{:else}
 				<Table.Row class="border-t">
 					<Table.Cell colspan={3} class="p-4 text-center text-sm text-muted-foreground">

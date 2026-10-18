@@ -34,7 +34,7 @@ public sealed class SoftDeleteInterceptor : SaveChangesInterceptor
         foreach (EntityEntry<ISoftDeletable> softDeletable in entries)
         {
             softDeletable.State = EntityState.Modified;
-            softDeletable.Entity.DeletedAt = DateTime.UtcNow;
+            softDeletable.Entity.DeletedAt = DateTimeOffset.UtcNow;
         }
 
         return base.SavingChangesAsync(eventData, result, cancellationToken);

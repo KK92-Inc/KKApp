@@ -5,7 +5,7 @@
 
 import type { components } from '$lib/api/api.js';
 import type { BadgeVariant } from '$lib/components/badge';
-import { formatRelative, hasPassed } from '../format';
+import { formatRelative, past } from '$lib/datetime';
 
 // ============================================================================
 
@@ -15,8 +15,8 @@ export type FreezeState = 'upcoming' | 'active' | 'past' | 'cancelled';
 /** Where a freeze is in its life, worked out from its dates (the API has no filter for it). */
 export function freezeState(freeze: Freeze): FreezeState {
 	if (freeze.invalidatedAt) return 'cancelled';
-	if (!hasPassed(freeze.startsAt)) return 'upcoming';
-	if (!hasPassed(freeze.endsAt)) return 'active';
+	if (!past(freeze.startsAt)) return 'upcoming';
+	if (!past(freeze.endsAt)) return 'active';
 	return 'past';
 }
 

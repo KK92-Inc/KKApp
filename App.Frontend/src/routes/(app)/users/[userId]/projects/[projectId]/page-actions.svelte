@@ -11,18 +11,11 @@
 	import * as Projects from '$lib/remotes/projects.remote';
 	import { Problem } from '$lib/api';
 	import * as Alert from '$lib/components/alert';
-	import { DateFormatter } from '@internationalized/date';
+	import { formatDate, past } from '$lib/datetime';
 	import Separator from '$lib/components/separator/separator.svelte';
 
 	const dialog = useDialog();
 	const context = Page.getContext();
-	const formatter = new DateFormatter(page.data.locale, {
-		day: 'numeric',
-		month: 'long',
-		year: 'numeric',
-		hour: '2-digit',
-		minute: '2-digit'
-	});
 
 	const project = await Projects.get(context.projectId());
 	const session = $derived(
@@ -32,8 +25,8 @@
 		})
 	);
 
-	const unlocksAt = $derived(session?.unlocksAt ? new Date(session.unlocksAt) : null);
-	const cooldown = $derived(unlocksAt !== null && unlocksAt > new Date());
+	const unlocksAt = $derived(session?.unlocksAt ?? null);
+	const cooldown = $derived(unlocksAt !== null && !past(unlocksAt));
 	const reactivation = $derived(session && session.state === 'Inactive');
 
 	const subscribeConfirmTitle = $derived(
@@ -170,7 +163,7 @@
 				<Alert.Description>
 					<p>
 						You recently unsubscribed. You can resubscribe or reactivate after
-						<span class="inline font-semibold">{formatter.format(unlocksAt)}</span>.
+						<span class="inline font-semibold">{formatDate(unlocksAt, 'datetimeLong')}</span>.
 					</p>
 				</Alert.Description>
 			</Alert.Root>

@@ -2,7 +2,7 @@
 	import { buttonVariants } from '$lib/components/button';
 	import * as Dialog from '$lib/components/dialog';
 	import Separator from '$lib/components/separator/separator.svelte';
-	import { formatDate } from '../format';
+	import { formatDate } from '$lib/datetime';
 	import FreezeStatus from './freeze-status.svelte';
 	import type { Freeze } from './state';
 

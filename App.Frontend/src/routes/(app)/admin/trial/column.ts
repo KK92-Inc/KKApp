@@ -8,7 +8,7 @@ import { createRawSnippet } from 'svelte';
 import { createColumnHelper, renderComponent } from '@tanstack/svelte-table';
 import { Badge, type BadgeVariant } from '$lib/components/badge';
 import type { DataTableFeatures } from '../features';
-import { formatDate, hasPassed } from '../format';
+import { formatDate, past } from '$lib/datetime';
 import CursusName from './cursus-name.svelte';
 import DataTableActions from './data-table-actions.svelte';
 
@@ -22,11 +22,11 @@ const helper = createColumnHelper<DataTableFeatures, Trial>();
 function status(trial: Trial): { label: string; variant: BadgeVariant } {
 	if (trial.endedAt) return { label: 'Ended', variant: 'secondary' };
 	if (trial.startedAt) {
-		return hasPassed(trial.endsAt)
+		return past(trial.endsAt)
 			? { label: 'Ending', variant: 'secondary' }
 			: { label: 'Running', variant: 'success' };
 	}
-	return hasPassed(trial.startsAt)
+	return past(trial.startsAt)
 		? { label: 'Starting', variant: 'secondary' }
 		: { label: 'Upcoming', variant: 'outline' };
 }

@@ -10,10 +10,21 @@
 	{#snippet left()}
 		<Navgroup
 			title="General Administration"
-			routes={['/(app)/admin', '/(app)/admin/agent', '/(app)/admin/cursus', '/(app)/admin/freeze']}
+			routes={[
+				'/(app)/admin',
+				'/(app)/admin/agent',
+				'/(app)/admin/cursus',
+				'/(app)/admin/freeze'
+			]}
 		/>
 
-		<Navgroup title="Cohort Managment" routes={['/(app)/admin/trial', '/(app)/admin/kickoff']} />
+		<Navgroup title="Cohort Managment" routes={[
+			"/(app)/admin/opendays",
+			"/(app)/admin/checkin",
+			'/(app)/admin/trial',
+			'/(app)/admin/kickoff',
+			]}
+		/>
 	{/snippet}
 
 	{#snippet right()}

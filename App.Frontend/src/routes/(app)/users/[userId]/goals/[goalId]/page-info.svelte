@@ -1,25 +1,19 @@
 <script lang="ts">
+	import { formatDate } from '$lib/datetime';
 	import * as Page from './context.svelte';
 	import * as Card from '$lib/components/card';
 	import Thumbnail from '$lib/components/thumbnail.svelte';
 	import { Badge } from '$lib/components/badge';
-	import { page } from '$app/state';
 	import { Calendar, Clock, Globe, Lock, TriangleAlert } from '@lucide/svelte';
 	import * as Tooltip from '$lib/components/tooltip';
 	import Separator from '$lib/components/separator/separator.svelte';
 	import * as Goal from '$lib/remotes/goals.remote';
 
 	const context = Page.getContext();
-	const formatter = new Intl.DateTimeFormat(page.data.locale, {
-		timeZone: page.data.tz,
-		month: 'short',
-		day: 'numeric',
-		year: 'numeric'
-	});
 
 	const goal = await Goal.get(context.goalId());
-	const createdAt = $derived(formatter.format(new Date(goal.createdAt)));
-	const updatedAt = $derived(formatter.format(new Date(goal.updatedAt)));
+	const createdAt = $derived(formatDate(goal.createdAt, 'date'));
+	const updatedAt = $derived(formatDate(goal.updatedAt, 'date'));
 </script>
 
 <Card.Root class="gap-1 overflow-hidden p-0">

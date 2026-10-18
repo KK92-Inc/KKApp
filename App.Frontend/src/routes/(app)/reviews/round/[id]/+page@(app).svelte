@@ -27,17 +27,11 @@
 		X
 	} from '@lucide/svelte';
 	import ScrollArea from '$lib/components/scroll-area/scroll-area.svelte';
-	import { DateFormatter } from '@internationalized/date';
+	import { formatDate } from '$lib/datetime';
 
 	const { params }: PageProps = $props();
 	const round = $derived(await Reviews.getRound(params.id));
 	const session = $derived(await UserProject.get(round.userProjectId));
-	const formatter = new DateFormatter(page.data.locale, {
-		timeStyle: 'short',
-		hour12: false,
-		dateStyle: 'medium',
-		timeZone: page.data.tz
-	});
 </script>
 
 <div class="container mx-auto my-8 max-w-xl space-y-2">
@@ -145,7 +139,7 @@
 													<span>{name}'s Conclusion</span>
 													{#if slot.finishedAt}
 													<span class="font-normal text-muted-foreground/80">
-														{formatter.format(new Date(slot.finishedAt))}
+														{formatDate(slot.finishedAt, 'datetime')}
 													</span>
 													{/if}
 												</div>
@@ -169,146 +163,3 @@
 		{/each}
 	</Item.Group>
 </div>
-
-<!-- <div class="container mx-auto py-8 max-w-5xl space-y-6">
-  <Card.Root>
-    <Card.Header class="flex flex-row items-center justify-between pb-6 border-b">
-      <div class="space-y-1">
-        <Card.Title class="text-2xl font-bold">
-          Evaluation Round
-        </Card.Title>
-        <Card.Description>
-          ID: {params.id}
-        </Card.Description>
-      </div>
-
-      {#if round?.projectId}
-        <Button.Root href="/projects/{round.projectId}" variant="outline">
-          View Project
-        </Button.Root>
-      {/if}
-    </Card.Header>
-
-    <Card.Content class="pt-6">
-      <Table.Root>
-        <Table.Header>
-          <Table.Row>
-            <Table.Head>Reviewer</Table.Head>
-            <Table.Head>Type</Table.Head>
-            <Table.Head>Duration</Table.Head>
-            <Table.Head>Outcome</Table.Head>
-            <Table.Head class="text-right">Actions</Table.Head>
-          </Table.Row>
-        </Table.Header>
-
-        <Table.Body>
-          {#each round.slots as slot (slot.reviewId ?? slot.id)}
-            <Table.Row class="h-16">
-              <Table.Cell>
-                {#if slot.reviewer}
-                  <div class="flex items-center gap-3">
-                    <Avatar.Root class="h-9 w-9">
-                      <Avatar.Image
-                        src={slot.reviewer.avatarUrl}
-                        alt={slot.reviewer.displayName ?? slot.reviewer.login}
-                      />
-                      <Avatar.Fallback>
-                        {(slot.reviewer.displayName ?? slot.reviewer.login ?? "U")
-                          .slice(0, 2)
-                          .toUpperCase()}
-                      </Avatar.Fallback>
-                    </Avatar.Root>
-
-                    <div class="flex flex-col">
-                      <span class="text-sm font-medium leading-none">
-                        {slot.reviewer.displayName ?? slot.reviewer.login}
-                      </span>
-                      <span class="text-xs text-muted-foreground mt-1">
-                        @{slot.reviewer.login}
-                      </span>
-                    </div>
-                  </div>
-                {:else}
-                  <div class="flex items-center gap-3 text-muted-foreground">
-                    <Avatar.Root class="h-9 w-9">
-                      <Avatar.Fallback>?</Avatar.Fallback>
-                    </Avatar.Root>
-                    <span class="text-sm italic">Unassigned</span>
-                  </div>
-                {/if}
-              </Table.Cell>
-
-              <Table.Cell>
-                <Badge variant="secondary">
-                  {slot.type ?? "Peer"}
-                </Badge>
-              </Table.Cell>
-
-              <Table.Cell class="text-sm">
-                {formatDuration(slot.startedAt, slot.completedAt)}
-              </Table.Cell>
-
-              <Table.Cell>
-                {#if !slot.reviewer || slot.state === "Pending"}
-                  <Badge variant="outline">Pending</Badge>
-                {:else}
-                  <svelte:boundary>
-                    {#snippet failed()}
-                      <Badge variant="destructive">Error</Badge>
-                    {/snippet}
-
-                    {@const annotations = await Reviews.getAnnotations({
-                      reviewId: slot.reviewId,
-                      type: "Conclusion"
-                    })}
-                    {@const conclusion = annotations?.[0]}
-
-                    {#if conclusion?.passed === true || conclusion?.value === "pass" || conclusion?.verdict === "PASS"}
-                      <Badge class="bg-emerald-600 text-white hover:bg-emerald-700">
-                        Passed
-                      </Badge>
-                    {:else if conclusion?.passed === false || conclusion?.value === "fail" || conclusion?.verdict === "FAIL"}
-                      <Badge variant="destructive">
-                        Failed
-                      </Badge>
-                    {:else if conclusion}
-                      <Badge variant="secondary">
-                        {conclusion.value ?? "Completed"}
-                      </Badge>
-                    {:else}
-                      <Badge variant="outline">
-                        {slot.state ?? "In Progress"}
-                      </Badge>
-                    {/if}
-                  </svelte:boundary>
-                {/if}
-              </Table.Cell>
-
-              <Table.Cell class="text-right space-x-2">
-                {#if !slot.reviewer}
-                  <Button
-                    size="sm"
-                    variant="default"
-                    onclick={() => handleClaimSlot(slot.id)}
-                  >
-                    Claim Slot
-                  </Button>
-                {/if}
-
-                {#if slot.reviewId}
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    href="/reviews/{slot.reviewId}"
-                  >
-                    View Review
-                  </Button>
-                {/if}
-              </Table.Cell>
-            </Table.Row>
-          {/each}
-        </Table.Body>
-      </Table.Root>
-    </Card.Content>
-  </Card.Root>
-</div> -->

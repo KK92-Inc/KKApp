@@ -42,7 +42,7 @@
 	import AppHelp from './app-help.svelte';
 	import AppManage from './app-manage.svelte';
 	import AppConsent from './app-consent.svelte';
-	import { DateFormatter } from '@internationalized/date';
+	import { formatDate } from '$lib/datetime';
 	import { Toggle } from '$lib/components/toggle';
 
 	const dialog = Dialog.useDialog();
@@ -51,10 +51,6 @@
 	let secret = $state('');
 	let target = $state<'current' | 'root'>('current');
 	let space = $derived(target === 'root' ? Workspace.root() : Workspace.current());
-	const formatter = new DateFormatter(page.data.locale, {
-		dateStyle: 'medium',
-		timeStyle: 'short'
-	});
 
 	async function toggle(workspaceId: string, appId: string, enabled: boolean) {
 		await Problem.try(async () => {
@@ -269,12 +265,12 @@
 							<div class="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
 								<span class="flex items-center gap-1" title="Created At">
 									<Calendar size={14} />
-									{formatter.format(new Date(app.createdAt))}
+									{formatDate(app.createdAt, 'datetime')}
 								</span>
 								<Separator orientation="vertical" class="h-3" />
 								<span class="flex items-center gap-1" title="Last Updated">
 									<RefreshCw size={14} />
-									{formatter.format(new Date(app.updatedAt))}
+									{formatDate(app.updatedAt, 'datetime')}
 								</span>
 								{#if app.redirectUris && app.redirectUris.length > 0}
 									<Separator orientation="vertical" class="h-3" />

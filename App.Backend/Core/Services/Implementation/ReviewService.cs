@@ -512,7 +512,7 @@ public class ReviewService(
         CancellationToken ct
     )
     {
-        var now = DateTimeOffset.UtcNow;
+        var now = time.GetUtcNow();
         var rows = await context.Reviews
             .Where(r => r.Id == reviewId
                 && r.ReviewerId == null

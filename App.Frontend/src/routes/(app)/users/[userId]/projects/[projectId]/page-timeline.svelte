@@ -20,7 +20,7 @@
 	import { page } from '$app/state';
 	import * as Page from './context.svelte';
 	import { Button } from '$lib/components/button';
-	import { DateFormatter } from '@internationalized/date';
+	import { formatDate } from '$lib/datetime';
 
 	let index = $state(1);
 	const context = Page.getContext();
@@ -31,11 +31,6 @@
 		})
 	);
 
-	const formatter = new DateFormatter(page.data.locale, {
-		dateStyle: 'long',
-		timeStyle: 'short',
-		hour12: false
-	});
 
 	type TransactionType = components['schemas']['UserProjectTransactionVariant'];
 	const events: Record<TransactionType, { icon: typeof Icon; label: string; class: string }> = {
@@ -94,7 +89,7 @@
 						<Item.Title class="flex w-full justify-between">
 							{config.label}
 							<time class="text-[11px] text-muted-foreground" datetime={tx.createdAt}>
-								{formatter.format(new Date(tx.createdAt))}
+								{formatDate(tx.createdAt, 'datetimeLong')}
 							</time>
 						</Item.Title>
 						{#if tx.user}

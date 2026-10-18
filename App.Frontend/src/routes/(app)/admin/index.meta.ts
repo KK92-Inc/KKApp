@@ -4,7 +4,7 @@
 // ============================================================================
 
 import type { MetaRecord } from "$lib/utils";
-import { Bot, FlaskConical, Play, Snowflake, Waypoints, Users, WavesLadder, Sparkles } from "@lucide/svelte";
+import { Play, Snowflake, Waypoints, Users, WavesLadder, Sparkles, TicketCheck, DoorOpen } from "@lucide/svelte";
 
 // ============================================================================
 
@@ -37,6 +37,16 @@ export const Meta: MetaRecord = {
 	'/(app)/admin/trial': {
 		icon: WavesLadder,
 		label: 'Piscines',
+		scopes: []
+	},
+		'/(app)/admin/checkin': {
+		icon: TicketCheck,
+		label: 'Check-Ins',
+		scopes: []
+	},
+	'/(app)/admin/opendays': {
+		icon: DoorOpen,
+		label: 'Open Days',
 		scopes: []
 	},
 }

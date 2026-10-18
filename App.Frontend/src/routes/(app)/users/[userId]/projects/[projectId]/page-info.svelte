@@ -1,23 +1,16 @@
 <script lang="ts">
+	import { formatDate } from '$lib/datetime';
 	import * as Page from './context.svelte';
 	import * as Card from '$lib/components/card';
 	import Thumbnail from '$lib/components/thumbnail.svelte';
 	import { Badge } from '$lib/components/badge';
-	import { page } from '$app/state';
 	import { Calendar, Clock, Globe, Lock, TriangleAlert } from '@lucide/svelte';
 	import * as Tooltip from '$lib/components/tooltip';
 	import Separator from '$lib/components/separator/separator.svelte';
 	import * as Projects from '$lib/remotes/projects.remote';
-	import * as Subscription from '$lib/remotes/subscription.remote';
-	import * as Reviews from '$lib/remotes/review.remote';
 	import * as UserProjects from '$lib/remotes/user-project.remote';
 
 	const context = Page.getContext();
-	const formatter = new Intl.DateTimeFormat(page.data.locale ?? 'en-US', {
-		month: 'short',
-		day: 'numeric',
-		year: 'numeric'
-	});
 
 	const [project, session] = $derived(
 		await Promise.all([
@@ -29,8 +22,8 @@
 		])
 	);
 
-	const createdAt = $derived(formatter.format(new Date(project.createdAt)));
-	const updatedAt = $derived(formatter.format(new Date(project.updatedAt)));
+	const createdAt = $derived(formatDate(project.createdAt, 'date'));
+	const updatedAt = $derived(formatDate(project.updatedAt, 'date'));
 </script>
 
 <Card.Root class="gap-1 overflow-hidden p-0">

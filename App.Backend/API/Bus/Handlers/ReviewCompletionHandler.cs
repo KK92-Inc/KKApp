@@ -23,7 +23,11 @@ using Wolverine;
 
 
 [WolverineHandler]
-public class ReviewCompletionHandler(DatabaseContext context, IMessageBus bus, ILogger<ReviewCompletionHandler> logger)
+public class ReviewCompletionHandler(
+    DatabaseContext context,
+    IMessageBus bus,
+    TimeProvider time,
+    ILogger<ReviewCompletionHandler> logger)
 {
     public async Task Handle(ReviewCompletionMessage message, CancellationToken ct)
     {
@@ -62,7 +66,7 @@ public class ReviewCompletionHandler(DatabaseContext context, IMessageBus bus, I
         // Close the round atomically so concurrent completions can't resolve it twice
         // (which would e.g. publish goal completions twice).
         var next = outcome is ReviewRoundOutcome.Passed ? ReviewRoundState.Passed : ReviewRoundState.Failed;
-        var now = DateTimeOffset.UtcNow;
+        var now = time.GetUtcNow();
         var closed = await context.ReviewRounds
             .Where(r => r.Id == round.Id && r.State == ReviewRoundState.Open)
             .ExecuteUpdateAsync(s => s

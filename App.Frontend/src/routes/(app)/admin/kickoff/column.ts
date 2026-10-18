@@ -8,7 +8,7 @@ import { createRawSnippet } from 'svelte';
 import { createColumnHelper, renderComponent } from '@tanstack/svelte-table';
 import { Badge, type BadgeVariant } from '$lib/components/badge';
 import type { DataTableFeatures } from '../features';
-import { formatDate, hasPassed } from '../format';
+import { formatDate, past } from '$lib/datetime';
 import DataTableActions from './data-table-actions.svelte';
 
 // ============================================================================
@@ -20,7 +20,7 @@ const helper = createColumnHelper<DataTableFeatures, Kickoff>();
 /** Where a kickoff is in its life. Past its date but not started means the job hasn't picked it up yet. */
 function status(kickoff: Kickoff): { label: string; variant: BadgeVariant } {
 	if (kickoff.startedAt) return { label: 'Started', variant: 'success' };
-	if (hasPassed(kickoff.startsAt)) return { label: 'Starting', variant: 'secondary' };
+	if (past(kickoff.startsAt)) return { label: 'Starting', variant: 'secondary' };
 	return { label: 'Upcoming', variant: 'outline' };
 }
 

@@ -7,13 +7,12 @@
 	import { cn } from '$lib/utils';
 	import { Archive, Award, BadgeInfo, Calendar, Eye, Globe, Users } from '@lucide/svelte';
 	import { colors, type EntityState } from '.';
-	import { page } from '$app/state';
 	import * as Goal from '$lib/remotes/goals.remote';
 	import * as UserProject from '$lib/remotes/user-project.remote';
 	import * as Accordion from '$lib/components/accordion';
 	import Loader from '$lib/components/loader.svelte';
 	import { Button } from '$lib/components/button';
-	import { DateFormatter } from '@internationalized/date';
+	import { formatDate } from '$lib/datetime';
 
 	interface Props {
 		event: components['schemas']['EventDO'];
@@ -21,10 +20,6 @@
 
 	const { event }: Props = $props();
 	const src = $derived(event.thumbnail ?? `https://placehold.co/128x128?text=${event.name}`);
-	const formatter = new DateFormatter(page.data.locale, {
-		dateStyle: 'medium',
-		timeStyle: 'short'
-	});
 </script>
 
 <Item.Root variant="outline" class="p-3">
@@ -58,7 +53,7 @@
 					</span>
 					<span class="flex items-center gap-1">
 						<Calendar size={14} />
-						{formatter.format(new Date(event.startsAt))}
+						{formatDate(event.startsAt, 'datetime')}
 					</span>
 				</Item.Description>
 			</Item.Content>

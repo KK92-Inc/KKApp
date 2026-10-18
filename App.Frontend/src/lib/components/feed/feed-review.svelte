@@ -3,7 +3,7 @@ import Star from '@lucide/svelte/icons/star';
 import * as Tooltip from '$lib/components/tooltip';
 import { Badge } from '$lib/components/badge';
 import type { components } from '$lib/api/api';
-// import { getLocalTimeZone, parseAbsolute, formatDateTime } from '@internationalized/date';
+import { formatDate, formatRelative } from '$lib/datetime';
 
 interface Props {
 	notification: components["schemas"]["NotificationDO"] & {
@@ -12,8 +12,6 @@ interface Props {
 }
 
 const { notification }: Props = $props();
-// const createdDate = parseAbsolute(notification.createdAt);
-// const formattedDate = formatDateTime(createdDate, { timeZone: getLocalTimeZone(), dateStyle: 'medium', timeStyle: 'short' });
 </script>
 
 <div class="mb-3 rounded-lg border bg-card p-4 transition-colors hover:bg-accent/50">
@@ -59,16 +57,16 @@ const { notification }: Props = $props();
 
 				<Tooltip.Root>
 					<Tooltip.Trigger class="text-muted-foreground text-xs">
-						{relativeTime(data.createdAt)}
+						{formatRelative(notification.createdAt)}
 					</Tooltip.Trigger>
 					<Tooltip.Content>
-						<p>{new Date(data.createdAt).toLocaleDateString()}</p>
+						<p>{formatDate(notification.createdAt)}</p>
 					</Tooltip.Content>
 				</Tooltip.Root>
 			</div>
 
 			<div class="markdown mt-2 text-sm">
-				{@html data.data.html}
+				{@html notification.data.html}
 			</div>
 
 			{#if href}

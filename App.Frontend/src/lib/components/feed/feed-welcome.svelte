@@ -3,6 +3,7 @@
 	import * as Tooltip from '$lib/components/tooltip';
 	import { Badge } from '$lib/components/badge';
 	import type { components } from '$lib/api/api';
+	import { formatDate } from '$lib/datetime';
 	import Markdown from '../markdown/markdown.svelte';
 
 	interface Props {
@@ -29,10 +30,10 @@
 
 				<Tooltip.Root>
 					<Tooltip.Trigger class="text-muted-foreground text-xs">
-						<!-- {relativeTime(notification.createdAt)} -->
+						<!-- {formatRelative(notification.createdAt)} -->
 					</Tooltip.Trigger>
 					<Tooltip.Content>
-						<p>{new Date(notification.createdAt).toLocaleDateString()}</p>
+						<p>{formatDate(notification.createdAt)}</p>
 					</Tooltip.Content>
 				</Tooltip.Root>
 			</div>
