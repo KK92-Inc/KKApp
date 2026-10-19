@@ -92,7 +92,8 @@ public class GitService : IGitService
     /// <inheritdoc />
     public async Task<TreeDTO[]?> GetTreeAsync(string owner, string name, string @ref, string path = "", CancellationToken token = default)
     {
-        var response = await _http.GetAsync($"repo/{owner}/{name}/tree/{@ref}/{path}", token);
+        var normalizedPath = string.IsNullOrWhiteSpace(path) ? string.Empty : $"/{Uri.UnescapeDataString(path).Trim('/')}";
+        var response = await _http.GetAsync($"repo/{owner}/{name}/tree/{@ref}{normalizedPath}", token);
         if (response.StatusCode is HttpStatusCode.NotFound)
             return null;
 
