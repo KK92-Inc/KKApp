@@ -36,19 +36,19 @@
 				</DropdownMenu.Item>
 			</DropdownMenu.Group>
 			<DropdownMenu.Separator />
+			{#if page.data.session.roles.includes('staff')}
 			<DropdownMenu.Group>
 				<!-- <DropdownMenu.Item href="/">
 					<CircleQuestionMark />
 					FAQ
 				</DropdownMenu.Item> -->
-				{#if page.data.session.roles.includes('staff')}
 					<DropdownMenu.Item href="/admin">
 						<Rocket />
 						Dashboard
 					</DropdownMenu.Item>
+				</DropdownMenu.Group>
+				<DropdownMenu.Separator />
 				{/if}
-			</DropdownMenu.Group>
-			<DropdownMenu.Separator />
 			<DropdownMenu.Group>
 				<DropdownMenu.Item remote={logout} variant="destructive">
 					<LogOut />

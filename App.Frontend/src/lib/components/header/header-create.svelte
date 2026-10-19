@@ -18,7 +18,7 @@
 	const cursus = $derived(permissions.includes('cursus:write'));
 	const rubrics = $derived(permissions.includes('rubrics:write'));
 	const workspace = $derived(permissions.includes('workspaces:read'));
-	const any = $derived(projects || goals || cursus || rubrics || workspace);
+	const any = $derived(projects || goals || cursus || rubrics);
 </script>
 
 <DropdownMenu.Root>
