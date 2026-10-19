@@ -17,12 +17,14 @@
 	{@const reviews = await Reviews.getPage({
 		page: index,
 		notKind: 'Self',
-		status: 'Pending'
+		status: 'Pending',
 	})}
+
 	{#snippet pending()}
 		<Skeleton class="h-32 w-full" />
 	{/snippet}
-	<Item.Group>
+
+	<Item.Group class="gap-2">
 		{#each reviews.data as review (review.id)}
 			<Item.Review {review}>
 				{#snippet actions()}

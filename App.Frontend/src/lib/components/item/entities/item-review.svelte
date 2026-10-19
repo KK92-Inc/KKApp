@@ -7,7 +7,7 @@
 	import Badge from '$lib/components/badge/badge.svelte';
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/state';
-	import { ArrowRight, Bot, CalendarIcon, Globe, User, Users } from '@lucide/svelte';
+	import { ArrowRight, Bot, CalendarIcon, Globe, LaptopMinimalCheck, User, Users } from '@lucide/svelte';
 	import { formatDate } from '$lib/datetime';
 
 	interface Props {
@@ -22,8 +22,9 @@
 
 	const projectName = $derived(review.userProject.name);
 	const to = $derived(href ?? `/reviews/${review.id}`);
+	const isCurrentUser = $derived(review.reviewer?.id === page.data.session.userId);
 
-	const icons = { Self: User, Peer: Users, Async: Globe, Auto: Bot } as const;
+	const icons = { Self: User, Peer: Users, Async: LaptopMinimalCheck, Auto: Bot } as const;
 	const Icon = $derived(icons[review.kind] ?? User);
 </script>
 
@@ -33,17 +34,18 @@
 	</Item.Media>
 
 	<Item.Content class="min-w-0 flex-1">
-		<Item.Title class="gap-1 truncate text-xs font-normal">
+		<Item.Title class="flex flex-wrap items-center gap-1 truncate text-xs font-normal">
 			{#if review.state === 'Cancelled'}
 				<span class="font-bold text-destructive">Cancelled</span>
 				<span class="text-muted-foreground/40 select-none">•</span>
 				<span class="max-w-32 truncate text-muted-foreground line-through">{projectName}</span>
-			{:else if review.state === 'Pending'}
-				<span class="animate-pulse font-bold text-amber-600 dark:text-amber-500">Seeking Review</span>
+			{:else if review.state === 'Pending' && !review.reviewer}
+				<span class="animate-pulse font-bold text-amber-600 dark:text-amber-500">Unassigned</span>
 				<span class="text-muted-foreground/40 select-none">•</span>
-				<span class="max-w-32 truncate">{projectName}</span>
+				<span class="text-muted-foreground">seeking reviewer for</span>
+				<span class="font-semibold">{projectName}</span>
 			{:else}
-				{#if review.kind === 'Self'}
+				{#if isCurrentUser}
 					<span class="font-bold">You</span>
 				{:else if review.reviewer}
 					{@const reviewer = review.reviewer}
@@ -78,28 +80,72 @@
 					<span class="font-bold">Someone</span>
 				{/if}
 
-				{#if review.state === 'InProgress'}
-					<span class="text-muted-foreground">{review.kind === 'Self' ? 'are' : 'will be'} reviewing</span>
+				{#if review.kind === 'Self'}
+					<span class="text-muted-foreground">
+						{isCurrentUser ? 'are doing a self review of' : 'will be doing a self review of'}
+					</span>
+				{:else if review.state === 'InProgress'}
+					<span class="text-muted-foreground">{isCurrentUser ? 'are' : 'will be'} reviewing</span>
+				{:else if review.state === 'Pending'}
+					<span class="text-muted-foreground">is set to review</span>
 				{:else}
 					<span class="text-muted-foreground">reviewed</span>
 				{/if}
 
 				<span class="font-medium">{projectName}</span>
+
+				{#if review.reviewer && review.reviewer.id !== review.reviewer?.id}
+					<span class="text-muted-foreground">for</span>
+					<HoverCard.Root>
+						<HoverCard.Trigger
+							href="/users/{review.reviewer.id}"
+							target="_blank"
+							rel="noreferrer noopener"
+							class="font-semibold underline-offset-4 hover:underline"
+						>
+							@{review.reviewer.displayName ?? review.reviewer.login}
+						</HoverCard.Trigger>
+						<HoverCard.Content class="text-left">
+							<div class="flex gap-3">
+								<Avatar.Root class="size-12 shrink-0 rounded-sm border">
+									<Avatar.Image
+										class="rounded-sm"
+										src={review.reviewer.avatarUrl ?? 'https://placehold.co/400'}
+									/>
+									<Avatar.Fallback class="rounded-sm">
+										{review.reviewer.login.slice(0, 2).toUpperCase()}
+									</Avatar.Fallback>
+								</Avatar.Root>
+
+								<div class="flex-1 space-y-3">
+									<h4 class="text-sm leading-none font-bold">
+										{review.reviewer.displayName ?? review.reviewer.login}
+										<span class="ml-1 text-xs font-normal text-muted-foreground"
+											>@{review.reviewer.login}</span
+										>
+									</h4>
+								</div>
+							</div>
+						</HoverCard.Content>
+					</HoverCard.Root>
+				{/if}
 			{/if}
 		</Item.Title>
 
-		<Item.Description class="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+		<Item.Description class="mt-1 flex min-w-0 flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
 			<Badge variant="outline" class="rounded-sm font-normal">{review.kind}</Badge>
+
 			{#if review.passed === true}
 				<span class="text-muted-foreground/40 select-none">•</span>
 				<Badge variant="success" class="rounded-sm font-normal">Passed</Badge>
-			{:else if !!review.passed && !review.passed && review.state !== "Cancelled"}
+			{:else if review.passed === false && review.state !== 'Cancelled'}
 				<span class="text-muted-foreground/40 select-none">•</span>
 				<Badge variant="destructive" class="rounded-sm font-normal">Failed</Badge>
 			{/if}
+
 			<span class="text-muted-foreground/40 select-none">•</span>
-			<span class="shrink-0 flex items-center gap-1">
-				<CalendarIcon size={12}/>
+			<span class="flex shrink-0 items-center gap-1">
+				<CalendarIcon size={12} />
 				{formatDate(review.createdAt, 'datetime')}
 			</span>
 		</Item.Description>
