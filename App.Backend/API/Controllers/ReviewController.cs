@@ -32,6 +32,7 @@ namespace App.Backend.API.Controllers;
 [Authorize]
 public class ReviewController(
     IReviewService service,
+    IUserService userService,
     IMemberService memberService,
     IOnsiteNetworkService onsite,
     IUserProjectService userProjects,
@@ -61,6 +62,11 @@ public class ReviewController(
         CancellationToken token
     )
     {
+        var user = await userService.FindByIdAsync(User.GetSID(), token);
+        if (user is null) return NotFound();
+
+        var role = user.Role;
+
         var page = await service.GetAllAsync(sorting, pagination, token,
             r => !userProjectId.HasValue || r.UserProjectId == userProjectId.Value,
             r => !reviewerId.HasValue || r.ReviewerId == reviewerId.Value,
@@ -69,13 +75,22 @@ public class ReviewController(
             r => !notKind.HasValue || r.Kind != notKind.Value,
             r => !status.HasValue || r.State == status.Value,
             r => !notStatus.HasValue || r.State != notStatus.Value,
-            // TODO: Delete this nasty escape hatch.
             revieweeId.HasValue ? r => ctx.Members.Any(m =>
                   m.EntityType == MemberEntityType.UserProject &&
                   m.EntityId == r.UserProjectId &&
                   m.UserId == revieweeId.Value &&
                   m.LeftAt == null
-            ) : null
+            ) : null,
+            // Staff bypass the role restriction; others are scoped to their role
+            role == UserRole.Staff ? null : r => ctx.Members
+                .Include(m => m.User)
+                .Any(m =>
+                m.EntityType == MemberEntityType.UserProject &&
+                m.EntityId == r.UserProjectId &&
+                m.Role == MemberRole.Leader &&
+                m.User.Role == role &&
+                m.LeftAt == null
+            )
         );
 
         page.AppendHeaders(Response.Headers);
