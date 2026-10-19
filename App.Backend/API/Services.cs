@@ -104,7 +104,16 @@ public static class Services
             o.Filters.Add<ServiceExceptionFilter>();
             // Agent DTOs carry raw JSON (tool arguments), there is nothing to validate inside it.
             o.ModelMetadataDetailsProviders.Add(new SuppressChildValidationMetadataProvider(typeof(JsonElement)));
-        }).AddJsonOptions(o => ConfigureJson(o.JsonSerializerOptions));
+        }).AddJsonOptions(o =>
+        {
+            ConfigureJson(o.JsonSerializerOptions);
+
+            // Only here, never in ConfigureJson: this is what (de)serializes the controllers, but
+            // Microsoft.AspNetCore.OpenApi builds its schemas from the *HTTP* options below. A custom
+            // converter makes System.Text.Json describe the type as "anything", so with it in there every
+            // date-time loses its `type: string` (and its nullability) and the TS types become `unknown`.
+            o.JsonSerializerOptions.Converters.Add(new UtcDateTimeOffsetConverter());
+        });
 
         // The line above only covers MVC. Microsoft.AspNetCore.OpenApi builds its schemas from the
         // *HTTP* JsonOptions instead, whose Web defaults accept numbers written as strings, which
@@ -124,10 +133,8 @@ public static class Services
 
     private static void ConfigureJson(JsonSerializerOptions options)
     {
-        // This is annoying for the API -> TS conversion, so we strictly make numbers, numbers.
         options.NumberHandling = JsonNumberHandling.Strict;
         options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-        options.Converters.Add(new UtcDateTimeOffsetConverter());
     }
 
     // Authentication & Authorization
@@ -379,16 +386,16 @@ public static class Services
 
         builder.Services.Configure<AgentOptions>(
             builder.Configuration.GetSection(AgentOptions.SectionName));
-        
-        #pragma warning disable EXTEXP0001 // TODO: For local testing we don't wanna limit (we can run at most 10t/s)
+
+#pragma warning disable EXTEXP0001 // TODO: For local testing we don't wanna limit (we can run at most 10t/s)
         builder.Services.AddHttpClient("ollama", (sp, client) =>
         {
             var agent = sp.GetRequiredService<IOptions<AgentOptions>>().Value;
             client.BaseAddress = new Uri(agent.BaseUrl.TrimEnd('/') + "/");
             client.Timeout = TimeSpan.FromSeconds(3000);
         }).RemoveAllResilienceHandlers();
-        #pragma warning restore EXTEXP0001
-        
+#pragma warning restore EXTEXP0001
+
         // The only place that knows we talk to Ollama. Any IChatClient works here (Azure OpenAI, OpenAI, ...).
         builder.Services.AddScoped<IChatClient>(sp => new OllamaApiClient(
             sp.GetRequiredService<IHttpClientFactory>().CreateClient("ollama"),

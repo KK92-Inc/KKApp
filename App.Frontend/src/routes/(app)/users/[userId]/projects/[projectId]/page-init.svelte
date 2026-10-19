@@ -15,12 +15,14 @@
 	import { env } from '$env/dynamic/public';
 
 	const context = Page.getContext();
-	const project = await Projects.get(context.projectId());
-	const session = $derived(
-		await UserProject.getByUserAndProject({
-			userId: context.userId(),
-			projectId: context.projectId()
-		})
+	const [project, session] = $derived(
+		await Promise.all([
+			Projects.get(context.projectId()),
+			UserProject.getByUserAndProject({
+				userId: context.userId(),
+				projectId: context.projectId()
+			})
+		])
 	);
 
 	const repoUrl = $derived(`${env.PUBLIC_GIT_URL}/${project.id}/${session!.id}`);

@@ -3,20 +3,12 @@
 	import Button, { buttonVariants } from '$lib/components/button/button.svelte';
 	import * as DropdownMenu from '$lib/components/dropdown-menu';
 	import {
-		BadgeCheckIcon,
 		Ban,
-		BookmarkIcon,
 		CheckCheck,
 		ChevronRightIcon,
-		Ellipsis,
 		HeartHandshake,
 		MessageSquarePlus,
-		MessagesSquareIcon,
-		Plus,
 		Search,
-		SortAsc,
-		SortDesc,
-		TextSearch,
 		X
 	} from '@lucide/svelte';
 	import { Skeleton } from '$lib/components/skeleton';
@@ -26,19 +18,19 @@
 	import Failed from '$lib/components/empty/failed.svelte';
 	import * as ButtonGroup from '$lib/components/button-group';
 	import type { components } from '$lib/api/api';
-	import * as Select from '$lib/components/select';
-	import { Order, Problem } from '$lib/api';
+	import * as Dialog from '$lib/components/dialog';
+	import * as Tabs from '$lib/components/tabs';
+	import { Problem } from '$lib/api';
 	import * as UserProjects from '$lib/remotes/user-project.remote';
 	import * as Reviews from '$lib/remotes/review.remote';
-	import * as Git from '$lib/remotes/git.remote';
-	import { toast } from 'svelte-sonner';
-	import Toggle from '$lib/components/toggle/toggle.svelte';
 	import Separator from '$lib/components/separator/separator.svelte';
 	import Badge from '$lib/components/badge/badge.svelte';
 	import * as Empty from '$lib/components/empty';
+	import { goto } from '$app/navigation';
 
 	let sort = $state<components['schemas']['Order']>('Descending');
 
+	const dialog = Dialog.useDialog();
 	const context = Page.getContext();
 	const session = $derived(
 		await UserProjects.getByUserAndProject({
@@ -46,8 +38,6 @@
 			projectId: context.projectId()
 		})
 	);
-
-	const git = $derived(session?.gitInfo ? await Git.getBranches(session.gitInfo.id) : []);
 
 	/** Request an evaluation round */
 	async function pull() {
@@ -59,15 +49,56 @@
 
 	/** Provide an evaluation to a potential round or just plain feedback. */
 	async function push() {
+		type ReviewKinds = components['schemas']['ReviewKinds'];
 		if (!session) return;
 
-		// ASK: Peer or Async ? Then try and it will otherwise fail.
+		const rounds = await Reviews.getRounds(session.id);
+		// Find the latest open round, if any exists
+		const open = rounds.find((r) => r.state === 'Open');
+
+		let target: ReviewKinds = 'Async';
+		let advisory = false;
+
+		if (open) {
+			// Check if there is an available Peer review slot in the open round
+			const peer = open.slots.find((s) => s.kind === 'Peer' && s.state === 'Pending');
+			const asyncSlot = open.slots.find((s) => s.kind === 'Async' && s.state === 'Pending');
+
+			if (peer) {
+				target = 'Peer';
+			} else if (asyncSlot) {
+				target = 'Async';
+			} else {
+				// If there is an open round, but no pending slots left of the preferred types,
+				// any new push will create an advisory review.
+				target = 'Async';
+				advisory = true;
+			}
+		} else {
+			// If there is no active round, pushing creates an advisory review.
+			advisory = true;
+		}
+
+		// Construct descriptive text based on whether it's advisory and the target kind
+		let description = `You will be doing a **${target}** evaluation. `;
+		if (advisory) {
+			description +=
+				'Since there is an active evaluation round where slots are filled (or no active round), this async feedback will be advisory only. ';
+		}
+		description += 'Once created, you will be directed straight to the review.';
+
+		const confirm = await dialog.confirm('Are you sure you want to evaluate this project?', description);
+
+		if (!confirm) return;
+
 		await Problem.try(async () => {
-			await Reviews.push({
-				kind: 'Peer',
+			const review = await Reviews.push({
+				kind: target,
 				userProjectId: session.id,
 				reviewerId: page.data.session.userId
 			});
+
+			await goto(`/reviews/${review.id}`);
 		});
 	}
 </script>
@@ -146,7 +177,7 @@
 							{/snippet}
 						</Item.Root>
 					{:else}
-						<Empty.Root class="h-full max-w-md bg-muted/30">
+						<Empty.Root class="h-full bg-muted/30">
 							<Empty.Header>
 								<Empty.Description class="max-w-xs text-pretty">
 									Currently no review rounds yet. New review rounds will appear here.
@@ -156,7 +187,13 @@
 					{/each}
 				</Item.Group>
 			{:else}
-				No Session
+				<Empty.Root class="h-full bg-muted/30">
+					<Empty.Header>
+						<Empty.Description class="max-w-xs text-pretty">
+							You are currently not subscribed to this project.
+						</Empty.Description>
+					</Empty.Header>
+				</Empty.Root>
 			{/if}
 		</Card.Content>
 	</Card.Root>

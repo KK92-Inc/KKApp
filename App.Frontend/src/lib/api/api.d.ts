@@ -3102,8 +3102,8 @@ export interface paths {
                 query?: {
                     "filter[id]"?: string;
                     "filter[name]"?: string;
-                    "filter[after]"?: unknown;
-                    "filter[before]"?: unknown;
+                    "filter[after]"?: string;
+                    "filter[before]"?: string;
                     /** @description The name of the property to use for sorting. */
                     "sort[by]"?: string;
                     /** @description The sort direction. */
@@ -6320,8 +6320,8 @@ export interface paths {
                     "filter[name]"?: string;
                     "filter[cursus]"?: string;
                     "filter[open]"?: boolean;
-                    "filter[after]"?: unknown;
-                    "filter[before]"?: unknown;
+                    "filter[after]"?: string;
+                    "filter[before]"?: string;
                     /** @description The name of the property to use for sorting. */
                     "sort[by]"?: string;
                     /** @description The sort direction. */
@@ -11225,9 +11225,9 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** Format: date-time */
-            createdAt: unknown;
+            createdAt: string;
             /** Format: date-time */
-            updatedAt: unknown;
+            updatedAt: string;
             name: string;
             clientId: string;
             description: string;
@@ -11245,9 +11245,9 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** Format: date-time */
-            createdAt: unknown;
+            createdAt: string;
             /** Format: date-time */
-            updatedAt: unknown;
+            updatedAt: string;
             entityType: string;
             /** Format: uuid */
             entityId: string;
@@ -11259,7 +11259,7 @@ export interface components {
             message: string;
             author: string;
             /** Format: date-time */
-            updatedAt: unknown;
+            updatedAt: string;
         };
         CommitFileDTO: {
             /** @description Relative file path, e.g. src/Program.cs */
@@ -11271,9 +11271,9 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** Format: date-time */
-            createdAt: unknown;
+            createdAt: string;
             /** Format: date-time */
-            updatedAt: unknown;
+            updatedAt: string;
             name: string;
             description: string;
             slug: string;
@@ -11312,9 +11312,9 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** Format: date-time */
-            createdAt: unknown;
+            createdAt: string;
             /** Format: date-time */
-            updatedAt: unknown;
+            updatedAt: string;
             name: string;
             description: string;
             thumbnail: null | string;
@@ -11324,11 +11324,11 @@ export interface components {
             /** Format: int32 */
             threshold: null | number;
             /** Format: date-time */
-            startsAt: unknown;
+            startsAt: string;
             /** Format: date-time */
-            endsAt: unknown;
+            endsAt: string;
             /** Format: date-time */
-            closesAt: unknown;
+            closesAt: string;
             state: components["schemas"]["EventState"];
             /** Format: uuid */
             userId: string;
@@ -11338,9 +11338,9 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** Format: date-time */
-            createdAt: unknown;
+            createdAt: string;
             /** Format: date-time */
-            updatedAt: unknown;
+            updatedAt: string;
             /** Format: uuid */
             eventId: string;
             /** Format: int32 */
@@ -11353,25 +11353,25 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** Format: date-time */
-            createdAt: unknown;
+            createdAt: string;
             /** Format: date-time */
-            updatedAt: unknown;
+            updatedAt: string;
             reason: string;
             /** Format: date-time */
-            startsAt: unknown;
+            startsAt: string;
             /** Format: date-time */
-            endsAt: unknown;
+            endsAt: string;
             /** Format: date-time */
-            invalidatedAt: unknown;
+            invalidatedAt: null | string;
             user: components["schemas"]["UserLightDO"];
         };
         GitDO: {
             /** Format: uuid */
             id: string;
             /** Format: date-time */
-            createdAt: unknown;
+            createdAt: string;
             /** Format: date-time */
-            updatedAt: unknown;
+            updatedAt: string;
             name: string;
             owner: string;
             ownership: components["schemas"]["EntityOwnership"];
@@ -11380,9 +11380,9 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** Format: date-time */
-            createdAt: unknown;
+            createdAt: string;
             /** Format: date-time */
-            updatedAt: unknown;
+            updatedAt: string;
             name: string;
             description: string;
             slug: string;
@@ -11415,12 +11415,12 @@ export interface components {
              * Format: date-time
              * @description The scheduled date on when this kickoff is invoked.
              */
-            startsAt: unknown;
+            startsAt: string;
             /**
              * Format: date-time
              * @description When the kickoff actually started and its applicants were promoted. Null while it is still upcoming.
              */
-            startedAt: unknown;
+            startedAt: null | string;
         };
         KickoffUsersRequestDTO: {
             /** @description The ids of the users. Duplicates are ignored. */
@@ -11430,9 +11430,9 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** Format: date-time */
-            createdAt: unknown;
+            createdAt: string;
             /** Format: date-time */
-            updatedAt: unknown;
+            updatedAt: string;
             /** Format: uuid */
             entityId: string;
             entityType: components["schemas"]["MemberEntityType"];
@@ -11440,7 +11440,7 @@ export interface components {
             userId: string;
             role: components["schemas"]["MemberRole"];
             /** Format: date-time */
-            leftAt: unknown;
+            leftAt: null | string;
             user: components["schemas"]["UserLightDO"];
         };
         /** @enum {unknown} */
@@ -11465,13 +11465,13 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** Format: date-time */
-            createdAt: unknown;
+            createdAt: string;
             /** Format: date-time */
-            updatedAt: unknown;
+            updatedAt: string;
             data: components["schemas"]["NotificationData"];
             descriptor: components["schemas"]["NotificationMeta"];
             /** Format: date-time */
-            readAt: unknown;
+            readAt: null | string;
             /** Format: uuid */
             resourceId: null | string;
         };
@@ -11527,17 +11527,17 @@ export interface components {
              * Format: date-time
              * @description When the event will start.
              */
-            startsAt?: unknown;
+            startsAt?: null | string;
             /**
              * Format: date-time
              * @description When the event will conclude.
              */
-            endsAt?: unknown;
+            endsAt?: null | string;
             /**
              * Format: date-time
              * @description When the event stops accepting new attendees or allowing leaves.
              */
-            closesAt?: unknown;
+            closesAt?: null | string;
         };
         PatchGoalRequestDTO: {
             /** @description The name of the goal. */
@@ -11563,7 +11563,7 @@ export interface components {
              * Format: date-time
              * @description The new scheduled date on when to invoke this kickoff.
              */
-            startsAt?: unknown;
+            startsAt?: null | string;
         };
         PatchProjectRequestDTO: {
             /** @description The name of the project. */
@@ -11609,12 +11609,12 @@ export interface components {
              * Format: date-time
              * @description The new start date. Only possible before it starts.
              */
-            startsAt?: unknown;
+            startsAt?: null | string;
             /**
              * Format: date-time
              * @description The new end date. Moving it earlier than now ends a running trial on the next run of the trial job.
              */
-            endsAt?: unknown;
+            endsAt?: null | string;
         };
         PatchUserDetailsRequestDTO: {
             /** @description Optional markdown biography or about text. */
@@ -11734,17 +11734,17 @@ export interface components {
              * Format: date-time
              * @description When the event will start.
              */
-            startsAt: unknown;
+            startsAt: string;
             /**
              * Format: date-time
              * @description When the event will conclude.
              */
-            endsAt: unknown;
+            endsAt: string;
             /**
              * Format: date-time
              * @description When the event stops accepting new attendees or allowing leaves.
              */
-            closesAt: unknown;
+            closesAt: string;
         };
         PostGoalRequestDTO: {
             name: string;
@@ -11769,7 +11769,7 @@ export interface components {
              * Format: date-time
              * @description The scheduled date on when to invoke this kickoff.
              */
-            startsAt: unknown;
+            startsAt: string;
         };
         PostProjectRequestDTO: {
             /** @description The name of the project. */
@@ -11829,12 +11829,12 @@ export interface components {
              * Format: date-time
              * @description When the trial begins. Participants are activated then.
              */
-            startsAt: unknown;
+            startsAt: string;
             /**
              * Format: date-time
              * @description When the trial ends. Participants are wrapped up then.
              */
-            endsAt: unknown;
+            endsAt: string;
         };
         PostUserFreezeRequestDTO: {
             /** @description The reason for the freeze. */
@@ -11843,12 +11843,12 @@ export interface components {
              * Format: date-time
              * @description When the freeze will start.
              */
-            startsAt: unknown;
+            startsAt: string;
             /**
              * Format: date-time
              * @description When the freeze will end.
              */
-            endsAt: unknown;
+            endsAt: string;
         };
         PostUserRequestDTO: {
             /** @description The user's unique login name. */
@@ -11884,9 +11884,9 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** Format: date-time */
-            createdAt: unknown;
+            createdAt: string;
             /** Format: date-time */
-            updatedAt: unknown;
+            updatedAt: string;
             /** @description The associated Git repository information for this project. */
             gitInfo: components["schemas"]["GitDO"];
             /** @description The workspace to which this project belongs. */
@@ -11936,9 +11936,9 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** Format: date-time */
-            createdAt: unknown;
+            createdAt: string;
             /** Format: date-time */
-            updatedAt: unknown;
+            updatedAt: string;
             kind: components["schemas"]["ReviewKinds"];
             state: components["schemas"]["ReviewState"];
             /** Format: uuid */
@@ -11947,11 +11947,11 @@ export interface components {
             sha: null | string;
             passed: null | boolean;
             /** Format: date-time */
-            claimedAt: unknown;
+            claimedAt: null | string;
             /** Format: date-time */
-            startedAt: unknown;
+            startedAt: null | string;
             /** Format: date-time */
-            finishedAt: unknown;
+            finishedAt: null | string;
             userProject: components["schemas"]["ReviewProjectDO"];
             reviewer: null | components["schemas"]["UserBriefDO"];
             rubric: components["schemas"]["ReviewRubricDO"];
@@ -11977,9 +11977,9 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** Format: date-time */
-            createdAt: unknown;
+            createdAt: string;
             /** Format: date-time */
-            updatedAt: unknown;
+            updatedAt: string;
             /** Format: uuid */
             userProjectId: string;
             /** Format: int32 */
@@ -11992,7 +11992,7 @@ export interface components {
             /** Format: uuid */
             requestedById: string;
             /** Format: date-time */
-            closedAt?: unknown;
+            closedAt?: null | string;
             slots: components["schemas"]["ReviewSlotDO"][];
         };
         /** @enum {unknown} */
@@ -12012,9 +12012,9 @@ export interface components {
             state: components["schemas"]["ReviewState"];
             reviewer?: null | components["schemas"]["UserBriefDO"];
             /** Format: date-time */
-            startedAt?: unknown;
+            startedAt?: null | string;
             /** Format: date-time */
-            finishedAt?: unknown;
+            finishedAt?: null | string;
             passed?: null | boolean;
         };
         /** @enum {unknown} */
@@ -12023,9 +12023,9 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** Format: date-time */
-            createdAt: unknown;
+            createdAt: string;
             /** Format: date-time */
-            updatedAt: unknown;
+            updatedAt: string;
             name: string;
             slug: string;
             public: boolean;
@@ -12058,25 +12058,25 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** Format: date-time */
-            createdAt: unknown;
+            createdAt: string;
             /** Format: date-time */
-            updatedAt: unknown;
+            updatedAt: string;
             title: string;
             description: string;
             actionText: string;
             href: string;
             backgroundUrl: string;
             /** Format: date-time */
-            startsAt: unknown;
+            startsAt: string;
             /** Format: date-time */
-            endsAt: unknown;
+            endsAt: null | string;
         };
         SshKeyResponseDO: {
             title: string;
             fingerprint: string;
             keyType: string;
             /** Format: date-time */
-            createdAt: unknown;
+            createdAt: string;
         };
         TreeDTO: {
             path: string;
@@ -12112,22 +12112,22 @@ export interface components {
              * Format: date-time
              * @description The scheduled date on when this trial begins.
              */
-            startsAt: unknown;
+            startsAt: string;
             /**
              * Format: date-time
              * @description The scheduled date on when this trial ends.
              */
-            endsAt: unknown;
+            endsAt: string;
             /**
              * Format: date-time
              * @description When the trial actually began. Null while it is still upcoming.
              */
-            startedAt?: unknown;
+            startedAt?: null | string;
             /**
              * Format: date-time
              * @description When the trial actually ended. Null until then.
              */
-            endedAt?: unknown;
+            endedAt?: null | string;
         };
         /** @enum {unknown} */
         TrialOutcome: "Pending" | "Selected" | "Rejected";
@@ -12148,14 +12148,14 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** Format: date-time */
-            createdAt: unknown;
+            createdAt: string;
             /** Format: date-time */
-            updatedAt: unknown;
+            updatedAt: string;
             user: components["schemas"]["UserBriefDO"];
             cursus: components["schemas"]["CursusDO"];
             state: components["schemas"]["EntityObjectState"];
             /** Format: date-time */
-            unlocksAt: unknown;
+            unlocksAt: null | string;
         };
         UserCursusTrackDO: {
             mode: components["schemas"]["CursusMode"];
@@ -12176,9 +12176,9 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** Format: date-time */
-            createdAt: unknown;
+            createdAt: string;
             /** Format: date-time */
-            updatedAt: unknown;
+            updatedAt: string;
             markdown: null | string;
             githubUrl: null | string;
             linkedinUrl: null | string;
@@ -12189,9 +12189,9 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** Format: date-time */
-            createdAt: unknown;
+            createdAt: string;
             /** Format: date-time */
-            updatedAt: unknown;
+            updatedAt: string;
             details?: null | components["schemas"]["UserDetailsDO"];
             login: string;
             email: string;
@@ -12205,16 +12205,16 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** Format: date-time */
-            createdAt: unknown;
+            createdAt: string;
             /** Format: date-time */
-            updatedAt: unknown;
+            updatedAt: string;
             /** Format: uuid */
             userId: string;
             /** Format: uuid */
             goalId: string;
             state: components["schemas"]["EntityObjectState"];
             /** Format: date-time */
-            unlocksAt: unknown;
+            unlocksAt: null | string;
             goal: components["schemas"]["GoalDO"];
             user: components["schemas"]["UserLightDO"];
         };
@@ -12222,9 +12222,9 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** Format: date-time */
-            createdAt: unknown;
+            createdAt: string;
             /** Format: date-time */
-            updatedAt: unknown;
+            updatedAt: string;
             login: string;
             email: string;
             role: components["schemas"]["UserRole"];
@@ -12237,9 +12237,9 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** Format: date-time */
-            createdAt: unknown;
+            createdAt: string;
             /** Format: date-time */
-            updatedAt: unknown;
+            updatedAt: string;
             /** @description The current state of the object. */
             state: components["schemas"]["EntityObjectState"];
             /** @description The project template this instance is based on. */
@@ -12249,15 +12249,15 @@ export interface components {
              * Format: date-time
              * @description Determines if and how long there is a cooldown on acting on this session again.
              */
-            unlocksAt: unknown;
+            unlocksAt: null | string;
         };
         UserProjectTransactionDO: {
             /** Format: uuid */
             id: string;
             /** Format: date-time */
-            createdAt: unknown;
+            createdAt: string;
             /** Format: date-time */
-            updatedAt: unknown;
+            updatedAt: string;
             /** Format: uuid */
             userProjectId: string;
             /** Format: uuid */
@@ -12273,9 +12273,9 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** Format: date-time */
-            createdAt: unknown;
+            createdAt: string;
             /** Format: date-time */
-            updatedAt: unknown;
+            updatedAt: string;
             /**
              * Format: uuid
              * @description The trial this is a participation in.
@@ -12289,12 +12289,12 @@ export interface components {
              * Format: date-time
              * @description When the user became active in the trial. Null if they never did.
              */
-            startedAt?: unknown;
+            startedAt?: null | string;
             /**
              * Format: date-time
              * @description When the trial ended for the user. Null while they are still in it.
              */
-            endedAt?: unknown;
+            endedAt?: null | string;
             user: components["schemas"]["UserLightDO"];
         };
         /** @enum {unknown} */
@@ -12303,9 +12303,9 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** Format: date-time */
-            createdAt: unknown;
+            createdAt: string;
             /** Format: date-time */
-            updatedAt: unknown;
+            updatedAt: string;
             owner: null | components["schemas"]["UserLightDO"];
             ownership: components["schemas"]["EntityOwnership"];
         };

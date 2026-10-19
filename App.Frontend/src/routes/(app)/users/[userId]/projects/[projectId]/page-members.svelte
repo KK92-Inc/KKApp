@@ -13,24 +13,33 @@
 	import { formatDate } from '$lib/datetime';
 	import Separator from '$lib/components/separator/separator.svelte';
 	import Failed from '$lib/components/empty/failed.svelte';
+	import { Skeleton } from '$lib/components/skeleton';
 	import * as ButtonGroup from '$lib/components/button-group';
 	import * as Components from './index.svelte';
 
 	const context = Page.getContext();
-
-	const project = await Project.get(context.projectId());
-	const session = $derived(
-		await UserProject.getByUserAndProject({
-			userId: context.userId(),
-			projectId: context.projectId()
-		})
+	const [project, session] = $derived(
+		await Promise.all([
+			Project.get(context.projectId()),
+			UserProject.getByUserAndProject({
+				userId: context.userId(),
+				projectId: context.projectId()
+			})
+		])
 	);
 </script>
 
 {#if session}
 	<svelte:boundary>
-		{@const members = await UserProject.getMembersPage({ id: session.id, active: true })}
+		{@const members = await UserProject.getMembersPage({ id: session.id })}
 		{@const abandoned = members.data.find((v) => v.userId === page.data.session.userId && v.leftAt)}
+		{@const team = members.data.filter((m) => !m.leftAt)}
+		{@const joined = team.filter((m) => m.role !== 'Pending').length}
+
+		{#snippet pending()}
+			<Skeleton class="h-24 w-full" />
+		{/snippet}
+
 		{#snippet failed(error, reset)}
 			<Failed {error} {reset} />
 		{/snippet}
@@ -41,7 +50,7 @@
 				>
 					<Users size={16} />
 					Members
-					{members.data.length} / {project.maxMembers}
+					{joined} / {project.maxMembers}
 				</Card.Title>
 				<Card.Action>
 					<ButtonGroup.Root>
@@ -61,7 +70,7 @@
 				{/if}
 
 				<ul class="flex items-center gap-1">
-					{#each members.data as member (member.id)}
+					{#each team as member (member.id)}
 						<HoverCard.Root>
 							<HoverCard.Trigger
 								href="/users/{member.user.id}"

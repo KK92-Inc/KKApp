@@ -16,6 +16,11 @@ const CursusSchema = v.object({ userId: Filters.id, cursusId: Filters.id });
 const GoalSchema = v.object({ userId: Filters.id, goalId: Filters.id });
 const ProjectSchema = v.object({ userId: Filters.id, projectId: Filters.id });
 
+function refreshProject(id: string, userId: string, projectId: string) {
+	UserProject.getMembersPage({ id }).refresh();
+	UserProject.getByUserAndProject({ userId, projectId }).refresh();
+}
+
 // ============================================================================
 
 /** Subscribe a user to a cursus */
@@ -86,12 +91,7 @@ export const subscribeToProject = command(ProjectSchema, async ({ userId, projec
 	});
 
 	if (error || !data) Problem.throw(error);
-	await Promise.all([
-		UserProject.get(data.id).refresh(),
-		UserProject.getMembersPage({ id: data.id, active: true }).refresh(),
-		UserProject.getByUserAndProject({ userId, projectId }).refresh()
-	]);
-
+	refreshProject(data.id, userId, projectId);
 	return data;
 });
 
@@ -103,10 +103,6 @@ export const unsubscribeFromProject = command(ProjectSchema, async ({ userId, pr
 	});
 
 	if (error || !data) Problem.throw(error);
-	await Promise.all([
-		UserProject.get(data.id).refresh(),
-		UserProject.getMembersPage({ id: data.id, active: true }).refresh(),
-		UserProject.getByUserAndProject({ userId, projectId }).refresh()
-	]);
+	refreshProject(data.id, userId, projectId);
 	return data;
 });

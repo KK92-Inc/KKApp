@@ -1,9 +1,8 @@
 <script lang="ts">
 	import * as Tabs from '$lib/components/tabs';
 	import { Separator } from '$lib/components/separator';
-	import { Ellipsis, GitBranch, PlusIcon, Trash2 } from '@lucide/svelte';
+	import { Ellipsis, GitBranch } from '@lucide/svelte';
 	import * as Git from '$lib/remotes/git.remote';
-	import * as Project from '$lib/remotes/projects.remote';
 	import * as UserProject from '$lib/remotes/user-project.remote';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
@@ -14,19 +13,13 @@
 	import * as InputGroup from '$lib/components/input-group';
 	import * as DropdownMenu from '$lib/components/dropdown-menu';
 	import * as Page from './context.svelte';
-	import { Problem } from '$lib/api';
-	import { toast } from 'svelte-sonner';
-	import * as Dialog from '$lib/components/dialog';
-	import { Input } from '$lib/components/input';
-	import { Label } from '$lib/components/label';
+
 	import Badge from '$lib/components/badge/badge.svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { env } from '$env/dynamic/public';
 
-	const dialog = Dialog.useDialog();
 	const context = Page.getContext();
-
 	const session = $derived(
 		await UserProject.getByUserAndProject({
 			userId: context.userId(),
@@ -34,10 +27,7 @@
 		})
 	);
 
-	const git = $derived(session?.gitInfo ? await Git.getBranches(session.gitInfo.id) : []);
-	const head = $derived(git.find((b) => b.head));
-	const initialized = $derived(!!head);
-	const current = $derived(page.params.branch ?? head?.name);
+
 
 	let search = $state('');
 </script>
@@ -55,10 +45,13 @@
 	</Tabs.Root>
 
 	{#if session && context.view === 'submission'}
+		{@const git = session.gitInfo ? await Git.getBranches(session.gitInfo.id) : []}
+		{@const head = git.find((b) => b.head)}
+		{@const current = page.params.branch ?? head?.name}
 		<Popover.Root>
 			<Popover.Trigger>
 				{#snippet child({ props })}
-					<Button {...props} disabled={!initialized} variant="outline" role="combobox">
+					<Button {...props} disabled={!head} variant="outline" role="combobox">
 						<GitBranch />
 						{current ?? 'Select a version'}
 						<ChevronsUpDownIcon class="opacity-50" />

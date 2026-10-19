@@ -13,16 +13,18 @@
 	import * as Alert from '$lib/components/alert';
 	import { formatDate, past } from '$lib/datetime';
 	import Separator from '$lib/components/separator/separator.svelte';
+	import { Skeleton } from '$lib/components/skeleton';
 
 	const dialog = useDialog();
 	const context = Page.getContext();
-
-	const project = await Projects.get(context.projectId());
-	const session = $derived(
-		await UserProjects.getByUserAndProject({
-			userId: context.userId(),
-			projectId: context.projectId()
-		})
+	const [project, session] = $derived(
+		await Promise.all([
+			Projects.get(context.projectId()),
+			UserProjects.getByUserAndProject({
+				userId: context.userId(),
+				projectId: context.projectId()
+			})
+		])
 	);
 
 	const unlocksAt = $derived(session?.unlocksAt ?? null);
@@ -55,18 +57,12 @@
 		loading={Subscription.subscribeToProject.pending > 0}
 		onclick={async () => {
 			if (!(await subscribe)) return;
-			Problem.try(async () => {
-				const data = await Subscription.subscribeToProject({
+			await Problem.try(() =>
+				Subscription.subscribeToProject({
 					userId: context.userId(),
 					projectId: context.projectId()
-				});
-
-				UserProjects.getMembersPage({ id: data.id, active: true }).refresh();
-				UserProjects.getByUserAndProject({
-					userId: context.userId(),
-					projectId: context.projectId()
-				}).refresh();
-			});
+				})
+			);
 		}}
 	>
 		{reactivation ? 'Reactivate Project!' : 'Subscribe'}
@@ -86,6 +82,10 @@
 	{/if}
 {:else}
 	<svelte:boundary>
+		{#snippet pending()}
+			<Skeleton class="h-9 w-full" />
+		{/snippet}
+
 		{@const members = await UserProject.getMembersPage({ id: session.id })}
 		{@const membership = members.data.find((m) => m.userId === page.data.session.userId && !m.leftAt)}
 		<!-- If you're seeing someone elses page and you're not a member -->
@@ -109,7 +109,7 @@
 				<Button
 					class="flex-1"
 					loading={UserProjects.accept.pending > 0}
-					onclick={() => UserProjects.accept(session.id)}
+					onclick={() => Problem.try(() => UserProjects.accept(session.id))}
 				>
 					Accept
 				</Button>
@@ -117,7 +117,7 @@
 					variant="outline"
 					class="flex-1"
 					loading={UserProjects.decline.pending > 0}
-					onclick={() => UserProjects.decline(session.id)}
+					onclick={() => Problem.try(() => UserProjects.decline(session.id))}
 				>
 					Decline
 				</Button>
@@ -189,12 +189,12 @@
 						loading={Subscription.subscribeToProject.pending > 0}
 						onclick={async () => {
 							if (!(await subscribe)) return;
-							Problem.try(async () => {
-								await Subscription.subscribeToProject({
+							await Problem.try(() =>
+								Subscription.subscribeToProject({
 									userId: context.userId(),
 									projectId: context.projectId()
-								});
-							});
+								})
+							);
 						}}
 					>
 						{reactivation ? 'Reactivate Project' : 'Subscribe'}

@@ -35,14 +35,15 @@
 	);
 
 	const debounced = useDebounce((query: string) => {
-		if (query.length <= 0) search = '';
-		else search = query;
+		index = 0;
+		search = query;
 	});
 </script>
 
 {#if session}
 	<svelte:boundary>
-		{@const members = await UserProject.getMembersPage({ id: session.id, active: true })}
+		{@const members = await UserProject.getMembersPage({ id: session.id })}
+		{@const team = members.data.filter((m) => !m.leftAt)}
 
 		{#snippet pending()}
 			<Skeleton class="h-20 w-50" />
@@ -83,7 +84,7 @@
 						</Tabs.List>
 						<Tabs.Content value="manage">
 							<Item.Group class="grid gap-2 grid-cols-3">
-								{#each members.data as member (member.id)}
+								{#each team as member (member.id)}
 									<Item.User user={member.user}>
 										{#snippet actions()}
 											{#if member.role === 'Leader'}
@@ -114,7 +115,8 @@
 														Problem.try(async () => {
 															await UserProject.transfer({
 																id: session.id,
-																newLeaderId: member.id
+																// A user id: the backend looks the member up by entity + user, not by the membership row.
+																newLeaderId: member.userId
 															});
 														});
 													}}
@@ -181,7 +183,9 @@
 													<Checkbox
 														id="filter-login"
 														checked={login}
-														onCheckedChange={() => {
+														onCheckedChange={(checked) => {
+															login = checked;
+															index = 0;
 															search = '';
 														}}
 													/>
@@ -198,19 +202,24 @@
 							<svelte:boundary>
 								{@const viable = await User.getEligiblePage({
 									size: 3,
-									page: 0,
-									id: "01a0f1fc-0883-72a4-9c0b-d04b94fbdeb3",
+									page: index,
+									id: context.projectId(),
 									type: 'Project',
-									display: search,
-									// login: login ? search : undefined
+									display: login ? undefined : search || undefined,
+									login: login ? search || undefined : undefined
 								})}
+
+								<!-- Nobody who is already on the team, or invited, needs to be offered again. -->
+								{@const offered = viable.data.filter(
+									(u) => u.id !== page.data.session.userId && !team.some((m) => m.userId === u.id)
+								)}
 
 								{#snippet pending()}
 									<Skeleton class="h-20 w-50" />
 								{/snippet}
 
 								<Item.Group class="grid grid-cols-3 gap-2">
-									{#each viable.data.filter((u) => u.id !== page.data.session.userId) as user (user.id)}
+									{#each offered as user (user.id)}
 										<Item.User {user}>
 											{#snippet actions()}
 												<Button

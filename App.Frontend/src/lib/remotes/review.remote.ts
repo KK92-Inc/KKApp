@@ -103,6 +103,7 @@ export const pull = command(Filters.id, async (userProjectId) => {
 	});
 
 	if (error || !data) Problem.throw(error);
+	getRounds(userProjectId).refresh();
 	return data;
 });
 
@@ -118,6 +119,7 @@ export const push = command("unchecked", async (body: PushReview) => {
 	});
 
 	if (error || !data) Problem.throw(error);
+	getRounds(userProjectId).refresh();
 	return data;
 });
 
