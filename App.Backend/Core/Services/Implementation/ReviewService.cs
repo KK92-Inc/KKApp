@@ -355,6 +355,25 @@ public class ReviewService(
             .ToListAsync(token);
     }
 
+    public async Task<PaginatedList<ReviewRound>> GetAllRoundsAsync(
+        ISorting sorting,
+        IPagination pagination,
+        CancellationToken token = default,
+        params Expression<Func<ReviewRound, bool>>?[] filters
+    )
+    {
+        return await filters
+            .Where(f => f is not null)
+            .Aggregate(context.ReviewRounds.AsNoTracking(), (q, filter) => q.Where(filter!))
+            .Sort(sorting)
+            .Include(r => r.Rubric)
+            .Include(r => r.Reviews)
+            .ThenInclude(r => r.Reviewer)
+            .Include(r => r.UserProject)
+            .ThenInclude(r => r.Project)
+            .PaginateAsync(pagination, token);
+    }
+
     public async Task<Review> StartReviewAsync(Guid reviewId, CancellationToken token = default)
     {
         var review = await _dbSet.Include(r => r.Round).FirstOrDefaultAsync(r => r.Id == reviewId, token)

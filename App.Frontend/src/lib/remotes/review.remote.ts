@@ -5,7 +5,7 @@
 
 import * as v from 'valibot';
 import { query, command, getRequestEvent } from '$app/server';
-import { Filters, paginate, Problem, ReviewKind, ReviewState } from '$lib/api';
+import { Filters, paginate, Problem, ReviewKind, ReviewRoundState, ReviewState } from '$lib/api';
 import type { components } from '$lib/api/api';
 
 // ============================================================================
@@ -19,6 +19,17 @@ const PageSchema = v.object({
 	notKind: v.optional(ReviewKind),
 	status: v.optional(ReviewState),
 	notStatus: v.optional(ReviewState),
+	...Filters.pagination,
+	...Filters.sort,
+});
+
+const PageRoundSchema = v.object({
+	userProjectId: v.optional(Filters.id),
+	rubricId: v.optional(Filters.id),
+	sha: v.optional(v.string()),
+	reviewerId: v.optional(Filters.id),
+	status: v.optional(ReviewRoundState),
+	notStatus: v.optional(ReviewRoundState),
 	...Filters.pagination,
 	...Filters.sort,
 });
@@ -49,6 +60,29 @@ export const getPage = query(PageSchema, async (params) => {
 				'filter[not[kind]]': params.notKind,
 				'filter[status]': params.status,
 				'filter[not[status]]': params.notStatus,
+				'sort[by]': params.sortBy,
+				'sort[order]': params.sort,
+				'page[index]': params.page,
+				'page[size]': params.size
+			}
+		}
+	});
+
+	if (error || !data) Problem.throw(error);
+	return paginate(data, response);
+});
+
+export const getRoundsPage = query(PageRoundSchema, async (params) => {
+	const { locals } = getRequestEvent();
+	const { response, error, data } = await locals.api.GET('/reviews/rounds', {
+		params: {
+			query: {
+				'filter[user_project_id]': params.userProjectId,
+				'filter[reviewer_id]': params.reviewerId,
+				'filter[rubric_id]': params.rubricId,
+				'filter[state]': params.status,
+				'filter[not[state]]': params.notStatus,
+				'filter[sha]': params.sha,
 				'sort[by]': params.sortBy,
 				'sort[order]': params.sort,
 				'page[index]': params.page,
@@ -103,7 +137,7 @@ export const pull = command(Filters.id, async (userProjectId) => {
 	});
 
 	if (error || !data) Problem.throw(error);
-	getRounds(userProjectId).refresh();
+	getRoundsForProject(userProjectId).refresh();
 	return data;
 });
 
@@ -119,7 +153,7 @@ export const push = command("unchecked", async (body: PushReview) => {
 	});
 
 	if (error || !data) Problem.throw(error);
-	getRounds(userProjectId).refresh();
+	getRoundsForProject(userProjectId).refresh();
 	return data;
 });
 
@@ -131,13 +165,14 @@ export const assign = command(AssignSchema, async ({ reviewId, reviewerId }) => 
 	});
 
 	if (error || !data) Problem.throw(error);
+
 	return data;
 });
 
 // ============================================================================
 
 /** Get all the rounds in regards to a project session */
-export const getRounds = query(Filters.id, async (userProjectId) => {
+export const getRoundsForProject = query(Filters.id, async (userProjectId) => {
 	const { locals } = getRequestEvent();
 	const { error, data } = await locals.api.GET("/user-project/{userProjectId}/reviews/rounds", {
 		params: { path: { userProjectId } }
@@ -177,6 +212,7 @@ export const start = command(Filters.id, async (reviewId) => {
 		params: { path: { reviewId } },
 	});
 
+	getRoundsPage({ }).refresh();
 	if (error || !data) Problem.throw(error);
 	return data;
 });

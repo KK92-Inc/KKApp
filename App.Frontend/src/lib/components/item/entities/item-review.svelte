@@ -9,14 +9,11 @@
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/state';
 	import {
-		ArrowRight,
 		Bot,
 		CalendarIcon,
 		ChevronRight,
 		ExternalLink,
-		Globe,
 		LaptopMinimalCheck,
-		Link,
 		User,
 		Users
 	} from '@lucide/svelte';

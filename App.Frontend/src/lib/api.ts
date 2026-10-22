@@ -93,6 +93,7 @@ const id = v.pipe(v.string(), v.uuid());
 export const Order = v.picklist(['Ascending', 'Descending']);
 export const EntityObjectState = v.picklist(['Inactive', 'Active', 'Awaiting', 'Completed']);
 export const ReviewState = v.picklist(['Pending', 'InProgress', 'Finished', 'Cancelled']);
+export const ReviewRoundState = v.picklist(['Open', 'Passed', 'Failed', 'Cancelled']);
 export const ReviewKind = v.picklist(["Self", "Peer", "Async", "Auto"]);
 export const CursusVariant = v.picklist(['Dynamic', 'Static', 'Partial']);
 export const EntityType = v.picklist(['Project', 'Cursus', 'Goal', 'Rubric']);

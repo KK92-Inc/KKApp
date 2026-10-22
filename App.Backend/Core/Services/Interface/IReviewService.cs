@@ -3,6 +3,8 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
+using App.Backend.Core.Query;
+using System.Linq.Expressions;
 using App.Backend.Domain.Entities;
 using App.Backend.Domain.Entities.Reviews;
 using App.Backend.Domain.Entities.Users;
@@ -122,6 +124,22 @@ public interface IReviewService : IDomainService<Review>
     /// <param name="token">Cancellation token.</param>
     /// <returns>A list of all the rounds.</returns>
     public Task<IEnumerable<ReviewRound>> GetRoundsAsync(Guid userProjectId, CancellationToken token = default);
+
+    /// <summary>
+    /// Gets evaluation rounds across all user projects with pagination, sorting and filtering.
+    /// Each round includes its rubric and its review slots (with reviewers).
+    /// </summary>
+    /// <param name="sorting">The sorting options.</param>
+    /// <param name="pagination">The pagination options.</param>
+    /// <param name="token">Cancellation token.</param>
+    /// <param name="filters">The filters to apply, null entries are ignored.</param>
+    /// <returns>A paginated list of rounds.</returns>
+    public Task<PaginatedList<ReviewRound>> GetAllRoundsAsync(
+        ISorting sorting,
+        IPagination pagination,
+        CancellationToken token = default,
+        params Expression<Func<ReviewRound, bool>>?[] filters
+    );
 
     /// <summary>
     /// Cancels an ongoing / open round. Will not proceed if there is a currently started review.

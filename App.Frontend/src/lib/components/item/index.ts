@@ -15,6 +15,7 @@ import Rubric from "./entities/item-rubric.svelte"
 import User from "./entities/item-user.svelte"
 import Event from "./entities/item-event.svelte"
 import Review from "./entities/item-review.svelte"
+import Round from "./entities/item-round.svelte"
 import Spotlight from "./misc/item-spotlight.svelte"
 
 export {
@@ -36,6 +37,7 @@ export {
 	Spotlight,
 	Event,
 	Review,
+	Round,
 	//
 	Root as Item,
 	Group as ItemGroup,
@@ -54,5 +56,6 @@ export {
 	User as ItemUser,
 	Spotlight as ItemSpotlight,
 	Event as ItemEvent,
-	Review as ItemReview
+	Review as ItemReview,
+	Round as ItemRound
 };

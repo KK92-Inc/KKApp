@@ -57,6 +57,9 @@ public class ReviewController(
         [FromQuery(Name = "filter[not[kind]]")] ReviewKinds? notKind,
         [FromQuery(Name = "filter[status]")] ReviewState? status,
         [FromQuery(Name = "filter[not[status]]")] ReviewState? notStatus,
+        [FromQuery(Name = "filter[assigned]")] bool? assigned,
+        [FromQuery(Name = "filter[advisory]")] bool? advisory,
+        [FromQuery(Name = "filter[active]"), Description("Whether is (pending or in progress), as opposed to finished or cancelled.")] bool? active,
         [FromQuery] Pagination pagination,
         [FromQuery] Sorting sorting,
         CancellationToken token
@@ -75,6 +78,9 @@ public class ReviewController(
             r => !notKind.HasValue || r.Kind != notKind.Value,
             r => !status.HasValue || r.State == status.Value,
             r => !notStatus.HasValue || r.State != notStatus.Value,
+            r => !assigned.HasValue || r.ReviewerId != null == assigned.Value,
+            r => !advisory.HasValue || r.RoundId == null == advisory.Value,
+            r => !active.HasValue || (r.State == ReviewState.Pending || r.State == ReviewState.InProgress) == active.Value,
             revieweeId.HasValue ? r => ctx.Members.Any(m =>
                   m.EntityType == MemberEntityType.UserProject &&
                   m.EntityId == r.UserProjectId &&
@@ -85,18 +91,17 @@ public class ReviewController(
             role == UserRole.Staff ? null : r => ctx.Members
                 .Include(m => m.User)
                 .Any(m =>
-                m.EntityType == MemberEntityType.UserProject &&
-                m.EntityId == r.UserProjectId &&
-                m.Role == MemberRole.Leader &&
-                m.User.Role == role &&
-                m.LeftAt == null
-            )
+                    m.EntityType == MemberEntityType.UserProject &&
+                    m.EntityId == r.UserProjectId &&
+                    m.Role == MemberRole.Leader &&
+                    m.User.Role == role &&
+                    m.LeftAt == null
+                )
         );
 
         page.AppendHeaders(Response.Headers);
         return Ok(page.Items.Select(r => new ReviewDO(r)));
     }
-
 
     [HttpGet("{reviewId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -240,6 +245,54 @@ Reviews as the requesting user unless a different reviewer is specified, which r
 
         var rounds = await service.GetRoundsAsync(userProjectId, token);
         return Ok(rounds.Select(r => new ReviewRoundDO(r)));
+    }
+
+    [HttpGet("rounds")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesErrorResponseType(typeof(ProblemDetails))]
+    [EndpointSummary("List evaluation rounds")]
+    [EndpointDescription("Returns a paginated list of evaluation rounds.")]
+    public async Task<ActionResult<IEnumerable<ReviewRoundDO>>> GetAllRounds(
+        [FromQuery(Name = "filter[user_project_id]")] Guid? userProjectId,
+        [FromQuery(Name = "filter[state]")] ReviewRoundState? state,
+        [FromQuery(Name = "filter[not[state]]")] ReviewRoundState? notState,
+        [FromQuery(Name = "filter[rubric_id]")] Guid? rubricId,
+        // [FromQuery(Name = "filter[active]"), Description("Whether is (pending or in progress), as opposed to finished or cancelled.")] bool? active,
+        // [FromQuery(Name = "filter[requested_by_id]"), Description("User that requested the round")] Guid? requestedById,
+        [FromQuery(Name = "filter[reviewer_id]"), Description("Rounds that have a slot held by this reviewer")] Guid? reviewerId,
+        [FromQuery(Name = "filter[sha]")] string? sha,
+        [FromQuery] Pagination pagination,
+        [FromQuery] Sorting sorting,
+        CancellationToken token
+    )
+    {
+        var user = await userService.FindByIdAsync(User.GetSID(), token);
+        if (user is null) return NotFound();
+
+        var role = user.Role;
+
+        var page = await service.GetAllRoundsAsync(sorting, pagination, token,
+            r => !userProjectId.HasValue || r.UserProjectId == userProjectId.Value,
+            r => !state.HasValue || r.State == state.Value,
+            r => !notState.HasValue || r.State != notState.Value,
+            r => !rubricId.HasValue || r.RubricId == rubricId.Value,
+            // r => !active.HasValue || (r.State == ReviewRoundState.Open || r.State == ReviewRoundState.Passed) == active.Value,
+            // r => !requestedById.HasValue || r.RequestedById == requestedById.Value,
+            reviewerId.HasValue ? r => r.Reviews.Any(v => v.ReviewerId == reviewerId.Value) : null,
+            string.IsNullOrWhiteSpace(sha) ? null : r => r.Sha == sha,
+            // Staff bypass the role restriction; others are scoped to their role (same as GetReviews)
+            role == UserRole.Staff ? null : r => ctx.Members.Any(m =>
+                m.EntityType == MemberEntityType.UserProject &&
+                m.EntityId == r.UserProjectId &&
+                m.Role == MemberRole.Leader &&
+                m.User.Role == role &&
+                m.LeftAt == null
+            )
+        );
+
+        page.AppendHeaders(Response.Headers);
+        return Ok(page.Items.Select(r => new ReviewRoundDO(r)));
     }
 
     [HttpGet("rounds/{roundId:guid}")]

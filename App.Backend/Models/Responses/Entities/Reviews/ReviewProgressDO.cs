@@ -5,6 +5,7 @@
 
 using App.Backend.Domain.Entities.Reviews;
 using App.Backend.Domain.Enums;
+using App.Backend.Models.Responses.Entities.Projects;
 using System.ComponentModel.DataAnnotations;
 
 // ============================================================================
@@ -95,6 +96,7 @@ public class ReviewRoundDO : BaseEntityDO<ReviewRound>
         RubricId = round.RubricId;
         Ref = round.Ref;
         Sha = round.Sha;
+        Project = round.UserProject.Project;
         RequestedById = round.RequestedById;
         ClosedAt = round.ClosedAt;
         Slots = [.. round.Reviews.OrderBy(r => r.CreatedAt).Select(r => new ReviewSlotDO(r))];
@@ -117,6 +119,9 @@ public class ReviewRoundDO : BaseEntityDO<ReviewRound>
 
     [Required]
     public string Ref { get; set; } = null!;
+
+    [Required]
+    public ProjectLightDO Project { get; set; } = null!;
 
     /// <summary>
     /// The exact commit this round evaluated. Null for rounds created before SHAs were recorded.

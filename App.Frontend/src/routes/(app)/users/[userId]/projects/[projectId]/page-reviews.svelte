@@ -1,7 +1,6 @@
 <script lang="ts">
 	import * as Item from '$lib/components/item/';
-	import Button, { buttonVariants } from '$lib/components/button/button.svelte';
-	import * as DropdownMenu from '$lib/components/dropdown-menu';
+	import Button from '$lib/components/button/button.svelte';
 	import {
 		Ban,
 		CheckCheck,
@@ -11,15 +10,12 @@
 		Search,
 		X
 	} from '@lucide/svelte';
-	import { Skeleton } from '$lib/components/skeleton';
 	import { page } from '$app/state';
 	import * as Card from '$lib/components/card';
 	import * as Page from './context.svelte';
-	import Failed from '$lib/components/empty/failed.svelte';
 	import * as ButtonGroup from '$lib/components/button-group';
 	import type { components } from '$lib/api/api';
 	import * as Dialog from '$lib/components/dialog';
-	import * as Tabs from '$lib/components/tabs';
 	import { Problem } from '$lib/api';
 	import * as UserProjects from '$lib/remotes/user-project.remote';
 	import * as Reviews from '$lib/remotes/review.remote';
@@ -27,8 +23,6 @@
 	import Badge from '$lib/components/badge/badge.svelte';
 	import * as Empty from '$lib/components/empty';
 	import { goto } from '$app/navigation';
-
-	let sort = $state<components['schemas']['Order']>('Descending');
 
 	const dialog = Dialog.useDialog();
 	const context = Page.getContext();
@@ -52,7 +46,7 @@
 		type ReviewKinds = components['schemas']['ReviewKinds'];
 		if (!session) return;
 
-		const rounds = await Reviews.getRounds(session.id);
+		const rounds = await Reviews.getRoundsForProject(session.id);
 		// Find the latest open round, if any exists
 		const open = rounds.find((r) => r.state === 'Open');
 
@@ -138,7 +132,7 @@
 		<Separator />
 		<Card.Content class="px-4">
 			{#if session}
-				{@const rounds = await Reviews.getRounds(session.id)}
+				{@const rounds = await Reviews.getRoundsForProject(session.id)}
 				<Item.Group class="grid max-h-64 grid-flow-row gap-1 overflow-y-auto pe-1">
 					{#each rounds as r (r.number)}
 						{@const passed = r.slots.filter((s) => s.passed).length}

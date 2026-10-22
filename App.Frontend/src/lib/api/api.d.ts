@@ -4504,6 +4504,10 @@ export interface paths {
                     "filter[not[kind]]"?: components["schemas"]["ReviewKinds"];
                     "filter[status]"?: components["schemas"]["ReviewState"];
                     "filter[not[status]]"?: components["schemas"]["ReviewState"];
+                    "filter[assigned]"?: boolean;
+                    "filter[advisory]"?: boolean;
+                    /** @description Whether is (pending or in progress), as opposed to finished or cancelled. */
+                    "filter[active]"?: boolean;
                     /** @description The 0-based page index */
                     "page[index]"?: number;
                     /** @description The amount of results per page */
@@ -5019,6 +5023,95 @@ export interface paths {
                 path: {
                     userProjectId: string;
                 };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ReviewRoundDO"][];
+                        "application/json": components["schemas"]["ReviewRoundDO"][];
+                        "text/json": components["schemas"]["ReviewRoundDO"][];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reviews/rounds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List evaluation rounds
+         * @description Returns a paginated list of evaluation rounds.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    "filter[user_project_id]"?: string;
+                    "filter[state]"?: components["schemas"]["ReviewRoundState"];
+                    "filter[not[state]]"?: components["schemas"]["ReviewRoundState"];
+                    "filter[rubric_id]"?: string;
+                    /** @description Rounds that have a slot held by this reviewer */
+                    "filter[reviewer_id]"?: string;
+                    "filter[sha]"?: string;
+                    /** @description The 0-based page index */
+                    "page[index]"?: number;
+                    /** @description The amount of results per page */
+                    "page[size]"?: number;
+                    /** @description The name of the property to use for sorting. */
+                    "sort[by]"?: string;
+                    /** @description The sort direction. */
+                    "sort[order]"?: components["schemas"]["Order"];
+                };
+                header?: never;
+                path?: never;
                 cookie?: never;
             };
             requestBody?: never;
@@ -11911,6 +12004,33 @@ export interface components {
              */
             maxMembers: number;
         };
+        ProjectLightDO: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** @description The display name of the project. */
+            name: string;
+            /** @description A detailed description of the project's purpose or contents. */
+            description: string;
+            /** @description The URL-friendly slug identifier for the project. */
+            slug: string;
+            /** @description The URL to the image containing the thumbnail of the project. */
+            thumbnail: null | string;
+            /** @description Indicates whether the project is currently active. */
+            active: boolean;
+            /** @description Indicates whether the project is publicly visible. */
+            public: boolean;
+            /** @description Indicates whether the project has been deprecated. */
+            deprecated: boolean;
+            /**
+             * Format: int32
+             * @description Indicates whether the project has been deprecated.
+             */
+            maxMembers: number;
+        };
         PutCursusTrackNodeDO: {
             /**
              * Format: uuid
@@ -11988,6 +12108,7 @@ export interface components {
             /** Format: uuid */
             rubricId: string;
             ref: string;
+            project: components["schemas"]["ProjectLightDO"];
             sha: string;
             /** Format: uuid */
             requestedById: string;
