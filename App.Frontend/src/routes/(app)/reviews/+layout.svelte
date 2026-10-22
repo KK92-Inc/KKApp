@@ -5,11 +5,37 @@
 	import Separator from '$lib/components/separator/separator.svelte';
 	import { goto } from '$app/navigation';
 
-	import { Clock, FolderCode, Globe, UserCheck, UserPlus } from '@lucide/svelte';
+	import { Clock, Earth, FolderCode, Globe, UserCheck, UserPlus, UserSearch } from '@lucide/svelte';
 	import { page } from '$app/state';
 
 	const { children }: LayoutProps = $props();
-	let tab = $derived(page.url.pathname.slice(page.url.pathname.lastIndexOf('/') + 1));
+	let tab = $derived(page.url.pathname);
+
+	const TABS = [
+		{
+			label: 'Searching',
+			icon: UserSearch,
+			href: '/reviews'
+		},
+		{
+			label: 'Other Evaluations',
+			icon: Earth,
+			href: '/reviews/global'
+		}
+	] as const;
+
+	const PERSONAL = [
+		{
+			label: 'Recent Evaluations',
+			icon: Clock,
+			href: '/reviews/recent'
+		},
+		{
+			label: 'My projects',
+			icon: FolderCode,
+			href: '/reviews/projects'
+		}
+	] as const;
 </script>
 
 <div class="mx-auto px-4 py-6 md:container">
@@ -20,13 +46,36 @@
 
 	<Separator class="my-2" />
 
-	<Tabs.Root bind:value={tab} class="mb-2 gap-1">
-		<Tabs.List variant="line" class="gap-1 p-1 [*]:font-normal">
-			<Tabs.Trigger onclick={() => goto('/reviews')} value="reviews">
-				<UserPlus />
-				Seeking Evaluations
-			</Tabs.Trigger>
-			<Tabs.Trigger onclick={() => goto('/reviews/global')} value="global">
+	<Tabs.Root bind:value={tab} class="mb-2 gap-1 flex">
+		<Tabs.List variant="line" class="p-0 pb-1">
+			{#each TABS as tab (tab.href)}
+				<Tabs.Trigger value={tab.href}>
+					{#snippet child({ props })}
+						<a {...props} href={tab.href}>
+							<tab.icon />
+							{tab.label}
+						</a>
+					{/snippet}
+				</Tabs.Trigger>
+			{/each}
+			<Separator orientation="vertical" class="h-6!" />
+			{#each PERSONAL as tab (tab.href)}
+				<Tabs.Trigger value={tab.href}>
+					{#snippet child({ props })}
+						<a {...props} href={tab.href}>
+							<tab.icon />
+							{tab.label}
+						</a>
+					{/snippet}
+				</Tabs.Trigger>
+			{/each}
+		</Tabs.List>
+	</Tabs.Root>
+
+	{@render children()}
+</div>
+
+<!-- <Tabs.Trigger onclick={() => goto('/reviews/global')} value="global">
 				<Globe />
 				All Evaluations
 			</Tabs.Trigger>
@@ -42,45 +91,4 @@
 			<Tabs.Trigger onclick={() => goto('/reviews/projects')} value="projects">
 				<FolderCode />
 				My Projects
-			</Tabs.Trigger>
-		</Tabs.List>
-
-		<Tabs.Content value="reviews">
-			<Alert.Root class="mt-2">
-				<Alert.Title>Looking for evaluations</Alert.Title>
-				<Alert.Description>
-					Browse and claim available evaluation sessions that match your skills and interests.
-				</Alert.Description>
-			</Alert.Root>
-		</Tabs.Content>
-
-		<Tabs.Content value="evaluate">
-			<Alert.Root class="mt-2">
-				<Alert.Title>Conducting evaluations</Alert.Title>
-				<Alert.Description>
-					Review the evaluations you have claimed and complete the active session rounds.
-				</Alert.Description>
-			</Alert.Root>
-		</Tabs.Content>
-
-		<Tabs.Content value="recent">
-			<Alert.Root class="mt-2">
-				<Alert.Title>Recent evaluations</Alert.Title>
-				<Alert.Description>
-					View evaluations you have recently completed, including their status and feedback.
-				</Alert.Description>
-			</Alert.Root>
-		</Tabs.Content>
-
-		<Tabs.Content value="projects">
-			<Alert.Root class="mt-2">
-				<Alert.Title>My projects</Alert.Title>
-				<Alert.Description>
-					Manage your projects and review the evaluations associated with each one.
-				</Alert.Description>
-			</Alert.Root>
-		</Tabs.Content>
-	</Tabs.Root>
-
-	{@render children()}
-</div>
+			</Tabs.Trigger> -->
