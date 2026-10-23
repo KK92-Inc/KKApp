@@ -1,1 +1,99 @@
-Hey!
+<script lang="ts">
+	import { page } from '$app/state';
+	import * as Reviews from '$lib/remotes/review.remote';
+	import * as UserProjects from '$lib/remotes/user-project.remote';
+	import * as Empty from '$lib/components/empty';
+	import * as Card from '$lib/components/card';
+	import * as Item from '$lib/components/item';
+	import { Button } from '$lib/components/button';
+	import Badge from '$lib/components/badge/badge.svelte';
+	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
+	import { Archive, BadgeCheckIcon, Ban, ChevronRightIcon, HeartHandshake, Plus } from '@lucide/svelte';
+	import Separator from '$lib/components/separator/separator.svelte';
+	import Thumbnail from '$lib/components/thumbnail.svelte';
+
+	const sessions = await UserProjects.getPageByUser({
+		userId: page.data.session.userId,
+		state: 'Awaiting',
+		size: 4
+	});
+</script>
+
+<Item.Group class="grid grid-cols-4 gap-2">
+	{#each sessions.data as session (session.id)}
+		<Item.Root variant="outline">
+			<Item.Media>
+				<Thumbnail readonly size={64} value={session.project.thumbnail} />
+			</Item.Media>
+			<Item.Content class="gap-2">
+				<Item.Title class="w-full">
+					<span class="flex-1">
+						{session.project.name}
+					</span>
+					<Badge>{session.state}</Badge>
+				</Item.Title>
+				<Item.Description>
+					{session.project.description}
+				</Item.Description>
+			</Item.Content>
+			<Item.Actions class="flex-1">
+				<Button
+					href="/users/{page.data.session.userId}/projects/{session.project.id}"
+					variant="outline"
+					class="flex-1"
+				>
+					View Project
+					<Archive />
+				</Button>
+				<Button href="/users/{page.data.session.userId}/" variant="destructive">
+					Cancel
+					<Ban />
+				</Button>
+			</Item.Actions>
+			<Separator />
+			<svelte:boundary>
+				{@const rounds = await Reviews.getRoundsForProject(session.id)}
+
+				{#snippet failed()}
+					Failed...
+				{/snippet}
+
+				{#snippet pending()}
+					<Skeleton class="h-12 w-full" />
+				{/snippet}
+
+				{@const latest = rounds.at(-1)}
+				<Item.Group class="w-full gap-2">
+					{#if latest}
+						<Item.Root variant="outline" size="sm">
+							{#snippet child({ props })}
+								<a href="/reviews/round/{latest.id}" {...props}>
+									<Item.Content>
+										<Item.Title>
+											<HeartHandshake />
+											{latest.number}
+										</Item.Title>
+										<Item.Description></Item.Description>
+									</Item.Content>
+									<Item.Actions>
+										<ChevronRightIcon class="size-4" />
+									</Item.Actions>
+								</a>
+							{/snippet}
+						</Item.Root>
+					{:else}
+						<span class="text-xs text-muted-foreground">No Evaluation Round</span>
+					{/if}
+				</Item.Group>
+			</svelte:boundary>
+		</Item.Root>
+	{:else}
+			<Empty.Root class="h-full border border-dashed col-span-full">
+			<Empty.Header>
+				<Empty.Media variant="icon"><HeartHandshake /></Empty.Media>
+				<Empty.Title>None of your projects are pending</Empty.Title>
+				<Empty.Description>You have no project sessions that are pending for any evaluations at this time.</Empty.Description>
+			</Empty.Header>
+		</Empty.Root>
+	{/each}
+</Item.Group>

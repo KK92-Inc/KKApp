@@ -137,7 +137,6 @@ export const pull = command(Filters.id, async (userProjectId) => {
 	});
 
 	if (error || !data) Problem.throw(error);
-	getRoundsForProject(userProjectId).refresh();
 	return data;
 });
 
@@ -153,7 +152,6 @@ export const push = command("unchecked", async (body: PushReview) => {
 	});
 
 	if (error || !data) Problem.throw(error);
-	getRoundsForProject(userProjectId).refresh();
 	return data;
 });
 
@@ -212,7 +210,6 @@ export const start = command(Filters.id, async (reviewId) => {
 		params: { path: { reviewId } },
 	});
 
-	getRoundsPage({ }).refresh();
 	if (error || !data) Problem.throw(error);
 	return data;
 });
@@ -235,10 +232,10 @@ export const finish = command("unchecked", async (body: CompleteReview) => {
 /** Cancel a review */
 export const stop = command(Filters.id, async (reviewId) => {
 	const { locals } = getRequestEvent();
-	const { error, data } = await locals.api.DELETE("/reviews/{reviewId}", {
+	const { error } = await locals.api.DELETE("/reviews/{reviewId}", {
 		params: { path: { reviewId } },
 	});
 
-	if (error || !data) Problem.throw(error);
-	return data;
+	// NOTE: The endpoint answers 204 No Content, so there is no body to check.
+	if (error) Problem.throw(error);
 });

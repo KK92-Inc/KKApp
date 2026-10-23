@@ -18,8 +18,10 @@
 		Ruler,
 		Archive,
 		MessageSquareCode,
-		Files
+		Files,
+		Play
 	} from '@lucide/svelte';
+	import { page } from '$app/state';
 	import Separator from '$lib/components/separator/separator.svelte';
 	import ViewRubric from './view-rubric.svelte';
 	import ViewProject from './view-project.svelte';
@@ -185,11 +187,23 @@
 					id="action-cancel"
 					variant="destructive"
 					class="border"
+					disabled={data.review.state === 'Finished' || data.review.state === 'Cancelled'}
 					onclick={async () => await context.cancel(data.review)}
 				>
 					Cancel <Ban />
 				</Button>
-				<Conclusion />
+				{#if data.review.state === 'Pending' && data.review.reviewer?.id === page.data.session.userId}
+					<Button
+						id="action-start"
+						variant="outline"
+						class="rounded-l-none border"
+						onclick={async () => await context.start(data.review)}
+					>
+						Start <Play />
+					</Button>
+				{:else}
+					<Conclusion />
+				{/if}
 			</ButtonGroup.Root>
 		</div>
 		{@render children()}

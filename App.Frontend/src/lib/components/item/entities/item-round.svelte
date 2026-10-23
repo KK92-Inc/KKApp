@@ -1,5 +1,8 @@
 <script lang="ts">
 	import type { components } from '$lib/api/api';
+	import * as Review from '$lib/review';
+	import { goto, refreshAll } from '$app/navigation';
+	import { Problem } from '$lib/api';
 	import * as Reviews from '$lib/remotes/review.remote';
 	import * as Item from '$lib/components/item';
 	import * as Avatar from '$lib/components/avatar';
@@ -7,70 +10,38 @@
 	import Badge from '$lib/components/badge/badge.svelte';
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/state';
-	import {
-		Bot,
-		ChevronRight,
-		HeartHandshake,
-		LaptopMinimalCheck,
-		MessageSquareHeart,
-		User,
-		Users
-	} from '@lucide/svelte';
+	import { ChevronRight, HeartHandshake, MessageSquareHeart } from '@lucide/svelte';
 	import { formatDate } from '$lib/datetime';
 	import Separator from '$lib/components/separator/separator.svelte';
 	import Progress from '$lib/components/progress/progress.svelte';
 	import * as Tooltip from '$lib/components/tooltip';
-	import { Problem } from '$lib/api';
-	import { toast } from 'svelte-sonner';
 	import { useDialog } from '$lib/components/dialog';
-	import { goto } from '$app/navigation';
 
 	interface Props {
 		round: components['schemas']['ReviewRoundDO'];
-		/** Replaces the default "open review" button on the right. */
 		actions?: Snippet<[]>;
 	}
 
-	const { round, actions }: Props = $props();
+	const { round }: Props = $props();
 	const finished = $derived(round.slots.filter((s) => s.state === 'Finished'));
-	const notStarted = $derived(round.slots.filter((s) => s.startedAt === null));
-	const seeking = $derived(round.slots.filter((s) => s.reviewer === null));
-
-	// TODO: Unify this with item.review.
-	const icons = { Self: User, Peer: Users, Async: LaptopMinimalCheck, Auto: Bot } as const;
+	const notStarted = $derived(round.slots.filter((s) => !s.startedAt));
+	const seeking = $derived(round.slots.filter((s) => !s.reviewer));
 	const dialog = useDialog();
-	const startConfirm = $derived(
-		dialog.confirm(
-			`Start review for ${round.project.name}`,
-			'Once you start you have 24 Hours to complete it.'
-		)
-	);
 
-	const claimConfirm = $derived(
-		dialog.confirm(
-			`Claim review slot for ${round.project.name}`,
-			"Claiming a review means you intend to start it within 48 hours. You can then choose to start whenever you're ready in that time window."
-		)
-	);
 
 	async function claim(reviewId: string) {
-		if (!(await claimConfirm)) return;
-		await Problem.try(async () => {
-			const review = await Reviews.assign({
-				reviewerId: page.data.session.userId,
-				reviewId
-			});
-
-			await start(review.id);
-		});
+		const { title, message } = Review.CONFIRM.claim(round.project.name);
+		if (!(await dialog.confirm(title, message))) return;
+		await Problem.try(() => Reviews.assign({ reviewId, reviewerId: page.data.session.userId }));
+		await refreshAll({ includeLoadFunctions: false });
 	}
 
 	async function start(reviewId: string) {
-		if (!(await startConfirm)) return;
-		await Problem.try(async () => {
-			const review = await Reviews.start(reviewId);
-			await goto(`/reviews/${review.id}`);
-		});
+		const { title, message } = Review.CONFIRM.start(round.project.name);
+		if (!(await dialog.confirm(title, message))) return;
+		const review = await Problem.try(() => Reviews.start(reviewId));
+		await refreshAll({ includeLoadFunctions: false });
+		if (review) await goto(`/reviews/${review.id}`);
 	}
 </script>
 
@@ -111,7 +82,9 @@
 
 		<Item.Group class="gap-2">
 			{#each round.slots as slot (slot.reviewId)}
-				{@const Logo = icons[slot.kind]}
+				{@const kind = Review.KINDS[slot.kind]}
+				{@const Logo = kind.icon}
+				{@const state = Review.STATES[slot.state]}
 				{@const isRequester = round.requestedById === page.data.session.userId}
 				<Item.Root variant="muted" size="sm">
 					<Item.Media>
@@ -129,27 +102,13 @@
 					<Item.Content>
 						<Item.Title>
 							<Badge variant="outline" class="rounded-sm">{slot.kind}</Badge>
-							{#if slot.state === 'Cancelled'}
-								<Badge class="rounded-sm" variant="destructive">Cancelled</Badge>
-							{:else if slot.state === 'Pending'}
-								<Badge class="rounded-sm" variant="secondary">Pending</Badge>
-							{:else if slot.state === 'Finished'}
-								<Badge class="rounded-sm" variant="success">Finished</Badge>
-							{:else if slot.state === 'InProgress'}
-								<Badge class="rounded-sm" variant="default">In Progress</Badge>
+							{#if state}
+								<Badge class="rounded-sm" variant={state.variant}>{state.label}</Badge>
 							{/if}
 						</Item.Title>
 
 						<Item.Description class="text-xs wrap-normal">
-							{#if slot.kind === 'Async'}
-								This is a automated review. No human input is required.
-							{:else if slot.kind === 'Peer'}
-								This is a automated review. No human input is required.
-							{:else if slot.kind === 'Self'}
-								This is a automated review. No human input is required.
-							{:else if slot.kind === 'Auto'}
-								This is a automated review. No human input is required.
-							{/if}
+							{kind.description}
 						</Item.Description>
 					</Item.Content>
 					<Item.Actions>

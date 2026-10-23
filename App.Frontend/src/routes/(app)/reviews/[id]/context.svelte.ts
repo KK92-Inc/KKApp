@@ -7,9 +7,12 @@ import type { components } from "$lib/api/api";
 import { driver } from "driver.js";
 import { createContext } from "svelte";
 import { SvelteMap } from "svelte/reactivity";
+import { untrack } from "svelte";
+import { goto, refreshAll } from "$app/navigation";
+import { Problem } from "$lib/api";
+import * as Review from "$lib/review";
 import * as Reviews from "$lib/remotes/review.remote";
 import { useDialog } from "$lib/components/dialog";
-import { Problem } from "$lib/api";
 
 // ============================================================================
 
@@ -29,7 +32,8 @@ export class Context {
 
 	public addAnnotation(path: string, comment: Annotation) {
 		const existing = this.annotations.get(path) ?? [];
-		// Optional: filter out any existing comment on the exact same row before adding a new one
+		// NOTE(W2): Technically it is ... fine ?
+		// Filter out any existing comment on the exact same row before adding a new one
 		const filtered = existing.filter((a) => a.rowStart !== comment.rowStart);
 		this.annotations.set(path, [...filtered, comment]);
 	}
@@ -47,22 +51,55 @@ export class Context {
 		}
 	}
 
+	public reset() {
+		this.pass = false;
+		this.conclusion = "";
+		this.annotations.clear();
+	}
+
+	public get comments(): Annotation[] {
+		return [...this.annotations.values()].flat();
+	}
+
 	public async cancel(review: components['schemas']['ReviewDO']) {
-		const confirm = this.dialog.confirm(
-			"Are you sure you want to cancel this review ?",
-			"If this review is a part of round it will be available to someone else. Otherwise you can safely cancel this review."
-		)
-
-		if (!await confirm) return;
-		await Problem.try(() => Reviews.stop(review.id));
+		const { title, message } = Review.CONFIRM.cancel();
+		if (!await this.dialog.confirm(title, message)) return;
+		let cancelled = false;
+		await Problem.try(async () => {
+			await Reviews.stop(review.id);
+			cancelled = true;
+		});
+		await refreshAll({ includeLoadFunctions: false });
+		if (cancelled)
+			await goto(review.roundId ? `/reviews/round/${review.roundId}` : '/reviews');
 	}
 
-	public finish() {
+	/**
+	 * Submit the verdict, the comments made on the files and the conclusion.
+	 * @returns true if the review was finished.
+	 */
+	public async finish(review: components['schemas']['ReviewDO']): Promise<boolean> {
+		const result = await Problem.try(() =>
+			Reviews.finish({
+				id: review.id,
+				passed: this.pass,
+				annotations: Review.toAnnotations(this.comments, this.conclusion)
+			})
+		);
 
+		await refreshAll({ includeLoadFunctions: false });
+
+		if (!result) return false;
+		this.reset();
+		await goto(review.roundId ? `/reviews/round/${review.roundId}` : '/reviews/recent');
+		return true;
 	}
 
-	public start() {
-
+	public async start(review: components['schemas']['ReviewDO']) {
+		const { title, message } = Review.CONFIRM.start(review.userProject.name);
+		if (!await this.dialog.confirm(title, message)) return;
+		await Problem.try(() => Reviews.start(review.id));
+		await refreshAll({ includeLoadFunctions: false });
 	}
 }
 

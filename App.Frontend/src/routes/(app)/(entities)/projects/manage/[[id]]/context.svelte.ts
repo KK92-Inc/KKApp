@@ -65,7 +65,7 @@ export class Context {
 			const blob = await Git.getBlob({
 				id: project.gitInfo.id,
 				ref: master.name,
-				path: "readme.md"
+				path: "README.md"
 			});
 
 			this.readme = new TextDecoder('utf-8', { fatal: true }).decode(blob);
@@ -94,7 +94,7 @@ export class Context {
 						id: project.gitInfo.id,
 						branch: this.branch!,
 						message: "Update README",
-						files: [{ path: "readme.md", content: bytes.toBase64() }]
+						files: [{ path: "README.md", content: bytes.toBase64() }]
 					});
 
 					this.checksum = checksum;;
@@ -112,7 +112,7 @@ export class Context {
 				...this.fields,
 				commit: {
 					message: "Initial Commit",
-					files: [{ path: "readme.md", content: bytes.toBase64() }]
+					files: [{ path: "README.md", content: bytes.toBase64() }]
 				}
 			});
 

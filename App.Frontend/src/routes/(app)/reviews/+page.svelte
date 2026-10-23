@@ -53,7 +53,7 @@
 
 	{#if group === 'round'}
 		{@const rounds = await Reviews.getRoundsPage({
-			page: 0,
+			page: index,
 			status: 'Open',
 			size: 4,
 			sortBy: 'CreatedAt',

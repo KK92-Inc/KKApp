@@ -8,15 +8,8 @@
 	import Badge from '$lib/components/badge/badge.svelte';
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/state';
-	import {
-		Bot,
-		CalendarIcon,
-		ChevronRight,
-		ExternalLink,
-		LaptopMinimalCheck,
-		User,
-		Users
-	} from '@lucide/svelte';
+	import { CalendarIcon, ChevronRight, ExternalLink } from '@lucide/svelte';
+	import { KINDS, STATES } from '$lib/review';
 	import { formatDate } from '$lib/datetime';
 	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
 	import Separator from '$lib/components/separator/separator.svelte';
@@ -31,8 +24,8 @@
 
 	const { review, href, actions }: Props = $props();
 	const to = $derived(href ?? `/reviews/${review.id}`);
-	const icons = { Self: User, Peer: Users, Async: LaptopMinimalCheck, Auto: Bot } as const;
-	const Icon = $derived(icons[review.kind] ?? User);
+	const kind = $derived(KINDS[review.kind]);
+	const state = $derived(STATES[review.state]);
 </script>
 
 <Item.Root variant="muted">
@@ -43,7 +36,7 @@
 				<Avatar.Fallback class="border-2">{review.reviewer.login.slice(0, 2).toUpperCase()}</Avatar.Fallback>
 			</Avatar.Root>
 		{:else}
-			<Icon size={16} class="shrink-0" />
+			<kind.icon size={16} class="shrink-0" />
 		{/if}
 	</Item.Media>
 	<Item.Content>
@@ -96,9 +89,9 @@
 								class="group flex items-center justify-between gap-2 rounded-md border bg-muted/40 px-3 py-2 transition-colors hover:bg-muted"
 							>
 								<span class="min-w-0">
-									<span class="block text-[10px] font-medium tracking-wide text-muted-foreground uppercase"
-										>Project</span
-									>
+									<span class="block text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
+										Project
+									</span>
 									<span class="block truncate font-semibold">{review.userProject.name}</span>
 								</span>
 								<ExternalLink
@@ -126,18 +119,14 @@
 		</Item.Title>
 		<Item.Description class="mt-1 flex min-w-0 flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
 			<Badge variant="outline" class="rounded-sm font-normal">
-				<Icon size={16} class="shrink-0" />
+				<kind.icon size={16} class="shrink-0" />
 				{review.kind}
 			</Badge>
 
-			{#if review.state === 'Cancelled'}
-				<Badge class="rounded-sm" variant="destructive">Cancelled</Badge>
-			{:else if review.state === 'Pending'}
-				<Badge class="rounded-sm" variant="secondary">Pending</Badge>
-			{:else if review.state === 'Finished'}
-				<Badge class="rounded-sm" variant="success">Finished</Badge>
-			{:else if review.state === 'InProgress'}
-				<Badge class="rounded-sm" variant="outline">In Progress</Badge>
+			{#if state}
+				<Badge class="rounded-sm" variant={review.state === 'InProgress' ? 'outline' : state.variant}>
+					{state.label}
+				</Badge>
 			{/if}
 
 			{#if review.passed === true}

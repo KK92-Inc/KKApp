@@ -127,7 +127,7 @@
 										{@const readme = await Git.getBlob({
 											id: project.gitInfo.id,
 											ref: head.name,
-											path: 'readme.md'
+											path: 'README.md'
 										})}
 
 										{#snippet pending()}

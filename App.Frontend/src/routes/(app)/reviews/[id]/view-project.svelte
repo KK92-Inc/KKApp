@@ -13,7 +13,7 @@
 <svelte:boundary>
 	{@const root = await Git.getBlob({
 		id: review.userProject.projectGitInfoId,
-		ref: review.ref,
+		ref: "master", // TODO: Persist the project sha so we can the subject from that time.
 		path: 'README.md'
 	})}
 

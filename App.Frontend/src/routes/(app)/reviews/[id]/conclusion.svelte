@@ -23,6 +23,20 @@
 	const context = Page.getContext();
 	const { review } = $derived(await Remote.load(context.reviewId()));
 
+	let open = $state(false);
+	let submitting = $state(false);
+
+	async function submit() {
+		if (submitting) return;
+		submitting = true;
+		try {
+			if (await context.finish(review))
+				open = false;
+		} finally {
+			submitting = false;
+		}
+	}
+
 	const fileCount = $derived(context.annotations.size);
 	const totalAnnotations = $derived.by(() => {
 		const values = Array.from(context.annotations.values());
@@ -30,11 +44,12 @@
 	});
 </script>
 
-<Dialog.Root>
+<Dialog.Root bind:open>
 	<Dialog.Trigger
 		type="button"
 		id="action-finish"
 		class={buttonVariants({ variant: 'outline', class: 'rounded-l-none' })}
+		disabled={review.state !== 'InProgress'}
 	>
 		Finish <Check />
 	</Dialog.Trigger>
@@ -163,7 +178,9 @@
 
 			<Dialog.Footer>
 				<Dialog.Close type="button" class={buttonVariants({ variant: 'outline' })}>Cancel</Dialog.Close>
-				<Button type="submit">Finish Review</Button>
+				<Button type="button" disabled={submitting} onclick={submit}>
+					{submitting ? 'Submitting...' : 'Finish Review'}
+				</Button>
 			</Dialog.Footer>
 		</svelte:boundary>
 	</Dialog.Content>

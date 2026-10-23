@@ -104,7 +104,7 @@
 
 	<Layout class="px-4" classL="space-y-4" classR="px-0!">
 		{#snippet left()}
-			<Card.Root class="mt-4 gap-1 scrollbar-none overflow-auto! p-0">
+			<Card.Root class="mt-4 scrollbar-none gap-1 overflow-auto! p-0">
 				<div
 					class="relative border-b bg-muted/30 px-6 pt-8 pb-6 text-center"
 					style="background-image: radial-gradient(color-mix(in oklab, var(--foreground) 12%, transparent) 1px, transparent 1px); background-size: 14px 14px;"
@@ -171,27 +171,27 @@
 						{/if}
 
 						{#if !params.id}
-						<Separator class="my-2" />
+							<Separator class="my-2" />
 
-						<Field.Field>
-							<Field.Label for="mode">Progression Mode</Field.Label>
-							<Tabs.Root id="mode" bind:value={context.fields.mode}>
-								<Tabs.List class="w-auto">
-									<Tabs.Trigger value="FreeStyle">Freestyle <Network /></Tabs.Trigger>
-									<Tabs.Trigger value="Ring">Ring <CircleDot /></Tabs.Trigger>
-								</Tabs.List>
-							</Tabs.Root>
-							<Field.Description>
-								{#if context.fields.mode === 'Ring'}
-									In Ring mode progression goes in depth. Meaning that in order to progress to the next
-									goals you need to complete all goals in the same depth.
-								{:else}
-									In Freestyle mode progression is hierarchical. Meaning you need to complete the previous
-									goal to progress to the next goal.
-								{/if}
-							</Field.Description>
-							<Field.Error errors={context.errors.mode} />
-						</Field.Field>
+							<Field.Field>
+								<Field.Label for="mode">Progression Mode</Field.Label>
+								<Tabs.Root id="mode" bind:value={context.fields.mode}>
+									<Tabs.List class="w-auto">
+										<Tabs.Trigger value="FreeStyle">Freestyle <Network /></Tabs.Trigger>
+										<Tabs.Trigger value="Ring">Ring <CircleDot /></Tabs.Trigger>
+									</Tabs.List>
+								</Tabs.Root>
+								<Field.Description>
+									{#if context.fields.mode === 'Ring'}
+										In Ring mode progression goes in depth. Meaning that in order to progress to the next
+										goals you need to complete all goals in the same depth.
+									{:else}
+										In Freestyle mode progression is hierarchical. Meaning you need to complete the previous
+										goal to progress to the next goal.
+									{/if}
+								</Field.Description>
+								<Field.Error errors={context.errors.mode} />
+							</Field.Field>
 
 							<Separator class="my-2" />
 							<Field.Field>
@@ -224,32 +224,26 @@
 				</Card.Content>
 			</Card.Root>
 
-<Card.Root class="gap-2 py-4">
-	<Card.Content class="px-4">
-		<Field.Set class="items-center!">
-			<Field.Group class="items-center!">
-				<Field.Field orientation="horizontal" class="items-center!">
-					<Field.Content>
-						<Field.Label for="cursus-enabled" class="flex items-center gap-2">
-							<!-- <Zap size={16} class={cn(enabled ? 'text-amber-500' : 'text-muted-foreground')} /> -->
-							Synchronization
-						</Field.Label>
-						<Field.Description>
-							Forces to set the cursus of all subscribed users to the currently defined one.
-							<!-- {#if enabled}
-								Other users can subscribe to this entity.
-							{:else}
-								Subscriptions to this entity are disabled
-							{/if} -->
-						</Field.Description>
-					</Field.Content>
-					<Switch id="cursus-enabled" />
-				</Field.Field>
-			</Field.Group>
-		</Field.Set>
-	</Card.Content>
-</Card.Root>
-
+			<!-- TODO: Implement rather as a confirm dialog (Do you want to force sync this update?) -->
+			<!-- <Card.Root class="gap-2 py-4">
+				<Card.Content class="px-4">
+					<Field.Set class="items-center!">
+						<Field.Group class="items-center!">
+							<Field.Field orientation="horizontal" class="items-center!">
+								<Field.Content>
+									<Field.Label for="cursus-enabled" class="flex items-center gap-2">
+										Synchronization
+									</Field.Label>
+									<Field.Description>
+										Forces to set the cursus of all subscribed users to the currently defined one.
+									</Field.Description>
+								</Field.Content>
+								<Switch id="cursus-enabled" />
+							</Field.Field>
+						</Field.Group>
+					</Field.Set>
+				</Card.Content>
+			</Card.Root> -->
 
 			<Access
 				bind:visible={context.fields.public}

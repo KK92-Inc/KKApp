@@ -1,5 +1,7 @@
 <script lang="ts">
 	import * as Reviews from '$lib/remotes/review.remote';
+	import * as Review from '$lib/review';
+	import { Problem } from '$lib/api';
 	import * as UserProject from '$lib/remotes/user-project.remote';
 	import * as User from '$lib/remotes/user.remote';
 	import * as Card from '$lib/components/card';
@@ -13,20 +15,14 @@
 	import { page } from '$app/state';
 	import Textarea from '$lib/components/textarea/textarea.svelte';
 	import * as Dialog from '$lib/components/dialog';
-	import { Problem } from '$lib/api';
-	import { goto } from '$app/navigation';
+	import { goto, refreshAll } from '$app/navigation';
 	import {
-		Ban,
-		Bot,
 		Check,
-		CheckCheck,
 		ChevronRight,
 		GitBranch,
 		GitPullRequest,
 		MessagesSquare,
 		PlusCircle,
-		Search,
-		UserRound,
 		Users,
 		X
 	} from '@lucide/svelte';
@@ -38,6 +34,7 @@
 
 	const round = $derived(await Reviews.getRound(params.id));
 	const session = $derived(await UserProject.get(round.userProjectId));
+	const roundState = $derived(Review.ROUND_STATES[round.state]);
 
 	/** Claim an unassigned review slot for the current authenticated user */
 	async function claim(reviewId: string, kind: string) {
@@ -50,14 +47,10 @@
 
 		if (!confirmed) return;
 
-		await Problem.try(async () => {
-			await Reviews.assign({
-				reviewId,
-				reviewerId: currentUserId
-			});
-
-			await goto(`/reviews/${reviewId}`);
-		});
+		// The review page has a start button for slots that are claimed but not started yet.
+		const assigned = await Problem.try(() => Reviews.assign({ reviewId, reviewerId: currentUserId }));
+		await refreshAll({ includeLoadFunctions: false });
+		if (assigned) await goto(`/reviews/${reviewId}`);
 	}
 </script>
 
@@ -81,14 +74,11 @@
 				</svelte:boundary>
 				<Badge variant="secondary" class="rounded-sm"><GitBranch /> {round.ref}</Badge>
 				<Badge variant="secondary" class="rounded-sm"><GitPullRequest /> {round.sha.slice(0, 8)}</Badge>
-				{#if round.state === 'Passed'}
-					<Badge variant="success" class="rounded-sm">Pass <CheckCheck /></Badge>
-				{:else if round.state === 'Cancelled'}
-					<Badge variant="destructive" class="rounded-sm">Cancelled <Ban /></Badge>
-				{:else if round.state === 'Failed'}
-					<Badge variant="destructive" class="rounded-sm">Fail <X /></Badge>
-				{:else if round.state === 'Open'}
-					<Badge variant="outline" class="rounded-sm">Open <Search /></Badge>
+				{#if roundState}
+					<Badge variant={roundState.variant} class="rounded-sm">
+						{roundState.label}
+						<roundState.icon />
+					</Badge>
 				{/if}
 			</Card.Description>
 		</Card.Header>
@@ -142,19 +132,12 @@
 								<Badge variant="default" class="rounded-sm">Your Review</Badge>
 							{/if}
 							<Badge variant="outline" class="rounded-sm">
-								{#if slot.kind === 'Self'}
-									<UserRound size={16} />
-								{:else if slot.kind === 'Async'}
-									<MessagesSquare size={16} />
-								{:else if slot.kind === 'Auto'}
-									<Bot size={16} />
-								{:else if slot.kind === 'Peer'}
-									<Users size={16} />
-								{/if}
+								{@const Icon = Review.KINDS[slot.kind].icon}
+								<Icon size={16} />
 								{slot.kind}
 							</Badge>
 							<Badge variant="secondary" class="rounded-sm">{slot.state}</Badge>
-							{#if !!slot.passed}
+							{#if slot.passed !== null && slot.passed !== undefined}
 								{#if slot.passed}
 									<Badge variant="success" class="rounded-sm">Pass <Check /></Badge>
 								{:else}
@@ -173,7 +156,7 @@
 							</Button>
 						</Item.Title>
 						<Item.Description class="line-clamp-none">
-							{#if slot.passed}
+							{#if slot.state === 'Finished'}
 								<svelte:boundary>
 									{@const annotation = await Reviews.getAnnotations({
 										reviewId: slot.reviewId,

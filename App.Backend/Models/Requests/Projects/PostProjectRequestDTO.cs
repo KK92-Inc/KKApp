@@ -50,7 +50,7 @@ public class PostProjectRequestDTO : RequestDTO
     [Description("The maximum number of members allowed in the project.")]
     public int MaxMembers { get; init; }
 
-    [Required, RequiresFile("readme.md", ErrorMessage = "README.md is required to be present.")]
+    [Required, RequiresFile("README.md", ErrorMessage = "README.md is required to be present.")]
     [Description("The initial projet commit.")]
     public required PostCommitDTO Commit { get; init; }
 }

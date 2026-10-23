@@ -4,6 +4,7 @@
 	import * as Page from '../../../context.svelte';
 	import * as Remote from '../../../page.remote';
 	import * as Git from '$lib/remotes/git.remote';
+	import * as Reviews from '$lib/remotes/review.remote';
 	import type { PageProps } from './$types';
 
 	import * as Avatar from '$lib/components/avatar';
@@ -65,7 +66,12 @@
 	-->
 		{@const { review } = await Remote.load(context.reviewId())}
 		{@const isReviewer = review.reviewer?.id === page.data.session.userId}
-		{@const onLineClick = isReviewer && review.state !== 'InProgress' ? toggleFocus : undefined}
+		{@const editable = isReviewer && review.state === 'InProgress'}
+		{@const saved =
+			review.state === 'Finished'
+				? await Reviews.getAnnotations({ reviewId: review.id, file: params.path, type: 'Comment' })
+				: null}
+		{@const onLineClick = editable ? toggleFocus : undefined}
 		{@const content = await Git.getBlob({
 			id: review.userProject.gitInfoId,
 			ref: review.sha!,
@@ -99,7 +105,9 @@
 			{#snippet text({ text, language })}
 				<Explorer.Code {text} {language} {onLineClick} class="border-b">
 					{#snippet extra({ line })}
-						{@const existing = context.annotations.get(params.path)?.find((a) => a.rowStart === line)}
+						{@const existing =
+							context.annotations.get(params.path)?.find((a) => a.rowStart === line) ??
+							saved?.annotations.find((a) => a.$type === 'Comment' && a.rowStart === line)}
 
 						{#if existing || line === focused}
 							<Item.Root
@@ -120,7 +128,7 @@
 											{review.reviewer?.displayName ?? review.reviewer?.login}
 											<span class="text-xs text-muted-foreground">on #{line}</span>
 											<Separator class="flex-1" />
-											{#if review.state !== 'InProgress'}
+											{#if editable}
 												<Button size="sm" variant="destructive" onclick={() => remove(line)}>
 													Remove
 													<Trash2 />

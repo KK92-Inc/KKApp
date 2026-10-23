@@ -16,13 +16,14 @@
 	import * as ButtonGroup from '$lib/components/button-group';
 	import type { components } from '$lib/api/api';
 	import * as Dialog from '$lib/components/dialog';
-	import { Problem } from '$lib/api';
 	import * as UserProjects from '$lib/remotes/user-project.remote';
 	import * as Reviews from '$lib/remotes/review.remote';
+	import * as Review from '$lib/review';
 	import Separator from '$lib/components/separator/separator.svelte';
 	import Badge from '$lib/components/badge/badge.svelte';
 	import * as Empty from '$lib/components/empty';
-	import { goto } from '$app/navigation';
+	import { goto, refreshAll } from '$app/navigation';
+	import { Problem } from '$lib/api';
 
 	const dialog = Dialog.useDialog();
 	const context = Page.getContext();
@@ -36,9 +37,8 @@
 	/** Request an evaluation round */
 	async function pull() {
 		if (!session) return;
-		await Problem.try(async () => {
-			await Reviews.pull(session.id);
-		});
+		await Problem.try(() => Reviews.pull(session.id));
+		await refreshAll({ includeLoadFunctions: false });
 	}
 
 	/** Provide an evaluation to a potential round or just plain feedback. */
@@ -85,15 +85,16 @@
 
 		if (!confirm) return;
 
-		await Problem.try(async () => {
-			const review = await Reviews.push({
+		const review = await Problem.try(() =>
+			Reviews.push({
 				kind: target,
 				userProjectId: session.id,
 				reviewerId: page.data.session.userId
-			});
+			})
+		);
+		await refreshAll({ includeLoadFunctions: false });
 
-			await goto(`/reviews/${review.id}`);
-		});
+		if (review) await goto(`/reviews/${review.id}`);
 	}
 </script>
 
