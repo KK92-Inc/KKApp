@@ -6,6 +6,7 @@
 import * as v from 'valibot';
 import { query, getRequestEvent, command } from '$app/server';
 import { Filters, paginate, Problem } from '$lib/api';
+import type { components } from '$lib/api/api';
 
 // ============================================================================
 
@@ -19,6 +20,12 @@ const PageSchema = v.object({
 	notState: v.optional(states),
 	year: v.optional(v.number()),
 	month: v.optional(v.number()),
+});
+
+const FeedbackPageSchema = v.object({
+	id: Filters.id,
+	...Filters.pagination,
+	...Filters.sort,
 });
 
 // ============================================================================
@@ -81,4 +88,41 @@ export const cancel = command(Filters.id, async (id) => {
 	if (error) Problem.throw(error)
 
 	get(id).refresh();
+});
+
+// ============================================================================
+
+/** Paginated feedback left on a (finished) event. */
+export const getFeedback = query(FeedbackPageSchema, async ({ id, ...params }) => {
+	const { locals } = getRequestEvent();
+	const { response, data, error } = await locals.api.GET("/events/{id}/feedback", {
+		params: {
+			path: { id },
+			query: {
+				"page[index]": params.page,
+				"page[size]": params.size,
+				"sort[by]": params.sortBy,
+				"sort[order]": params.sort,
+			}
+		}
+	});
+
+	if (error) Problem.throw(error)
+	return paginate(data, response);
+});
+
+/**
+ * Leave feedback on an event, only possible once it's finished and only for participants.
+ * NOTE: Doesn't refresh `getFeedback` since that's cached per page, the caller refreshes.
+ */
+type CreateFeedback = { id: string } & components['schemas']['PostEventFeedbackRequestDTO']
+export const addFeedback = command("unchecked", async ({ id, ...body }: CreateFeedback) => {
+	const { locals } = getRequestEvent();
+	const { error, data } = await locals.api.POST("/events/{id}/feedback", {
+		params: { path: { id } },
+		body,
+	});
+
+	if (error || !data) Problem.throw(error)
+	return data;
 });

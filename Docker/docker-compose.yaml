@@ -1,6 +1,6 @@
 services:
   env-dashboard:
-    image: "mcr.microsoft.com/dotnet/nightly/aspire-dashboard:13.5"
+    image: "mcr.microsoft.com/dotnet/nightly/aspire-dashboard:13.6"
     ports:
       - "18888"
     expose:
@@ -245,9 +245,10 @@ services:
       HOST: "0.0.0.0"
       HOSTNAME: "0.0.0.0"
       KC_SECRET: "${KC_STUDENT_INTRA_SECRET}"
-      KC_ORIGIN: "https://auth.${DOMAIN}"
       S3_ACCESS_KEY_ID: "${S3_ACCESS_KEY_ID}"
       S3_SECRET_ACCESS_KEY: "${S3_SECRET_ACCESS_KEY}"
+      KC_ORIGIN: "https://auth.${DOMAIN}"
+      PUBLIC_KC_ORIGIN: "https://auth.${DOMAIN}"
       PUBLIC_GIT_URL: "git@${DOMAIN}"
       PUBLIC_API_URL: "http://backend:${BACKEND_PORT}"
       PUBLIC_S3_ENDPOINT: "https://s3.${DOMAIN}"

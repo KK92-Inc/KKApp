@@ -28,10 +28,12 @@ Add a tool once and both entry points get it.
 
 ## Agent configuration (`appsettings.json` -> `Agent`)
 
+The Ollama endpoint and model come from the `qwen3-8b` connection string (`Endpoint=...;Model=...`).
+The AppHost injects it; `appsettings.json` has a localhost fallback for running the API on its own.
+The model must support tool calling (`ollama show <model>` lists `tools`).
+
 | Key | Default | |
 |---|---|---|
-| `BaseUrl` | `http://localhost:11434` | Ollama |
-| `Model` | `qwen3:8b` | Must support tool calling (`ollama show <model>` lists `tools`) |
 | `Think` | unset | `false` speeds up thinking models (qwen3). Leave unset if your model rejects it |
 | `ContextLength` | `8192` | Sent as `num_ctx` |
 | `MaxSteps` | `8` | Max model round-trips per request |
@@ -40,5 +42,5 @@ Add a tool once and both entry points get it.
 ## Changing the model provider
 
 `AgentService` only knows `Microsoft.Extensions.AI.IChatClient`. The single registration lives in `Services.cs` (`RegisterMcp`):
-swap the `OllamaSharp.OllamaApiClient` for any other `IChatClient` and nothing else changes.
+swap `AddOllamaApiClient(...).AddChatClient()` for any other `IChatClient` registration and nothing else changes.
 The `RawRepresentationFactory` in `AgentService` (num_ctx, think) is the only Ollama specific bit; other providers ignore it or need their own.

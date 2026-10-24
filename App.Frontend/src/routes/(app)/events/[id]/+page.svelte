@@ -9,6 +9,7 @@
 	import Separator from '$lib/components/separator/separator.svelte';
 	import { ArrowLeft, CalendarMinus, CalendarPlus, Info, PartyPopper, StarCheck, X } from '@lucide/svelte';
 	import CardEvent from '../card-event.svelte';
+	import Feedback from './feedback.svelte';
 	import { Problem } from '$lib/api';
 	import { useDialog } from '$lib/components/dialog';
 
@@ -19,6 +20,9 @@
 
 	const staff = $derived(page.data.session.roles.includes("staff"));
 	const creator = $derived(event.userId === page.data.session.userId);
+	// Mirrors the backend: only the creator or staff, and only while the event is still live.
+	const live = $derived(event.state === 'Pending' || event.state === 'Accepted');
+	const canCancel = $derived(live && (creator || staff));
 </script>
 
 {#snippet reject(title: string)}
@@ -31,9 +35,8 @@
 			);
 
 			if (!confirm) return;
-			Problem.try(async () => {
-				Events.cancel(event.id);
-			});
+			// NOTE: Must be awaited/returned, otherwise errors never reach the toast.
+			await Problem.try(() => Events.cancel(event.id));
 		}}
 	>
 		{title}
@@ -77,18 +80,18 @@
 							<X />
 						</Button>
 					{:else if !creator}
-						{#if event.participants.length === event.capacity}
+						{#if event.participants.find((u) => u.id === page.data.session.userId)}
+							<Button variant="destructive" onclick={() => Problem.try(() => Events.leave(event.id))}>
+								Leave
+								<CalendarMinus />
+							</Button>
+						{:else if event.participants.length >= event.capacity}
 							<Button inert class="border-yellow-600 bg-yellow-600/30">
 								Event is full
 								<X />
 							</Button>
-						{:else if event.participants.find((u) => u.id === page.data.session.userId)}
-							<Button variant="destructive" onclick={() => Problem.try(async () => Events.leave(event.id))}>
-								Leave
-								<CalendarMinus />
-							</Button>
 						{:else}
-							<Button onclick={() => Problem.try(async () => Problem.try(async () => Events.join(event.id)))}>
+							<Button onclick={() => Problem.try(() => Events.join(event.id))}>
 								{#if event.state === 'Pending'}
 									I'm Interested
 									<StarCheck />
@@ -98,24 +101,19 @@
 								{/if}
 							</Button>
 						{/if}
-					{:else}
-						<Button inert variant="secondary">
-							You're hosting this event
-							<Info />
-						</Button>
-						{@render reject("Cancel")}
 					{/if}
 				</ButtonGroup.Root>
-				<ButtonGroup.Root>
-					<Button variant="secondary">
-						View Reviews
-						<StarCheck />
-					</Button>
-					{#if staff && event.state !== "Rejected" || event.state !== "Finished" && !creator}
+				<!-- The creator already has the cancel button above, this one is for staff. -->
+				{#if canCancel && !creator}
+					<ButtonGroup.Root>
 						{@render reject("Cancel")}
-					{/if}
-				</ButtonGroup.Root>
+					</ButtonGroup.Root>
+				{/if}
 			</ButtonGroup.Root>
 		</Card.Footer>
 	</Card.Root>
+
+	{#if event.state === 'Finished'}
+		<Feedback {event} />
+	{/if}
 </div>

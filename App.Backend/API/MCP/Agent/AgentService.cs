@@ -143,6 +143,7 @@ public sealed class AgentService(
     private async Task<ChatResponse> AskModelAsync(List<ChatMessage> conversation, ChatOptions chatOptions, CancellationToken ct)
     {
         var cfg = options.Value;
+        var meta = chat.GetService<ChatClientMetadata>();
         try
         {
             return await chat.GetResponseAsync(conversation, chatOptions, ct);
@@ -150,7 +151,7 @@ public sealed class AgentService(
         catch (ModelDoesNotSupportToolsException)
         {
             throw new ServiceException(502, "The model can't use tools.",
-                $"'{cfg.Model}' doesn't support tool calling. Pick another model: `ollama show <model>` must list 'tools'.");
+                $"'{meta?.DefaultModelId}' doesn't support tool calling. Pick another model: `ollama show <model>` must list 'tools'.");
         }
         catch (OllamaException e)
         {
@@ -159,9 +160,9 @@ public sealed class AgentService(
         }
         catch (HttpRequestException e) when (e.StatusCode is null)
         {
-            log.LogError(e, "Could not reach Ollama at {Url}", cfg.BaseUrl);
+            log.LogError(e, "Could not reach Ollama at {Url}", meta?.ProviderUri);
             throw new ServiceException(503, "The language model is unavailable.",
-                $"Could not reach Ollama at {cfg.BaseUrl}. Is it running?");
+                $"Could not reach Ollama at {meta?.ProviderUri}. Is it running?");
         }
         catch (HttpRequestException e)
         {

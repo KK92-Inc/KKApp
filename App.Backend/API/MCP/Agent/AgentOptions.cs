@@ -15,14 +15,10 @@ public class AgentOptions
     public const string SectionName = "Agent";
 
     /// <summary>
-    /// Base URL of the Ollama server.
+    /// Name of the connection string (`ConnectionStrings:qwen3-8b`) holding the Ollama endpoint and model,
+    /// e.g. `Endpoint=http://localhost:11434;Model=qwen3:8b`. The AppHost injects it. The model must support tool calling.
     /// </summary>
-    public string BaseUrl { get; set; } = "http://localhost:11434";
-
-    /// <summary>
-    /// Model to use. Must support tool calling.
-    /// </summary>
-    public string Model { get; set; } = "qwen3:8b";
+    public const string ConnectionName = "qwen3-8b";
 
     /// <summary>
     /// Sent as Ollama's `think` flag when set. Leave null if your model rejects it.

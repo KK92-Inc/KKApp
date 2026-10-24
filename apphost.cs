@@ -9,6 +9,7 @@
 #:package Aspire.Npgsql@13.6.1
 #:package Aspire.Hosting.Docker@13.6.1
 #:package Aspire.Hosting.Valkey@13.6.1
+#:package CommunityToolkit.Aspire.Hosting.Ollama@13.6.0
 #:package Aspire.Hosting.PostgreSQL@13.6.1
 #:package Aspire.Hosting.JavaScript@13.6.1
 #:project App.Migrations/Migrations.csproj
@@ -223,6 +224,22 @@ else
 }
 
 // ============================================================================
+// LLM
+// - Ollama + the model used by the in-app agent.
+// - Locally the model is pulled automatically on first start.
+// - The name "qwen3-8b" is the connection name read by the backend
+//   (AgentOptions.ConnectionName), keep them in sync.
+// ============================================================================
+
+var ollama = builder.AddOllama("ollama")
+    .WithDataVolume("ollama-volume")
+    .WithGPUSupport()
+    .WithEnvironment("OLLAMA_KEEP_ALIVE", "1h")
+    .WithLifetime(ContainerLifetime.Persistent);
+
+var qwen = ollama.AddModel("qwen3-8b", "qwen3:8b");
+
+// ============================================================================
 // Backend
 // - Backend waits for DB, Migrations, and Keycloak
 // ============================================================================
@@ -231,6 +248,7 @@ var backend = builder.AddProject<Projects.App_Backend_API>("backend")
     .WithHttpHealthCheck("/health")
     .WithReference(backendDb)
     .WithReference(cache)
+    .WithReference(qwen)
     .WithEnvironment("KeycloakAdmin__credentials__secret", adminIntraSecret)
     .WithEnvironment("KeycloakAdmin__auth-server-url", auth.GetEndpoint("http"))
     .WithEnvironment("KeycloakStudent__credentials__secret", studentIntraSecret)
@@ -240,6 +258,7 @@ var backend = builder.AddProject<Projects.App_Backend_API>("backend")
     .WaitFor(migration)
     .WaitFor(postgres)
     .WaitFor(cache)
+    .WaitFor(ollama) // Not the model: it can take minutes to download and is only needed at request time
     .WaitFor(auth)
     .WaitFor(api);
 

@@ -58,7 +58,6 @@ using Humanizer;
 using JasperFx.CodeGeneration.Model;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.AI;
-using OllamaSharp;
 
 // ============================================================================
 
@@ -387,20 +386,20 @@ public static class Services
         builder.Services.Configure<AgentOptions>(
             builder.Configuration.GetSection(AgentOptions.SectionName));
 
-#pragma warning disable EXTEXP0001 // TODO: For local testing we don't wanna limit (we can run at most 10t/s)
-        builder.Services.AddHttpClient("ollama", (sp, client) =>
-        {
-            var agent = sp.GetRequiredService<IOptions<AgentOptions>>().Value;
-            client.BaseAddress = new Uri(agent.BaseUrl.TrimEnd('/') + "/");
-            client.Timeout = TimeSpan.FromSeconds(3000);
-        }).RemoveAllResilienceHandlers();
+        // Endpoint and model come from ConnectionStrings:qwen3-8b (injected by the AppHost via WithReference).
+        // The only place that knows we talk to Ollama. Any IChatClient works here (Azure OpenAI, OpenAI, ...).
+        builder.AddOllamaApiClient(AgentOptions.ConnectionName).AddChatClient();
+
+        // Local models are slow. ServiceDefaults adds a 30s resilience handler to every HttpClient, which would
+        // kill a CPU bound generation, so this one client opts out and gets our own timeout instead.
+#pragma warning disable EXTEXP0001
+        builder.Services
+            .AddHttpClient($"{AgentOptions.ConnectionName}_httpClient") // Name used internally by the toolkit
+            .ConfigureHttpClient((sp, client) => client.Timeout =
+                TimeSpan.FromSeconds(sp.GetRequiredService<IOptions<AgentOptions>>().Value.TimeoutSeconds))
+            .RemoveAllResilienceHandlers();
 #pragma warning restore EXTEXP0001
 
-        // The only place that knows we talk to Ollama. Any IChatClient works here (Azure OpenAI, OpenAI, ...).
-        builder.Services.AddScoped<IChatClient>(sp => new OllamaApiClient(
-            sp.GetRequiredService<IHttpClientFactory>().CreateClient("ollama"),
-            sp.GetRequiredService<IOptions<AgentOptions>>().Value.Model)
-        );
         builder.Services.AddScoped<AgentService>();
     }
 
