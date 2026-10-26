@@ -7,10 +7,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using App.Backend.API.Params;
-using App.Backend.Core.Services.Interface;
 using App.Backend.Domain.Entities.Apply;
 using App.Backend.Models.Requests.Apply;
 using App.Backend.Models.Responses.Entities.Apply;
+using App.Backend.Core.Services.Interface.Apply;
 
 // ============================================================================
 

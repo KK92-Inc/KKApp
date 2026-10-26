@@ -3,13 +3,11 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-using App.Backend.Domain.Entities.Apply;
-
 // ============================================================================
 
-namespace App.Backend.Core.Services.Interface;
+namespace App.Backend.Domain.Values;
 
 /// <summary>
-/// Check-ins, the first step of admissions. See <see cref="IApplyEventService{TEvent,TRegistration}"/>.
+/// How many people signed up for a session, and how many of them were verified as present.
 /// </summary>
-public interface ICheckInService : IApplyEventService<CheckIn, CheckInRegistration> { }
+public readonly record struct ApplyCounts(int Registered, int Attended);

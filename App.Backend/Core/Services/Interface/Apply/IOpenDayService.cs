@@ -7,7 +7,7 @@ using App.Backend.Domain.Entities.Apply;
 
 // ============================================================================
 
-namespace App.Backend.Core.Services.Interface;
+namespace App.Backend.Core.Services.Interface.Apply;
 
 /// <summary>
 /// Open days, the second step of admissions. See <see cref="IApplyEventService{TEvent,TRegistration}"/>.
@@ -15,6 +15,4 @@ namespace App.Backend.Core.Services.Interface;
 /// <remarks>
 /// Signing up requires having been verified at a check-in, unless <c>Admissions:RequireCheckInForOpenDay</c> is switched off.
 /// </remarks>
-public interface IOpenDayService : IApplyEventService<OpenDay, OpenDayRegistration>
-{
-}
+public interface IOpenDayService : IApplyEventService<OpenDay, OpenDayRegistration> { }

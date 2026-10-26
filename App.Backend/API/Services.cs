@@ -58,6 +58,8 @@ using Humanizer;
 using JasperFx.CodeGeneration.Model;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.AI;
+using App.Backend.Core.Services.Interface.Apply;
+using App.Backend.Core.Services.Implementation.Apply;
 
 // ============================================================================
 

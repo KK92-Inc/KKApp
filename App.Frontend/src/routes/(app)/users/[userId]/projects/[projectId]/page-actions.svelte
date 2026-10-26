@@ -77,8 +77,26 @@
 			<Alert.Description>User has no session and isn't subscribed to this project yet.</Alert.Description>
 		</Alert.Root>
 	{:else}
-		<Separator />
-		{@render subscription()}
+		<svelte:boundary>
+			{@const eligible = await User.getEligiblePage({
+				type: 'Project',
+				id: context.projectId(),
+				userId: context.userId()
+			})}
+
+			{#if eligible.data.length > 0}
+				<Separator />
+				{@render subscription()}
+			{:else}
+				<Alert.Root variant="destructive" class="border-dashed">
+					<TriangleAlert />
+					<Alert.Title>Unable to subscribe</Alert.Title>
+					<Alert.Description>
+						You do not meet the prerequisites to subscribe to this project at the moment.
+					</Alert.Description>
+				</Alert.Root>
+			{/if}
+		</svelte:boundary>
 	{/if}
 {:else}
 	<svelte:boundary>

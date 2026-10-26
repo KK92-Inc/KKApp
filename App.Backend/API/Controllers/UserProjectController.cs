@@ -10,7 +10,6 @@ using App.Backend.API.Params;
 using App.Backend.Core.Services.Interface;
 using App.Backend.Domain.Enums;
 using App.Backend.Models.Responses.Entities.Projects;
-using App.Backend.API.Controllers.Interfaces;
 using App.Backend.API.Utils;
 using App.Backend.Database;
 
@@ -35,7 +34,7 @@ public class UserProjectController(
     IMemberService memberService,
     IAuthorizationService auth,
     DatabaseContext ctx
-) : Controller, IInviteController
+) : Controller
 {
     private async Task<bool> Access(Guid entityId, CancellationToken token)
     {

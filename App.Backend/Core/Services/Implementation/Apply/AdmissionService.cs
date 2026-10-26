@@ -3,16 +3,16 @@
 // See README.md in the project root for license information.
 // ============================================================================
 
-using App.Backend.Core.Services.Interface;
+using App.Backend.Core.Services.Interface.Apply;
 using App.Backend.Database;
-using App.Backend.Domain.Entities.Apply;
 using App.Backend.Domain.Entities.Users;
 using App.Backend.Domain.Enums;
+using App.Backend.Domain.Values;
 using Microsoft.EntityFrameworkCore;
 
 // ============================================================================
 
-namespace App.Backend.Core.Services.Implementation;
+namespace App.Backend.Core.Services.Implementation.Apply;
 
 public class AdmissionService(DatabaseContext ctx) : IAdmissionService
 {

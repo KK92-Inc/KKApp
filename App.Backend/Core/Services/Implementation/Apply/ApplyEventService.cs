@@ -5,16 +5,18 @@
 
 using App.Backend.Core.Query;
 using App.Backend.Core.Services.Interface;
+using App.Backend.Core.Services.Interface.Apply;
 using App.Backend.Core.Services.Options;
 using App.Backend.Database;
 using App.Backend.Database.Extensions;
 using App.Backend.Domain.Entities.Apply;
+using App.Backend.Domain.Values;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 // ============================================================================
 
-namespace App.Backend.Core.Services.Implementation;
+namespace App.Backend.Core.Services.Implementation.Apply;
 
 /// <summary>
 /// Everything a check-in and an open day have in common: the capacity and the deadline, the sign-ups, and
@@ -34,11 +36,11 @@ public abstract class ApplyEventService<TEvent, TRegistration>(
     where TEvent : ApplyEvent
     where TRegistration : ApplyRegistration<TEvent>, new()
 {
-    protected DatabaseContext Db { get; } = ctx;
+    protected DatabaseContext Context { get; } = ctx;
 
     protected AdmissionOptions Rules => options.Value;
 
-    protected DbSet<TRegistration> Registrations => Db.Set<TRegistration>();
+    protected DbSet<TRegistration> Registrations => Context.Set<TRegistration>();
 
     /// <summary>
     /// What a session is called in messages, without an article. E.g: "check-in".
@@ -118,7 +120,7 @@ public abstract class ApplyEventService<TEvent, TRegistration>(
 
     public override Task UpdateAsync(TEvent entity, CancellationToken token = default)
     {
-        return Db.WithAdvisoryLockAsync($"{LockScope}:{entity.Id}", async ct =>
+        return Context.WithAdvisoryLockAsync($"{LockScope}:{entity.Id}", async ct =>
         {
             ServiceException.ThrowIf(!await _dbSet.AnyAsync(e => e.Id == entity.Id, ct), 404, $"The {Label} doesn't exist.");
             ServiceException.ThrowIf(entity.DeadlineAt > entity.StartsAt, 422, "The sign-up deadline can't be after the start.");
@@ -138,7 +140,7 @@ public abstract class ApplyEventService<TEvent, TRegistration>(
 
     public override Task DeleteAsync(TEvent entity, CancellationToken token = default)
     {
-        return Db.WithAdvisoryLockAsync($"{LockScope}:{entity.Id}", async ct =>
+        return Context.WithAdvisoryLockAsync($"{LockScope}:{entity.Id}", async ct =>
         {
             var attended = await Registrations.CountAsync(r => r.EventId == entity.Id && r.AttendedAt != null, ct);
             ServiceException.ThrowIf(attended > 0, 409,
@@ -148,7 +150,7 @@ public abstract class ApplyEventService<TEvent, TRegistration>(
             await Registrations.Where(r => r.EventId == entity.Id).ExecuteDeleteAsync(ct);
 
             _dbSet.Remove(entity);
-            await Db.SaveChangesAsync(ct);
+            await Context.SaveChangesAsync(ct);
         }, token);
     }
 
@@ -161,7 +163,7 @@ public abstract class ApplyEventService<TEvent, TRegistration>(
         var normalized = email.Trim().ToLowerInvariant();;
         ServiceException.ThrowIf(normalized.Length == 0, 422, "An email address is required.");
 
-        return Db.WithAdvisoryLockAsync($"{LockScope}:{eventId}", async ct =>
+        return Context.WithAdvisoryLockAsync($"{LockScope}:{eventId}", async ct =>
         {
             var session = await _dbSet.AsNoTracking().FirstOrDefaultAsync(e => e.Id == eventId, ct)
                 ?? throw new ServiceException(404, $"The {Label} doesn't exist.");
@@ -175,7 +177,7 @@ public abstract class ApplyEventService<TEvent, TRegistration>(
             var now = time.GetUtcNow();
             ServiceException.ThrowIf(now > session.DeadlineAt, 409, $"Sign-up for this {Label} is closed.");
 
-            return await Db.WithAdvisoryLockAsync($"apply-email:{normalized}", async ct2 =>
+            return await Context.WithAdvisoryLockAsync($"apply-email:{normalized}", async ct2 =>
             {
                 await EnsureEligibleAsync(normalized, ct2);
 
@@ -201,7 +203,7 @@ public abstract class ApplyEventService<TEvent, TRegistration>(
                 };
 
                 await Registrations.AddAsync(registration, ct2);
-                await Db.SaveChangesAsync(ct2);
+                await Context.SaveChangesAsync(ct2);
                 return registration;
             }, ct);
         }, token);
@@ -209,7 +211,7 @@ public abstract class ApplyEventService<TEvent, TRegistration>(
 
     public Task UnregisterAsync(Guid eventId, Guid registrationId, CancellationToken token = default)
     {
-        return Db.WithAdvisoryLockAsync($"{LockScope}:{eventId}", async ct =>
+        return Context.WithAdvisoryLockAsync($"{LockScope}:{eventId}", async ct =>
         {
             var registration = await Registrations.FirstOrDefaultAsync(r => r.Id == registrationId && r.EventId == eventId, ct)
                 ?? throw new ServiceException(404, "This isn't a sign-up for this session.");
@@ -218,13 +220,13 @@ public abstract class ApplyEventService<TEvent, TRegistration>(
                 "This person was verified as present, that record has to stay.");
 
             Registrations.Remove(registration);
-            await Db.SaveChangesAsync(ct);
+            await Context.SaveChangesAsync(ct);
         }, token);
     }
 
     public Task<TRegistration> SetAttendanceAsync(Guid eventId, Guid registrationId, bool attended, Guid verifiedBy, CancellationToken token = default)
     {
-        return Db.WithAdvisoryLockAsync($"{LockScope}:{eventId}", async ct =>
+        return Context.WithAdvisoryLockAsync($"{LockScope}:{eventId}", async ct =>
         {
             var session = await _dbSet.AsNoTracking().FirstOrDefaultAsync(e => e.Id == eventId, ct)
                 ?? throw new ServiceException(404, $"The {Label} doesn't exist.");
@@ -248,7 +250,7 @@ public abstract class ApplyEventService<TEvent, TRegistration>(
 
                 registration.AttendedAt = now;
                 registration.VerifiedBy = verifiedBy;
-                await Db.SaveChangesAsync(ct);
+                await Context.SaveChangesAsync(ct);
                 return registration;
             }
 
@@ -257,13 +259,13 @@ public abstract class ApplyEventService<TEvent, TRegistration>(
 
             // Taking presence back is a correction. The person's lock makes sure nobody is signing up for
             // the next step right now, and the next step is what decides whether this is still possible.
-            return await Db.WithAdvisoryLockAsync($"apply-email:{registration.Email}", async ct2 =>
+            return await Context.WithAdvisoryLockAsync($"apply-email:{registration.Email}", async ct2 =>
             {
                 await EnsureCanRevokeAsync(registration.Email, ct2);
 
                 registration.AttendedAt = null;
                 registration.VerifiedBy = null;
-                await Db.SaveChangesAsync(ct2);
+                await Context.SaveChangesAsync(ct2);
                 return registration;
             }, ct);
         }, token);

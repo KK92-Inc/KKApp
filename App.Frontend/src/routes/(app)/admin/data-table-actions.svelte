@@ -94,8 +94,6 @@
 			</Dialog.Description>
 		</Dialog.Header>
 
-		<!-- TODO: Fetch a users freeze status first. -->
-
 		<Field.Set>
 			<Field.Group class="gap-3">
 				<Field.Field>

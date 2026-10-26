@@ -47,7 +47,7 @@
 		</div>
 		<Sheet.Footer dir="ltr" class="flex justify-between gap-1 border-t px-4 py-3">
 			<div class="flex items-center gap-3 text-sm text-muted-foreground">
-				<span>© {today(page.data.tz).year} W2 B.V.</span>
+				<span>© {today(page.data.tz).year} W2Inc. Zzp</span>
 				<span aria-hidden="true">•</span>
 				<nav>
 					<Button href="#" size="icon" variant="ghost"><GitFork /></Button>

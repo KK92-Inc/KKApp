@@ -51,7 +51,7 @@ public class DatabaseContext(DbContextOptions<DatabaseContext> options) : DbCont
     public DbSet<Trial> Trials { get; set; }
     public DbSet<UserTrial> UserTrials { get; set; }
 
-    // Admissions, these live in their own `apply` schema.
+    // Admissions
     public DbSet<CheckIn> CheckIns { get; set; }
     public DbSet<CheckInRegistration> CheckInRegistrations { get; set; }
     public DbSet<OpenDay> OpenDays { get; set; }

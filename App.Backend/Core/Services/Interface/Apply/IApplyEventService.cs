@@ -5,15 +5,11 @@
 
 using App.Backend.Core.Query;
 using App.Backend.Domain.Entities.Apply;
+using App.Backend.Domain.Values;
 
 // ============================================================================
 
-namespace App.Backend.Core.Services.Interface;
-
-/// <summary>
-/// How many people signed up for a session, and how many of them were verified as present.
-/// </summary>
-public readonly record struct ApplyCounts(int Registered, int Attended);
+namespace App.Backend.Core.Services.Interface.Apply;
 
 public interface IApplyEventService<TEvent, TRegistration> : IDomainService<TEvent>
     where TEvent : ApplyEvent

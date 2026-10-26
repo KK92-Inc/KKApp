@@ -4,6 +4,7 @@
 // ============================================================================
 
 using App.Backend.Core.Services.Interface;
+using App.Backend.Core.Services.Interface.Apply;
 using App.Backend.Core.Services.Options;
 using App.Backend.Database;
 using App.Backend.Domain.Entities.Apply;
@@ -12,7 +13,7 @@ using Microsoft.Extensions.Options;
 
 // ============================================================================
 
-namespace App.Backend.Core.Services.Implementation;
+namespace App.Backend.Core.Services.Implementation.Apply;
 
 public class OpenDayService(DatabaseContext ctx, TimeProvider time, IOptions<AdmissionOptions> options) : ApplyEventService<OpenDay, OpenDayRegistration>(ctx, time, options), IOpenDayService
 {
@@ -25,7 +26,7 @@ public class OpenDayService(DatabaseContext ctx, TimeProvider time, IOptions<Adm
         if (!Rules.RequireCheckInForOpenDay)
             return;
 
-        var verified = await Db.CheckInRegistrations.AnyAsync(r => r.Email == email && r.AttendedAt != null, token);
+        var verified = await Context.CheckInRegistrations.AnyAsync(r => r.Email == email && r.AttendedAt != null, token);
         ServiceException.ThrowIf(!verified, 409, $"{email} hasn't been verified at a check-in yet, which an open day requires.");
     }
 }
