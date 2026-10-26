@@ -1,15 +1,20 @@
 <script lang="ts">
 	import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
-	import { Button, buttonVariants } from '$lib/components/button';
+	import { Button } from '$lib/components/button';
 	import * as DropdownMenu from '$lib/components/dropdown-menu';
 	import type { components } from '$lib/api/api';
-	import { CloudLightning, Hammer, HatGlasses, IdCard, Snowflake, User, UserPen, Zap } from '@lucide/svelte';
+	import {
+		HatGlasses,
+		IdCard,
+		Plus,
+		Snowflake,
+		User,
+		UserPen,
+		Zap
+	} from '@lucide/svelte';
 	import { useDialog } from '$lib/components/dialog';
-	import * as Dialog from '$lib/components/dialog';
-	import InputDate from '$lib/components/input-date.svelte';
-	import * as Field from '$lib/components/field';
-	import { Textarea } from '$lib/components/textarea';
-	import Separator from '$lib/components/separator/separator.svelte';
+	import DataTableActionsFreeze from './data-table-actions-freeze.svelte';
+	import DataTableActionsSubscribe from './data-table-actions-subscribe.svelte';
 
 	interface Props {
 		user: components['schemas']['UserDO'];
@@ -17,10 +22,8 @@
 
 	const dialog = useDialog();
 
-	let freezeOpen = $state(false);
-	// UTC ISO strings, `<InputDate>` shows and reads them in the instance's timezone.
-	let freezeStartsAt = $state<string>();
-	let freezeEndsAt = $state<string>();
+	let freeze = $state(false);
+	let subscribe = $state(false);
 	let { user }: Props = $props();
 
 	async function anonymize() {
@@ -30,12 +33,12 @@
 				'This action is final and cannot be undone, please consider this action carefully.'
 			)
 			.input(user.login, user.login)
-			.ok(() => {
-				console.log('Yup!');
-			});
+			.ok(() => {});
 	}
 </script>
 
+<DataTableActionsFreeze bind:open={freeze} {user} />
+<DataTableActionsSubscribe bind:open={subscribe} {user} />
 <DropdownMenu.Root>
 	<DropdownMenu.Trigger>
 		{#snippet child({ props })}
@@ -71,7 +74,12 @@
 					Actions
 				</DropdownMenu.SubTrigger>
 				<DropdownMenu.SubContent>
-					<DropdownMenu.Item variant="destructive" onclick={() => (freezeOpen = true)}>
+					<DropdownMenu.Item onclick={() => (subscribe = true)}>
+						<Plus />
+						Manage Subscriptions
+					</DropdownMenu.Item>
+					<DropdownMenu.Separator />
+					<DropdownMenu.Item variant="destructive" onclick={() => (freeze = true)}>
 						<Snowflake />
 						View Freeze
 					</DropdownMenu.Item>
@@ -84,51 +92,3 @@
 		</DropdownMenu.Group>
 	</DropdownMenu.Content>
 </DropdownMenu.Root>
-
-<Dialog.Root bind:open={freezeOpen}>
-	<Dialog.Content>
-		<Dialog.Header>
-			<Dialog.Title>Freeze {user.login}</Dialog.Title>
-			<Dialog.Description>
-				A freeze temporarily closes a users account for a given duration.
-			</Dialog.Description>
-		</Dialog.Header>
-
-		<Field.Set>
-			<Field.Group class="gap-3">
-				<Field.Field>
-					<Field.Label for="reason">
-						Reason
-						<span class="ml-auto text-xs font-normal">
-							{0}/255
-						</span>
-					</Field.Label>
-					<Textarea
-						id="reason"
-						rows={3}
-						class="max-h-52 resize-y"
-						maxlength={255}
-						placeholder="Took an arrow to the knee."
-					/>
-				</Field.Field>
-				<div class="grid grid-cols-2 gap-2">
-					<Field.Field>
-						<Field.Label for="start">From</Field.Label>
-						<InputDate id="start" bind:value={freezeStartsAt} />
-						<Field.Description>When to freeze the account.</Field.Description>
-					</Field.Field>
-					<Field.Field>
-						<Field.Label for="end">Until</Field.Label>
-						<InputDate id="end" bind:value={freezeEndsAt} min={freezeStartsAt} />
-						<Field.Description>When to allow access again.</Field.Description>
-					</Field.Field>
-				</div>
-			</Field.Group>
-		</Field.Set>
-		<Separator />
-		<Dialog.Footer>
-			<Dialog.Close type="button" class={buttonVariants({ variant: 'outline' })}>Cancel</Dialog.Close>
-			<Button type="submit" variant="destructive">Freeze <Snowflake /></Button>
-		</Dialog.Footer>
-	</Dialog.Content>
-</Dialog.Root>

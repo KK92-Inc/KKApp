@@ -7,19 +7,19 @@ import type { components } from '$lib/api/api.js';
 import { createRawSnippet } from 'svelte';
 import { createColumnHelper, renderComponent } from '@tanstack/svelte-table';
 import { Badge, type BadgeVariant } from '$lib/components/badge';
-import type { DataTableFeatures } from '../features';
+import type { DataTableFeatures } from '../../features';
 import { formatDate, past } from '$lib/datetime';
 import DataTableActions from './data-table-actions.svelte';
 
 // ============================================================================
 
-type CheckIn = components['schemas']['ApplyEventDO'];
+type OpenDay = components['schemas']['ApplyEventDO'];
 
-const helper = createColumnHelper<DataTableFeatures, CheckIn>();
+const helper = createColumnHelper<DataTableFeatures, OpenDay>();
 
-function status(checkIn: CheckIn): { label: string; variant: BadgeVariant } {
-	if (past(checkIn.startsAt)) return { label: 'Started', variant: 'secondary' };
-	if (past(checkIn.deadlineAt)) return { label: 'Sign-up closed', variant: 'outline' };
+function status(openDay: OpenDay): { label: string; variant: BadgeVariant } {
+	if (past(openDay.startsAt)) return { label: 'Started', variant: 'secondary' };
+	if (past(openDay.deadlineAt)) return { label: 'Sign-up closed', variant: 'outline' };
 	return { label: 'Open', variant: 'success' };
 }
 
@@ -60,6 +60,6 @@ export const columns = helper.columns([
 	}),
 	helper.display({
 		id: 'actions',
-		cell: ({ row }) => renderComponent(DataTableActions, { checkIn: row.original })
+		cell: ({ row }) => renderComponent(DataTableActions, { openDay: row.original })
 	})
 ]);

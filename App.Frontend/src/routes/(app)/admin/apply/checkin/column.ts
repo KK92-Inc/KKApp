@@ -7,21 +7,20 @@ import type { components } from '$lib/api/api.js';
 import { createRawSnippet } from 'svelte';
 import { createColumnHelper, renderComponent } from '@tanstack/svelte-table';
 import { Badge, type BadgeVariant } from '$lib/components/badge';
-import type { DataTableFeatures } from '../features';
+import type { DataTableFeatures } from '../../features';
 import { formatDate, past } from '$lib/datetime';
 import DataTableActions from './data-table-actions.svelte';
 
 // ============================================================================
 
-type Kickoff = components['schemas']['KickoffDO'];
+type CheckIn = components['schemas']['ApplyEventDO'];
 
-const helper = createColumnHelper<DataTableFeatures, Kickoff>();
+const helper = createColumnHelper<DataTableFeatures, CheckIn>();
 
-/** Where a kickoff is in its life. Past its date but not started means the job hasn't picked it up yet. */
-function status(kickoff: Kickoff): { label: string; variant: BadgeVariant } {
-	if (kickoff.startedAt) return { label: 'Started', variant: 'success' };
-	if (past(kickoff.startsAt)) return { label: 'Starting', variant: 'secondary' };
-	return { label: 'Upcoming', variant: 'outline' };
+function status(checkIn: CheckIn): { label: string; variant: BadgeVariant } {
+	if (past(checkIn.startsAt)) return { label: 'Started', variant: 'secondary' };
+	if (past(checkIn.deadlineAt)) return { label: 'Sign-up closed', variant: 'outline' };
+	return { label: 'Open', variant: 'success' };
 }
 
 // ============================================================================
@@ -31,25 +30,36 @@ export const columns = helper.columns([
 		header: 'Name',
 		cell: ({ row }) => row.original.name
 	}),
+	helper.accessor('location', {
+		header: 'Location',
+		cell: ({ row }) => row.original.location
+	}),
 	helper.display({
-		header: 'Members',
-		cell: ({ row }) => `${row.original.members} / ${row.original.capacity}`
+		header: 'Sign-ups',
+		cell: ({ row }) => `${row.original.registered} / ${row.original.capacity ?? '∞'}`
+	}),
+	helper.accessor('attended', {
+		header: 'Verified',
+		cell: ({ row }) => row.original.attended
 	}),
 	helper.accessor('startsAt', {
 		header: 'Starts',
 		cell: ({ row }) => formatDate(row.original.startsAt)
 	}),
+	helper.accessor('deadlineAt', {
+		header: 'Sign-up deadline',
+		cell: ({ row }) => formatDate(row.original.deadlineAt)
+	}),
 	helper.display({
 		header: 'Status',
 		cell: ({ row }) => {
 			const { label, variant } = status(row.original);
-			// The label is one of our own constants, never API data, so it is safe as markup.
 			const children = createRawSnippet(() => ({ render: () => `<span>${label}</span>` }));
 			return renderComponent(Badge, { variant, children });
 		}
 	}),
 	helper.display({
 		id: 'actions',
-		cell: ({ row }) => renderComponent(DataTableActions, { kickoff: row.original })
+		cell: ({ row }) => renderComponent(DataTableActions, { checkIn: row.original })
 	})
 ]);

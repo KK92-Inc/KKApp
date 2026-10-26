@@ -7,7 +7,7 @@ import type { components } from '$lib/api/api.js';
 import { createRawSnippet } from 'svelte';
 import { createColumnHelper, renderComponent } from '@tanstack/svelte-table';
 import { Badge, type BadgeVariant } from '$lib/components/badge';
-import type { DataTableFeatures } from '../features';
+import type { DataTableFeatures } from '../../features';
 import { formatDate, past } from '$lib/datetime';
 import CursusName from './cursus-name.svelte';
 import DataTableActions from './data-table-actions.svelte';

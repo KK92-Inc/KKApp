@@ -3,7 +3,7 @@
 	import * as Table from '$lib/components/table';
 	import { Button } from '$lib/components/button';
 	import Separator from '$lib/components/separator/separator.svelte';
-	import { features, type DataTableFeatures } from './features';
+	import { features, type DataTableFeatures } from '../features';
 
 	type DataTableProps<TData extends RowData> = {
 		columns: ColumnDef<DataTableFeatures, TData>[];

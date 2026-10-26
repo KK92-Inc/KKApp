@@ -100,7 +100,7 @@ In regards to rubrics it will evaluate if user is elligible to conduct a review 
 		{
 			UserRole.Applicant => [UserRole.Applicant],
 			UserRole.Student => [UserRole.Student],
-			UserRole.Staff => [UserRole.Applicant, UserRole.Student],
+			UserRole.Staff => [UserRole.Applicant, UserRole.Student, UserRole.Staff],
 			_ => []
         };
 

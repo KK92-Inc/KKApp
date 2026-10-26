@@ -18,11 +18,11 @@
 			]}
 		/>
 
-		<Navgroup title="Cohort Managment" routes={[
-			"/(app)/admin/opendays",
-			"/(app)/admin/checkin",
-			'/(app)/admin/trial',
-			'/(app)/admin/kickoff',
+		<Navgroup title="Admission Managment" routes={[
+			"/(app)/admin/apply/opendays",
+			"/(app)/admin/apply/checkin",
+			'/(app)/admin/apply/trial',
+			'/(app)/admin/apply/kickoff',
 			]}
 		/>
 	{/snippet}

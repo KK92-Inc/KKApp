@@ -11,11 +11,9 @@
 	import { Problem, type ValidationErrors } from '$lib/api';
 	import type { components } from '$lib/api/api';
 	import * as CheckIns from '$lib/remotes/checkin.remote';
-	import { equal } from '$lib/datetime';
 
 	interface Props {
 		open: boolean;
-		/** When given the dialog edits this check-in, otherwise it creates one. */
 		checkIn?: components['schemas']['ApplyEventDO'];
 	}
 

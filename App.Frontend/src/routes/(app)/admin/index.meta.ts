@@ -29,22 +29,22 @@ export const Meta: MetaRecord = {
 		label: 'Freezes',
 		scopes: []
 	},
-	'/(app)/admin/kickoff': {
+	'/(app)/admin/apply/kickoff': {
 		icon: Play,
 		label: 'Kickoffs',
 		scopes: []
 	},
-	'/(app)/admin/trial': {
+	'/(app)/admin/apply/trial': {
 		icon: WavesLadder,
 		label: 'Piscines',
 		scopes: []
 	},
-		'/(app)/admin/checkin': {
+		'/(app)/admin/apply/checkin': {
 		icon: TicketCheck,
 		label: 'Check-Ins',
 		scopes: []
 	},
-	'/(app)/admin/opendays': {
+	'/(app)/admin/apply/opendays': {
 		icon: DoorOpen,
 		label: 'Open Days',
 		scopes: []
