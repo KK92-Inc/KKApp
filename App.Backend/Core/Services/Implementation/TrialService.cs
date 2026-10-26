@@ -5,18 +5,21 @@
 
 using App.Backend.Core.Query;
 using App.Backend.Core.Services.Interface;
+using App.Backend.Core.Services.Options;
 using App.Backend.Database;
 using App.Backend.Database.Extensions;
 using App.Backend.Domain.Entities;
+using App.Backend.Domain.Entities.Apply;
 using App.Backend.Domain.Entities.Users;
 using App.Backend.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 // ============================================================================
 
 namespace App.Backend.Core.Services.Implementation;
 
-public class TrialService(DatabaseContext ctx, TimeProvider time) : BaseService<Trial>(ctx), ITrialService
+public class TrialService(DatabaseContext ctx, TimeProvider time, IOptions<AdmissionOptions> options) : BaseService<Trial>(ctx), ITrialService
 {
     private readonly DatabaseContext ctx = ctx;
 
@@ -230,6 +233,15 @@ public class TrialService(DatabaseContext ctx, TimeProvider time) : BaseService<
             // NOTE(W2): Trials are the applicant stage. Students are already in and staff never take part.
             ServiceException.ThrowIf(user.Role is not UserRole.Applicant, 422, "Only applicants can take part in a trial.");
             ServiceException.ThrowIf(trial.EndedAt is not null || trial.EndsAt <= time.GetUtcNow(), 409, "This trial is already over.");
+
+            // Optionally the trial is the step after the open day, see AdmissionOptions. The person is matched by email,
+            // since that is all an applicant was known by before this account existed.
+            if (options.Value.RequireOpenDayForTrial)
+            {
+                var email = user.Email.Trim().ToLowerInvariant();
+                var verified = await ctx.OpenDayRegistrations.AnyAsync(r => r.Email == email && r.AttendedAt != null, ct);
+                ServiceException.ThrowIf(!verified, 409, "This user hasn't been verified at an open day yet.");
+            }
 
             // The same user may be signing up for another trial at this very moment, which holds a different
             // trial lock. Always take the trial lock first and the user lock second, or this could deadlock.

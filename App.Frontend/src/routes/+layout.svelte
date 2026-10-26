@@ -1,6 +1,5 @@
 <script lang="ts">
 	import '../app.css';
-	import favicon from '$lib/assets/favicon.svg';
 	import { Toaster } from '$lib/components/sonner';
 	import { mode, ModeWatcher } from 'mode-watcher';
 	import type { LayoutProps } from './$types';
@@ -12,7 +11,7 @@
 
 <svelte:head>
 	<title>KKApp</title>
-	<link rel="icon" href={favicon} />
+	<link rel="icon" href="favicon.png" />
 </svelte:head>
 
 <ModeWatcher />

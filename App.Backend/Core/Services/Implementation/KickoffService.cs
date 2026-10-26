@@ -5,18 +5,20 @@
 
 using App.Backend.Core.Query;
 using App.Backend.Core.Services.Interface;
+using App.Backend.Core.Services.Options;
 using App.Backend.Database;
 using App.Backend.Database.Extensions;
 using App.Backend.Domain.Entities;
 using App.Backend.Domain.Entities.Users;
 using App.Backend.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 // ============================================================================
 
 namespace App.Backend.Core.Services.Implementation;
 
-public class KickoffService(DatabaseContext ctx, TimeProvider time) : BaseService<Kickoff>(ctx), IKickoffService
+public class KickoffService(DatabaseContext ctx, TimeProvider time, IOptions<AdmissionOptions> options) : BaseService<Kickoff>(ctx), IKickoffService
 {
     private readonly DatabaseContext ctx = ctx;
 
@@ -163,6 +165,26 @@ public class KickoffService(DatabaseContext ctx, TimeProvider time) : BaseServic
             var toAdd = found.Where(u => u.KickoffId is null).Select(u => u.Id).ToList();
             if (toAdd.Count == 0)
                 return kickoff;
+
+            // Optionally the kickoff is the step after the trial, see AdmissionOptions. Only applicants are held to it,
+            // students that get cohorted are in already.
+            if (options.Value.RequireTrialForKickoff)
+            {
+                var applicants = found
+                    .Where(u => u.Role is UserRole.Applicant && toAdd.Contains(u.Id))
+                    .Select(u => u.Id)
+                    .ToList();
+
+                var selected = await ctx.UserTrials
+                    .AsNoTracking()
+                    .Where(ut => applicants.Contains(ut.UserId) && ut.Outcome == TrialOutcome.Selected)
+                    .Select(ut => ut.UserId)
+                    .Distinct()
+                    .ToListAsync(ct);
+
+                var notSelected = applicants.Except(selected).ToList();
+                ServiceException.ThrowIf(notSelected.Count > 0, 409, $"Not selected in a trial yet: {Describe(notSelected)}.");
+            }
 
             var members = await ctx.Users.CountAsync(u => u.KickoffId == kickoffId, ct);
             ServiceException.ThrowIf(members + toAdd.Count > kickoff.Capacity, 409,

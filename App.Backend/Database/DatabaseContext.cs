@@ -10,6 +10,7 @@ using App.Backend.Domain.Entities.Reviews;
 using App.Backend.Domain.Relations;
 using App.Backend.Domain.Entities.Projects;
 using App.Backend.Domain.Entities.Events;
+using App.Backend.Domain.Entities.Apply;
 
 // ============================================================================
 
@@ -50,6 +51,12 @@ public class DatabaseContext(DbContextOptions<DatabaseContext> options) : DbCont
     public DbSet<Trial> Trials { get; set; }
     public DbSet<UserTrial> UserTrials { get; set; }
 
+    // Admissions, these live in their own `apply` schema.
+    public DbSet<CheckIn> CheckIns { get; set; }
+    public DbSet<CheckInRegistration> CheckInRegistrations { get; set; }
+    public DbSet<OpenDay> OpenDays { get; set; }
+    public DbSet<OpenDayRegistration> OpenDayRegistrations { get; set; }
+
     // Joins
     public DbSet<GoalProject> GoalProject { get; set; }
     public DbSet<CursusGoal> CursusGoal { get; set; }
@@ -82,5 +89,20 @@ public class DatabaseContext(DbContextOptions<DatabaseContext> options) : DbCont
             .HasIndex(t => t.UserId, "IX_tbl_user_trial_user_id_open")
             .IsUnique()
             .HasFilter("\"state\" IN (0, 1)");
+
+        // A registration is the record of who was (or wasn't) there. Deleting a session must never take
+        // it along behind the service's back, so the database refuses. The services remove the sign-ups
+        // that never turned into attendance themselves, and refuse to delete a session that has attendance.
+        modelBuilder.Entity<CheckInRegistration>()
+            .HasOne(r => r.Event)
+            .WithMany()
+            .HasForeignKey(r => r.EventId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<OpenDayRegistration>()
+            .HasOne(r => r.Event)
+            .WithMany()
+            .HasForeignKey(r => r.EventId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

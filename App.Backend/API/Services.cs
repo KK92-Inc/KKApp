@@ -128,6 +128,8 @@ public static class Services
             builder.Configuration.GetSection(WebhookOptions.SectionName));
         builder.Services.Configure<OnsiteNetworkOptions>(
             builder.Configuration.GetSection(OnsiteNetworkOptions.SectionName));
+        builder.Services.Configure<AdmissionOptions>(
+            builder.Configuration.GetSection(AdmissionOptions.SectionName));
     }
 
     private static void ConfigureJson(JsonSerializerOptions options)
@@ -341,6 +343,9 @@ public static class Services
         builder.Services.AddScoped<IMemberService, MemberService>();
         builder.Services.AddScoped<IKickoffService, KickoffService>();
         builder.Services.AddScoped<ITrialService, TrialService>();
+        builder.Services.AddScoped<ICheckInService, CheckInService>();
+        builder.Services.AddScoped<IOpenDayService, OpenDayService>();
+        builder.Services.AddScoped<IAdmissionService, AdmissionService>();
         builder.Services.AddScoped<IUserCursusService, UserCursusService>();
         builder.Services.AddScoped<IUserGoalService, UserGoalService>();
         builder.Services.AddScoped<IUserProjectService, UserProjectService>();
