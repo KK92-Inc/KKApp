@@ -21,6 +21,7 @@
 	let { open = $bindable(false), parentGoalId = null }: Props = $props();
 	const context = Page.getContext();
 
+	let index = $state(0);
 	let query = $state('');
 	const debounced = useDebounce((search: string) => {
 		query = search;
@@ -31,6 +32,7 @@
 			...context.track,
 			{
 				goalId: goal.id,
+				description: goal.description,
 				name: goal.name,
 				slug: goal.slug,
 				parentGoalId
@@ -56,7 +58,7 @@
 		</InputGroup.Root>
 
 		<svelte:boundary>
-			{@const promise = Goal.getPage({ name: query })}
+			{@const promise = Goal.getPage({ name: query, page: index, size: 3 })}
 			{@const page = await promise}
 			{@const filtered = page.data.filter((g) => !context.track.some((cp) => cp.goalId === g.id))}
 
@@ -66,44 +68,43 @@
 				<Skeleton class="h-16 w-full" />
 			{/snippet}
 
-			{#each filtered as goal, index (goal.id)}
-				<Item.Goal goal={goal}>
-					{#snippet actions()}
-						<Button variant="secondary" size="icon" onclick={() => selectGoal(goal)}>
-							<Plus />
-						</Button>
-					{/snippet}
-				</Item.Goal>
-				{#if index !== filtered.length - 1}
-					<Item.Separator />
-				{/if}
-			{:else}
-				<Empty.Root class="border p-0">
-					<Empty.Header>
-						<Empty.Media variant="icon">
-							<FolderCodeIcon />
-						</Empty.Media>
-						<Empty.Title>No Goals Found</Empty.Title>
-						<Empty.Description>
-							No matching goals were found. Create a new goal or adjust your search.
-						</Empty.Description>
-					</Empty.Header>
-					<Empty.Content class="max-w-full">
-						<ButtonGroup.Root>
-							<Button variant="outline" target="_blank" href="/goals/manage">
-								Create Goal
+			<Item.Group class="gap-1">
+				{#each filtered as goal (goal.id)}
+					<Item.Goal {goal}>
+						{#snippet actions()}
+							<Button variant="secondary" size="icon" onclick={() => selectGoal(goal)}>
 								<Plus />
 							</Button>
-							<Button variant="outline" onclick={() => promise.refresh()}>
-								Refresh
-								<RotateCw />
-							</Button>
-						</ButtonGroup.Root>
-					</Empty.Content>
-				</Empty.Root>
-			{/each}
+						{/snippet}
+					</Item.Goal>
+				{:else}
+					<Empty.Root class="border p-0">
+						<Empty.Header>
+							<Empty.Media variant="icon">
+								<FolderCodeIcon />
+							</Empty.Media>
+							<Empty.Title>No Goals Found</Empty.Title>
+							<Empty.Description>
+								No matching goals were found. Create a new goal or adjust your search.
+							</Empty.Description>
+						</Empty.Header>
+						<Empty.Content class="max-w-full">
+							<ButtonGroup.Root>
+								<Button variant="outline" target="_blank" href="/goals/manage">
+									Create Goal
+									<Plus />
+								</Button>
+								<Button variant="outline" onclick={() => promise.refresh()}>
+									Refresh
+									<RotateCw />
+								</Button>
+							</ButtonGroup.Root>
+						</Empty.Content>
+					</Empty.Root>
+				{/each}
+			</Item.Group>
 
-			<Paginate count={page.count} perPage={page.perPage} />
+			<Paginate bind:page={index} count={page.count} perPage={page.perPage} />
 		</svelte:boundary>
 	</Dialog.Content>
 </Dialog.Root>

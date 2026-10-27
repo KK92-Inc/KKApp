@@ -21,6 +21,7 @@
 
 	const context = Page.getContext();
 
+	let index = $state(0);
 	let query = $state('');
 	let debounced = useDebounce((search: string) => {
 		query = search;
@@ -48,7 +49,7 @@
 		</InputGroup.Root>
 
 		<svelte:boundary>
-			{@const promise = Project.getPage({ name: query })}
+			{@const promise = Project.getPage({ name: query, page: index, size: 4 })}
 			{@const page = await promise}
 			{@const filtered = page.data.filter((p) => !context.projects.some((cp) => cp.id === p.id))}
 			{#snippet pending()}
@@ -57,57 +58,57 @@
 				<Skeleton class="h-20 w-full" />
 				<Skeleton class="h-20 w-full" />
 			{/snippet}
-			{#each filtered as project, index (project.id)}
-				<Item.Project {project}>
-					{#snippet actions()}
-						<Button
-							variant="secondary"
-							size="icon"
-							onclick={() => {
-								context.projects = [
-									...context.projects,
-									{
-										id: project.id,
-										description: project.description,
-										name: project.name,
-										thumbnail: ""
-									}
-								];
-							}}
-						>
-							<Plus />
-						</Button>
-					{/snippet}
-				</Item.Project>
-				{#if index !== filtered.length - 1}
-					<Item.Separator />
-				{/if}
-			{:else}
-				<Empty.Root class="border p-0">
-					<Empty.Header>
-						<Empty.Media variant="icon">
-							<FolderCodeIcon />
-						</Empty.Media>
-						<Empty.Title>No Projects Yet</Empty.Title>
-						<Empty.Description>
-							You haven't added any projects yet. Get started by adding your first project.
-						</Empty.Description>
-					</Empty.Header>
-					<Empty.Content class="max-w-full">
-						<ButtonGroup.Root>
-							<Button variant="outline" target="_blank" href="/projects/manage">
-								Create Project
+			<Item.Group class="gap-1">
+				{#each filtered as project (project.id)}
+					<Item.Project {project}>
+						{#snippet actions()}
+							<Button
+								variant="secondary"
+								size="icon"
+								onclick={() => {
+									context.projects = [
+										...context.projects,
+										{
+											id: project.id,
+											description: project.description,
+											name: project.name,
+											thumbnail: ''
+										}
+									];
+								}}
+							>
 								<Plus />
 							</Button>
-							<Button variant="outline" onclick={() => promise.refresh()}>
-								Refresh
-								<RotateCw />
-							</Button>
-						</ButtonGroup.Root>
-					</Empty.Content>
-				</Empty.Root>
-			{/each}
-			<Paginate count={page.count} perPage={page.perPage} />
+						{/snippet}
+					</Item.Project>
+				{:else}
+					<Empty.Root class="border p-0">
+						<Empty.Header>
+							<Empty.Media variant="icon">
+								<FolderCodeIcon />
+							</Empty.Media>
+							<Empty.Title>No Projects Yet</Empty.Title>
+							<Empty.Description>
+								You haven't added any projects yet. Get started by adding your first project.
+							</Empty.Description>
+						</Empty.Header>
+						<Empty.Content class="max-w-full">
+							<ButtonGroup.Root>
+								<Button variant="outline" target="_blank" href="/projects/manage">
+									Create Project
+									<Plus />
+								</Button>
+								<Button variant="outline" onclick={() => promise.refresh()}>
+									Refresh
+									<RotateCw />
+								</Button>
+							</ButtonGroup.Root>
+						</Empty.Content>
+					</Empty.Root>
+				{/each}
+			</Item.Group>
+
+			<Paginate bind:page={index} count={page.count} perPage={page.perPage} />
 		</svelte:boundary>
 	</Dialog.Content>
 </Dialog.Root>
