@@ -70,7 +70,7 @@
 
 		<Item.Group class="flex gap-4">
 			{#each result.data as goal (goal.id)}
-				<Item.Goal {goal} session={{ state: "Awaiting", userId: page.data.session.userId}}>
+				<Item.Goal {goal}>
 					{#snippet actions()}
 						<Button
 							variant="outline"

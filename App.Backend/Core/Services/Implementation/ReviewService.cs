@@ -516,7 +516,7 @@ public class ReviewService(
             .Where(r => r.Enabled && (r.ProjectId == projectId || r.ProjectId == null))
             .OrderByDescending(r => r.ProjectId != null)
             .FirstOrDefaultAsync(ct)
-            ?? throw new ServiceException(404, "No rubric available for this project.");
+            ?? throw new ServiceException("There are currently no configured rubrics, please report to staff.");
     }
 
     /// <summary>

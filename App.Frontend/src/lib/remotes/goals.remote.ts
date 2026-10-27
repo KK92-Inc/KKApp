@@ -22,7 +22,7 @@ const PageSchema = v.object({
 export const get = query(Filters.id, async (id) => {
 	const { locals } = getRequestEvent();
 	const { error, data } = await locals.api.GET("/goals/{id}", {
-		params: { path: { id }, query: { "access[user_id]": locals.session.userId }},
+		params: { path: { id }, query: {  }},
 	});
 
 	if (error || !data) Problem.throw(error)

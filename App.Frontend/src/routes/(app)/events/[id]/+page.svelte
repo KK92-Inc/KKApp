@@ -18,31 +18,12 @@
 	const [event] = $derived(await Promise.all([Events.get(params.id)]));
 	const src = $derived(event.thumbnail ?? `https://placehold.co/1200x514?text=${event.name}`);
 
-	const staff = $derived(page.data.session.roles.includes("staff"));
+	const staff = $derived(page.data.session.roles.includes('staff'));
 	const creator = $derived(event.userId === page.data.session.userId);
 	// Mirrors the backend: only the creator or staff, and only while the event is still live.
 	const live = $derived(event.state === 'Pending' || event.state === 'Accepted');
 	const canCancel = $derived(live && (creator || staff));
 </script>
-
-{#snippet reject(title: string)}
-	<Button
-		variant="destructive"
-		onclick={async () => {
-			const confirm = await dialog.confirm(
-				`Cancel event: '${event.name}' ?`,
-				'This will reject the event. This action is final, for a new event you will have to create one.'
-			);
-
-			if (!confirm) return;
-			// NOTE: Must be awaited/returned, otherwise errors never reach the toast.
-			await Problem.try(() => Events.cancel(event.id));
-		}}
-	>
-		{title}
-		<CalendarMinus />
-	</Button>
-{/snippet}
 
 <div class="mx-auto mt-4 w-full max-w-2xl min-w-0 space-y-4 px-4">
 	<Button variant="outline" href="/events">
@@ -103,10 +84,23 @@
 						{/if}
 					{/if}
 				</ButtonGroup.Root>
-				<!-- The creator already has the cancel button above, this one is for staff. -->
-				{#if canCancel && !creator}
+				{#if canCancel}
 					<ButtonGroup.Root>
-						{@render reject("Cancel")}
+						<Button
+							variant="destructive"
+							onclick={async () => {
+								const confirm = await dialog.confirm(
+									`Cancel event: '${event.name}' ?`,
+									'This will reject the event. This action is final, for a new event you will have to create one.'
+								);
+
+								if (!confirm) return;
+								await Problem.try(async () => await Events.cancel(event.id));
+							}}
+						>
+							Cancel Event
+							<CalendarMinus />
+						</Button>
 					</ButtonGroup.Root>
 				{/if}
 			</ButtonGroup.Root>

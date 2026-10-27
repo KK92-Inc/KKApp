@@ -12,6 +12,8 @@ using App.Backend.Domain.Enums;
 using App.Backend.Models.Responses.Entities.Projects;
 using App.Backend.API.Utils;
 using App.Backend.Database;
+using Wolverine;
+using App.Backend.API.Notifications.Variants;
 
 // ============================================================================
 
@@ -19,12 +21,6 @@ namespace App.Backend.API.Controllers;
 
 /// <summary>
 /// Operations on user project sessions.
-///
-/// Supports two access patterns:
-/// <list type="bullet">
-///   <item>Nested: <c>GET /users/{userId}/projects</c> — scoped listing and lookup by project ID</item>
-///   <item>Direct: <c>GET /user-projects/{id}</c> — lookup by UserProject entity ID, members, or transactions</item>
-/// </list>
 /// </summary>
 [ApiController]
 [Route("users/{userId:guid}/projects"), Tags("UserProjects")]
@@ -33,6 +29,7 @@ public class UserProjectController(
     IUserProjectService service,
     IMemberService memberService,
     IAuthorizationService auth,
+    IMessageBus bus,
     DatabaseContext ctx
 ) : Controller
 {
@@ -201,7 +198,7 @@ public class UserProjectController(
             UserProjectTransactionVariant.MemberInvited,
             token);
 
-        // await bus.PublishAsync(new InviteNotification(userId, User.GetSID(), up.Id));
+        await bus.PublishAsync(new ProjectInviteNotification(userId, User.GetSID(), up.Id, up.ProjectId));
         return Ok(new MemberDO(member));
     }
 

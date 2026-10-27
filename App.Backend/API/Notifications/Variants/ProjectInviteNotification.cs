@@ -19,18 +19,12 @@ namespace App.Backend.API.Notifications.Variants;
 public sealed record ProjectInviteNotification(
     Guid InviteeId,
     Guid InviterUserId,
-    Guid UserProjectId
-) : INotificationMessage, IBroadcastChannel, IDatabaseChannel
+    Guid UserProjectId,
+    Guid ProjectId
+) : INotificationMessage, IDatabaseChannel
 {
     public Guid NotifiableId => InviteeId;
     public Guid? ResourceId => UserProjectId;
     public NotificationMeta Meta => NotificationMeta.AcceptOrDecline | NotificationMeta.Project | NotificationMeta.User | NotificationMeta.Feed;
-
-    public BroadcastMessage ToBroadcast() => new("ProjectInvite", new
-    {
-        UserProjectId,
-        InviterUserId,
-    });
-
-    public NotificationData ToDatabase() => new ProjectInviteData(UserProjectId, InviterUserId);
+    public NotificationData ToDatabase() => new ProjectInviteData(UserProjectId, InviterUserId, ProjectId);
 }

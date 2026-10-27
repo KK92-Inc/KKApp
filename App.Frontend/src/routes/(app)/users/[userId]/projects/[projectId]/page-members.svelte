@@ -102,21 +102,19 @@
 							<HoverCard.Content class="text-left">
 								<div class="flex gap-3">
 									<Avatar.Root class="size-12 shrink-0 rounded-sm border">
-										<Avatar.Image
-											class="rounded-sm"
-											src={member.user.avatarUrl ?? 'https://placehold.co/400'}
-										/>
+										<Avatar.Image class="rounded-sm" src={member.user.avatarUrl} />
 										<Avatar.Fallback class="rounded-sm">
 											{member.user.login.slice(0, 2).toUpperCase()}
 										</Avatar.Fallback>
 									</Avatar.Root>
 
 									<div class="flex-1 space-y-1">
-										<h4 class="grid grid-cols-[auto_1fr_auto] items-center text-sm leading-none font-bold">
-											{member.user.displayName}
-											<span class="ml-1 text-xs font-normal text-muted-foreground">
+										<h4 class="grid grid-cols-[1fr_auto] items-center text-sm leading-none font-bold">
+												{member.user.displayName}
+
+											<!-- <span class="ml-1 text-xs font-normal text-muted-foreground">
 												@{member.user.login}
-											</span>
+											</span> -->
 											{#if member.role === 'Leader'}
 												<Badge>Leader <Crown /></Badge>
 											{:else if member.role === 'Pending'}
@@ -126,11 +124,11 @@
 										<Separator />
 										<div class="flex items-center text-xs text-muted-foreground">
 											<CalendarDaysIcon class="me-1.5 size-3.5 opacity-70" />
-											<span>Joined {formatDate(member.user.createdAt, 'dateLong')}</span>
+											<span>Joined {formatDate(member.user.createdAt, 'date')}</span>
 										</div>
 										<div class="flex items-center text-xs text-muted-foreground">
 											<CalendarDaysIcon class="me-1.5 size-3.5 opacity-70" />
-											<span>Member since {formatDate(member.createdAt, 'dateLong')}</span>
+											<span>Member since {formatDate(member.createdAt, 'date')}</span>
 										</div>
 									</div>
 								</div>

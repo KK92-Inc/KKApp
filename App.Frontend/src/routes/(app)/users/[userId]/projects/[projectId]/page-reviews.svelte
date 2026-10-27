@@ -37,7 +37,14 @@
 	/** Request an evaluation round */
 	async function pull() {
 		if (!session) return;
-		await Problem.try(() => Reviews.pull(session.id));
+
+		const confirm = dialog.confirm(
+			"Confirm to submit repository for evaluation?",
+			"You'll be requesting a evaluation round. While awaiting an evaluation the repository will be locked and reject any further changes."
+		);
+
+		if (!await confirm) return;
+		await Problem.try(async () => await Reviews.pull(session.id));
 		await refreshAll({ includeLoadFunctions: false });
 	}
 
@@ -114,7 +121,7 @@
 
 				<Card.Action class="flex items-center gap-1">
 					<ButtonGroup.Root>
-						{#if membership?.role === 'Leader'}
+						{#if membership?.role === 'Leader' && session.state !== 'Awaiting'}
 							<Button size="sm" variant="outline" onclick={pull}>
 								<MessageSquarePlus />
 								Request

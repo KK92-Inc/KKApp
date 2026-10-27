@@ -8,22 +8,26 @@
 	import * as Item from '../item';
 
 	interface Props {
-		notification: components["schemas"]["NotificationDO"] & {
-			data: components["schemas"]["NotificationDataMessageDO"]
-		}
+		notification: components['schemas']['NotificationDO'] & {
+			data: components['schemas']['NotificationDataMessageDO'];
+		};
 	}
 
 	const { notification }: Props = $props();
 </script>
 
-	<Item.Root variant="outline" size="sm" class="items-start border-pink-200/70 bg-pink-50/40 hover:bg-pink-100/50 dark:border-pink-900/50 dark:bg-pink-950/20 dark:hover:bg-pink-950/35">
-		<Item.Media variant="icon" class="text-pink-500 dark:text-pink-400">
-			<Heart size={16} />
-    </Item.Media>
-    <Item.Content class="items-start ">
-			<Markdown value={notification.data.markdown}/>
-    </Item.Content>
-  </Item.Root>
+<Item.Root
+	variant="outline"
+	size="sm"
+	class="items-start border-pink-200/70 bg-pink-50/40 hover:bg-pink-100/50 dark:border-pink-900/50 dark:bg-pink-950/20 dark:hover:bg-pink-950/35"
+>
+	<Item.Media variant="icon" class="text-pink-500 dark:text-pink-400">
+		<Heart size={16} />
+	</Item.Media>
+	<Item.Content class="items-start ">
+		<Markdown value={notification.data.markdown} />
+	</Item.Content>
+</Item.Root>
 
 <!-- <div class="bg-card hover:bg-accent/50 mb-3 rounded-lg border p-4 transition-colors">
 	<div class="flex items-start gap-3">

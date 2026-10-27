@@ -10,64 +10,64 @@
 	import * as Goal from '$lib/remotes/goals.remote';
 
 	const context = Page.getContext();
-
-	const goal = await Goal.get(context.goalId());
-	const createdAt = $derived(formatDate(goal.createdAt, 'date'));
-	const updatedAt = $derived(formatDate(goal.updatedAt, 'date'));
 </script>
 
-<Card.Root class="gap-1 overflow-hidden p-0">
-	<div
-		class="relative border-b bg-muted/30 px-6 pt-8 pb-6 text-center"
-		style="background-image: radial-gradient(color-mix(in oklab, var(--foreground) 12%, transparent) 1px, transparent 1px); background-size: 14px 14px;"
-	>
-		<Thumbnail
-			readonly
-			size={128}
-			value={goal.thumbnail ?? `https://placehold.co/128x128?text=${goal.name}`}
-			class="rounded-lg border"
-		/>
-	</div>
+<svelte:boundary>
+	{@const goal = await Goal.get(context.goalId())}
+	{@const createdAt = formatDate(goal.createdAt, 'date')}
+	{@const updatedAt = formatDate(goal.updatedAt, 'date')}
+	<Card.Root class="gap-1 overflow-hidden p-0">
+		<div
+			class="relative border-b bg-muted/30 px-6 pt-8 pb-6 text-center"
+			style="background-image: radial-gradient(color-mix(in oklab, var(--foreground) 12%, transparent) 1px, transparent 1px); background-size: 14px 14px;"
+		>
+			<Thumbnail
+				readonly
+				size={128}
+				value={goal.thumbnail ?? `https://placehold.co/128x128?text=${goal.name}`}
+				class="rounded-lg border"
+			/>
+		</div>
 
-	<Card.Content class="space-y-2 p-4">
-		<h1 class="text-xl font-semibold tracking-tight text-foreground">{goal.name}</h1>
+		<Card.Content class="space-y-2 p-4">
+			<h1 class="text-xl font-semibold tracking-tight text-foreground">{goal.name}</h1>
 
-		<Tooltip.Root>
-			<Tooltip.Trigger class="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-				<Calendar size={16} />
-				<span>{createdAt}</span>
-			</Tooltip.Trigger>
-			<Tooltip.Content>Created on {createdAt}</Tooltip.Content>
-		</Tooltip.Root>
-		<Tooltip.Root>
-			<Tooltip.Trigger class="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-				<Clock size={16} />
-				<span>Updated {updatedAt}</span>
-			</Tooltip.Trigger>
-			<Tooltip.Content>Last update on {updatedAt}</Tooltip.Content>
-		</Tooltip.Root>
-		<p class="text-sm leading-6 text-muted-foreground">{goal.description}</p>
+			<Tooltip.Root>
+				<Tooltip.Trigger class="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+					<Calendar size={16} />
+					<span>{createdAt}</span>
+				</Tooltip.Trigger>
+				<Tooltip.Content>Created on {createdAt}</Tooltip.Content>
+			</Tooltip.Root>
+			<Tooltip.Root>
+				<Tooltip.Trigger class="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+					<Clock size={16} />
+					<span>Updated {updatedAt}</span>
+				</Tooltip.Trigger>
+				<Tooltip.Content>Last update on {updatedAt}</Tooltip.Content>
+			</Tooltip.Root>
+			<p class="text-sm leading-6 text-muted-foreground">{goal.description}</p>
 
-
-		<Separator />
-		{#if goal.public}
-			<Badge variant="secondary">
-				<Globe class="size-3" /> Public
-			</Badge>
-		{:else}
-			<Badge variant="outline">
-				<Lock class="size-3" /> Private
-			</Badge>
-		{/if}
-		{#if goal.deprecated}
-			<Badge variant="destructive">
-				<TriangleAlert class="size-3" /> Deprecated
-			</Badge>
-		{/if}
-		{#if !goal.enabled}
-			<Badge variant="destructive">
-				<TriangleAlert class="size-3" /> Disabled
-			</Badge>
-		{/if}
-	</Card.Content>
-</Card.Root>
+			<Separator />
+			{#if goal.public}
+				<Badge variant="secondary">
+					<Globe class="size-3" /> Public
+				</Badge>
+			{:else}
+				<Badge variant="outline">
+					<Lock class="size-3" /> Private
+				</Badge>
+			{/if}
+			{#if goal.deprecated}
+				<Badge variant="destructive">
+					<TriangleAlert class="size-3" /> Deprecated
+				</Badge>
+			{/if}
+			{#if !goal.enabled}
+				<Badge variant="destructive">
+					<TriangleAlert class="size-3" /> Disabled
+				</Badge>
+			{/if}
+		</Card.Content>
+	</Card.Root>
+</svelte:boundary>

@@ -1,17 +1,9 @@
 <script lang="ts">
 	import type { components } from '$lib/api/api';
 	import * as Item from '$lib/components/item';
-	import * as Events from '$lib/remotes/events.remote';
 	import { Badge } from '$lib/components/badge';
-	import type { Snippet } from 'svelte';
-	import { cn } from '$lib/utils';
 	import { Archive, Award, BadgeInfo, Calendar, Eye, Globe, Users } from '@lucide/svelte';
-	import { colors, type EntityState } from '.';
-	import * as Goal from '$lib/remotes/goals.remote';
-	import * as UserProject from '$lib/remotes/user-project.remote';
-	import * as Accordion from '$lib/components/accordion';
 	import Loader from '$lib/components/loader.svelte';
-	import { Button } from '$lib/components/button';
 	import { formatDate } from '$lib/datetime';
 
 	interface Props {
@@ -39,17 +31,7 @@
 				<Item.Description class="flex items-center gap-2">
 					<span class="flex items-center gap-1">
 						<Users size={14} />
-						<svelte:boundary>
-							{@const users = await Events.participants(event.id)}
-							{#snippet pending()}
-								<Loader />
-							{/snippet}
-							{#snippet failed()}
-								0
-							{/snippet}
-							{users.length}
-						</svelte:boundary>
-						/{event.capacity}
+						{event.participants.length}/{event.capacity}
 					</span>
 					<span class="flex items-center gap-1">
 						<Calendar size={14} />

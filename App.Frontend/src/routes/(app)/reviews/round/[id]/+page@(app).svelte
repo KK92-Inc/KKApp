@@ -87,7 +87,6 @@
 	<Item.Group class="gap-4">
 		{#each round.slots as slot (slot.reviewId)}
 			{@const isOwnReview = slot.reviewer?.id === page.data.session.userId}
-
 			{#if !slot.reviewer && (slot.kind === 'Async' || slot.kind === 'Peer')}
 				<Item.Root variant="outline" class="items-center border-dashed p-3">
 					<Item.Media variant="icon" class="rounded-md bg-muted/50 p-2">

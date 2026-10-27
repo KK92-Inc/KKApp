@@ -1,7 +1,7 @@
 <script lang="ts">
 	import * as Freezes from '$lib/remotes/freeze.remote';
 	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
-	import DataTable from '../data-table-cohort.svelte';
+	import DataTable from '../apply/data-table-cohort.svelte';
 	import { columns } from './column';
 
 	let page = $state(0);

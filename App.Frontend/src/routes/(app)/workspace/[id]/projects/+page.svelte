@@ -70,7 +70,7 @@
 
 		<Item.Group class="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
 			{#each result.data as project (project.id)}
-				<Item.Project {project} session={{ state: "Awaiting", userId: page.data.session.userId }} />
+				<Item.Project {project} />
 			{:else}
 				<Item.Root variant="muted" class="col-span-full">
 					<Empty.Root>

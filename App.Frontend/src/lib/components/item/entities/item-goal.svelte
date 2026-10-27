@@ -137,7 +137,7 @@
 								No projects linked to this goal.
 							</p>
 						{:else}
-							<Item.Group class="grid grid-cols-1">
+							<Item.Group class="grid grid-cols-1 gap-1">
 								{#each items as { project, session: projectSession } (project.id)}
 									<Item.Project {project} session={projectSession} />
 								{/each}

@@ -9,6 +9,8 @@
 	import PageActions from './page-actions.svelte';
 	import * as Page from './context.svelte';
 	import PageInfo from './page-info.svelte';
+	import Skeleton from '$lib/components/skeleton/skeleton.svelte';
+	import Button from '$lib/components/button/button.svelte';
 
 	const { params }: PageProps = $props();
 	Page.setContext(
@@ -23,7 +25,17 @@
 	{@const projects = await Goal.getProjects(params.goalId)}
 
 	{#snippet pending()}
-		Loading...
+		<Layout classL="gap-y-4 mt-4" classR="mt-4 flex flex-col gap-1">
+			{#snippet left()}
+				<Skeleton class="w-full h-64"/>
+			{/snippet}
+
+			{#snippet right()}
+				<Skeleton class="w-full h-16"/>
+				<Skeleton class="w-full h-16"/>
+				<Skeleton class="w-full h-16"/>
+			{/snippet}
+		</Layout>
 	{/snippet}
 	<Layout classL="gap-y-4 mt-4" classR="mt-4">
 		{#snippet left()}
@@ -37,9 +49,13 @@
 				<Separator class="flex-1" />
 			</div>
 
-			<Item.Group class="pt-2">
+			<Item.Group class="pt-2 gap-1">
 				{#each projects as project (project.id)}
-					<Item.Project {project} />
+					<Item.Project {project}>
+						<!-- {#snippet actions()}
+							<Button>Subscribe</Button>
+						{/snippet} -->
+					</Item.Project>
 				{:else}
 					<Empty.Root class="h-full bg-linear-to-b from-muted/50 from-30% to-background">
 						<Empty.Header>

@@ -2,7 +2,19 @@
 	import * as Item from '$lib/components/item';
 	import { Button } from '$lib/components/button';
 	import * as Dialog from '$lib/components/dialog';
-	import { Plus, Search, Settings, Users, UserSearch } from '@lucide/svelte';
+	import {
+		ArrowUp,
+		Clock3,
+		Crown,
+		LogOut,
+		Plus,
+		Search,
+		Settings,
+		UserRound,
+		Users,
+		UserSearch,
+		X
+	} from '@lucide/svelte';
 	import { page } from '$app/state';
 	import * as InputGroup from '$lib/components/input-group';
 	import * as Tooltip from '$lib/components/tooltip';
@@ -44,6 +56,8 @@
 	<svelte:boundary>
 		{@const members = await UserProject.getMembersPage({ id: session.id })}
 		{@const team = members.data.filter((m) => !m.leftAt)}
+		{@const currentMember = team.find((member) => member.userId === page.data.session.userId)}
+		{@const isLeader = currentMember?.role === 'Leader'}
 
 		{#snippet pending()}
 			<Skeleton class="h-20 w-50" />
@@ -53,7 +67,15 @@
 			<Dialog.Root>
 				<Dialog.Trigger>
 					{#snippet child({ props })}
-						<Button {...props} size="sm" variant="outline">Manage <Settings /></Button>
+						<Button {...props} size="sm" variant="outline">
+							{#if isLeader}
+								Manage
+								<Settings />
+							{:else}
+								View Members
+								<Users />
+							{/if}
+						</Button>
 					{/snippet}
 				</Dialog.Trigger>
 				<Dialog.Content>
@@ -77,19 +99,43 @@
 								<Users />
 								Peers
 							</Tabs.Trigger>
-							<Tabs.Trigger value="search">
-								<UserSearch />
-								Find Peers
-							</Tabs.Trigger>
+							{#if isLeader}
+								<Tabs.Trigger value="search">
+									<UserSearch />
+									Find Peers
+								</Tabs.Trigger>
+							{/if}
 						</Tabs.List>
 						<Tabs.Content value="manage">
-							<Item.Group class="grid gap-2 grid-cols-3">
+							<Item.Group class="grid grid-cols-3 gap-2">
 								{#each team as member (member.id)}
 									<Item.User user={member.user}>
 										{#snippet actions()}
 											{#if member.role === 'Leader'}
-												<Badge variant="outline" class="rounded-sm">Project Leader</Badge>
+												<Badge
+													variant="outline"
+													class="rounded-sm p-1.5"
+													title="Project Leader"
+													aria-label="Project Leader"
+												>
+													<Crown size={16} />
+												</Badge>
 											{:else if member.role === 'Pending'}
+												<Badge variant="outline" class="rounded-sm p-1.5" title="Pending" aria-label="Pending">
+													<Clock3 size={16} />
+												</Badge>
+											{:else}
+												<Badge
+													variant="outline"
+													class="rounded-sm p-1.5"
+													title="Project Member"
+													aria-label="Project Member"
+												>
+													<UserRound size={16} />
+												</Badge>
+											{/if}
+
+											{#if isLeader && member.role === 'Pending'}
 												<Button
 													onclick={(e) => {
 														e.preventDefault();
@@ -101,13 +147,15 @@
 															});
 														});
 													}}
-													class="z-20 h-7"
+													class="z-20"
 													variant="outline"
-													size="sm"
+													size="icon-sm"
+													title="Cancel invitation"
+													aria-label="Cancel invitation"
 												>
-													Cancel
+													<X size={14} />
 												</Button>
-											{:else}
+											{:else if isLeader && member.role !== 'Leader'}
 												<Button
 													onclick={(e) => {
 														e.preventDefault();
@@ -120,11 +168,13 @@
 															});
 														});
 													}}
-													class="z-20 h-7"
+													class="z-20"
 													variant="outline"
-													size="sm"
+													size="icon-sm"
+													title="Make project leader"
+													aria-label="Make project leader"
 												>
-													Leader
+													<ArrowUp size={14} />
 												</Button>
 
 												<Button
@@ -138,11 +188,28 @@
 															});
 														});
 													}}
-													class="z-20 h-7"
+													class="z-20"
 													variant="outline"
-													size="sm"
+													size="icon-sm"
+													title="Remove member"
+													aria-label="Remove member"
 												>
-													Kick
+													<X size={14} />
+												</Button>
+											{:else if currentMember?.userId === member.userId}
+												<Button
+													onclick={(e) => {
+														e.preventDefault();
+														e.stopPropagation();
+														Problem.try(() => UserProject.leave(session.id));
+													}}
+													class="z-20"
+													variant="outline"
+													size="icon-sm"
+													title="Leave project"
+													aria-label="Leave project"
+												>
+													<LogOut size={14} />
 												</Button>
 											{/if}
 										{/snippet}

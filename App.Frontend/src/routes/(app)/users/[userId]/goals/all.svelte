@@ -52,7 +52,7 @@
 		</div>
 	{/snippet}
 
-	<Item.Group class="grid gap-4 p-4 grid-cols-1 sm:grid-cols-2">
+	<Item.Group class="grid gap-4 p-4 grid-cols-1">
 		{#each page.data as goal (goal.id)}
 			<Item.Goal {goal} href="/users/{userId}/goals/{goal.id}"/>
 		{:else}
