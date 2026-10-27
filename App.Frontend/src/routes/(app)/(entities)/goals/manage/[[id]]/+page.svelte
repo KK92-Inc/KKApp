@@ -166,7 +166,7 @@
 			</div>
 		{/snippet}
 		{#snippet right()}
-			<Item.Group class="mt-4 rounded border bg-muted/30 p-4">
+			<Item.Group class="mt-4 rounded border bg-muted/30 p-4 gap-1">
 				{#each context.projects as project, index (project.id)}
 					<Item.Root variant="outline">
 						<Item.Media>
@@ -202,13 +202,7 @@
 							{/if}
 						</Item.Actions>
 					</Item.Root>
-
-					<!-- Fixed: Check against context.projects.length instead of people.length -->
-					{#if index !== context.projects.length - 1}
-						<Item.Separator />
-					{/if}
 				{:else}
-					<!-- Empty State (Only rendered when projects array is empty) -->
 					{#if !params.id}
 						<Empty.Root class="p-0!">
 							<Empty.Header>
@@ -238,9 +232,7 @@
 					</Alert.Root>
 				{:else if context.projects.length > 0}
 					{#if context.projects.length < 4}
-						<div class="mt-4">
 							<PageProject />
-						</div>
 					{:else}
 						<Alert.Root variant="warning" class="mt-4">
 							<TriangleAlert />

@@ -38,13 +38,11 @@
 				parentGoalId
 			}
 		];
-
-		open = false;
 	}
 </script>
 
 <Dialog.Root bind:open>
-	<Dialog.Content class="sm:max-w-106.25">
+	<Dialog.Content>
 		<Dialog.Header>
 			<Dialog.Title>Search Goals</Dialog.Title>
 			<Dialog.Description>Search for available goals to add to this cursus.</Dialog.Description>

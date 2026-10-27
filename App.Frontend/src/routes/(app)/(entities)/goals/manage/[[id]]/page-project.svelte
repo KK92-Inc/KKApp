@@ -14,10 +14,6 @@
 	import * as ButtonGroup from '$lib/components/button-group';
 	import * as InputGroup from '$lib/components/input-group';
 	import Paginate from '$lib/components/paginate.svelte';
-	import * as Alert from '$lib/components/alert';
-	import Separator from '$lib/components/separator/separator.svelte';
-	import { Badge } from '$lib/components/badge';
-	import * as Card from '$lib/components/card';
 
 	const context = Page.getContext();
 
@@ -36,7 +32,7 @@
 		Add Project
 		<Plus />
 	</Dialog.Trigger>
-	<Dialog.Content class="sm:max-w-106.25">
+	<Dialog.Content>
 		<Dialog.Header>
 			<Dialog.Title>Search Projects</Dialog.Title>
 			<Dialog.Description>Search for available projects to add to this goal.</Dialog.Description>
@@ -63,9 +59,12 @@
 					<Item.Project {project}>
 						{#snippet actions()}
 							<Button
+								type="button"
 								variant="secondary"
 								size="icon"
-								onclick={() => {
+								onclick={(e) => {
+									e.stopPropagation()
+									e.preventDefault()
 									context.projects = [
 										...context.projects,
 										{
